@@ -1,306 +1,452 @@
-const clients = [
-  {
-    id: 1,
-    name: "Ercan Alaylı Ltd. Şti.",
-    phone: "0532 111 11 11",
-    taxNo: "1234567890",
-    city: "Bursa",
-    balance: 18400,
-    status: "Aktif",
-    lastCollection: "03.04.2026",
-    movements: [
-      { date: "03.04.2026", desc: "Mart muhasebe ücreti tahsilatı", type: "Tahsilat", debit: 0, credit: 12000 },
-      { date: "01.04.2026", desc: "Nisan muhasebe ücreti tahakkuk", type: "Tahakkuk", debit: 6000, credit: 0 },
-      { date: "01.03.2026", desc: "Mart muhasebe ücreti tahakkuk", type: "Tahakkuk", debit: 6000, credit: 0 }
-    ],
-    privateNotes: [
-      { text: "Ödeme sözü verdi, cuma tekrar ara.", type: "ödeme sözü", date: "08.04.2026", by: "Admin" },
-      { text: "Patronla konuşunca ödeme hızlanıyor.", type: "özel", date: "04.04.2026", by: "Admin" }
-    ],
-    promises: [
-      { amount: 25000, date: "12.04.2026", note: "Parçalı ödeme yapacak", status: "Bekliyor" }
-    ]
-  },
-  {
-    id: 2,
-    name: "Beta Mobilya",
-    phone: "0532 222 22 22",
-    taxNo: "9876543210",
-    city: "İnegöl",
-    balance: 26500,
-    status: "Riskli",
-    lastCollection: "15.03.2026",
-    movements: [
-      { date: "15.03.2026", desc: "Kısmi tahsilat", type: "Tahsilat", debit: 0, credit: 6000 },
-      { date: "01.03.2026", desc: "Mart muhasebe ücreti", type: "Tahakkuk", debit: 6500, credit: 0 },
-      { date: "01.02.2026", desc: "Şubat muhasebe ücreti", type: "Tahakkuk", debit: 6500, credit: 0 }
-    ],
-    privateNotes: [
-      { text: "Sıkıştırınca ödeme yapıyor, yumuşak ilerle.", type: "risk", date: "07.04.2026", by: "Admin" }
-    ],
-    promises: [
-      { amount: 15000, date: "10.04.2026", note: "Hafta sonu ödeme sözü", status: "Bekliyor" }
-    ]
-  },
-  {
-    id: 3,
-    name: "Gündüz Makine",
-    phone: "0532 333 33 33",
-    taxNo: "1122334455",
-    city: "Bursa",
-    balance: 8250,
-    status: "Normal",
-    lastCollection: "02.04.2026",
-    movements: [
-      { date: "02.04.2026", desc: "Banka tahsilatı", type: "Tahsilat", debit: 0, credit: 8250 }
-    ],
-    privateNotes: [],
-    promises: []
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #eef2f7;
+  --sidebar: #0f172a;
+  --sidebar-2: #111827;
+  --primary: #2563eb;
+  --primary-2: #1d4ed8;
+  --text: #1e293b;
+  --muted: #64748b;
+  --card: #ffffff;
+  --line: #e2e8f0;
+  --success-bg: #dcfce7;
+  --success-text: #166534;
+  --warning-bg: #fef3c7;
+  --warning-text: #92400e;
+  --danger-bg: #fee2e2;
+  --danger-text: #991b1b;
+  --neutral-bg: #e2e8f0;
+  --neutral-text: #334155;
+  --shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  min-height: 100vh;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 100vh;
+}
+
+.sidebar {
+  background: linear-gradient(180deg, var(--sidebar), var(--sidebar-2));
+  color: #fff;
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-mark {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #3b82f6, #38bdf8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.brand-top {
+  margin: 0;
+  font-size: 12px;
+  color: #93c5fd;
+  letter-spacing: 1px;
+}
+
+.brand h2 {
+  margin: 4px 0 0;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.menu-item {
+  color: #cbd5e1;
+  text-decoration: none;
+  padding: 12px 14px;
+  border-radius: 14px;
+  transition: 0.2s ease;
+  font-weight: 600;
+}
+
+.menu-item:hover,
+.menu-item.active {
+  background: var(--primary-2);
+  color: #fff;
+}
+
+.sidebar-box {
+  margin-top: auto;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.box-label {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sidebar-box h3 {
+  margin: 0 0 8px;
+  font-size: 28px;
+}
+
+.sidebar-box p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.main {
+  padding: 28px;
+}
+
+.hero {
+  background: linear-gradient(135deg, #0f172a, #2563eb);
+  color: #fff;
+  border-radius: 24px;
+  padding: 30px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  box-shadow: var(--shadow);
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 1.2px;
+  color: #bfdbfe;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.1;
+}
+
+.hero-sub {
+  margin-top: 10px;
+  color: #dbeafe;
+  font-size: 16px;
+}
+
+.hero-badges {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.badge,
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.success {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.danger {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+}
+
+.neutral {
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
+}
+
+.kpi-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.kpi-card,
+.panel,
+.client-card {
+  background: var(--card);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
+.kpi-card {
+  padding: 22px;
+}
+
+.kpi-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.kpi-card h3 {
+  margin: 10px 0;
+  font-size: 30px;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.up,
+.down {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.up {
+  color: #15803d;
+}
+
+.down {
+  color: #b91c1c;
+}
+
+.content-grid,
+.bottom-grid {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 18px;
+}
+
+.panel {
+  padding: 22px;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #0f172a;
+  line-height: 1.15;
+}
+
+.list-item,
+.task-item {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.list-item h4,
+.client-card h4 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  line-height: 1.25;
+}
+
+.list-item p,
+.client-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.list-right {
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.task-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+}
+
+.client-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.client-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+}
+
+.action-btn,
+.primary-btn {
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.action-btn {
+  margin-top: 14px;
+  background: var(--neutral-bg);
+  color: #0f172a;
+}
+
+.action-btn:hover {
+  opacity: 0.9;
+}
+
+.primary-btn {
+  background: var(--primary);
+  color: #fff;
+  width: 100%;
+}
+
+.primary-btn:hover {
+  background: var(--primary-2);
+}
+
+.quick-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.quick-result {
+  margin-top: 16px;
+  font-weight: 700;
+  color: var(--primary-2);
+  line-height: 1.5;
+}
+
+textarea,
+input[type="text"],
+input[type="file"],
+select {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  padding: 12px;
+  font: inherit;
+  background: #fff;
+  color: var(--text);
+}
+
+button {
+  font: inherit;
+}
+
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: 1fr;
   }
-];
 
-const approvals = [
-  { raw: "FAST: ERCAN ALAYLI 60000 MUHASEBE ÜCRETİ", client: "Ercan Alaylı Ltd. Şti.", type: "Tahsilat", amount: 60000, score: 96 },
-  { raw: "BETA MOBİLYA 25000 ödeme sözü verdi cuma", client: "Beta Mobilya", type: "Ödeme Sözü", amount: 25000, score: 92 },
-  { raw: "Kira çıktı 18000", client: "Belirsiz", type: "Gider", amount: 18000, score: 71 },
-  { raw: "AKDENİZ GIDA 9750 banka tahsilatı", client: "Akdeniz Gıda", type: "Tahsilat", amount: 9750, score: 88 }
-];
+  .sidebar {
+    gap: 18px;
+  }
 
-const bankRaw = [
-  { source: "Excel", text: "FAST: ERCAN ALAYLI 60000 MUHASEBE ÜCRETİ", status: "AI yorumlandı" },
-  { source: "WhatsApp", text: "Beta Mobilya 25000 ödeme sözü verdi cuma", status: "Onay bekliyor" },
-  { source: "Excel", text: "Kira çıktı 18000", status: "Belirsiz" }
-];
+  .sidebar-box {
+    margin-top: 0;
+  }
 
-let currentClientId = 1;
+  .kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-const screens = document.querySelectorAll('.screen');
-const menuButtons = document.querySelectorAll('.menu-item');
-const targetButtons = document.querySelectorAll('[data-screen-target]');
-const tabButtons = document.querySelectorAll('.tab-btn');
-const tabPanels = document.querySelectorAll('.tab-panel');
-
-function formatMoney(num) {
-  return `₺${Number(num).toLocaleString('tr-TR')}`;
+  .content-grid,
+  .bottom-grid,
+  .client-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
-function showScreen(screenName) {
-  screens.forEach(screen => screen.classList.toggle('active', screen.id === `screen-${screenName}`));
-  menuButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.screen === screenName));
+@media (max-width: 700px) {
+  .main {
+    padding: 16px;
+  }
+
+  .hero {
+    padding: 22px;
+  }
+
+  .hero h1 {
+    font-size: 30px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .list-item,
+  .task-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .list-right {
+    width: 100%;
+    text-align: left;
+    align-items: flex-start;
+  }
 }
-
-menuButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const screen = btn.dataset.screen;
-    showScreen(screen);
-  });
-});
-
-targetButtons.forEach(btn => btn.addEventListener('click', () => showScreen(btn.dataset.screenTarget)));
-
-function renderClientTable(filter = '') {
-  const body = document.getElementById('clientTableBody');
-  const q = filter.trim().toLowerCase();
-  const filtered = clients.filter(c =>
-    [c.name, c.phone, c.taxNo, c.city].join(' ').toLowerCase().includes(q)
-  );
-
-  body.innerHTML = filtered.map(c => `
-    <div class="client-row client-table-grid">
-      <div>
-        <h4>${c.name}</h4>
-        <p>${c.city}</p>
-      </div>
-      <div>${c.phone}</div>
-      <div>${c.taxNo}</div>
-      <div><strong>${formatMoney(c.balance)}</strong></div>
-      <div class="status">${c.status}</div>
-      <div><button class="action-btn open-client" data-client-id="${c.id}">Detay</button></div>
-    </div>
-  `).join('');
-
-  document.querySelectorAll('.open-client').forEach(btn => {
-    btn.addEventListener('click', () => openClientDetail(Number(btn.dataset.clientId)));
-  });
-}
-
-function openClientDetail(id) {
-  currentClientId = id;
-  const client = clients.find(c => c.id === id);
-  if (!client) return;
-
-  document.getElementById('clientDetailTitle').textContent = client.name;
-  document.getElementById('clientDetailMeta').textContent = `${client.phone} · Vergi No: ${client.taxNo} · ${client.city}`;
-  document.getElementById('detailBalance').textContent = formatMoney(client.balance);
-  document.getElementById('detailLastCollection').textContent = client.lastCollection;
-  document.getElementById('detailPromiseCount').textContent = client.promises.length;
-
-  document.getElementById('movementTable').innerHTML = client.movements.map(m => `
-    <div class="movement-row movement-grid">
-      <div>${m.date}</div>
-      <div>${m.desc}</div>
-      <div>${m.type}</div>
-      <div>${m.debit ? formatMoney(m.debit) : '-'}</div>
-      <div>${m.credit ? formatMoney(m.credit) : '-'}</div>
-    </div>
-  `).join('');
-
-  document.getElementById('privateNoteList').innerHTML = client.privateNotes.length ? client.privateNotes.map(n => `
-    <div class="note-row">
-      <div class="topline"><strong>${n.type.toUpperCase()}</strong><span class="tag danger">Sadece iç kullanım</span></div>
-      <p class="meta-line">${n.text}</p>
-      <small>${n.date} · ${n.by}</small>
-    </div>
-  `).join('') : `<div class="note-row"><p class="meta-line">Henüz gizli not yok.</p></div>`;
-
-  document.getElementById('promiseList').innerHTML = client.promises.length ? client.promises.map(p => `
-    <div class="promise-row">
-      <div class="topline"><strong>${formatMoney(p.amount)}</strong><span class="tag warning">${p.status}</span></div>
-      <p class="meta-line">Tarih: ${p.date}</p>
-      <p class="meta-line">${p.note}</p>
-    </div>
-  `).join('') : `<div class="promise-row"><p class="meta-line">Henüz ödeme sözü yok.</p></div>`;
-
-  showScreen('client-detail');
-}
-
-const clientSearch = document.getElementById('clientSearch');
-if (clientSearch) clientSearch.addEventListener('input', e => renderClientTable(e.target.value));
-
-function renderApprovals() {
-  document.getElementById('approvalList').innerHTML = approvals.map((a, i) => `
-    <div class="approval-card">
-      <div class="topline">
-        <div>
-          <h4>${a.client}</h4>
-          <p class="meta-line">${a.raw}</p>
-        </div>
-        <span class="tag ${a.score >= 90 ? 'success' : a.score >= 75 ? 'warning' : 'danger'}">%${a.score}</span>
-      </div>
-      <div class="meta-line">Tür: ${a.type} · Tutar: ${formatMoney(a.amount)}</div>
-      <div class="approval-actions">
-        <button class="primary-btn small approve-btn" data-index="${i}">Onayla</button>
-        <button class="ghost-btn reject-btn" data-index="${i}">Reddet</button>
-      </div>
-    </div>
-  `).join('');
-
-  document.querySelectorAll('.approve-btn').forEach(btn => btn.addEventListener('click', () => {
-    btn.textContent = 'Onaylandı';
-    btn.disabled = true;
-  }));
-  document.querySelectorAll('.reject-btn').forEach(btn => btn.addEventListener('click', () => {
-    btn.textContent = 'Reddedildi';
-    btn.disabled = true;
-  }));
-}
-
-function renderBankRaw() {
-  document.getElementById('bankRawList').innerHTML = bankRaw.map(row => `
-    <div class="bank-row">
-      <div class="topline"><strong>${row.source}</strong><span class="tag neutral">${row.status}</span></div>
-      <p class="meta-line">${row.text}</p>
-    </div>
-  `).join('');
-}
-
-const quickActionBtn = document.getElementById('quickActionBtn');
-const quickActionResult = document.getElementById('quickActionResult');
-quickActionBtn?.addEventListener('click', () => {
-  quickActionResult.textContent = 'AI hızlı işlem modülü aktif. Yeni giriş onay kuyruğuna düşecek.';
-  showScreen('approvals');
-});
-
-tabButtons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    tabButtons.forEach(x => x.classList.remove('active'));
-    tabPanels.forEach(x => x.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(`tab-${btn.dataset.tab}`).classList.add('active');
-  });
-});
-
-const overlay = document.getElementById('overlay');
-const modals = {
-  pasteModal: document.getElementById('pasteModal'),
-  voiceModal: document.getElementById('voiceModal'),
-  privateNoteModal: document.getElementById('privateNoteModal'),
-  promiseModal: document.getElementById('promiseModal')
-};
-
-function openModal(key) {
-  overlay.classList.remove('hidden');
-  modals[key].classList.remove('hidden');
-}
-function closeAllModals() {
-  overlay.classList.add('hidden');
-  Object.values(modals).forEach(m => m.classList.add('hidden'));
-}
-
-document.querySelectorAll('.close-modal').forEach(btn => btn.addEventListener('click', closeAllModals));
-overlay.addEventListener('click', closeAllModals);
-
-document.getElementById('floatingAlertBtn')?.addEventListener('click', () => openModal('pasteModal'));
-document.getElementById('voiceFab')?.addEventListener('click', () => openModal('voiceModal'));
-document.getElementById('openPasteBtn')?.addEventListener('click', () => openModal('pasteModal'));
-document.getElementById('newPrivateNoteBtn')?.addEventListener('click', () => openModal('privateNoteModal'));
-document.getElementById('newPromiseBtn')?.addEventListener('click', () => openModal('promiseModal'));
-
-document.getElementById('parsePasteBtn')?.addEventListener('click', () => {
-  const input = document.getElementById('pasteInput').value.trim();
-  if (!input) return;
-  approvals.unshift({ raw: input, client: 'AI eşleştirecek', type: 'Öneri oluşturuldu', amount: 0, score: 78 });
-  bankRaw.unshift({ source: 'WhatsApp', text: input, status: 'Onay bekliyor' });
-  renderApprovals();
-  renderBankRaw();
-  closeAllModals();
-  showScreen('approvals');
-});
-
-document.getElementById('parseVoiceBtn')?.addEventListener('click', () => {
-  const input = document.getElementById('voiceInput').value.trim();
-  if (!input) return;
-  approvals.unshift({ raw: input, client: 'AI ses çözümleme', type: 'Sesli giriş', amount: 0, score: 74 });
-  renderApprovals();
-  closeAllModals();
-  showScreen('approvals');
-});
-
-document.getElementById('savePrivateNoteBtn')?.addEventListener('click', () => {
-  const text = document.getElementById('privateNoteInput').value.trim();
-  if (!text) return;
-  const client = clients.find(c => c.id === currentClientId);
-  client.privateNotes.unshift({ text, type: 'genel', date: '08.04.2026', by: 'Admin' });
-  openClientDetail(currentClientId);
-  closeAllModals();
-  document.getElementById('privateNoteInput').value = '';
-});
-
-document.getElementById('savePromiseBtn')?.addEventListener('click', () => {
-  const amount = document.getElementById('promiseAmount').value.trim() || '0';
-  const date = document.getElementById('promiseDate').value.trim() || '-';
-  const note = document.getElementById('promiseNote').value.trim() || 'Not yok';
-  const client = clients.find(c => c.id === currentClientId);
-  client.promises.unshift({ amount: Number(amount.replace(/[^\d]/g, '')) || 0, date, note, status: 'Bekliyor' });
-  openClientDetail(currentClientId);
-  closeAllModals();
-  document.getElementById('promiseAmount').value = '';
-  document.getElementById('promiseDate').value = '';
-  document.getElementById('promiseNote').value = '';
-});
-
-document.getElementById('excelInput')?.addEventListener('change', (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  bankRaw.unshift({ source: 'Excel', text: `${file.name} yüklendi`, status: 'AI analiz bekliyor' });
-  approvals.unshift({ raw: `${file.name} içinden hareketler okunacak`, client: 'Toplu işlem', type: 'Excel yükleme', amount: 0, score: 82 });
-  renderBankRaw();
-  renderApprovals();
-  showScreen('bank');
-});
-
-renderClientTable();
-renderApprovals();
-renderBankRaw();
-openClientDetail(1);
-showScreen('dashboard');
