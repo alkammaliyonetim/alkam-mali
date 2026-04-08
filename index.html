@@ -7,39 +7,164 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="app">
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">ALKAM Mali Müşavirlik</p>
-        <h1>Mükellef Takip Sistemi</h1>
-        <p class="sub">GitHub + Cloudflare ile çalışan ilk sürüm</p>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <div>
+          <p class="brand-top">ALKAM</p>
+          <h2>Mali Müşavirlik</h2>
+        </div>
       </div>
-    </header>
 
-    <main class="grid">
-      <section class="card">
-        <h2>Genel Durum</h2>
-        <p>Bu ekran ilk çalışan iskelet sürümdür.</p>
+      <nav class="menu">
+        <a class="menu-item active" href="#">Dashboard</a>
+        <a class="menu-item" href="#">Mükellefler</a>
+        <a class="menu-item" href="#">Tahsilatlar</a>
+        <a class="menu-item" href="#">Görevler</a>
+        <a class="menu-item" href="#">Belgeler</a>
+        <a class="menu-item" href="#">Raporlar</a>
+      </nav>
+
+      <div class="sidebar-box">
+        <p class="box-label">Bugün kritik</p>
+        <h3>18 işlem</h3>
+        <p>7 geciken tahsilat · 11 açık görev</p>
+      </div>
+    </aside>
+
+    <main class="main">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">ALKAM MALİ MÜŞAVİRLİK</p>
+          <h1>Yönetim Paneli</h1>
+          <p class="hero-sub">Mükellef, tahsilat ve görev takibini tek ekranda gör.</p>
+        </div>
+        <div class="hero-badges">
+          <span class="badge warning">5 belge bekliyor</span>
+          <span class="badge danger">7 tahsilat gecikmiş</span>
+          <span class="badge success">12 işlem tamamlandı</span>
+        </div>
       </section>
 
-      <section class="card">
-        <h2>Mükellefler</h2>
-        <ul>
-          <li>Ercan Alaylı Ltd. Şti.</li>
-          <li>Beta Mobilya</li>
-          <li>Akdeniz Gıda</li>
-        </ul>
+      <section class="kpi-grid">
+        <div class="kpi-card">
+          <p>Toplam Alacak</p>
+          <h3>₺1.284.500</h3>
+          <span class="up">Geçen aya göre +%8</span>
+        </div>
+        <div class="kpi-card">
+          <p>Bu Ay Tahsilat</p>
+          <h3>₺426.800</h3>
+          <span class="up">Hedefin %74’ü</span>
+        </div>
+        <div class="kpi-card">
+          <p>Geciken Mükellef</p>
+          <h3>23</h3>
+          <span class="down">8 tanesi kritik</span>
+        </div>
+        <div class="kpi-card">
+          <p>Açık Görev</p>
+          <h3>61</h3>
+          <span class="down">14 tanesi bugün</span>
+        </div>
       </section>
 
-      <section class="card">
-        <h2>Tahsilat</h2>
-        <p>Bu ay tahsilat: <strong>₺426.800</strong></p>
+      <section class="content-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Tahsilat Takibi</h2>
+          </div>
+
+          <div class="list-item">
+            <div>
+              <h4>Ercan Alaylı Ltd. Şti.</h4>
+              <p>Mart muhasebe ücreti</p>
+            </div>
+            <div class="list-right">
+              <strong>₺12.000</strong>
+              <span class="tag success">Tahsil edildi</span>
+            </div>
+          </div>
+
+          <div class="list-item">
+            <div>
+              <h4>Beta Mobilya</h4>
+              <p>Şubat + Mart gecikme</p>
+            </div>
+            <div class="list-right">
+              <strong>₺26.500</strong>
+              <span class="tag danger">Riskli</span>
+            </div>
+          </div>
+
+          <div class="list-item">
+            <div>
+              <h4>Akdeniz Gıda</h4>
+              <p>Nisan tahakkuk</p>
+            </div>
+            <div class="list-right">
+              <strong>₺9.500</strong>
+              <span class="tag warning">Bekliyor</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Bugünkü İş Akışı</h2>
+          </div>
+
+          <div class="task-item">
+            <span>KDV Beyannamesi kontrol</span>
+            <span class="tag danger">Yüksek</span>
+          </div>
+          <div class="task-item">
+            <span>Eksik evrak hatırlatması</span>
+            <span class="tag warning">Orta</span>
+          </div>
+          <div class="task-item">
+            <span>Banka eşleştirme onayı</span>
+            <span class="tag danger">Yüksek</span>
+          </div>
+          <div class="task-item">
+            <span>Cari ekstre gönderimi</span>
+            <span class="tag neutral">Düşük</span>
+          </div>
+        </div>
       </section>
 
-      <section class="card">
-        <h2>Durum</h2>
-        <button id="testBtn">Tıkla</button>
-        <p id="result"></p>
+      <section class="bottom-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Öne Çıkan Mükellefler</h2>
+          </div>
+          <div class="client-cards">
+            <div class="client-card">
+              <h4>Ercan Alaylı Ltd. Şti.</h4>
+              <p>Cari Bakiye: ₺18.400</p>
+              <button class="action-btn">Detay Gör</button>
+            </div>
+            <div class="client-card">
+              <h4>Beta Mobilya</h4>
+              <p>Cari Bakiye: ₺26.500</p>
+              <button class="action-btn">Detay Gör</button>
+            </div>
+            <div class="client-card">
+              <h4>Gündüz Makine</h4>
+              <p>Cari Bakiye: ₺8.250</p>
+              <button class="action-btn">Detay Gör</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel quick-panel">
+          <div class="panel-head">
+            <h2>Hızlı İşlem</h2>
+          </div>
+          <button id="quickActionBtn" class="primary-btn">Tahsilat Girişi Başlat</button>
+          <p id="quickActionResult" class="quick-result"></p>
+        </div>
       </section>
     </main>
   </div>
