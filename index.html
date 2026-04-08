@@ -18,155 +18,356 @@
       </div>
 
       <nav class="menu">
-        <a class="menu-item active" href="#">Dashboard</a>
-        <a class="menu-item" href="#">Mükellefler</a>
-        <a class="menu-item" href="#">Tahsilatlar</a>
-        <a class="menu-item" href="#">Görevler</a>
-        <a class="menu-item" href="#">Belgeler</a>
-        <a class="menu-item" href="#">Raporlar</a>
+        <button class="menu-item active" data-screen="dashboard">Dashboard</button>
+        <button class="menu-item" data-screen="clients">Mükellefler</button>
+        <button class="menu-item" data-screen="bank">Banka Hareketleri</button>
+        <button class="menu-item" data-screen="approvals">Onay Kuyruğu</button>
+        <button class="menu-item" data-screen="reports">Raporlar</button>
       </nav>
 
       <div class="sidebar-box">
         <p class="box-label">Bugün kritik</p>
         <h3>18 işlem</h3>
-        <p>7 geciken tahsilat · 11 açık görev</p>
+        <p>7 geciken tahsilat · 6 ödeme sözü · 11 açık görev</p>
       </div>
     </aside>
 
     <main class="main">
-      <section class="hero">
-        <div>
-          <p class="eyebrow">ALKAM MALİ MÜŞAVİRLİK</p>
-          <h1>Yönetim Paneli</h1>
-          <p class="hero-sub">Mükellef, tahsilat ve görev takibini tek ekranda gör.</p>
+      <section id="screen-dashboard" class="screen active">
+        <section class="hero">
+          <div>
+            <p class="eyebrow">ALKAM MALİ MÜŞAVİRLİK</p>
+            <h1>Yönetim Paneli</h1>
+            <p class="hero-sub">Mükellef, gizli not, ödeme sözü ve banka hareketi takibini tek ekranda yönet.</p>
+          </div>
+          <div class="hero-badges">
+            <span class="badge warning">5 belge bekliyor</span>
+            <span class="badge danger">7 tahsilat gecikmiş</span>
+            <span class="badge success">12 işlem tamamlandı</span>
+          </div>
+        </section>
+
+        <section class="kpi-grid">
+          <div class="kpi-card">
+            <p>Toplam Alacak</p>
+            <h3>₺1.284.500</h3>
+            <span class="up">Geçen aya göre +%8</span>
+          </div>
+          <div class="kpi-card">
+            <p>Bu Ay Tahsilat</p>
+            <h3>₺426.800</h3>
+            <span class="up">Hedefin %74’ü</span>
+          </div>
+          <div class="kpi-card">
+            <p>Ödeme Sözü</p>
+            <h3>6</h3>
+            <span class="down">3 tanesi bugün</span>
+          </div>
+          <div class="kpi-card">
+            <p>AI Onay Kuyruğu</p>
+            <h3>14</h3>
+            <span class="down">5 tanesi banka kaynaklı</span>
+          </div>
+        </section>
+
+        <section class="content-grid two-one">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Tahsilat Takibi</h2>
+            </div>
+
+            <div class="list-item">
+              <div>
+                <h4>Ercan Alaylı Ltd. Şti.</h4>
+                <p>Mart muhasebe ücreti</p>
+              </div>
+              <div class="list-right">
+                <strong>₺12.000</strong>
+                <span class="tag success">Tahsil edildi</span>
+              </div>
+            </div>
+
+            <div class="list-item">
+              <div>
+                <h4>Beta Mobilya</h4>
+                <p>Şubat + Mart gecikme</p>
+              </div>
+              <div class="list-right">
+                <strong>₺26.500</strong>
+                <span class="tag danger">Riskli</span>
+              </div>
+            </div>
+
+            <div class="list-item">
+              <div>
+                <h4>Akdeniz Gıda</h4>
+                <p>Nisan tahakkuk</p>
+              </div>
+              <div class="list-right">
+                <strong>₺9.500</strong>
+                <span class="tag warning">Bekliyor</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Bugünkü İş Akışı</h2>
+            </div>
+            <div class="task-item"><span>KDV Beyannamesi kontrol</span><span class="tag danger">Yüksek</span></div>
+            <div class="task-item"><span>Eksik evrak hatırlatması</span><span class="tag warning">Orta</span></div>
+            <div class="task-item"><span>Banka eşleştirme onayı</span><span class="tag danger">Yüksek</span></div>
+            <div class="task-item"><span>Cari ekstre gönderimi</span><span class="tag neutral">Düşük</span></div>
+          </div>
+        </section>
+
+        <section class="bottom-grid two-one">
+          <div class="panel">
+            <div class="panel-head between-wrap">
+              <h2>Öne Çıkan Mükellefler</h2>
+              <button class="ghost-btn" data-screen-target="clients">Hepsini Gör</button>
+            </div>
+            <div class="client-cards">
+              <div class="client-card">
+                <h4>Ercan Alaylı Ltd. Şti.</h4>
+                <p>Cari Bakiye: ₺18.400</p>
+                <button class="action-btn open-client" data-client-id="1">Detay Gör</button>
+              </div>
+              <div class="client-card">
+                <h4>Beta Mobilya</h4>
+                <p>Cari Bakiye: ₺26.500</p>
+                <button class="action-btn open-client" data-client-id="2">Detay Gör</button>
+              </div>
+              <div class="client-card">
+                <h4>Gündüz Makine</h4>
+                <p>Cari Bakiye: ₺8.250</p>
+                <button class="action-btn open-client" data-client-id="3">Detay Gör</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel quick-panel">
+            <div class="panel-head">
+              <h2>Hızlı AI İşlem</h2>
+            </div>
+            <button id="quickActionBtn" class="primary-btn">Tahsilat Girişi Başlat</button>
+            <p id="quickActionResult" class="quick-result"></p>
+          </div>
+        </section>
+      </section>
+
+      <section id="screen-clients" class="screen">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow dark">MÜKELLEFLER</p>
+            <h1 class="page-title">Cari Kartlar</h1>
+          </div>
+          <div class="toolbar">
+            <input id="clientSearch" class="search-input" type="text" placeholder="Unvan, telefon, vergi no ara..." />
+            <button class="primary-btn small">Yeni Mükellef</button>
+          </div>
         </div>
-        <div class="hero-badges">
-          <span class="badge warning">5 belge bekliyor</span>
-          <span class="badge danger">7 tahsilat gecikmiş</span>
-          <span class="badge success">12 işlem tamamlandı</span>
+
+        <div class="panel table-panel">
+          <div class="client-table-head client-table-grid">
+            <strong>Unvan</strong>
+            <strong>Telefon</strong>
+            <strong>Vergi No</strong>
+            <strong>Bakiye</strong>
+            <strong>Durum</strong>
+            <strong></strong>
+          </div>
+          <div id="clientTableBody"></div>
         </div>
       </section>
 
-      <section class="kpi-grid">
-        <div class="kpi-card">
-          <p>Toplam Alacak</p>
-          <h3>₺1.284.500</h3>
-          <span class="up">Geçen aya göre +%8</span>
-        </div>
-        <div class="kpi-card">
-          <p>Bu Ay Tahsilat</p>
-          <h3>₺426.800</h3>
-          <span class="up">Hedefin %74’ü</span>
-        </div>
-        <div class="kpi-card">
-          <p>Geciken Mükellef</p>
-          <h3>23</h3>
-          <span class="down">8 tanesi kritik</span>
-        </div>
-        <div class="kpi-card">
-          <p>Açık Görev</p>
-          <h3>61</h3>
-          <span class="down">14 tanesi bugün</span>
-        </div>
-      </section>
-
-      <section class="content-grid">
-        <div class="panel">
-          <div class="panel-head">
-            <h2>Tahsilat Takibi</h2>
+      <section id="screen-client-detail" class="screen">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow dark">MÜKELLEF DETAY</p>
+            <h1 id="clientDetailTitle" class="page-title">Mükellef</h1>
+            <p id="clientDetailMeta" class="page-subtitle"></p>
           </div>
-
-          <div class="list-item">
-            <div>
-              <h4>Ercan Alaylı Ltd. Şti.</h4>
-              <p>Mart muhasebe ücreti</p>
-            </div>
-            <div class="list-right">
-              <strong>₺12.000</strong>
-              <span class="tag success">Tahsil edildi</span>
-            </div>
-          </div>
-
-          <div class="list-item">
-            <div>
-              <h4>Beta Mobilya</h4>
-              <p>Şubat + Mart gecikme</p>
-            </div>
-            <div class="list-right">
-              <strong>₺26.500</strong>
-              <span class="tag danger">Riskli</span>
-            </div>
-          </div>
-
-          <div class="list-item">
-            <div>
-              <h4>Akdeniz Gıda</h4>
-              <p>Nisan tahakkuk</p>
-            </div>
-            <div class="list-right">
-              <strong>₺9.500</strong>
-              <span class="tag warning">Bekliyor</span>
-            </div>
+          <div class="toolbar">
+            <button class="ghost-btn" data-screen-target="clients">Listeye Dön</button>
+            <button class="primary-btn small" id="newPromiseBtn">Ödeme Sözü Ekle</button>
+            <button class="primary-btn small" id="newPrivateNoteBtn">Gizli Not Ekle</button>
           </div>
         </div>
 
-        <div class="panel">
-          <div class="panel-head">
-            <h2>Bugünkü İş Akışı</h2>
-          </div>
+        <section class="kpi-grid three">
+          <div class="kpi-card"><p>Bakiye</p><h3 id="detailBalance">₺0</h3><span class="down">Cari bakiye</span></div>
+          <div class="kpi-card"><p>Son Tahsilat</p><h3 id="detailLastCollection">-</h3><span class="up">Son işlem</span></div>
+          <div class="kpi-card"><p>Ödeme Sözü</p><h3 id="detailPromiseCount">0</h3><span class="down">Aktif kayıt</span></div>
+        </section>
 
-          <div class="task-item">
-            <span>KDV Beyannamesi kontrol</span>
-            <span class="tag danger">Yüksek</span>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="movements">Cari Hareketler</button>
+          <button class="tab-btn" data-tab="private-notes">Gizli Notlar</button>
+          <button class="tab-btn" data-tab="promises">Ödeme Sözleri</button>
+        </div>
+
+        <div id="tab-movements" class="tab-panel active panel">
+          <div class="table-mini-head movement-grid">
+            <strong>Tarih</strong>
+            <strong>Açıklama</strong>
+            <strong>Tür</strong>
+            <strong>Borç</strong>
+            <strong>Alacak</strong>
           </div>
-          <div class="task-item">
-            <span>Eksik evrak hatırlatması</span>
-            <span class="tag warning">Orta</span>
-          </div>
-          <div class="task-item">
-            <span>Banka eşleştirme onayı</span>
-            <span class="tag danger">Yüksek</span>
-          </div>
-          <div class="task-item">
-            <span>Cari ekstre gönderimi</span>
-            <span class="tag neutral">Düşük</span>
-          </div>
+          <div id="movementTable"></div>
+        </div>
+
+        <div id="tab-private-notes" class="tab-panel panel">
+          <div class="section-top"><h2>Gizli Notlar</h2><span class="tag danger">Ekstreye girmez</span></div>
+          <div id="privateNoteList" class="stack-list"></div>
+        </div>
+
+        <div id="tab-promises" class="tab-panel panel">
+          <div class="section-top"><h2>Ödeme Sözü Kayıtları</h2><span class="tag warning">Ofis içi kayıt</span></div>
+          <div id="promiseList" class="stack-list"></div>
         </div>
       </section>
 
-      <section class="bottom-grid">
-        <div class="panel">
-          <div class="panel-head">
-            <h2>Öne Çıkan Mükellefler</h2>
+      <section id="screen-bank" class="screen">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow dark">BANKA HAREKETLERİ</p>
+            <h1 class="page-title">Kolay Giriş Merkezi</h1>
+            <p class="page-subtitle">Excel yükle, metin yapıştır, AI öneri üretsin, onaya düşsün.</p>
           </div>
-          <div class="client-cards">
-            <div class="client-card">
-              <h4>Ercan Alaylı Ltd. Şti.</h4>
-              <p>Cari Bakiye: ₺18.400</p>
-              <button class="action-btn">Detay Gör</button>
-            </div>
-            <div class="client-card">
-              <h4>Beta Mobilya</h4>
-              <p>Cari Bakiye: ₺26.500</p>
-              <button class="action-btn">Detay Gör</button>
-            </div>
-            <div class="client-card">
-              <h4>Gündüz Makine</h4>
-              <p>Cari Bakiye: ₺8.250</p>
-              <button class="action-btn">Detay Gör</button>
-            </div>
+          <div class="toolbar">
+            <button class="ghost-btn" id="openPasteBtn">Kopyala Yapıştır</button>
+            <label class="primary-btn small upload-btn">
+              Excel Yükle
+              <input id="excelInput" type="file" accept=".xlsx,.xls,.csv" hidden />
+            </label>
           </div>
         </div>
 
-        <div class="panel quick-panel">
-          <div class="panel-head">
-            <h2>Hızlı İşlem</h2>
+        <div class="content-grid two-one">
+          <div class="panel">
+            <div class="panel-head"><h2>Banka Ham Kayıtları</h2></div>
+            <div id="bankRawList" class="stack-list"></div>
           </div>
-          <button id="quickActionBtn" class="primary-btn">Tahsilat Girişi Başlat</button>
-          <p id="quickActionResult" class="quick-result"></p>
+          <div class="panel">
+            <div class="panel-head"><h2>AI Yorum Motoru</h2></div>
+            <div class="info-card">
+              <p><strong>Yapılanlar</strong></p>
+              <ul>
+                <li>isim ayıklama</li>
+                <li>cari eşleştirme</li>
+                <li>tahsilat / ödeme / gider tahmini</li>
+                <li>güven skoru</li>
+                <li>onay kuyruğuna gönderim</li>
+              </ul>
+            </div>
+            <div class="info-note">AI doğrudan muhasebeleştirme yapmaz. Her şey önce onaya düşer.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="screen-approvals" class="screen">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow dark">ONAY KUYRUĞU</p>
+            <h1 class="page-title">AI İşlem Önerileri</h1>
+          </div>
+        </div>
+        <div id="approvalList" class="approval-grid"></div>
+      </section>
+
+      <section id="screen-reports" class="screen">
+        <div class="page-head">
+          <div>
+            <p class="eyebrow dark">RAPORLAR</p>
+            <h1 class="page-title">Ekstre Güvenlik Kuralı</h1>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="report-rule">
+            <h3>Bu sistemde gizli notlar ve ödeme sözü kayıtları cari ekstrelere girmez.</h3>
+            <p>Ekstre mantığı sadece cari hareketlerden beslenir. İç notlar ve ödeme sözü modülü ayrı veri katmanında tutulur.</p>
+          </div>
         </div>
       </section>
     </main>
+  </div>
+
+  <button id="floatingAlertBtn" class="floating-alert" title="Açık alacak ve AI giriş modülü">
+    <span class="dot"></span>
+    <div>
+      <strong>Açık Alacak Uyarısı</strong>
+      <small>374.400 ₺ tahsil edilmemiş alacak</small>
+    </div>
+  </button>
+
+  <button id="voiceFab" class="voice-fab" title="Sesli giriş">🎙</button>
+
+  <div id="overlay" class="overlay hidden"></div>
+
+  <div id="pasteModal" class="modal hidden">
+    <div class="modal-head">
+      <div>
+        <h3>WhatsApp / Banka Metin Girişi</h3>
+        <p>Metni yapıştır, AI yorumlasın, onaya düşsün.</p>
+      </div>
+      <button class="icon-btn close-modal">✕</button>
+    </div>
+    <textarea id="pasteInput" placeholder="Örnek: Ercan Alaylı 60000 muhasebe ücreti"></textarea>
+    <div class="modal-actions">
+      <button class="ghost-btn close-modal">Kapat</button>
+      <button id="parsePasteBtn" class="primary-btn small">AI ile Yorumla</button>
+    </div>
+  </div>
+
+  <div id="voiceModal" class="modal hidden small-modal">
+    <div class="modal-head">
+      <div>
+        <h3>Sesli Giriş</h3>
+        <p>Ses → metin → AI yorum → onay kuyruğu</p>
+      </div>
+      <button class="icon-btn close-modal">✕</button>
+    </div>
+    <textarea id="voiceInput" placeholder="Örnek: Beta Mobilya 25000 ödeme sözü verdi cuma"></textarea>
+    <div class="modal-actions">
+      <button class="ghost-btn close-modal">Kapat</button>
+      <button id="parseVoiceBtn" class="primary-btn small">Metni İşle</button>
+    </div>
+  </div>
+
+  <div id="privateNoteModal" class="modal hidden small-modal">
+    <div class="modal-head">
+      <div>
+        <h3>Gizli Not Ekle</h3>
+        <p>Bu not ekstrede görünmez.</p>
+      </div>
+      <button class="icon-btn close-modal">✕</button>
+    </div>
+    <textarea id="privateNoteInput" placeholder="Örnek: Ödeme sözü verdi, cuma tekrar ara"></textarea>
+    <div class="modal-actions">
+      <button class="ghost-btn close-modal">Kapat</button>
+      <button id="savePrivateNoteBtn" class="primary-btn small">Kaydet</button>
+    </div>
+  </div>
+
+  <div id="promiseModal" class="modal hidden small-modal">
+    <div class="modal-head">
+      <div>
+        <h3>Ödeme Sözü Ekle</h3>
+        <p>Ofis içi kayıt. Ekstreye girmez.</p>
+      </div>
+      <button class="icon-btn close-modal">✕</button>
+    </div>
+    <div class="form-grid">
+      <input id="promiseAmount" type="text" placeholder="Tutar" />
+      <input id="promiseDate" type="text" placeholder="Tarih" />
+    </div>
+    <textarea id="promiseNote" placeholder="Not"></textarea>
+    <div class="modal-actions">
+      <button class="ghost-btn close-modal">Kapat</button>
+      <button id="savePromiseBtn" class="primary-btn small">Kaydet</button>
+    </div>
   </div>
 
   <script src="app.js"></script>
