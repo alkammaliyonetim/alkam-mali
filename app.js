@@ -1,6 +1,7 @@
-const testBtn = document.getElementById("testBtn");
-const result = document.getElementById("result");
+const quickActionBtn = document.getElementById("quickActionBtn");
+const quickActionResult = document.getElementById("quickActionResult");
 
-testBtn.addEventListener("click", () => {
-  result.textContent = "Sistem çalışıyor. Bir sonraki adım Cloudflare bağlantısı.";
+quickActionBtn.addEventListener("click", () => {
+  quickActionResult.textContent =
+    "Tahsilat giriş ekranı bir sonraki sürümde açılacak. Altyapı hazır.";
 });
