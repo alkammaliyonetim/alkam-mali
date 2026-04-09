@@ -1,32 +1,182 @@
-<div id="loginOverlay" class="login-overlay">
-  <div class="login-card">
-    <div class="login-logo-wrap">
-      <img src="logo.png" alt="ALKAM Logo" class="login-logo" onerror="this.style.display='none'" />
-      <div class="login-brand">ALKAM MALİ MÜŞAVİRLİK</div>
-    </div>
+<style>
+  #alkamSecureOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,.60);
+    backdrop-filter:blur(7px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:999999;
+    padding:20px;
+  }
 
-    <h2 class="login-title">Programa Giriş</h2>
+  #alkamSecureOverlay.active{
+    display:flex;
+  }
 
-    <form id="loginForm" autocomplete="off">
-      <label class="login-label" for="loginPassword">Şifre</label>
-      <div class="password-wrap">
+  .alkam-login-card{
+    width:100%;
+    max-width:430px;
+    background:#fff;
+    border:1px solid rgba(226,232,240,.9);
+    border-radius:26px;
+    padding:30px 26px 24px;
+    box-shadow:0 30px 80px rgba(15,23,42,.32);
+  }
+
+  .alkam-login-brand{
+    text-align:center;
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.08em;
+    color:#2563eb;
+    margin-bottom:10px;
+  }
+
+  .alkam-login-title{
+    text-align:center;
+    margin:0 0 18px;
+    font-size:20px;
+    font-weight:800;
+    color:#0f172a;
+  }
+
+  .alkam-login-label{
+    display:block;
+    margin-bottom:8px;
+    font-size:13px;
+    font-weight:700;
+    color:#334155;
+  }
+
+  .alkam-password-wrap{
+    position:relative;
+    margin-bottom:14px;
+  }
+
+  #alkamLoginPassword{
+    width:100%;
+    height:50px;
+    border:1px solid #cbd5e1;
+    border-radius:14px;
+    padding:0 48px 0 14px;
+    font-size:15px;
+    font-weight:700;
+    outline:none;
+    margin:0;
+  }
+
+  #alkamLoginPassword:focus{
+    border-color:#2563eb;
+    box-shadow:0 0 0 4px rgba(37,99,235,.12);
+  }
+
+  #alkamTogglePassword{
+    position:absolute;
+    right:8px;
+    top:50%;
+    transform:translateY(-50%);
+    width:34px;
+    height:34px;
+    border:none;
+    background:transparent;
+    color:#475569;
+    cursor:pointer;
+    border-radius:10px;
+    font-size:16px;
+    margin:0;
+    padding:0;
+  }
+
+  #alkamLoginBtn{
+    width:100%;
+    height:48px;
+    border:none;
+    border-radius:14px;
+    background:#2563eb;
+    color:#fff;
+    font-size:15px;
+    font-weight:800;
+    cursor:pointer;
+    margin:0;
+  }
+
+  #alkamLoginError{
+    min-height:20px;
+    margin-top:12px;
+    text-align:center;
+    color:#dc2626;
+    font-size:13px;
+    font-weight:700;
+  }
+
+  #alkamVersionBadge{
+    position:fixed;
+    right:16px;
+    bottom:16px;
+    z-index:999998;
+    background:#0f172a;
+    color:#fff;
+    padding:10px 14px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:800;
+    box-shadow:0 12px 32px rgba(15,23,42,.25);
+    letter-spacing:.04em;
+  }
+
+  #alkamLogoutBtn{
+    position:fixed;
+    top:16px;
+    right:16px;
+    z-index:999998;
+    height:42px;
+    padding:0 16px;
+    border:none;
+    border-radius:12px;
+    background:#dc2626;
+    color:#fff;
+    font-size:14px;
+    font-weight:800;
+    cursor:pointer;
+    display:none;
+    box-shadow:0 12px 28px rgba(220,38,38,.24);
+  }
+
+  body.alkam-authenticated #alkamLogoutBtn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+</style>
+
+<div id="alkamSecureOverlay" class="active">
+  <div class="alkam-login-card">
+    <div class="alkam-login-brand">ALKAM MALİ MÜŞAVİRLİK</div>
+    <h2 class="alkam-login-title">Programa Giriş</h2>
+
+    <form id="alkamLoginForm" autocomplete="off">
+      <label class="alkam-login-label" for="alkamLoginPassword">Şifre</label>
+      <div class="alkam-password-wrap">
         <input
-          id="loginPassword"
-          name="password"
+          id="alkamLoginPassword"
           type="password"
-          inputmode="text"
+          placeholder="Şifrenizi girin"
           autocomplete="current-password"
           autocapitalize="off"
           autocorrect="off"
           spellcheck="false"
-          placeholder="Şifrenizi girin"
           required
         />
-        <button type="button" id="togglePassword" class="toggle-password" aria-label="Şifreyi göster/gizle">👁</button>
+        <button type="button" id="alkamTogglePassword">👁</button>
       </div>
 
-      <button type="submit" class="login-btn">Giriş Yap</button>
-      <div id="loginError" class="login-error"></div>
+      <button type="submit" id="alkamLoginBtn">Giriş Yap</button>
+      <div id="alkamLoginError"></div>
     </form>
   </div>
 </div>
+
+<button type="button" id="alkamLogoutBtn">Çıkış Yap</button>
+<div id="alkamVersionBadge">V-</div>
