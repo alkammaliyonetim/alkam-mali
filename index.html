@@ -4,222 +4,850 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ALKAM Mali Müşavirlik</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#f1f5f9;color:#0f172a}
-    body{min-height:100vh}
-    .app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
-    .sidebar{background:linear-gradient(180deg,#0f172a 0%,#0b214a 100%);color:#fff;padding:22px 18px}
-    .brand{font-size:24px;font-weight:800;line-height:1.1;margin-bottom:6px}
-    .sub{font-size:13px;opacity:.8;margin-bottom:24px}
-    .menu{display:flex;flex-direction:column;gap:10px}
-    .menu a{display:block;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.06);color:#fff;text-decoration:none;font-weight:700}
-    .menu a.active{background:#2563eb}
-    .main{padding:24px}
-    .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
-    .page-title{font-size:28px;font-weight:800}
-    .version-badge{display:inline-flex;align-items:center;justify-content:center;background:#0f172a;color:#fff;padding:10px 14px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.04em}
-    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:16px}
-    .card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:18px;box-shadow:0 10px 25px rgba(15,23,42,.05)}
-    .label{font-size:13px;color:#64748b;font-weight:700;margin-bottom:8px}
-    .value{font-size:30px;font-weight:800}
-    .section{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:18px;box-shadow:0 10px 25px rgba(15,23,42,.05);margin-bottom:16px}
-    .section-title{font-size:18px;font-weight:800;margin-bottom:14px}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:12px 10px;border-bottom:1px solid #e2e8f0;text-align:left;font-size:14px}
-    th{background:#f8fafc;font-weight:800}
-    .text-right{text-align:right}
-    .btn{border:none;border-radius:12px;height:44px;padding:0 16px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer}
-    .btn-red{background:#dc2626}
-    .btn-ghost{background:#e2e8f0;color:#0f172a}
-    .actions{display:flex;gap:10px;flex-wrap:wrap}
-    .hidden{display:none!important}
+    :root{
+      --bg:#f4f7fb;
+      --panel:#ffffff;
+      --line:#e6ebf3;
+      --text:#0f172a;
+      --muted:#64748b;
+      --nav1:#0a1730;
+      --nav2:#102c5f;
+      --blue:#2f67e8;
+      --blue-dark:#1d4ed8;
+      --red:#dc2626;
+      --green:#059669;
+      --shadow:0 18px 40px rgba(15,23,42,.08);
+      --radius:18px;
+    }
 
-    #secureOverlay{
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+    body{min-height:100vh}
+
+    .layout{
+      display:grid;
+      grid-template-columns:290px 1fr;
+      min-height:100vh;
+    }
+
+    .sidebar{
+      background:linear-gradient(180deg,var(--nav1) 0%,var(--nav2) 100%);
+      color:#fff;
+      padding:24px 18px;
+      position:sticky;
+      top:0;
+      height:100vh;
+      overflow:auto;
+    }
+
+    .brand-title{
+      font-size:22px;
+      font-weight:900;
+      line-height:1.05;
+      margin-bottom:8px;
+    }
+
+    .brand-sub{
+      font-size:12px;
+      color:rgba(255,255,255,.78);
+      line-height:1.45;
+      margin-bottom:22px;
+    }
+
+    .nav{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      margin-top:18px;
+    }
+
+    .nav-btn{
+      width:100%;
+      border:none;
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      padding:14px;
+      border-radius:14px;
+      font-size:15px;
+      font-weight:800;
+      cursor:pointer;
+      text-align:left;
+    }
+
+    .nav-btn.active{background:var(--blue)}
+    .nav-btn:hover{background:rgba(255,255,255,.14)}
+
+    .sidebar-box{
+      margin-top:26px;
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .sidebar-box .mini{
+      font-size:11px;
+      color:rgba(255,255,255,.7);
+      font-weight:800;
+      margin-bottom:6px;
+      letter-spacing:.04em;
+    }
+
+    .sidebar-box .big{
+      font-size:15px;
+      font-weight:900;
+      line-height:1.4;
+      word-break:break-word;
+    }
+
+    .main{
+      padding:22px;
+      min-width:0;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-bottom:18px;
+    }
+
+    .page-head h1{
+      margin:0;
+      font-size:38px;
+      font-weight:900;
+      letter-spacing:-.02em;
+    }
+
+    .page-head p{
+      margin:8px 0 0;
+      color:var(--muted);
+      font-size:14px;
+      font-weight:700;
+    }
+
+    .topbar-right{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    .version-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:40px;
+      padding:0 14px;
+      border-radius:999px;
+      background:#0f172a;
+      color:#fff;
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
+      box-shadow:var(--shadow);
+    }
+
+    .logout-btn{
+      border:none;
+      border-radius:12px;
+      background:var(--red);
+      color:#fff;
+      height:40px;
+      padding:0 16px;
+      font-size:13px;
+      font-weight:900;
+      cursor:pointer;
+      white-space:nowrap;
+      box-shadow:0 12px 30px rgba(220,38,38,.22);
+    }
+
+    .tab-page{display:none}
+    .tab-page.active{display:block}
+
+    .cards{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:16px;
+      margin-bottom:16px;
+    }
+
+    .card,.section{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+
+    .card{padding:18px}
+    .section{padding:18px;margin-bottom:16px}
+
+    .card-label{
+      color:var(--muted);
+      font-size:12px;
+      font-weight:800;
+      margin-bottom:8px;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+
+    .card-value{
+      font-size:28px;
+      font-weight:900;
+      line-height:1.1;
+      word-break:break-word;
+    }
+
+    .section-title{
+      margin:0 0 14px;
+      font-size:22px;
+      font-weight:900;
+      letter-spacing:-.01em;
+    }
+
+    .section-sub{
+      color:var(--muted);
+      font-size:13px;
+      font-weight:700;
+      margin:-4px 0 14px;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:1.1fr .9fr;
+      gap:16px;
+    }
+
+    .grid-3{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:16px;
+    }
+
+    table{
+      width:100%;
+      border-collapse:collapse;
+    }
+
+    th,td{
+      padding:12px 10px;
+      border-bottom:1px solid var(--line);
+      text-align:left;
+      font-size:14px;
+      vertical-align:top;
+    }
+
+    th{
+      background:#f8fbff;
+      font-weight:900;
+      color:#334155;
+    }
+
+    .text-right{text-align:right}
+    .muted{color:var(--muted)}
+
+    .tag{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:28px;
+      padding:0 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .tag.blue{background:#eaf1ff;color:#2457d6}
+    .tag.green{background:#e7faf3;color:#047857}
+    .tag.red{background:#fdecec;color:#b91c1c}
+    .tag.gray{background:#f1f5f9;color:#475569}
+
+    .btn-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      border:none;
+      border-radius:12px;
+      height:42px;
+      padding:0 16px;
+      font-size:14px;
+      font-weight:900;
+      cursor:pointer;
+    }
+    .btn-blue{background:var(--blue);color:#fff}
+    .btn-soft{background:#e8eef9;color:#0f172a}
+    .btn-red{background:var(--red);color:#fff}
+    .btn-green{background:var(--green);color:#fff}
+
+    .list{
+      display:grid;
+      gap:10px;
+    }
+
+    .list-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:14px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fbfdff;
+      cursor:pointer;
+    }
+
+    .list-title{
+      font-weight:900;
+      font-size:15px;
+      margin-bottom:4px;
+    }
+
+    .list-meta{
+      color:var(--muted);
+      font-size:13px;
+      font-weight:700;
+    }
+
+    .empty{
+      padding:22px;
+      border:1px dashed #cbd5e1;
+      border-radius:16px;
+      text-align:center;
+      color:var(--muted);
+      font-weight:800;
+      background:#fbfdff;
+    }
+
+    .form-grid,.form-grid-3{
+      display:grid;
+      gap:12px;
+    }
+    .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .form-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .field label{
+      font-size:12px;
+      color:#334155;
+      font-weight:900;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+    }
+
+    .field input,.field select,.field textarea{
+      width:100%;
+      border:1px solid #cfd8e6;
+      border-radius:12px;
+      min-height:44px;
+      padding:10px 12px;
+      font-size:14px;
+      font-weight:700;
+      outline:none;
+      background:#fff;
+    }
+
+    .field textarea{
+      min-height:110px;
+      resize:vertical;
+      padding-top:12px;
+    }
+
+    .field input:focus,.field select:focus,.field textarea:focus{
+      border-color:#3b82f6;
+      box-shadow:0 0 0 4px rgba(59,130,246,.12);
+    }
+
+    .search-input{
+      width:100%;
+      border:1px solid #cfd8e6;
+      border-radius:12px;
+      min-height:44px;
+      padding:10px 12px;
+      font-size:14px;
+      font-weight:700;
+      outline:none;
+      background:#fff;
+      margin-bottom:14px;
+    }
+
+    .search-input:focus{
+      border-color:#3b82f6;
+      box-shadow:0 0 0 4px rgba(59,130,246,.12);
+    }
+
+    .login-overlay{
       position:fixed;
       inset:0;
-      background:rgba(15,23,42,.58);
-      backdrop-filter:blur(7px);
+      background:rgba(15,23,42,.62);
+      backdrop-filter:blur(8px);
+      z-index:999999;
       display:flex;
       align-items:center;
       justify-content:center;
-      z-index:999999;
       padding:20px;
     }
+
     .login-card{
       width:100%;
-      max-width:420px;
+      max-width:460px;
       background:#fff;
       border-radius:26px;
-      padding:30px 24px 24px;
-      box-shadow:0 30px 80px rgba(15,23,42,.32);
-      border:1px solid #e2e8f0;
+      border:1px solid var(--line);
+      box-shadow:0 35px 90px rgba(15,23,42,.34);
+      padding:30px 26px 24px;
     }
+
     .login-brand{
       text-align:center;
       color:#2563eb;
-      font-weight:800;
       font-size:12px;
+      font-weight:900;
       letter-spacing:.08em;
       margin-bottom:10px;
     }
+
     .login-title{
       margin:0 0 18px;
       text-align:center;
-      font-size:20px;
-      font-weight:800;
+      font-size:26px;
+      font-weight:900;
     }
-    .login-label{
-      display:block;
-      font-size:13px;
-      font-weight:800;
-      color:#334155;
-      margin-bottom:8px;
+
+    .pass-wrap{
+      position:relative;
     }
-    .pass-wrap{position:relative;margin-bottom:14px}
-    #loginPassword{
+
+    .pass-wrap input{
       width:100%;
       height:50px;
       border:1px solid #cbd5e1;
       border-radius:14px;
       padding:0 48px 0 14px;
       font-size:15px;
-      font-weight:700;
+      font-weight:800;
       outline:none;
     }
-    #loginPassword:focus{
+
+    .pass-wrap input:focus{
       border-color:#2563eb;
       box-shadow:0 0 0 4px rgba(37,99,235,.12);
     }
-    #togglePassword{
+
+    .toggle-password{
       position:absolute;
-      right:8px;
       top:50%;
+      right:8px;
       transform:translateY(-50%);
       width:34px;
       height:34px;
       border:none;
-      border-radius:10px;
       background:transparent;
-      cursor:pointer;
       font-size:16px;
-      color:#475569;
+      cursor:pointer;
+      color:#64748b;
+      border-radius:10px;
     }
-    #loginBtn{
+
+    .login-btn{
       width:100%;
       height:48px;
       border:none;
       border-radius:14px;
-      background:#2563eb;
+      margin-top:14px;
+      background:var(--blue);
       color:#fff;
       font-size:15px;
-      font-weight:800;
+      font-weight:900;
       cursor:pointer;
     }
-    #loginError{
+
+    .login-error{
       min-height:20px;
-      margin-top:12px;
       text-align:center;
+      color:#dc2626;
+      font-size:13px;
+      font-weight:900;
+      margin-top:12px;
+    }
+
+    .toast{
+      position:fixed;
+      right:16px;
+      bottom:16px;
+      z-index:999999;
+      background:#0f172a;
+      color:#fff;
+      padding:12px 14px;
+      border-radius:12px;
+      box-shadow:var(--shadow);
       font-size:13px;
       font-weight:800;
-      color:#dc2626;
-    }
-
-    #logoutBtn{
-      position:fixed;
-      top:16px;
-      right:16px;
-      z-index:999998;
-      border:none;
-      border-radius:12px;
-      background:#dc2626;
-      color:#fff;
-      padding:12px 16px;
-      font-size:14px;
-      font-weight:800;
-      cursor:pointer;
       display:none;
-      box-shadow:0 12px 28px rgba(220,38,38,.22);
+      max-width:340px;
     }
-    body.authenticated #logoutBtn{display:block}
 
-    @media (max-width: 980px){
-      .app{grid-template-columns:1fr}
-      .grid{grid-template-columns:1fr}
-      .sidebar{display:none}
+    @media (max-width:1200px){
+      .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .grid-2,.grid-3{grid-template-columns:1fr}
+    }
+
+    @media (max-width:860px){
+      .layout{grid-template-columns:1fr}
+      .sidebar{position:relative;height:auto}
       .main{padding:16px}
+      .page-head h1{font-size:32px}
+    }
+
+    @media (max-width:640px){
+      .cards{grid-template-columns:1fr}
+      .form-grid,.form-grid-3{grid-template-columns:1fr}
+      .topbar{align-items:stretch}
+      .topbar-right{justify-content:flex-start}
     }
   </style>
 </head>
 <body>
-  <div id="secureOverlay">
+  <div id="loginOverlay" class="login-overlay">
     <div class="login-card">
       <div class="login-brand">ALKAM MALİ MÜŞAVİRLİK</div>
       <h2 class="login-title">Programa Giriş</h2>
+
       <form id="loginForm" autocomplete="off">
-        <label class="login-label" for="loginPassword">Şifre</label>
-        <div class="pass-wrap">
-          <input
-            id="loginPassword"
-            type="password"
-            placeholder="Şifrenizi girin"
-            autocomplete="current-password"
-            autocapitalize="off"
-            autocorrect="off"
-            spellcheck="false"
-            required
-          />
-          <button type="button" id="togglePassword">👁</button>
+        <div class="field">
+          <label for="loginEmail">E-posta</label>
+          <input id="loginEmail" type="email" placeholder="mail@ornek.com" required />
         </div>
-        <button type="submit" id="loginBtn">Giriş Yap</button>
-        <div id="loginError"></div>
+
+        <div class="field">
+          <label for="loginPassword">Şifre</label>
+          <div class="pass-wrap">
+            <input id="loginPassword" type="password" placeholder="Şifrenizi girin" required />
+            <button id="togglePassword" type="button" class="toggle-password">👁</button>
+          </div>
+        </div>
+
+        <button id="loginBtn" type="submit" class="login-btn">Giriş Yap</button>
+        <div id="loginError" class="login-error"></div>
       </form>
     </div>
   </div>
 
-  <button id="logoutBtn" type="button">Çıkış Yap</button>
-
-  <div class="app">
+  <div class="layout">
     <aside class="sidebar">
-      <div class="brand">ALKAM<br>Mali Müşavirlik</div>
-      <div class="sub">Finans · Ön Muhasebe · Raporlama</div>
+      <div class="brand-title">ALKAM<br />Mali Müşavirlik</div>
+      <div class="brand-sub">Supabase bağlı canlı cari, tahakkuk, tahsilat ve hareket sistemi</div>
 
-      <nav class="menu">
-        <a href="#" class="active">Dashboard</a>
-        <a href="#">Mükellefler</a>
-        <a href="#">Veri Girişi</a>
-        <a href="#">Hesaplar</a>
-        <a href="#">Finansal Raporlar</a>
-      </nav>
+      <div class="nav">
+        <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
+        <button class="nav-btn" data-tab="cariler">Cariler</button>
+        <button class="nav-btn" data-tab="hareket-ekle">Hareket Ekle</button>
+        <button class="nav-btn" data-tab="raporlar">Raporlar</button>
+      </div>
+
+      <div class="sidebar-box">
+        <div class="mini">BAĞLANTI</div>
+        <div class="big" id="connState">Bağlantı kontrol ediliyor...</div>
+      </div>
+
+      <div class="sidebar-box">
+        <div class="mini">GİRİŞ YAPAN</div>
+        <div class="big" id="currentUserBox">-</div>
+      </div>
     </aside>
 
     <main class="main">
       <div class="topbar">
-        <div class="page-title">Dashboard</div>
-        <div id="versionBadge" class="version-badge">V-</div>
-      </div>
+        <div class="page-head">
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageDesc">Canlı veritabanı üzerinden güncel özet</p>
+        </div>
 
-      <div class="grid">
-        <div class="card">
-          <div class="label">Toplam Cari</div>
-          <div class="value">128</div>
-        </div>
-        <div class="card">
-          <div class="label">Bekleyen Tahakkuk</div>
-          <div class="value">₺245.000</div>
-        </div>
-        <div class="card">
-          <div class="label">Bu Ay Tahsilat</div>
-          <div class="value">₺182.450</div>
-        </div>
-        <div class="card">
-          <div class="label">Açık Bakiye</div>
-          <div class="value">₺62.550</div>
+        <div class="topbar-right">
+          <div id="versionBadge" class="version-badge">V-</div>
+          <button id="logoutBtn" class="logout-btn" type="button">Çıkış Yap</button>
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-title">Son Hareketler</div>
+      <section id="tab-dashboard" class="tab-page active">
+        <div class="cards">
+          <div class="card">
+            <div class="card-label">Toplam Cari</div>
+            <div class="card-value" id="kpiToplamCari">0</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Aktif Cari</div>
+            <div class="card-value" id="kpiAktifCari">0</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Bu Ay Tahsilat</div>
+            <div class="card-value" id="kpiBuAyTahsilat">₺0,00</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Toplam Bakiye</div>
+            <div class="card-value" id="kpiToplamBakiye">₺0,00</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="section">
+            <h2 class="section-title">Son Hareketler</h2>
+            <div id="lastMovementsWrap" class="empty">Veri yükleniyor...</div>
+          </div>
+
+          <div class="section">
+            <h2 class="section-title">Hızlı Cari Ekle</h2>
+            <div class="form-grid">
+              <div class="field">
+                <label>Cari Adı</label>
+                <input id="quickCariAdi" type="text" placeholder="Cari adı" />
+              </div>
+              <div class="field">
+                <label>Cari Türü</label>
+                <select id="quickCariTuru">
+                  <option value="mukellef">Mükellef</option>
+                  <option value="tedarikci">Tedarikçi</option>
+                  <option value="diger">Diğer</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label>Telefon</label>
+                <input id="quickCariTelefon" type="text" placeholder="Telefon" />
+              </div>
+              <div class="field">
+                <label>Aylık Tahakkuk</label>
+                <input id="quickCariTahakkuk" type="number" min="0" step="0.01" placeholder="0" />
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-blue" id="btnQuickCariSave" type="button">Cariyi Kaydet</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-cariler" class="tab-page">
+        <div class="section">
+          <h2 class="section-title">Cari Listesi</h2>
+          <input id="cariSearch" class="search-input" type="text" placeholder="Cari adı ile ara..." />
+          <div id="cariList" class="list"></div>
+        </div>
+
+        <div class="section">
+          <h2 class="section-title">Seçili Cari Detayı</h2>
+          <div id="selectedCariDetail" class="empty">Bir cari seç.</div>
+        </div>
+      </section>
+
+      <section id="tab-hareket-ekle" class="tab-page">
+        <div class="section">
+          <h2 class="section-title">Yeni Hareket</h2>
+
+          <div class="form-grid-3">
+            <div class="field">
+              <label>Cari</label>
+              <select id="hareketCariSelect"></select>
+            </div>
+            <div class="field">
+              <label>İşlem Türü</label>
+              <select id="hareketTurSelect">
+                <option value="tahakkuk">Tahakkuk</option>
+                <option value="tahsilat">Tahsilat</option>
+                <option value="odeme">Ödeme</option>
+                <option value="gelir">Gelir</option>
+                <option value="gider">Gider</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Tarih</label>
+              <input id="hareketTarihInput" type="date" />
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label>Tutar</label>
+              <input id="hareketTutarInput" type="number" min="0" step="0.01" placeholder="0" />
+            </div>
+            <div class="field">
+              <label>Alt Tür</label>
+              <input id="hareketAltTurInput" type="text" placeholder="Nakit / Banka / Muhasebe" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Açıklama</label>
+            <textarea id="hareketAciklamaInput" placeholder="İşlem açıklaması"></textarea>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-green" id="btnSaveMovement" type="button">Hareketi Kaydet</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-raporlar" class="tab-page">
+        <div class="section">
+          <h2 class="section-title">Cari Özet Raporu</h2>
+          <div id="reportWrap" class="empty">Rapor hazırlanıyor...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const SUPABASE_URL = "https://mnagzuvwxvmzrlbzrfpp.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_Nzt_sPkSVU4pR9pc1hocmg_0Axrcv-W";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const state = {
+      currentUser: null,
+      currentTab: "dashboard",
+      cariler: [],
+      cariOzet: [],
+      hareketler: [],
+      selectedCariId: null
+    };
+
+    function pad2(n){ return String(n).padStart(2, "0"); }
+    function buildVersion(){
+      let d = new Date(document.lastModified);
+      if (Number.isNaN(d.getTime())) d = new Date();
+      return "V" + `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getDate())}${pad2(d.getMonth()+1)}${String(d.getFullYear()).slice(-2)}-${pad2(d.getHours())}${pad2(d.getMinutes())}`;
+    }
+    function money(v){
+      return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(Number(v||0));
+    }
+    function shortDate(v){
+      if(!v) return "-";
+      const d = new Date(v);
+      if(Number.isNaN(d.getTime())) return v;
+      return new Intl.DateTimeFormat("tr-TR").format(d);
+    }
+    function notify(msg){
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.style.display = "block";
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => t.style.display = "none", 2600);
+    }
+    function setConnState(text){
+      document.getElementById("connState").textContent = text;
+    }
+
+    function switchTab(tab){
+      const meta = {
+        dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],
+        cariler:["Cariler","Cari arama, detay ve bakiye görünümü"],
+        "hareket-ekle":["Hareket Ekle","Tahakkuk, tahsilat, ödeme, gelir ve gider kaydı"],
+        raporlar:["Raporlar","Cari özet ve finans görünümü"]
+      };
+      state.currentTab = tab;
+      document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.tab === tab));
+      document.querySelectorAll(".tab-page").forEach(page => page.classList.remove("active"));
+      document.getElementById("tab-" + tab).classList.add("active");
+      document.getElementById("pageTitle").textContent = meta[tab][0];
+      document.getElementById("pageDesc").textContent = meta[tab][1];
+    }
+
+    async function login(email, password){
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+    }
+
+    async function logout(){
+      const { error } = await supabase.auth.signOut();
+      if(error) throw error;
+    }
+
+    async function getSessionUser(){
+      const { data, error } = await supabase.auth.getUser();
+      if(error) throw error;
+      return data.user;
+    }
+
+    async function loadDashboard(){
+      const { data, error } = await supabase.rpc("get_cari_dashboard");
+      if(error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      document.getElementById("kpiToplamCari").textContent = row?.toplam_cari ?? 0;
+      document.getElementById("kpiAktifCari").textContent = row?.aktif_cari ?? 0;
+      document.getElementById("kpiBuAyTahsilat").textContent = money(row?.bu_ay_tahsilat ?? 0);
+      document.getElementById("kpiToplamBakiye").textContent = money(row?.toplam_bakiye ?? 0);
+    }
+
+    async function loadCariler(){
+      const { data, error } = await supabase
+        .from("v_cari_ozet")
+        .select("*")
+        .order("cari_adi", { ascending: true });
+
+      if(error) throw error;
+
+      state.cariOzet = data || [];
+      state.cariler = (data || []).map(x => ({
+        id: x.id,
+        cari_adi: x.cari_adi,
+        cari_turu: x.cari_turu,
+        telefon: x.telefon,
+        email: x.email,
+        aylik_tahakkuk: x.aylik_tahakkuk,
+        aktif: x.aktif
+      }));
+
+      renderCariList();
+      fillCariSelects();
+      renderReports();
+    }
+
+    async function loadHareketler(){
+      const { data, error } = await supabase
+        .from("hareketler")
+        .select("id,cari_id,tarih,islem_turu,alt_tur,aciklama,tutar,kayit_no,created_at,cariler(cari_adi)")
+        .order("tarih", { ascending: false })
+        .limit(50);
+
+      if(error) throw error;
+      state.hareketler = data || [];
+      renderLastMovements();
+      if(state.selectedCariId) renderSelectedCariDetail(state.selectedCariId);
+    }
+
+    function renderLastMovements(){
+      const wrap = document.getElementById("lastMovementsWrap");
+      if(!state.hareketler.length){
+        wrap.innerHTML = `<div class="empty">Henüz hareket yok.</div>`;
+        return;
+      }
+
+      const rows = state.hareketler.slice(0,10).map(h => `
+        <tr>
+          <td>${shortDate(h.tarih)}</td>
+          <td>${escapeHtml(h.cariler?.cari_adi || "-")}</td>
+          <td>${renderTag(h.islem_turu)}</td>
+          <td>${escapeHtml(h.aciklama || "-")}</td>
+          <td class="text-right">${money(h.tutar)}</td>
+        </tr>
+      `).join("");
+
+      wrap.innerHTML = `
         <table>
           <thead>
             <tr>
@@ -230,210 +858,359 @@
               <th class="text-right">Tutar</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>09.04.2026</td>
-              <td>Ercan Alaylı</td>
-              <td>Tahsilat</td>
-              <td>Nisan tahsilatı</td>
-              <td class="text-right">₺3.000</td>
-            </tr>
-            <tr>
-              <td>08.04.2026</td>
-              <td>Malzemeci Erdinç</td>
-              <td>Ödeme</td>
-              <td>Malzeme ödemesi</td>
-              <td class="text-right">₺5.200</td>
-            </tr>
-            <tr>
-              <td>01.04.2026</td>
-              <td>Ercan Alaylı</td>
-              <td>Tahakkuk</td>
-              <td>Nisan muhasebe ücreti</td>
-              <td class="text-right">₺3.000</td>
-            </tr>
-          </tbody>
+          <tbody>${rows}</tbody>
         </table>
-      </div>
+      `;
+    }
 
-      <div class="section">
-        <div class="section-title">Sistem</div>
-        <div class="actions">
-          <button class="btn" type="button" onclick="alert('Sistem aktif')">Durum Kontrol</button>
-          <button class="btn btn-ghost" type="button" onclick="location.reload()">Yenile</button>
-          <button class="btn btn-red" type="button" onclick="logoutALKAM()">Oturumu Kapat</button>
+    function renderTag(type){
+      if(type === "tahakkuk") return `<span class="tag blue">Tahakkuk</span>`;
+      if(type === "tahsilat") return `<span class="tag green">Tahsilat</span>`;
+      if(type === "odeme") return `<span class="tag red">Ödeme</span>`;
+      if(type === "gelir") return `<span class="tag green">Gelir</span>`;
+      if(type === "gider") return `<span class="tag red">Gider</span>`;
+      return `<span class="tag gray">${escapeHtml(type || "-")}</span>`;
+    }
+
+    function renderCariList(){
+      const q = (document.getElementById("cariSearch").value || "").trim().toLowerCase();
+      const filtered = state.cariOzet.filter(c => (c.cari_adi || "").toLowerCase().includes(q));
+      const list = document.getElementById("cariList");
+
+      if(!filtered.length){
+        list.innerHTML = `<div class="empty">Cari bulunamadı.</div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map(c => `
+        <div class="list-item" data-cari-id="${c.id}">
+          <div>
+            <div class="list-title">${escapeHtml(c.cari_adi)}</div>
+            <div class="list-meta">
+              Tür: ${escapeHtml(c.cari_turu || "-")} ·
+              Son tahakkuk: ${shortDate(c.son_tahakkuk_tarihi)} ·
+              Son tahsilat: ${shortDate(c.son_tahsilat_tarihi)}
+            </div>
+          </div>
+          <div class="tag ${Number(c.bakiye || 0) > 0 ? "red" : "green"}">${money(c.bakiye || 0)}</div>
         </div>
-      </div>
-    </main>
-  </div>
+      `).join("");
 
-  <script>
-    const ALKAM_SECURITY = {
-      password: "2909",
-      sessionKey: "alkam_secure_session_v5",
-      maxFail: 5,
-      lockMinutes: 10
-    };
-
-    function pad2(n){
-      return String(n).padStart(2,"0");
+      list.querySelectorAll("[data-cari-id]").forEach(el => {
+        el.addEventListener("click", () => renderSelectedCariDetail(el.dataset.cariId));
+      });
     }
 
-    function buildVersion(){
-      let d = new Date(document.lastModified);
-      if (Number.isNaN(d.getTime())) d = new Date();
-      const hh = pad2(d.getHours());
-      const mm = pad2(d.getMinutes());
-      const dd = pad2(d.getDate());
-      const mo = pad2(d.getMonth() + 1);
-      const yy = String(d.getFullYear()).slice(-2);
-      return `${hh}${mm}${dd}${mo}${yy}-${hh}${mm}`;
+    function fillCariSelects(){
+      const sel = document.getElementById("hareketCariSelect");
+      const options = [`<option value="">Cari seç</option>`].concat(
+        state.cariler.map(c => `<option value="${c.id}">${escapeHtml(c.cari_adi)}</option>`)
+      );
+      sel.innerHTML = options.join("");
     }
 
-    function renderVersion(){
-      const el = document.getElementById("versionBadge");
-      if (el) el.textContent = "V" + buildVersion();
+    async function renderSelectedCariDetail(cariId){
+      state.selectedCariId = cariId;
+      const target = document.getElementById("selectedCariDetail");
+      const ozet = state.cariOzet.find(x => x.id === cariId);
+
+      if(!ozet){
+        target.innerHTML = `<div class="empty">Cari bulunamadı.</div>`;
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("hareketler")
+        .select("*")
+        .eq("cari_id", cariId)
+        .order("tarih", { ascending: false });
+
+      if(error){
+        target.innerHTML = `<div class="empty">Cari hareketleri alınamadı.</div>`;
+        return;
+      }
+
+      const rows = (data || []).map(h => `
+        <tr>
+          <td>${shortDate(h.tarih)}</td>
+          <td>${renderTag(h.islem_turu)}</td>
+          <td>${escapeHtml(h.alt_tur || "-")}</td>
+          <td>${escapeHtml(h.aciklama || "-")}</td>
+          <td class="text-right">${money(h.tutar)}</td>
+        </tr>
+      `).join("");
+
+      target.innerHTML = `
+        <div class="grid-3" style="margin-bottom:16px;">
+          <div class="card">
+            <div class="card-label">Cari</div>
+            <div class="card-value" style="font-size:22px;">${escapeHtml(ozet.cari_adi)}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Aylık Tahakkuk</div>
+            <div class="card-value" style="font-size:22px;">${money(ozet.aylik_tahakkuk || 0)}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Bakiye</div>
+            <div class="card-value" style="font-size:22px;">${money(ozet.bakiye || 0)}</div>
+          </div>
+        </div>
+
+        <div class="grid-3" style="margin-bottom:16px;">
+          <div class="card">
+            <div class="card-label">Son Tahakkuk</div>
+            <div class="card-value" style="font-size:20px;">${shortDate(ozet.son_tahakkuk_tarihi)}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Son Tahsilat</div>
+            <div class="card-value" style="font-size:20px;">${shortDate(ozet.son_tahsilat_tarihi)}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">İletişim</div>
+            <div class="card-value" style="font-size:16px;line-height:1.4;">
+              ${escapeHtml(ozet.telefon || "-")}<br>${escapeHtml(ozet.email || "-")}
+            </div>
+          </div>
+        </div>
+
+        <div class="section" style="margin:0;padding:0;border:none;box-shadow:none;">
+          <h3 class="section-title" style="padding:0 0 10px 0;margin:0;">Cari Hareketleri</h3>
+          ${rows ? `
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>İşlem</th>
+                  <th>Alt Tür</th>
+                  <th>Açıklama</th>
+                  <th class="text-right">Tutar</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          ` : `<div class="empty">Bu cariye ait hareket yok.</div>`}
+        </div>
+      `;
     }
 
-    function getState(){
+    function renderReports(){
+      const target = document.getElementById("reportWrap");
+      if(!state.cariOzet.length){
+        target.innerHTML = `<div class="empty">Rapor için veri yok.</div>`;
+        return;
+      }
+
+      const rows = state.cariOzet
+        .slice()
+        .sort((a,b) => Number(b.bakiye || 0) - Number(a.bakiye || 0))
+        .map(c => `
+          <tr>
+            <td>${escapeHtml(c.cari_adi)}</td>
+            <td>${escapeHtml(c.cari_turu || "-")}</td>
+            <td>${shortDate(c.son_tahakkuk_tarihi)}</td>
+            <td>${shortDate(c.son_tahsilat_tarihi)}</td>
+            <td class="text-right">${money(c.aylik_tahakkuk || 0)}</td>
+            <td class="text-right">${money(c.bakiye || 0)}</td>
+          </tr>
+        `).join("");
+
+      target.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Cari</th>
+              <th>Tür</th>
+              <th>Son Tahakkuk</th>
+              <th>Son Tahsilat</th>
+              <th class="text-right">Aylık Tahakkuk</th>
+              <th class="text-right">Bakiye</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    }
+
+    async function addCari(){
+      const cari_adi = document.getElementById("quickCariAdi").value.trim();
+      const cari_turu = document.getElementById("quickCariTuru").value;
+      const telefon = document.getElementById("quickCariTelefon").value.trim();
+      const aylik_tahakkuk = Number(document.getElementById("quickCariTahakkuk").value || 0);
+
+      if(!cari_adi){
+        notify("Cari adı zorunlu.");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("cariler")
+        .insert([{
+          cari_adi,
+          cari_turu,
+          telefon: telefon || null,
+          aylik_tahakkuk,
+          created_by: state.currentUser?.id || null
+        }]);
+
+      if(error) throw error;
+
+      await writeAudit("cariler", null, "insert", { cari_adi, cari_turu, aylik_tahakkuk });
+      document.getElementById("quickCariAdi").value = "";
+      document.getElementById("quickCariTelefon").value = "";
+      document.getElementById("quickCariTahakkuk").value = "";
+      notify("Cari kaydedildi.");
+      await refreshAllData();
+      switchTab("cariler");
+    }
+
+    async function addMovement(){
+      const cari_id = document.getElementById("hareketCariSelect").value;
+      const islem_turu = document.getElementById("hareketTurSelect").value;
+      const tarih = document.getElementById("hareketTarihInput").value;
+      const tutar = Number(document.getElementById("hareketTutarInput").value || 0);
+      const alt_tur = document.getElementById("hareketAltTurInput").value.trim();
+      const aciklama = document.getElementById("hareketAciklamaInput").value.trim();
+
+      if(!cari_id){
+        notify("Cari seç.");
+        return;
+      }
+      if(!tarih){
+        notify("Tarih seç.");
+        return;
+      }
+      if(!tutar || tutar <= 0){
+        notify("Geçerli tutar gir.");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("hareketler")
+        .insert([{
+          cari_id,
+          tarih,
+          islem_turu,
+          alt_tur: alt_tur || null,
+          aciklama: aciklama || null,
+          tutar,
+          created_by: state.currentUser?.id || null
+        }]);
+
+      if(error) throw error;
+
+      await writeAudit("hareketler", null, "insert", { cari_id, tarih, islem_turu, tutar });
+      document.getElementById("hareketTutarInput").value = "";
+      document.getElementById("hareketAltTurInput").value = "";
+      document.getElementById("hareketAciklamaInput").value = "";
+      notify("Hareket kaydedildi.");
+      await refreshAllData();
+      switchTab("dashboard");
+    }
+
+    async function writeAudit(tablo, kayit_id, islem, detay){
       try{
-        return JSON.parse(localStorage.getItem(ALKAM_SECURITY.sessionKey) || "{}");
-      }catch{
-        return {};
-      }
+        await supabase.from("audit_log").insert([{
+          tablo,
+          kayit_id,
+          islem,
+          detay,
+          created_by: state.currentUser?.id || null
+        }]);
+      }catch(e){}
     }
 
-    function setState(obj){
-      localStorage.setItem(ALKAM_SECURITY.sessionKey, JSON.stringify(obj));
+    async function refreshAllData(){
+      await Promise.all([
+        loadDashboard(),
+        loadCariler(),
+        loadHareketler()
+      ]);
     }
 
-    function clearState(){
-      localStorage.removeItem(ALKAM_SECURITY.sessionKey);
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
     }
 
-    function isLocked(){
-      const state = getState();
-      return !!(state.lockUntil && Date.now() < state.lockUntil);
-    }
+    async function boot(){
+      document.getElementById("versionBadge").textContent = buildVersion();
+      document.getElementById("hareketTarihInput").value = new Date().toISOString().slice(0,10);
 
-    function lockText(){
-      const state = getState();
-      if (!state.lockUntil) return "";
-      const diff = state.lockUntil - Date.now();
-      if (diff <= 0) return "";
-      return Math.ceil(diff / 60000) + " dakika sonra tekrar deneyin.";
-    }
-
-    function openApp(){
-      const overlay = document.getElementById("secureOverlay");
-      if (overlay) overlay.style.display = "none";
-      document.body.classList.add("authenticated");
-    }
-
-    function closeApp(){
-      const overlay = document.getElementById("secureOverlay");
-      if (overlay) overlay.style.display = "flex";
-      document.body.classList.remove("authenticated");
-    }
-
-    function loginNow(passwordValue){
-      const errorBox = document.getElementById("loginError");
-
-      if (isLocked()){
-        errorBox.textContent = "Çok fazla hatalı giriş. " + lockText();
-        return false;
-      }
-
-      const state = getState();
-      const failCount = Number(state.failCount || 0);
-
-      if ((passwordValue || "").trim() === ALKAM_SECURITY.password){
-        setState({
-          authenticated: true,
-          failCount: 0,
-          lastLogin: new Date().toISOString()
-        });
-        if (errorBox) errorBox.textContent = "";
-        openApp();
-        return true;
-      }
-
-      const newFail = failCount + 1;
-
-      if (newFail >= ALKAM_SECURITY.maxFail){
-        setState({
-          authenticated: false,
-          failCount: newFail,
-          lockUntil: Date.now() + ALKAM_SECURITY.lockMinutes * 60 * 1000
-        });
-        if (errorBox) errorBox.textContent = "Çok fazla hatalı giriş. " + ALKAM_SECURITY.lockMinutes + " dakika kilitlendi.";
-        return false;
-      }
-
-      setState({
-        authenticated: false,
-        failCount: newFail
+      document.querySelectorAll(".nav-btn").forEach(btn => {
+        btn.addEventListener("click", () => switchTab(btn.dataset.tab));
       });
 
-      if (errorBox) errorBox.textContent = "Şifre hatalı.";
-      return false;
+      document.getElementById("cariSearch").addEventListener("input", renderCariList);
+      document.getElementById("btnQuickCariSave").addEventListener("click", async () => {
+        try{
+          await addCari();
+        }catch(e){
+          notify(e.message || "Cari kaydedilemedi.");
+        }
+      });
+
+      document.getElementById("btnSaveMovement").addEventListener("click", async () => {
+        try{
+          await addMovement();
+        }catch(e){
+          notify(e.message || "Hareket kaydedilemedi.");
+        }
+      });
+
+      document.getElementById("logoutBtn").addEventListener("click", async () => {
+        try{
+          await logout();
+          location.reload();
+        }catch(e){
+          notify("Çıkış yapılamadı.");
+        }
+      });
+
+      document.getElementById("togglePassword").addEventListener("click", () => {
+        const p = document.getElementById("loginPassword");
+        p.type = p.type === "password" ? "text" : "password";
+      });
+
+      document.getElementById("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+        const errorBox = document.getElementById("loginError");
+        errorBox.textContent = "";
+        try{
+          await login(email, password);
+          location.reload();
+        }catch(err){
+          errorBox.textContent = err.message || "Giriş yapılamadı.";
+        }
+      });
+
+      try{
+        setConnState("Supabase bağlantısı kuruluyor...");
+        const user = await getSessionUser();
+        state.currentUser = user;
+
+        if(!user){
+          setConnState("Giriş bekleniyor");
+          return;
+        }
+
+        document.getElementById("loginOverlay").style.display = "none";
+        document.getElementById("currentUserBox").textContent = user.email || user.id;
+        setConnState("Supabase canlı bağlı");
+
+        await refreshAllData();
+      }catch(e){
+        setConnState("Bağlantı hatası");
+        notify("Bağlantı kurulamadı: " + (e.message || e));
+      }
     }
 
-    function logoutALKAM(){
-      clearState();
-      closeApp();
-      const input = document.getElementById("loginPassword");
-      const errorBox = document.getElementById("loginError");
-      if (input){
-        input.value = "";
-        input.type = "password";
-        input.focus();
-      }
-      if (errorBox) errorBox.textContent = "";
-    }
-
-    function initALKAM(){
-      renderVersion();
-
-      const form = document.getElementById("loginForm");
-      const input = document.getElementById("loginPassword");
-      const toggle = document.getElementById("togglePassword");
-      const logoutBtn = document.getElementById("logoutBtn");
-
-      const state = getState();
-      if (state.authenticated === true){
-        openApp();
-      }else{
-        closeApp();
-      }
-
-      if (toggle){
-        toggle.addEventListener("click", function(){
-          input.type = input.type === "password" ? "text" : "password";
-        });
-      }
-
-      if (form){
-        form.addEventListener("submit", function(e){
-          e.preventDefault();
-          const ok = loginNow(input.value);
-          if (!ok){
-            input.value = "";
-            input.type = "password";
-            input.focus();
-          }else{
-            input.value = "";
-            input.type = "password";
-          }
-        });
-      }
-
-      if (logoutBtn){
-        logoutBtn.addEventListener("click", logoutALKAM);
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", initALKAM);
+    boot();
   </script>
 </body>
 </html>
