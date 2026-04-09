@@ -1,145 +1,70 @@
-/* =========================================================
-   ALKAM - app.js
-   Tek dosya, localStorage tabanlı temel ön muhasebe iskeleti
-   Özellikler:
-   - Cari listesi
-   - Cari detay
-   - Hareket ekleme
-   - Tahakkuk / Tahsilat / Ödeme / Gelir / Gider kayıtları
-   - Cari bakiyesi
-   - Son tahsilat
-   - Son tahakkuk
-   ========================================================= */
-
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "alkam_finans_v1";
+  const STORAGE_KEY = "alkam_finans_v2";
 
   const emptyDB = {
-    cariler: [
-      {
-        id: uid(),
-        ad: "Örnek Cari 1",
-        telefon: "",
-        email: "",
-        not: "",
-        createdAt: nowISO()
-      },
-      {
-        id: uid(),
-        ad: "Örnek Cari 2",
-        telefon: "",
-        email: "",
-        not: "",
-        createdAt: nowISO()
-      }
-    ],
-    hareketler: [
-      {
-        id: uid(),
-        cariId: null,
-        tur: "gelir",
-        altTur: "nakit",
-        tarih: today(),
-        tutar: 15000,
-        aciklama: "Açılış nakit",
-        createdAt: nowISO()
-      },
-      {
-        id: uid(),
-        cariId: null,
-        tur: "gider",
-        altTur: "genel",
-        tarih: today(),
-        tutar: 3500,
-        aciklama: "Kırtasiye gideri",
-        createdAt: nowISO()
-      }
-    ],
+    cariler: [],
+    hareketler: [],
     seciliCariId: null
   };
 
   let db = loadDB();
 
-  // ---------------------------------------------------------
-  // DOM
-  // ---------------------------------------------------------
   const el = {
-    cariListesi: $("#cariListesi"),
-    cariArama: $("#cariArama"),
-    cariForm: $("#cariForm"),
-    cariAd: $("#cariAd"),
-    cariTelefon: $("#cariTelefon"),
-    cariEmail: $("#cariEmail"),
-    cariNot: $("#cariNot"),
+    cariListesi: document.getElementById("cariListesi"),
+    cariArama: document.getElementById("cariArama"),
+    cariForm: document.getElementById("cariForm"),
+    cariAd: document.getElementById("cariAd"),
+    cariTelefon: document.getElementById("cariTelefon"),
+    cariEmail: document.getElementById("cariEmail"),
+    cariNot: document.getElementById("cariNot"),
 
-    hareketForm: $("#hareketForm"),
-    hareketCari: $("#hareketCari"),
-    hareketTur: $("#hareketTur"),
-    hareketAltTur: $("#hareketAltTur"),
-    hareketTarih: $("#hareketTarih"),
-    hareketTutar: $("#hareketTutar"),
-    hareketAciklama: $("#hareketAciklama"),
+    hareketForm: document.getElementById("hareketForm"),
+    hareketCari: document.getElementById("hareketCari"),
+    hareketTur: document.getElementById("hareketTur"),
+    hareketAltTur: document.getElementById("hareketAltTur"),
+    hareketTarih: document.getElementById("hareketTarih"),
+    hareketTutar: document.getElementById("hareketTutar"),
+    hareketAciklama: document.getElementById("hareketAciklama"),
 
-    detayBos: $("#detayBos"),
-    cariDetay: $("#cariDetay"),
-    detayBaslik: $("#detayBaslik"),
-    detayAlt: $("#detayAlt"),
+    detayBos: document.getElementById("detayBos"),
+    cariDetay: document.getElementById("cariDetay"),
+    detayBaslik: document.getElementById("detayBaslik"),
+    detayAlt: document.getElementById("detayAlt"),
 
-    ozetBakiye: $("#ozetBakiye"),
-    ozetToplamBorc: $("#ozetToplamBorc"),
-    ozetToplamTahsilat: $("#ozetToplamTahsilat"),
-    ozetSonTahakkuk: $("#ozetSonTahakkuk"),
-    ozetSonTahsilat: $("#ozetSonTahsilat"),
+    ozetBakiye: document.getElementById("ozetBakiye"),
+    ozetToplamBorc: document.getElementById("ozetToplamBorc"),
+    ozetToplamTahsilat: document.getElementById("ozetToplamTahsilat"),
+    ozetSonTahakkuk: document.getElementById("ozetSonTahakkuk"),
+    ozetSonTahsilat: document.getElementById("ozetSonTahsilat"),
 
-    hareketTabloBody: $("#hareketTabloBody"),
+    hareketTabloBody: document.getElementById("hareketTabloBody"),
 
-    btnCariSil: $("#btnCariSil"),
-    btnOrnekData: $("#btnOrnekData")
+    btnCariSil: document.getElementById("btnCariSil"),
+    btnOrnekData: document.getElementById("btnOrnekData")
   };
 
-  // ---------------------------------------------------------
-  // INIT
-  // ---------------------------------------------------------
   init();
 
   function init() {
-    seedIfNeeded();
+    ensureDBShape();
     bindEvents();
-    fillCariSelect();
-    setDefaultFormValues();
+    setDefaultValues();
     renderAll();
   }
 
   function bindEvents() {
-    if (el.cariArama) {
-      el.cariArama.addEventListener("input", renderCariListesi);
-    }
-
-    if (el.cariForm) {
-      el.cariForm.addEventListener("submit", onCariSubmit);
-    }
-
-    if (el.hareketForm) {
-      el.hareketForm.addEventListener("submit", onHareketSubmit);
-    }
-
-    if (el.btnCariSil) {
-      el.btnCariSil.addEventListener("click", onCariSil);
-    }
-
-    if (el.btnOrnekData) {
-      el.btnOrnekData.addEventListener("click", yukleOrnekData);
-    }
+    if (el.cariArama) el.cariArama.addEventListener("input", renderCariListesi);
+    if (el.cariForm) el.cariForm.addEventListener("submit", onCariSubmit);
+    if (el.hareketForm) el.hareketForm.addEventListener("submit", onHareketSubmit);
+    if (el.btnCariSil) el.btnCariSil.addEventListener("click", onCariSil);
+    if (el.btnOrnekData) el.btnOrnekData.addEventListener("click", yukleOrnekData);
   }
 
-  // ---------------------------------------------------------
-  // RENDER
-  // ---------------------------------------------------------
   function renderAll() {
-    renderCariListesi();
     fillCariSelect();
+    renderCariListesi();
     renderSeciliCariDetay();
   }
 
@@ -151,19 +76,20 @@
     const cariler = [...db.cariler]
       .filter(c => {
         if (!q) return true;
-        return (
-          (c.ad || "").toLowerCase().includes(q) ||
-          (c.telefon || "").toLowerCase().includes(q) ||
-          (c.email || "").toLowerCase().includes(q)
-        );
+        return [
+          c.ad || "",
+          c.telefon || "",
+          c.email || "",
+          c.not || ""
+        ].join(" ").toLowerCase().includes(q);
       })
       .sort((a, b) => (a.ad || "").localeCompare(b.ad || "", "tr"));
 
     if (!cariler.length) {
       el.cariListesi.innerHTML = `
         <div class="empty-state">
-          <div class="empty-title">Cari bulunamadı</div>
-          <div class="empty-text">Aramayı değiştir ya da yeni cari ekle.</div>
+          <div class="empty-title">Cari yok</div>
+          <div class="empty-text">Yeni cari ekleyin.</div>
         </div>
       `;
       return;
@@ -173,14 +99,11 @@
       const rapor = hesaplaCariRaporu(cari.id);
 
       return `
-        <button class="cari-item ${db.seciliCariId === cari.id ? "active" : ""}" data-cari-id="${escapeHtml(cari.id)}">
+        <button type="button" class="cari-item ${db.seciliCariId === cari.id ? "active" : ""}" data-cari-id="${escapeHtml(cari.id)}">
           <div class="cari-item-top">
             <div class="cari-item-title">${escapeHtml(cari.ad || "-")}</div>
-            <div class="cari-item-bakiye ${rapor.bakiye >= 0 ? "pozitif" : "negatif"}">
-              ${formatMoney(rapor.bakiye)}
-            </div>
+            <div class="cari-item-bakiye ${rapor.bakiye >= 0 ? "pozitif" : "negatif"}">${formatMoney(rapor.bakiye)}</div>
           </div>
-
           <div class="cari-item-meta">
             <span>Son Tahakkuk: ${rapor.sonTahakkuk ? formatDateTR(rapor.sonTahakkuk.tarih) : "-"}</span>
             <span>Son Tahsilat: ${rapor.sonTahsilat ? formatDateTR(rapor.sonTahsilat.tarih) : "-"}</span>
@@ -189,7 +112,7 @@
       `;
     }).join("");
 
-    $all("[data-cari-id]", el.cariListesi).forEach(btn => {
+    el.cariListesi.querySelectorAll("[data-cari-id]").forEach(btn => {
       btn.addEventListener("click", () => {
         db.seciliCariId = btn.dataset.cariId;
         saveDB();
@@ -198,29 +121,40 @@
     });
   }
 
+  function fillCariSelect() {
+    if (!el.hareketCari) return;
+
+    const options = [
+      `<option value="">Cari seç</option>`,
+      ...db.cariler
+        .sort((a, b) => (a.ad || "").localeCompare(b.ad || "", "tr"))
+        .map(c => `<option value="${escapeHtml(c.id)}" ${db.seciliCariId === c.id ? "selected" : ""}>${escapeHtml(c.ad || "")}</option>`)
+    ];
+
+    el.hareketCari.innerHTML = options.join("");
+  }
+
   function renderSeciliCariDetay() {
-    const cari = db.cariler.find(x => x.id === db.seciliCariId);
+    const cari = db.cariler.find(c => c.id === db.seciliCariId);
 
     if (!cari) {
-      if (el.detayBos) el.detayBos.style.display = "";
+      if (el.detayBos) el.detayBos.style.display = "block";
       if (el.cariDetay) el.cariDetay.style.display = "none";
+      if (el.hareketTabloBody) el.hareketTabloBody.innerHTML = "";
       return;
     }
 
     if (el.detayBos) el.detayBos.style.display = "none";
-    if (el.cariDetay) el.cariDetay.style.display = "";
+    if (el.cariDetay) el.cariDetay.style.display = "block";
 
     const rapor = hesaplaCariRaporu(cari.id);
 
-    if (el.detayBaslik) {
-      el.detayBaslik.textContent = cari.ad || "Cari";
-    }
-
+    if (el.detayBaslik) el.detayBaslik.textContent = cari.ad || "Cari";
     if (el.detayAlt) {
       el.detayAlt.innerHTML = `
-        <div>${cari.telefon ? `Telefon: ${escapeHtml(cari.telefon)}` : ""}</div>
-        <div>${cari.email ? `E-posta: ${escapeHtml(cari.email)}` : ""}</div>
-        <div>${cari.not ? `Not: ${escapeHtml(cari.not)}` : ""}</div>
+        ${cari.telefon ? `<div>Telefon: ${escapeHtml(cari.telefon)}</div>` : ""}
+        ${cari.email ? `<div>E-posta: ${escapeHtml(cari.email)}</div>` : ""}
+        ${cari.not ? `<div>Not: ${escapeHtml(cari.not)}</div>` : ""}
       `;
     }
 
@@ -231,57 +165,52 @@
     if (el.ozetSonTahakkuk) {
       el.ozetSonTahakkuk.innerHTML = rapor.sonTahakkuk
         ? `
-          <div class="mini-line">
-            <strong>${formatDateTR(rapor.sonTahakkuk.tarih)}</strong>
-          </div>
-          <div class="mini-line">${formatMoney(rapor.sonTahakkuk.tutar)}</div>
-          <div class="mini-line">${escapeHtml(rapor.sonTahakkuk.aciklama || rapor.sonTahakkuk.altTur || "Tahakkuk")}</div>
+          <div><strong>${formatDateTR(rapor.sonTahakkuk.tarih)}</strong></div>
+          <div>${formatMoney(rapor.sonTahakkuk.tutar)}</div>
+          <div>${escapeHtml(rapor.sonTahakkuk.aciklama || rapor.sonTahakkuk.altTur || "Tahakkuk")}</div>
         `
-        : `<div class="mini-line">Kayıt yok</div>`;
+        : `<div>Kayıt yok</div>`;
     }
 
     if (el.ozetSonTahsilat) {
       el.ozetSonTahsilat.innerHTML = rapor.sonTahsilat
         ? `
-          <div class="mini-line">
-            <strong>${formatDateTR(rapor.sonTahsilat.tarih)}</strong>
-          </div>
-          <div class="mini-line">${formatMoney(rapor.sonTahsilat.tutar)}</div>
-          <div class="mini-line">${escapeHtml(rapor.sonTahsilat.aciklama || rapor.sonTahsilat.altTur || "Tahsilat")}</div>
+          <div><strong>${formatDateTR(rapor.sonTahsilat.tarih)}</strong></div>
+          <div>${formatMoney(rapor.sonTahsilat.tutar)}</div>
+          <div>${escapeHtml(rapor.sonTahsilat.aciklama || rapor.sonTahsilat.altTur || "Tahsilat")}</div>
         `
-        : `<div class="mini-line">Kayıt yok</div>`;
+        : `<div>Kayıt yok</div>`;
     }
 
     renderCariHareketleri(cari.id);
-    fillCariSelect();
   }
 
   function renderCariHareketleri(cariId) {
     if (!el.hareketTabloBody) return;
 
-    const rows = db.hareketler
+    const hareketler = db.hareketler
       .filter(h => h.cariId === cariId)
-      .sort(sortByDateDesc)
-      .map(h => {
-        return `
-          <tr>
-            <td>${formatDateTR(h.tarih)}</td>
-            <td>${etiketTur(h.tur)}</td>
-            <td>${escapeHtml(h.altTur || "-")}</td>
-            <td>${escapeHtml(h.aciklama || "-")}</td>
-            <td class="text-right">${formatMoney(h.tutar)}</td>
-            <td class="text-right">
-              <button class="btn-small btn-danger" data-sil-hareket-id="${escapeHtml(h.id)}">Sil</button>
-            </td>
-          </tr>
-        `;
-      });
+      .sort(sortByDateDesc);
 
-    el.hareketTabloBody.innerHTML = rows.length
-      ? rows.join("")
-      : `<tr><td colspan="6" style="text-align:center;">Bu cariye ait hareket yok.</td></tr>`;
+    if (!hareketler.length) {
+      el.hareketTabloBody.innerHTML = `<tr><td colspan="6" class="center">Bu cariye ait hareket yok.</td></tr>`;
+      return;
+    }
 
-    $all("[data-sil-hareket-id]", el.hareketTabloBody).forEach(btn => {
+    el.hareketTabloBody.innerHTML = hareketler.map(h => `
+      <tr>
+        <td>${formatDateTR(h.tarih)}</td>
+        <td>${etiketTur(h.tur)}</td>
+        <td>${escapeHtml(h.altTur || "-")}</td>
+        <td>${escapeHtml(h.aciklama || "-")}</td>
+        <td class="text-right">${formatMoney(h.tutar)}</td>
+        <td class="text-right">
+          <button type="button" class="btn-small btn-danger" data-sil-hareket-id="${escapeHtml(h.id)}">Sil</button>
+        </td>
+      </tr>
+    `).join("");
+
+    el.hareketTabloBody.querySelectorAll("[data-sil-hareket-id]").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = btn.dataset.silHareketId;
         db.hareketler = db.hareketler.filter(h => h.id !== id);
@@ -291,28 +220,6 @@
     });
   }
 
-  function fillCariSelect() {
-    if (!el.hareketCari) return;
-
-    const secenekler = [
-      `<option value="">Cari seç</option>`,
-      ...db.cariler
-        .sort((a, b) => (a.ad || "").localeCompare(b.ad || "", "tr"))
-        .map(c => `<option value="${escapeHtml(c.id)}" ${db.seciliCariId === c.id ? "selected" : ""}>${escapeHtml(c.ad)}</option>`)
-    ];
-
-    el.hareketCari.innerHTML = secenekler.join("");
-  }
-
-  function setDefaultFormValues() {
-    if (el.hareketTarih && !el.hareketTarih.value) {
-      el.hareketTarih.value = today();
-    }
-  }
-
-  // ---------------------------------------------------------
-  // EVENTS
-  // ---------------------------------------------------------
   function onCariSubmit(e) {
     e.preventDefault();
 
@@ -322,7 +229,7 @@
     const not = (el.cariNot?.value || "").trim();
 
     if (!ad) {
-      alert("Cari adı zorunlu.");
+      alert("Cari adı zorunlu");
       return;
     }
 
@@ -354,22 +261,21 @@
     const aciklama = (el.hareketAciklama?.value || "").trim();
 
     if (!tur) {
-      alert("Hareket türü seç.");
+      alert("Tür seç");
       return;
     }
 
-    const cariZorunlu = ["tahakkuk", "tahsilat", "odeme"];
-    if (cariZorunlu.includes(tur) && !cariId) {
-      alert("Bu hareket için cari seçmen lazım.");
+    if (["tahakkuk", "tahsilat", "odeme"].includes(tur) && !cariId) {
+      alert("Cari seç");
       return;
     }
 
     if (!tutar || tutar <= 0) {
-      alert("Geçerli bir tutar gir.");
+      alert("Geçerli tutar gir");
       return;
     }
 
-    const yeniHareket = {
+    db.hareketler.push({
       id: uid(),
       cariId,
       tur,
@@ -378,30 +284,27 @@
       tutar,
       aciklama,
       createdAt: nowISO()
-    };
-
-    db.hareketler.push(yeniHareket);
+    });
 
     if (cariId) db.seciliCariId = cariId;
 
     saveDB();
 
     if (el.hareketForm) el.hareketForm.reset();
-    setDefaultFormValues();
+    setDefaultValues();
     renderAll();
   }
 
   function onCariSil() {
     if (!db.seciliCariId) {
-      alert("Silinecek cari seçili değil.");
+      alert("Cari seç");
       return;
     }
 
     const cari = db.cariler.find(c => c.id === db.seciliCariId);
     if (!cari) return;
 
-    const ok = confirm(`${cari.ad} carisini ve buna bağlı hareketleri silmek istiyor musun?`);
-    if (!ok) return;
+    if (!confirm(`${cari.ad} silinsin mi?`)) return;
 
     db.hareketler = db.hareketler.filter(h => h.cariId !== cari.id);
     db.cariler = db.cariler.filter(c => c.id !== cari.id);
@@ -479,9 +382,6 @@
     renderAll();
   }
 
-  // ---------------------------------------------------------
-  // RAPOR / HESAP
-  // ---------------------------------------------------------
   function hesaplaCariRaporu(cariId) {
     const hareketler = db.hareketler
       .filter(h => h.cariId === cariId)
@@ -495,42 +395,30 @@
     const toplamTahsilat = sum(tahsilatlar.map(x => x.tutar));
     const toplamOdeme = sum(odemeler.map(x => x.tutar));
 
-    // Mantık:
-    // Tahakkuk cari borcu artırır
-    // Tahsilat borcu azaltır
-    // Ödeme burada cariyle ilişkili bir tedarikçi ödemesi gibi düşünülür, borç artıran kalem gibi izlenir
     const bakiye = toplamTahakkuk + toplamOdeme - toplamTahsilat;
-
-    const sonTahakkuk = tahakkuklar.length ? tahakkuklar[0] : null;
-    const sonTahsilat = tahsilatlar.length ? tahsilatlar[0] : null;
 
     return {
       toplamTahakkuk,
       toplamTahsilat,
       toplamOdeme,
       bakiye,
-      sonTahakkuk,
-      sonTahsilat
+      sonTahakkuk: tahakkuklar[0] || null,
+      sonTahsilat: tahsilatlar[0] || null
     };
   }
 
-  // ---------------------------------------------------------
-  // STORAGE
-  // ---------------------------------------------------------
   function loadDB() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return structuredCloneSafe(emptyDB);
+      if (!raw) return clone(emptyDB);
       const parsed = JSON.parse(raw);
-
       return {
         cariler: Array.isArray(parsed.cariler) ? parsed.cariler : [],
         hareketler: Array.isArray(parsed.hareketler) ? parsed.hareketler : [],
         seciliCariId: parsed.seciliCariId || null
       };
-    } catch (err) {
-      console.error("DB okunamadı:", err);
-      return structuredCloneSafe(emptyDB);
+    } catch (e) {
+      return clone(emptyDB);
     }
   }
 
@@ -538,22 +426,15 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
   }
 
-  function seedIfNeeded() {
+  function ensureDBShape() {
     if (!Array.isArray(db.cariler)) db.cariler = [];
     if (!Array.isArray(db.hareketler)) db.hareketler = [];
     if (typeof db.seciliCariId === "undefined") db.seciliCariId = null;
     saveDB();
   }
 
-  // ---------------------------------------------------------
-  // HELPERS
-  // ---------------------------------------------------------
-  function $(selector, root = document) {
-    return root.querySelector(selector);
-  }
-
-  function $all(selector, root = document) {
-    return Array.from(root.querySelectorAll(selector));
+  function setDefaultValues() {
+    if (el.hareketTarih) el.hareketTarih.value = today();
   }
 
   function uid() {
@@ -565,7 +446,11 @@
   }
 
   function today() {
-    return new Date().toISOString().slice(0, 10);
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
   }
 
   function sum(arr) {
@@ -594,19 +479,17 @@
 
   function sortByDateDesc(a, b) {
     const da = new Date(a.tarih || a.createdAt || 0).getTime();
-    const dbb = new Date(b.tarih || b.createdAt || 0).getTime();
-    return dbb - da;
+    const db = new Date(b.tarih || b.createdAt || 0).getTime();
+    return db - da;
   }
 
   function etiketTur(tur) {
-    switch (tur) {
-      case "tahakkuk": return "Tahakkuk";
-      case "tahsilat": return "Tahsilat";
-      case "odeme": return "Ödeme";
-      case "gelir": return "Gelir";
-      case "gider": return "Gider";
-      default: return tur || "-";
-    }
+    if (tur === "tahakkuk") return "Tahakkuk";
+    if (tur === "tahsilat") return "Tahsilat";
+    if (tur === "odeme") return "Ödeme";
+    if (tur === "gelir") return "Gelir";
+    if (tur === "gider") return "Gider";
+    return tur || "-";
   }
 
   function escapeHtml(str) {
@@ -618,7 +501,7 @@
       .replace(/'/g, "&#039;");
   }
 
-  function structuredCloneSafe(obj) {
+  function clone(obj) {
     return JSON.parse(JSON.stringify(obj));
   }
 })();
