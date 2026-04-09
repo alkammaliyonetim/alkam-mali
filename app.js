@@ -1,125 +1,162 @@
-const APP_SECURITY = {
-  password: "2909",
-  sessionKey: "alkam_session_v1",
-  maxFail: 5,
-  lockMinutes: 10
-};
+(function () {
+  const ALKAM_SECURITY = {
+    password: "2909",
+    sessionKey: "alkam_secure_session_v4",
+    maxFail: 5,
+    lockMinutes: 10
+  };
 
-function getSessionState() {
-  try {
-    return JSON.parse(localStorage.getItem(APP_SECURITY.sessionKey) || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function setSessionState(data) {
-  localStorage.setItem(APP_SECURITY.sessionKey, JSON.stringify(data));
-}
-
-function clearSessionState() {
-  localStorage.removeItem(APP_SECURITY.sessionKey);
-}
-
-function isLocked() {
-  const state = getSessionState();
-  if (!state.lockUntil) return false;
-  return Date.now() < state.lockUntil;
-}
-
-function getRemainingLockText() {
-  const state = getSessionState();
-  if (!state.lockUntil) return "";
-  const ms = state.lockUntil - Date.now();
-  if (ms <= 0) return "";
-  const min = Math.ceil(ms / 60000);
-  return `${min} dakika sonra tekrar deneyin.`;
-}
-
-function openApp() {
-  const overlay = document.getElementById("loginOverlay");
-  if (overlay) overlay.style.display = "none";
-  document.body.classList.add("app-unlocked");
-}
-
-function closeApp() {
-  const overlay = document.getElementById("loginOverlay");
-  if (overlay) overlay.style.display = "flex";
-  document.body.classList.remove("app-unlocked");
-}
-
-function initLoginSystem() {
-  const form = document.getElementById("loginForm");
-  const input = document.getElementById("loginPassword");
-  const errorBox = document.getElementById("loginError");
-  const toggleBtn = document.getElementById("togglePassword");
-
-  if (!form || !input || !errorBox) return;
-
-  const state = getSessionState();
-
-  if (state.authenticated === true) {
-    openApp();
-  } else {
-    closeApp();
+  function alkamPad(n) {
+    return String(n).padStart(2, "0");
   }
 
-  if (toggleBtn) {
-    toggleBtn.addEventListener("click", function () {
-      input.type = input.type === "password" ? "text" : "password";
-    });
+  function alkamVersionFromLastModified() {
+    let d = new Date(document.lastModified);
+    if (Number.isNaN(d.getTime())) d = new Date();
+    const hh = alkamPad(d.getHours());
+    const mm = alkamPad(d.getMinutes());
+    const dd = alkamPad(d.getDate());
+    const mo = alkamPad(d.getMonth() + 1);
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${hh}${mm}${dd}${mo}${yy}-${hh}${mm}`;
   }
 
-  form.addEventListener("submit", function (e) {
-    e.preventDefault();
+  function alkamGetState() {
+    try {
+      return JSON.parse(localStorage.getItem(ALKAM_SECURITY.sessionKey) || "{}");
+    } catch {
+      return {};
+    }
+  }
 
-    if (isLocked()) {
-      errorBox.textContent = "Çok fazla hatalı giriş. " + getRemainingLockText();
-      return;
+  function alkamSetState(data) {
+    localStorage.setItem(ALKAM_SECURITY.sessionKey, JSON.stringify(data));
+  }
+
+  function alkamClearState() {
+    localStorage.removeItem(ALKAM_SECURITY.sessionKey);
+  }
+
+  function alkamIsLocked() {
+    const state = alkamGetState();
+    return !!(state.lockUntil && Date.now() < state.lockUntil);
+  }
+
+  function alkamLockText() {
+    const state = alkamGetState();
+    if (!state.lockUntil) return "";
+    const remaining = state.lockUntil - Date.now();
+    if (remaining <= 0) return "";
+    const min = Math.ceil(remaining / 60000);
+    return `${min} dakika sonra tekrar deneyin.`;
+  }
+
+  function alkamOpenApp() {
+    const overlay = document.getElementById("alkamSecureOverlay");
+    if (overlay) overlay.classList.remove("active");
+    document.body.classList.add("alkam-authenticated");
+  }
+
+  function alkamCloseApp() {
+    const overlay = document.getElementById("alkamSecureOverlay");
+    if (overlay) overlay.classList.add("active");
+    document.body.classList.remove("alkam-authenticated");
+  }
+
+  function alkamRenderVersion() {
+    const version = alkamVersionFromLastModified();
+    const badge = document.getElementById("alkamVersionBadge");
+    if (badge) badge.textContent = "V" + version;
+  }
+
+  function alkamInitLogin() {
+    const form = document.getElementById("alkamLoginForm");
+    const input = document.getElementById("alkamLoginPassword");
+    const errorBox = document.getElementById("alkamLoginError");
+    const toggle = document.getElementById("alkamTogglePassword");
+    const logoutBtn = document.getElementById("alkamLogoutBtn");
+
+    if (!form || !input || !errorBox) return;
+
+    alkamRenderVersion();
+
+    const state = alkamGetState();
+    if (state.authenticated === true) {
+      alkamOpenApp();
+    } else {
+      alkamCloseApp();
     }
 
-    const entered = (input.value || "").trim();
-    const current = getSessionState();
-    const failCount = Number(current.failCount || 0);
-
-    if (entered === APP_SECURITY.password) {
-      setSessionState({
-        authenticated: true,
-        failCount: 0,
-        lastLogin: new Date().toISOString()
+    if (toggle) {
+      toggle.addEventListener("click", function () {
+        input.type = input.type === "password" ? "text" : "password";
       });
-      errorBox.textContent = "";
-      input.value = "";
-      openApp();
-      return;
     }
 
-    const newFail = failCount + 1;
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
 
-    if (newFail >= APP_SECURITY.maxFail) {
-      setSessionState({
+      if (alkamIsLocked()) {
+        errorBox.textContent = "Çok fazla hatalı giriş. " + alkamLockText();
+        return;
+      }
+
+      const entered = (input.value || "").trim();
+      const current = alkamGetState();
+      const failCount = Number(current.failCount || 0);
+
+      if (entered === ALKAM_SECURITY.password) {
+        alkamSetState({
+          authenticated: true,
+          failCount: 0,
+          lastLogin: new Date().toISOString()
+        });
+        input.value = "";
+        input.type = "password";
+        errorBox.textContent = "";
+        alkamOpenApp();
+        return;
+      }
+
+      const newFail = failCount + 1;
+
+      if (newFail >= ALKAM_SECURITY.maxFail) {
+        alkamSetState({
+          authenticated: false,
+          failCount: newFail,
+          lockUntil: Date.now() + ALKAM_SECURITY.lockMinutes * 60 * 1000
+        });
+        input.value = "";
+        input.type = "password";
+        errorBox.textContent = "Çok fazla hatalı giriş. " + ALKAM_SECURITY.lockMinutes + " dakika kilitlendi.";
+        return;
+      }
+
+      alkamSetState({
         authenticated: false,
-        failCount: newFail,
-        lockUntil: Date.now() + APP_SECURITY.lockMinutes * 60 * 1000
+        failCount: newFail
       });
-      errorBox.textContent = "Çok fazla hatalı giriş. " + APP_SECURITY.lockMinutes + " dakika kilitlendi.";
+
       input.value = "";
       input.type = "password";
-      return;
-    }
-
-    setSessionState({
-      authenticated: false,
-      failCount: newFail
+      errorBox.textContent = "Şifre hatalı.";
+      input.focus();
     });
 
-    errorBox.textContent = "Şifre hatalı.";
-    input.value = "";
-    input.type = "password";
-    input.focus();
-  });
-}
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", function () {
+        alkamClearState();
+        alkamCloseApp();
+        input.value = "";
+        input.type = "password";
+        errorBox.textContent = "";
+      });
+    }
+  }
 
-document.addEventListener("DOMContentLoaded", function () {
-  initLoginSystem();
-});
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", alkamInitLogin);
+  } else {
+    alkamInitLogin();
+  }
+})();
