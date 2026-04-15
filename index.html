@@ -946,7 +946,8 @@
       if(state.selectedCariId) renderSelectedCariDetail(state.selectedCariId);
     }
 
-    function findCariName(cariId){
+    async function loadIslenenler(){
+      if(!supabaseClient) return;
       const { data, error } = await supabaseClient
         .from("v_islenenler")
         .select("*")
@@ -955,14 +956,7 @@
 
       if(error){
         console.warn("v_islenenler okunamadı:", error.message);
-        state.hareketler = [];
-      }else{
-        state.hareketler = data || [];
       }
-
-      renderLastMovements();
-      renderDashboard();
-      if(state.selectedCariId) renderSelectedCariDetail(state.selectedCariId);
     }
 
     function findCariName(cariId){
@@ -1255,6 +1249,7 @@
   </script>
 </body>
 </html>
+
 
 
 
