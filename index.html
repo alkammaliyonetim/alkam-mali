@@ -512,6 +512,59 @@
       .topbar-right{justify-content:flex-start}
     }
   </style>
+
+  <script>
+    window.ALKAM_PASSWORD = "2909";
+    window.ALKAM_SESSION_KEY = "alkam_local_session_v2";
+
+    window.toggleAlkamPassword = function(){
+      var input = document.getElementById("loginPassword");
+      if (!input) return false;
+      input.type = input.type === "password" ? "text" : "password";
+      return false;
+    };
+
+    window.openAlkamApp = async function(){
+      try {
+        localStorage.setItem(window.ALKAM_SESSION_KEY, "1");
+      } catch(e) {}
+      var overlay = document.getElementById("loginOverlay");
+      if (overlay) overlay.style.display = "none";
+      document.body.classList.add("alkam-authenticated");
+      if (typeof window.refreshAll === "function") {
+        try { await window.refreshAll(); } catch(e) { console.error(e); }
+      }
+      return false;
+    };
+
+    window.closeAlkamApp = function(){
+      try { localStorage.removeItem(window.ALKAM_SESSION_KEY); } catch(e) {}
+      var overlay = document.getElementById("loginOverlay");
+      if (overlay) overlay.style.display = "flex";
+      document.body.classList.remove("alkam-authenticated");
+      return false;
+    };
+
+    window.submitAlkamLogin = async function(ev){
+      if (ev) ev.preventDefault();
+      var input = document.getElementById("loginPassword");
+      var err = document.getElementById("loginError");
+      if (err) err.textContent = "";
+      var value = ((input && input.value) || "").trim();
+      if (!value) { if (err) err.textContent = "Şifre zorunlu."; return false; }
+      if (value !== window.ALKAM_PASSWORD) { if (err) err.textContent = "Şifre hatalı."; return false; }
+      await window.openAlkamApp();
+      return false;
+    };
+
+    document.addEventListener("DOMContentLoaded", function(){
+      try {
+        if (localStorage.getItem(window.ALKAM_SESSION_KEY) === "1") {
+          window.openAlkamApp();
+        }
+      } catch(e) {}
+    });
+  </script>
 </head>
 <body>
   <div id="loginOverlay" class="login-overlay">
@@ -522,12 +575,12 @@
       <div class="login-brand">ALKAM MALİ MÜAVİRLİK</div>
       <h2 class="login-title">Programa Giriş</h2>
 
-      <form id="loginForm" autocomplete="off">
+      <form id="loginForm" autocomplete="off" onsubmit="return submitAlkamLogin(event)">
         <div class="field">
           <label for="loginPassword">Şifre</label>
           <div class="pass-wrap">
             <input id="loginPassword" type="password" placeholder="Şifrenizi girin" required />
-            <button id="togglePassword" type="button" class="toggle-password">👁</button>
+            <button id="togglePassword" type="button" class="toggle-password" onclick="return toggleAlkamPassword()">👁</button>
           </div>
         </div>
 
@@ -572,7 +625,7 @@
 
         <div class="topbar-right">
           <div id="versionBadge" class="version-badge">V-</div>
-          <button id="logoutBtn" class="logout-btn" type="button">Çıkış Yap</button>
+          <button id="logoutBtn" class="logout-btn" type="button" onclick="return closeAlkamApp()">Çıkış Yap</button>
         </div>
       </div>
 
@@ -707,7 +760,7 @@
     const SUPABASE_URL = "https://gghfpurgtuczgaaiyftm.supabase.co";
     const SUPABASE_ANON_KEY = "sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabaseClient = window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
     const state = {
       currentUser: null,
@@ -823,6 +876,7 @@
     }
 
     async function loadDashboard(){
+      if(!supabaseClient) return;
       const { data, error } = await supabaseClient
         .from("v_dashboard_ozet")
         .select("*")
@@ -838,6 +892,7 @@
     }
 
     async function loadCariler(){
+      if(!supabaseClient) return;
       const { data, error } = await supabaseClient
         .from("v_cari_ozet")
         .select("*")
@@ -872,6 +927,7 @@
     }
 
     async function loadHareketler(){
+      if(!supabaseClient) return;
       const { data, error } = await supabaseClient
         .from("v_cari_hareket_dokumu")
         .select("*")
@@ -1187,39 +1243,6 @@
       document.getElementById("cariSearch").addEventListener("input", renderCariList);
       document.getElementById("btnQuickCariSave").addEventListener("click", saveQuickCari);
       document.getElementById("btnSaveMovement").addEventListener("click", saveMovement);
-      document.getElementById("logoutBtn").addEventListener("click", () => {
-        setAuthenticated(false);
-        closeApp();
-        location.reload();
-      });
-
-      document.getElementById("togglePassword").addEventListener("click", () => {
-        const input = document.getElementById("loginPassword");
-        input.type = input.type === "password" ? "text" : "password";
-      });
-
-      document.getElementById("loginForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const loginError = document.getElementById("loginError");
-        loginError.textContent = "";
-
-        const password = document.getElementById("loginPassword").value.trim();
-
-        if(!password){
-          loginError.textContent = "Şifre zorunlu.";
-          return;
-        }
-
-        if(password !== LOCAL_APP_PASSWORD){
-          loginError.textContent = "Şifre hatalı.";
-          return;
-        }
-
-        setAuthenticated(true);
-        openApp();
-        await refreshAll();
-      });
-
       if(isAuthenticated()){
         openApp();
         await refreshAll();
@@ -1232,7 +1255,6 @@
   </script>
 </body>
 </html>
-
 
 
 
