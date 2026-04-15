@@ -524,15 +524,10 @@
 
       <form id="loginForm" autocomplete="off">
         <div class="field">
-          <label for="loginEmail">E-posta</label>
-          <input id="loginEmail" type="email" placeholder="mail@ornek.com" required />
-        </div>
-
-        <div class="field">
-          <label for="loginPassword">ifre</label>
+          <label for="loginPassword">Şifre</label>
           <div class="pass-wrap">
-            <input id="loginPassword" type="password" placeholder="ifrenizi girin" required />
-            <button id="togglePassword" type="button" class="toggle-password"></button>
+            <input id="loginPassword" type="password" placeholder="Şifrenizi girin" required />
+            <button id="togglePassword" type="button" class="toggle-password">👁</button>
           </div>
         </div>
 
@@ -544,9 +539,6 @@
 
   <div class="layout">
     <aside class="sidebar">
-      <div style="text-align:center;margin-bottom:16px;">
-        <img src="data:image/jpeg;base64," alt="ALKAM Logo" style="width:120px;max-width:100%;height:auto;display:block;margin:0 auto 10px auto;">
-      </div>
       <div style="text-align:center;margin-bottom:16px;">
         <img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" style="width:120px;max-width:100%;height:auto;display:block;margin:0 auto 10px auto;">
       </div>
@@ -726,6 +718,9 @@
       selectedCariId: null
     };
 
+    const LOCAL_APP_PASSWORD = "2909";
+    const LOCAL_SESSION_KEY = "alkam_local_session_v1";
+
     function pad2(n){ return String(n).padStart(2, "0"); }
 
     function buildVersion(){
@@ -797,28 +792,35 @@
       document.getElementById("pageDesc").textContent = meta[tab][1];
     }
 
-    async function signIn(email, password){
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if(error) throw error;
+    function isAuthenticated(){
+      try{
+        return localStorage.getItem(LOCAL_SESSION_KEY) === "ok";
+      }catch(_){
+        return false;
+      }
     }
 
-    async function signOut(){
-      const { error } = await supabaseClient.auth.signOut();
-      if(error) throw error;
+    function setAuthenticated(value){
+      try{
+        if(value){
+          localStorage.setItem(LOCAL_SESSION_KEY, "ok");
+        }else{
+          localStorage.removeItem(LOCAL_SESSION_KEY);
+        }
+      }catch(_){}
     }
 
-    async function getUser(){
-      const { data, error } = await supabaseClient.auth.getUser();
-      if(error) throw error;
-      return data.user;
+    function openApp(){
+      document.getElementById("loginOverlay").style.display = "none";
+      document.getElementById("currentUserBox").textContent = "Yerel Giriş";
+      setConnState("Canlı bağlantı aktif");
     }
 
-    async function getSession(){
-      const { data, error } = await supabaseClient.auth.getSession();
-      if(error) throw error;
-      return data.session;
+    function closeApp(){
+      document.getElementById("loginOverlay").style.display = "flex";
+      document.getElementById("currentUserBox").textContent = "-";
+      setConnState("Giriş bekleniyor");
     }
-
 
     async function loadDashboard(){
       const { data, error } = await supabaseClient
@@ -1185,13 +1187,10 @@
       document.getElementById("cariSearch").addEventListener("input", renderCariList);
       document.getElementById("btnQuickCariSave").addEventListener("click", saveQuickCari);
       document.getElementById("btnSaveMovement").addEventListener("click", saveMovement);
-      document.getElementById("logoutBtn").addEventListener("click", async () => {
-        try{
-          await signOut();
-          location.reload();
-        }catch(err){
-          notify(err.message || "Çıkış yapılamadı.");
-        }
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        setAuthenticated(false);
+        closeApp();
+        location.reload();
       });
 
       document.getElementById("togglePassword").addEventListener("click", () => {
@@ -1204,53 +1203,36 @@
         const loginError = document.getElementById("loginError");
         loginError.textContent = "";
 
-        try{
-          const email = document.getElementById("loginEmail").value.trim();
-          const password = document.getElementById("loginPassword").value.trim();
+        const password = document.getElementById("loginPassword").value.trim();
 
-          if(!email || !password){
-            loginError.textContent = "E-posta ve şifre zorunlu.";
-            return;
-          }
-
-          await signIn(email, password);
-          await finishLoginFlow();
-        }catch(err){
-          loginError.textContent = err.message || "Giriş yapılamadı.";
+        if(!password){
+          loginError.textContent = "Şifre zorunlu.";
+          return;
         }
+
+        if(password !== LOCAL_APP_PASSWORD){
+          loginError.textContent = "Şifre hatalı.";
+          return;
+        }
+
+        setAuthenticated(true);
+        openApp();
+        await refreshAll();
       });
 
-      try{
-        setConnState("Bağlantı kuruluyor...");
-        const session = await getSession();
-
-        if(session?.user){
-          await finishLoginFlow();
-        }else{
-          setConnState("Giriş bekleniyor");
-        }
-      }catch(err){
-        setConnState("Bağlantı hatası");
-        notify(err.message || "Bağlantı kurulamadı.");
+      if(isAuthenticated()){
+        openApp();
+        await refreshAll();
+      }else{
+        closeApp();
       }
-    }
-
-    async function finishLoginFlow(){
-      state.currentUser = await getUser();
-
-      document.getElementById("currentUserBox").textContent =
-        state.currentUser?.email || state.currentUser?.id || "-";
-
-      document.getElementById("loginOverlay").style.display = "none";
-      setConnState("Canlı bağlantı aktif");
-
-      await refreshAll();
     }
 
     initApp();
   </script>
 </body>
 </html>
+
 
 
 
