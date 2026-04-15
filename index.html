@@ -302,6 +302,14 @@
       background:#fbfdff;
       cursor:pointer;
     }
+    .list-item.active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,103,232,.12);background:#f6f9ff}
+    .cari-layout{display:grid;grid-template-columns:minmax(340px,.9fr) minmax(440px,1.3fr);gap:16px;align-items:start}
+    .detail-sticky{position:sticky;top:22px}
+    .metric-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px}
+    .metric-mini{background:#fbfdff;border:1px solid var(--line);border-radius:14px;padding:12px}
+    .metric-mini .k{font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+    .metric-mini .v{font-size:18px;font-weight:900;color:var(--text)}
+    .hint{font-size:12px;color:var(--muted);font-weight:700}
 
     .list-title{
       font-weight:900;
@@ -495,7 +503,8 @@
 
     @media (max-width:1200px){
       .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .grid-2,.grid-3{grid-template-columns:1fr}
+      .grid-2,.grid-3,.cari-layout,.metric-strip{grid-template-columns:1fr}
+      .detail-sticky{position:static}
     }
 
     @media (max-width:860px){
@@ -603,6 +612,7 @@
         <button class="nav-btn" data-tab="cariler">Cariler</button>
         <button class="nav-btn" data-tab="hareket-ekle">Hareket Ekle</button>
         <button class="nav-btn" data-tab="raporlar">Raporlar</button>
+        <button class="nav-btn" data-tab="onay-merkezi">Onay Merkezi</button>
       </div>
 
       <div class="sidebar-box">
@@ -688,15 +698,18 @@
       </section>
 
       <section id="tab-cariler" class="tab-page">
-        <div class="section">
-          <h2 class="section-title">Cari Listesi</h2>
-          <input id="cariSearch" class="search-input" type="text" placeholder="Cari adı ile ara..." />
-          <div id="cariList" class="list"></div>
-        </div>
+        <div class="cari-layout">
+          <div class="section">
+            <h2 class="section-title">Cari Listesi</h2>
+            <input id="cariSearch" class="search-input" type="text" placeholder="Cari adı ile ara..." />
+            <div class="hint" style="margin:-6px 0 12px;">Satıra tıkla, detay sağda açılsın.</div>
+            <div id="cariList" class="list"></div>
+          </div>
 
-        <div class="section">
-          <h2 class="section-title">Seçili Cari Detayı</h2>
-          <div id="selectedCariDetail" class="empty">Bir cari seç.</div>
+          <div class="section detail-sticky">
+            <h2 class="section-title">Seçili Cari Detayı</h2>
+            <div id="selectedCariDetail" class="empty">Bir cari seç.</div>
+          </div>
         </div>
       </section>
 
@@ -749,6 +762,25 @@
         <div class="section">
           <h2 class="section-title">Cari Özet Raporu</h2>
           <div id="reportWrap" class="empty">Rapor hazırlanıyor...</div>
+        </div>
+      </section>
+
+      <section id="tab-onay-merkezi" class="tab-page">
+        <div class="section">
+          <h2 class="section-title">Onay Bekleyenler</h2>
+          <div id="pendingWrap" class="empty">Yükleniyor...</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="section">
+            <h2 class="section-title">İşlenenler</h2>
+            <div id="processedWrap" class="empty">Yükleniyor...</div>
+          </div>
+
+          <div class="section">
+            <h2 class="section-title">İşlenmeyenler</h2>
+            <div id="unprocessedWrap" class="empty">Yükleniyor...</div>
+          </div>
         </div>
       </section>
     </main>
@@ -832,7 +864,8 @@
         dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],
         cariler:["Cariler","Cari arama, detay ve bakiye görünümü"],
         "hareket-ekle":["Hareket Ekle","Tahakkuk, tahsilat ve ödeme kaydı"],
-        raporlar:["Raporlar","Cari özet ve finans görünümü"]
+        raporlar:["Raporlar","Cari özet ve finans görünümü"],
+        "onay-merkezi":["Onay Merkezi","İşlenen, işlenmeyen ve onay bekleyen hareketler"]
       };
 
       state.currentTab = tab;
@@ -956,6 +989,140 @@
 
       if(error){
         console.warn("v_islenenler okunamadı:", error.message);
+        state.islenenler = [];
+      }else{
+        state.islenenler = data || [];
+      }
+    }
+
+    async function loadOnayBekleyenler(){
+      if(!supabaseClient) return;
+      const { data, error } = await supabaseClient
+        .from("v_onay_merkezi")
+        .select("*")
+        .order("movement_date", { ascending: false })
+        .limit(100);
+
+      if(error){
+        console.warn("v_onay_merkezi okunamadı:", error.message);
+        state.onayBekleyenler = [];
+      }else{
+        state.onayBekleyenler = data || [];
+      }
+    }
+
+    async function loadIslenmeyenler(){
+      if(!supabaseClient) return;
+      const { data, error } = await supabaseClient
+        .from("v_islenmeyenler")
+        .select("*")
+        .order("movement_date", { ascending: false })
+        .limit(100);
+
+      if(error){
+        console.warn("v_islenmeyenler okunamadı:", error.message);
+        state.islenmeyenler = [];
+      }else{
+        state.islenmeyenler = data || [];
+      }
+    }
+
+    function renderOnayMerkezi(){
+      const pendingWrap = document.getElementById("pendingWrap");
+      const processedWrap = document.getElementById("processedWrap");
+      const unprocessedWrap = document.getElementById("unprocessedWrap");
+
+      if(pendingWrap){
+        if(!state.onayBekleyenler.length){
+          pendingWrap.innerHTML = `<div class="empty">Onay bekleyen kayıt yok.</div>`;
+        }else{
+          pendingWrap.innerHTML = `
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>Cari</th>
+                  <th>İşlem</th>
+                  <th>Açıklama</th>
+                  <th>Güven</th>
+                  <th class="text-right">Tutar</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${state.onayBekleyenler.slice(0,30).map(r => `
+                  <tr>
+                    <td>${shortDate(r.movement_date)}</td>
+                    <td>${escapeHtml(r.onerilen_cari_adi || "-")}</td>
+                    <td>${renderTag(r.onerilen_hareket_tipi || r.ham_hareket_tipi || "-")}</td>
+                    <td>${escapeHtml(r.description || "-")}</td>
+                    <td>${Number(r.guven_puani || 0).toFixed(0)}</td>
+                    <td class="text-right">${money(r.abs_amount || r.net_amount || 0)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        }
+      }
+
+      if(processedWrap){
+        if(!state.islenenler.length){
+          processedWrap.innerHTML = `<div class="empty">İşlenen kayıt yok.</div>`;
+        }else{
+          processedWrap.innerHTML = `
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>Cari</th>
+                  <th>Açıklama</th>
+                  <th class="text-right">Tutar</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${state.islenenler.slice(0,20).map(r => `
+                  <tr>
+                    <td>${shortDate(r.movement_date)}</td>
+                    <td>${escapeHtml(r.cari_name || "-")}</td>
+                    <td>${escapeHtml(r.description || "-")}</td>
+                    <td class="text-right">${money(r.matched_amount || r.net_amount || 0)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        }
+      }
+
+      if(unprocessedWrap){
+        if(!state.islenmeyenler.length){
+          unprocessedWrap.innerHTML = `<div class="empty">İşlenmeyen kayıt yok.</div>`;
+        }else{
+          unprocessedWrap.innerHTML = `
+            <table>
+              <thead>
+                <tr>
+                  <th>Tarih</th>
+                  <th>Kaynak</th>
+                  <th>Açıklama</th>
+                  <th>Durum</th>
+                  <th class="text-right">Tutar</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${state.islenmeyenler.slice(0,20).map(r => `
+                  <tr>
+                    <td>${shortDate(r.movement_date)}</td>
+                    <td>${escapeHtml(r.account_name || r.account_source || "-")}</td>
+                    <td>${escapeHtml(r.description || "-")}</td>
+                    <td>${escapeHtml(r.process_status || "-")}</td>
+                    <td class="text-right">${money(r.net_amount || 0)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          `;
+        }
       }
     }
 
@@ -1033,7 +1200,7 @@
       }
 
       list.innerHTML = filtered.map(c => `
-          <div class="list-item" data-cari-id="${c.id}">
+          <div class="list-item ${state.selectedCariId === c.id ? "active" : ""}" data-cari-id="${c.id}">
             <div>
               <div class="list-title">${escapeHtml(c.cari_adi)}</div>
               <div class="list-meta">
@@ -1047,7 +1214,7 @@
         `).join("");
 
       list.querySelectorAll("[data-cari-id]").forEach(el => {
-        el.addEventListener("click", () => renderSelectedCariDetail(el.dataset.cariId));
+        el.addEventListener("click", () => { renderSelectedCariDetail(el.dataset.cariId); renderCariList(); if(window.innerWidth < 1100){ document.getElementById("selectedCariDetail").scrollIntoView({behavior:"smooth", block:"start"}); } });
       });
     }
 
@@ -1072,7 +1239,7 @@
         .filter(h => h.cari_id === cariId)
         .sort((a,b) => new Date(b.line_date) - new Date(a.line_date));
 
-      const rows = hareketler.map(h => `
+      const rows = hareketler.slice(0,50).map(h => `
         <tr>
           <td>${shortDate(h.line_date)}</td>
           <td>${renderTag(h.movement_type)}</td>
@@ -1084,53 +1251,41 @@
       `).join("");
 
       target.innerHTML = `
-        <div class="grid-3" style="margin-bottom:16px;">
+        <div class="metric-strip">
+          <div class="metric-mini"><div class="k">Cari Kodu</div><div class="v">${escapeHtml(cari.cari_kodu || "-")}</div></div>
+          <div class="metric-mini"><div class="k">Tür</div><div class="v">${escapeHtml(cari.cari_turu || "-")}</div></div>
+          <div class="metric-mini"><div class="k">Son Tahakkuk</div><div class="v">${shortDate(cari.son_tahakkuk)}</div></div>
+          <div class="metric-mini"><div class="k">Son Tahsilat</div><div class="v">${shortDate(cari.son_tahsilat)}</div></div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:16px;">
           <div class="card">
             <div class="card-label">Cari</div>
-            <div class="card-value" style="font-size:22px;">${escapeHtml(cari.cari_adi)}</div>
-          </div>
-          <div class="card">
-            <div class="card-label">Son Tahakkuk</div>
-            <div class="card-value" style="font-size:22px;">${shortDate(cari.son_tahakkuk)}</div>
+            <div class="card-value" style="font-size:24px;">${escapeHtml(cari.cari_adi)}</div>
+            <div class="hint" style="margin-top:8px;">Eşleşen hareket: ${Number(cari.eslesen_hareket_sayisi || 0)}</div>
           </div>
           <div class="card">
             <div class="card-label">Bakiye</div>
-            <div class="card-value" style="font-size:22px;">${money(cari.bakiye)}</div>
+            <div class="card-value" style="font-size:24px;">${money(cari.bakiye)}</div>
+            <div class="hint" style="margin-top:8px;">Son tahsilat tutarı: ${money(cari.son_tahsilat_tutari || 0)}</div>
           </div>
         </div>
 
-        <div class="grid-3" style="margin-bottom:16px;">
-          <div class="card">
-            <div class="card-label">Cari Kodu</div>
-            <div class="card-value" style="font-size:20px;">${escapeHtml(cari.cari_kodu || "-")}</div>
-          </div>
-          <div class="card">
-            <div class="card-label">Son Tahsilat</div>
-            <div class="card-value" style="font-size:20px;">${shortDate(cari.son_tahsilat)}</div>
-          </div>
-          <div class="card">
-            <div class="card-label">Son Tahsilat Tutarı</div>
-            <div class="card-value" style="font-size:20px;">${money(cari.son_tahsilat_tutari || 0)}</div>
-          </div>
-        </div>
-
-        ${
-          hareketler.length
-            ? `<table>
-                <thead>
-                  <tr>
-                    <th>Tarih</th>
-                    <th>İşlem</th>
-                    <th>Açıklama</th>
-                    <th class="text-right">Borç</th>
-                    <th class="text-right">Alacak</th>
-                    <th class="text-right">Tutar</th>
-                  </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-              </table>`
-            : `<div class="empty">Bu cariye ait hareket yok.</div>`
-        }
+        ${hareketler.length ? `
+          <table>
+            <thead>
+              <tr>
+                <th>Tarih</th>
+                <th>İşlem</th>
+                <th>Açıklama</th>
+                <th class="text-right">Borç</th>
+                <th class="text-right">Alacak</th>
+                <th class="text-right">Tutar</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        ` : `<div class="empty">Bu cariye ait hareket yok.</div>`}
       `;
     }
 
@@ -1142,36 +1297,75 @@
         return;
       }
 
-      const rows = state.cariler
-        .map(c => ({
-          cari_adi: c.cari_adi || "-",
-          bakiye: Number(c.bakiye || 0),
-          son_tahakkuk: c.son_tahakkuk,
-          son_tahsilat: c.son_tahsilat
-        }))
-        .sort((a,b) => b.bakiye - a.bakiye)
-        .map(r => `
-          <tr>
-            <td>${escapeHtml(r.cari_adi)}</td>
-            <td>${shortDate(r.son_tahakkuk)}</td>
-            <td>${shortDate(r.son_tahsilat)}</td>
-            <td class="text-right">${money(r.bakiye)}</td>
-          </tr>
-        `)
-        .join("");
+      const topBorclular = [...state.cariler]
+        .sort((a,b) => Number(b.bakiye || 0) - Number(a.bakiye || 0))
+        .slice(0,10);
+
+      const sonTahsilatAlanlar = [...state.cariler]
+        .filter(c => c.son_tahsilat)
+        .sort((a,b) => new Date(b.son_tahsilat) - new Date(a.son_tahsilat))
+        .slice(0,10);
+
+      const toplamTahsilat = state.cariler.reduce((sum,c) => sum + Number(c.son_tahsilat_tutari || 0), 0);
+      const toplamPozitifBakiye = state.cariler.reduce((sum,c) => sum + Math.max(Number(c.bakiye || 0), 0), 0);
 
       wrap.innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <th>Cari</th>
-              <th>Son Tahakkuk</th>
-              <th>Son Tahsilat</th>
-              <th class="text-right">Bakiye</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
+        <div class="grid-2" style="margin-bottom:16px;">
+          <div class="card">
+            <div class="card-label">Toplam Son Tahsilat Tutarı</div>
+            <div class="card-value">${money(toplamTahsilat)}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">Pozitif Bakiye Toplamı</div>
+            <div class="card-value">${money(toplamPozitifBakiye)}</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="section">
+            <h2 class="section-title">En Borçlu Cariler</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Cari</th>
+                  <th>Son Tahakkuk</th>
+                  <th class="text-right">Bakiye</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${topBorclular.map(r => `
+                  <tr>
+                    <td>${escapeHtml(r.cari_adi)}</td>
+                    <td>${shortDate(r.son_tahakkuk)}</td>
+                    <td class="text-right">${money(r.bakiye)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section">
+            <h2 class="section-title">Son Tahsilat Alanlar</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Cari</th>
+                  <th>Son Tahsilat</th>
+                  <th class="text-right">Tutar</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sonTahsilatAlanlar.map(r => `
+                  <tr>
+                    <td>${escapeHtml(r.cari_adi)}</td>
+                    <td>${shortDate(r.son_tahsilat)}</td>
+                    <td class="text-right">${money(r.son_tahsilat_tutari || 0)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
       `;
     }
 
@@ -1224,6 +1418,10 @@
       await loadDashboard();
       await loadCariler();
       await loadHareketler();
+      await loadOnayBekleyenler();
+      await loadIslenenler();
+      await loadIslenmeyenler();
+      renderOnayMerkezi();
     }
 
     async function initApp(){
@@ -1249,7 +1447,6 @@
   </script>
 </body>
 </html>
-
 
 
 
