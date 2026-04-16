@@ -20,7 +20,7 @@
     table{width:100%;border-collapse:collapse} th,td{padding:12px 10px;border-bottom:1px solid var(--line);text-align:left;font-size:14px;vertical-align:top} th{background:#f8fbff;font-weight:900;color:#334155}
     .text-right{text-align:right}.tag{display:inline-flex;align-items:center;justify-content:center;min-height:28px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:900;white-space:nowrap}
     .tag.blue{background:#eaf1ff;color:#2457d6}.tag.green{background:#e7faf3;color:#047857}.tag.red{background:#fdecec;color:#b91c1c}.tag.gray{background:#f1f5f9;color:#475569}.tag.amber{background:#fff7ed;color:#c2410c}
-    .btn{border:none;border-radius:12px;min-height:42px;padding:10px 16px;font-size:14px;font-weight:900;cursor:pointer}.btn-blue{background:var(--blue);color:#fff}.btn-soft{background:#e8eef9;color:#0f172a}.btn-red{background:var(--red);color:#fff}.btn-green{background:var(--green);color:#fff}
+    .btn{border:none;border-radius:12px;min-height:42px;padding:10px 16px;font-size:14px;font-weight:900;cursor:pointer}.btn-blue{background:var(--blue);color:#fff}.btn-soft{background:#e8eef9;color:#0f172a}.btn-red{background:var(--red);color:#fff}
     .btn-row{display:flex;gap:10px;flex-wrap:wrap}
     .list{display:grid;gap:10px}.list-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;cursor:pointer}.list-item.active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,103,232,.12);background:#f6f9ff}.list-item.risk{border-color:#fecaca;background:#fff7f7}
     .list-title{font-weight:900;font-size:15px;margin-bottom:6px}.list-meta{color:var(--muted);font-size:13px;font-weight:700;line-height:1.55}.empty{padding:22px;border:1px dashed #cbd5e1;border-radius:16px;text-align:center;color:var(--muted);font-weight:800;background:#fbfdff}
@@ -28,6 +28,7 @@
     .toolbar{display:grid;grid-template-columns:1.3fr .8fr .8fr;gap:12px;margin-bottom:14px}.detail-sticky{position:sticky;top:22px}
     .metric-mini{background:#fbfdff;border:1px solid var(--line);border-radius:14px;padding:12px}.metric-mini .k{font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}.metric-mini .v{font-size:18px;font-weight:900;color:var(--text)}
     .filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.chip{border:none;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;background:#e8eef9;color:#0f172a;cursor:pointer}.chip.active{background:var(--blue);color:#fff}
+    .hero-name{font-size:28px;font-weight:900;line-height:1.1;margin:0 0 8px}.hero-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:13px;font-weight:800;margin-bottom:16px}
     .login-overlay,.modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.62);backdrop-filter:blur(8px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:20px}.login-card,.modal-card{width:100%;max-width:420px;background:#fff;border-radius:26px;border:1px solid var(--line);box-shadow:0 35px 90px rgba(15,23,42,.34);padding:30px 26px 24px}
     .modal-card{max-width:900px;max-height:90vh;overflow:auto}
     .login-brand{text-align:center;color:#2563eb;font-size:12px;font-weight:900;letter-spacing:.08em;margin-bottom:10px}.login-title{margin:0 0 18px;text-align:center;font-size:26px;font-weight:900}.pass-wrap{position:relative}.pass-wrap input{width:100%;height:50px;border:1px solid #cbd5e1;border-radius:14px;padding:0 48px 0 14px;font-size:15px;font-weight:800;outline:none}
@@ -118,9 +119,7 @@
     </div>
     <div class="field" style="margin-top:12px;"><label>Kim Verdi</label><input id="promiseBy" /></div>
     <div class="field" style="margin-top:12px;"><label>Not</label><textarea id="promiseNote" rows="4" class="select-input"></textarea></div>
-    <div class="btn-row" style="margin-top:16px;">
-      <button class="btn btn-blue" onclick="savePaymentPromise()">Ödeme Sözünü Kaydet</button>
-    </div>
+    <div class="btn-row" style="margin-top:16px;"><button class="btn btn-blue" onclick="savePaymentPromise()">Ödeme Sözünü Kaydet</button></div>
   </div>
 </div>
 
@@ -187,16 +186,6 @@
           <div id="cariList" class="list"></div>
         </div>
         <div class="section detail-sticky">
-          <h2 class="section-title">Seçili Cari Detayı</h2>
-          <div class="filter-chips" id="dateChips">
-            <button class="chip active" data-range="3m">3 Ay</button>
-            <button class="chip" data-range="1m">1 Ay</button>
-            <button class="chip" data-range="2m">2 Ay</button>
-            <button class="chip" data-range="6m">6 Ay</button>
-            <button class="chip" data-range="1y">1 Yıl</button>
-            <button class="chip" data-range="thisyear">Bu Yıl</button>
-            <button class="chip" data-range="all">Tümü</button>
-          </div>
           <div id="selectedCariDetail" class="empty">Bir cari seç.</div>
         </div>
       </div>
@@ -323,11 +312,43 @@ function rangeFilteredHareketler(){
   return state.hareketler.filter(h=>new Date(h.line_date)>=start);
 }
 function getCariCard(id){ return state.cariCards.find(x=>x.cari_id===id) || null; }
+function computeRunningRows(rows){
+  const ordered=[...rows].sort((a,b)=>new Date(a.line_date)-new Date(b.line_date));
+  let balance=0;
+  return ordered.map(r=>{
+    balance += Number(r.debit||0) - Number(r.credit||0);
+    return {...r, running_balance: balance};
+  }).reverse();
+}
+function balanceLabel(v){
+  const n=Number(v||0);
+  if(n>0) return `${money(n)} Alacak Bakiye`;
+  if(n<0) return `${money(Math.abs(n))} Borç Bakiye`;
+  return `${money(0)} Bakiye`;
+}
 function renderSelectedCariDetail(){
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId); const card=getCariCard(state.selectedCariId); const target=document.getElementById("selectedCariDetail");
   if(!c){target.innerHTML=`<div class="empty">Bir cari seç.</div>`; return}
-  const hs=rangeFilteredHareketler();
-  target.innerHTML=`<div class="grid-4" style="margin-bottom:14px">
+  const hs=computeRunningRows(rangeFilteredHareketler());
+  target.innerHTML=`
+  <div class="hero-name">${escapeHtml(c.cari_name || 'Cari')}</div>
+  <div class="hero-sub">
+    <span>${escapeHtml(c.cari_code || '-')}</span>
+    <span>•</span>
+    <span>${escapeHtml(c.taxpayer_type || card?.taxpayer_type || '-')}</span>
+    ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''}
+    ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}
+  </div>
+  <div class="filter-chips" id="detailDateChips">
+    <button class="chip ${state.selectedRange==='3m'?'active':''}" data-range="3m">3 Ay</button>
+    <button class="chip ${state.selectedRange==='1m'?'active':''}" data-range="1m">1 Ay</button>
+    <button class="chip ${state.selectedRange==='2m'?'active':''}" data-range="2m">2 Ay</button>
+    <button class="chip ${state.selectedRange==='6m'?'active':''}" data-range="6m">6 Ay</button>
+    <button class="chip ${state.selectedRange==='1y'?'active':''}" data-range="1y">1 Yıl</button>
+    <button class="chip ${state.selectedRange==='thisyear'?'active':''}" data-range="thisyear">Bu Yıl</button>
+    <button class="chip ${state.selectedRange==='all'?'active':''}" data-range="all">Tümü</button>
+  </div>
+  <div class="grid-4" style="margin-bottom:14px">
     <div class="metric-mini"><div class="k">Cari Kodu</div><div class="v">${escapeHtml(c.cari_code||"-")}</div></div>
     <div class="metric-mini"><div class="k">Mükellef Tipi</div><div class="v">${escapeHtml(c.taxpayer_type||card?.taxpayer_type||"-")}</div></div>
     <div class="metric-mini"><div class="k">Defter Ücreti</div><div class="v">${money(card?.monthly_fee_amount||c.defter_ucreti||0)}</div></div>
@@ -340,7 +361,7 @@ function renderSelectedCariDetail(){
     <div class="metric-mini"><div class="k">E-posta</div><div class="v">${escapeHtml(card?.email||"-")}</div></div>
   </div>
   <div class="grid-3" style="margin-bottom:14px">
-    <div class="card"><div class="card-label">Bakiye</div><div class="card-value" style="font-size:24px">${money(c.bakiye||0)}</div></div>
+    <div class="card"><div class="card-label">Güncel Bakiye</div><div class="card-value" style="font-size:24px">${balanceLabel(c.bakiye||0)}</div></div>
     <div class="card"><div class="card-label">Bu Ay</div><div class="card-value" style="font-size:20px">Tahakkuk ${money(c.bu_ay_tahakkuk||0)}<br>Tahsilat ${money(c.bu_ay_tahsilat||0)}</div></div>
     <div class="card"><div class="card-label">Tahsilat İstihbaratı</div><div class="card-value" style="font-size:18px">${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':'<span class="tag green">Normal</span>'}${c.aktif_odeme_sozu_var?`<div style="margin-top:8px;font-size:14px">Söz: ${shortDate(c.aktif_odeme_sozu_tarihi)} · ${money(c.aktif_odeme_sozu_tutari||0)} · ${escapeHtml(c.aktif_odeme_sozu_durum||"-")}</div>`:''}</div></div>
   </div>
@@ -349,7 +370,8 @@ function renderSelectedCariDetail(){
     <button class="btn btn-soft" onclick="openPromiseModal()">Ödeme Sözü Gir</button>
     <button class="btn btn-soft" onclick="alert('Yazdır / Excel / PDF sonraki turda bağlanacak.')">Extre Al</button>
   </div>
-  ${hs.length?`<table><thead><tr><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Tutar</th></tr></thead><tbody>${hs.map(h=>`<tr><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.debit||0)}</td><td class="text-right">${money(h.credit||0)}</td><td class="text-right">${money(h.amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Seçili aralıkta hareket yok.</div>`}`;
+  ${hs.length?`<table><thead><tr><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Bakiye</th></tr></thead><tbody>${hs.map(h=>`<tr><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.debit||0)}</td><td class="text-right">${money(h.credit||0)}</td><td class="text-right">${balanceLabel(h.running_balance)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Seçili aralıkta hareket yok.</div>`}`;
+  target.querySelectorAll("#detailDateChips .chip").forEach(btn=>btn.addEventListener("click",()=>{state.selectedRange=btn.dataset.range; renderSelectedCariDetail();}));
 }
 function renderAccounts(){
   document.getElementById("accountSummaryWrap").innerHTML=state.accounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${state.accounts.map(a=>`<tr><td>${escapeHtml(a.account_name)}</td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`;
@@ -360,7 +382,7 @@ function renderReports(){
   const riskRows=state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).sort((a,b)=>Number(b.bakiye||0)-Number(a.bakiye||0)).slice(0,15);
   const topFee=[...state.cariler].sort((a,b)=>Number(b.defter_ucreti||0)-Number(a.defter_ucreti||0)).slice(0,10);
   document.getElementById("reportWrap").innerHTML=`<div class="grid-2" style="margin-bottom:16px"><div class="card"><div class="card-label">Toplam Son Tahsilat Tutarı</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Number(b.son_tahsilat_tutari||0),0))}</div></div><div class="card"><div class="card-label">Pozitif Bakiye Toplamı</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Math.max(Number(b.bakiye||0),0),0))}</div></div></div>
-  <div class="grid-2"><div class="section"><h2 class="section-title">Tahsilat Riski Olanlar</h2>${riskRows.length?`<table><thead><tr><th>Cari</th><th>Son Tahsilat</th><th class="text-right">Bakiye</th></tr></thead><tbody>${riskRows.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${shortDate(r.son_tahsilat_tarihi)} · ${money(r.son_tahsilat_tutari||0)}</td><td class="text-right">${money(r.bakiye||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Riskli cari yok.</div>`}</div>
+  <div class="grid-2"><div class="section"><h2 class="section-title">Tahsilat Riski Olanlar</h2>${riskRows.length?`<table><thead><tr><th>Cari</th><th>Son Tahsilat</th><th class="text-right">Bakiye</th></tr></thead><tbody>${riskRows.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${shortDate(r.son_tahsilat_tarihi)} · ${money(r.son_tahsilat_tutari||0)}</td><td class="text-right">${balanceLabel(r.bakiye||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Riskli cari yok.</div>`}</div>
   <div class="section"><h2 class="section-title">En Yüksek Defter Ücretliler</h2><table><thead><tr><th>Cari</th><th>Tür</th><th class="text-right">Defter Ücreti</th></tr></thead><tbody>${topFee.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${escapeHtml(r.taxpayer_type||"-")}</td><td class="text-right">${money(r.defter_ucreti||0)}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
 function renderApprovals(){
@@ -463,7 +485,6 @@ async function refreshAll(){await Promise.all([loadDashboard(),loadCariler(),loa
 document.getElementById("cariSearch").addEventListener("input",renderCariList);
 document.getElementById("taxpayerFilter").addEventListener("change",renderCariList);
 document.getElementById("sortBy").addEventListener("change",renderCariList);
-document.querySelectorAll("#dateChips .chip").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll("#dateChips .chip").forEach(x=>x.classList.remove("active")); btn.classList.add("active"); state.selectedRange=btn.dataset.range; renderSelectedCariDetail()}));
 document.getElementById("versionBadge").textContent=buildVersion();
 if(localStorage.getItem(SESSION_KEY)==="ok"){openApp(); refreshAll()}else{setConnState("Giriş bekleniyor")}
 </script>
