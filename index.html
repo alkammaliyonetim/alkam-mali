@@ -121,6 +121,21 @@
     <div class="field" style="margin-top:12px;"><label>Not</label><textarea id="promiseNote" rows="4" class="select-input"></textarea></div>
     <div class="btn-row" style="margin-top:16px;"><button class="btn btn-blue" onclick="savePaymentPromise()">Ödeme Sözünü Kaydet</button></div>
   </div>
+
+</div>
+
+<div id="statementPrecheckModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:760px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Extre Son Kontrol</h2>
+      <button class="btn btn-red" onclick="closeStatementPrecheck()">Kapat</button>
+    </div>
+    <div id="statementPrecheckContent"></div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-blue" onclick="confirmStatementOutput()">Yazdır / PDF Aç</button>
+      <button class="btn btn-soft" onclick="exportStatementExcel()">Excel İndir</button>
+    </div>
+  </div>
 </div>
 
 <div class="layout">
@@ -334,6 +349,70 @@ function balanceColumns(v){
     bakiye_a: n > 0 ? money(n) : '',
   };
 }
+
+function currentStatementRows(){
+  const rows = computeRunningRows(rangeFilteredHareketler()).reverse();
+  return rows;
+}
+function openStatementPrecheck(){
+  const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
+  const card=getCariCard(state.selectedCariId);
+  const rows=currentStatementRows();
+  if(!c){ notify("Cari seçili değil."); return; }
+  if(!rows.length){ notify("Seçili aralıkta extre satırı yok."); return; }
+  const totalDebit = rows.reduce((a,r)=>a+Number(r.debit||0),0);
+  const totalCredit = rows.reduce((a,r)=>a+Number(r.credit||0),0);
+  const closingBalance = rows.length ? Number(rows[rows.length-1].running_balance||0) : 0;
+  const periodMap = {'1m':'Son 1 Ay','2m':'Son 2 Ay','3m':'Son 3 Ay','6m':'Son 6 Ay','1y':'Son 1 Yıl','thisyear':'Bu Yıl','all':'Tümü'};
+  document.getElementById('statementPrecheckContent').innerHTML = `
+    <div class="grid-2">
+      <div class="metric-mini"><div class="k">Cari Adı</div><div class="v">${escapeHtml(c.cari_name||'-')}</div></div>
+      <div class="metric-mini"><div class="k">Cari Kodu</div><div class="v">${escapeHtml(c.cari_code||'-')}</div></div>
+      <div class="metric-mini"><div class="k">Vergi No / TC No</div><div class="v">${escapeHtml(card?.tax_no || card?.tc_no || '-')}</div></div>
+      <div class="metric-mini"><div class="k">Dönem</div><div class="v">${escapeHtml(periodMap[state.selectedRange] || 'Özel')}</div></div>
+      <div class="metric-mini"><div class="k">Satır Sayısı</div><div class="v">${rows.length}</div></div>
+      <div class="metric-mini"><div class="k">Toplam Borç</div><div class="v">${money(totalDebit)}</div></div>
+      <div class="metric-mini"><div class="k">Toplam Alacak</div><div class="v">${money(totalCredit)}</div></div>
+      <div class="metric-mini"><div class="k">Kapanış Bakiye</div><div class="v">${balanceLabel(closingBalance)}</div></div>
+    </div>
+    <div style="margin-top:14px;padding:12px;border:1px solid #fecaca;background:#fff7f7;border-radius:12px;font-weight:800;color:#991b1b">
+      Belge oluşturmadan önce cari adı, cari kodu ve dönem bilgisini kontrol et. Yanlış müşteriye belge gitmemesi ana kuraldır.
+    </div>`;
+  document.getElementById('statementPrecheckModal').style.display='flex';
+}
+function closeStatementPrecheck(){ document.getElementById('statementPrecheckModal').style.display='none'; }
+function confirmStatementOutput(){ closeStatementPrecheck(); openStatementOutput(); }
+function exportStatementExcel(){
+  const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
+  const rows=currentStatementRows();
+  if(!c || !rows.length){ notify("Excel için extre satırı yok."); return; }
+  const csvRows = [
+    ['Tarih','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']
+  ];
+  rows.forEach(r=>{
+    const b = balanceColumns(r.running_balance);
+    csvRows.push([
+      shortDate(r.line_date),
+      r.movement_type || '',
+      (r.description || '').replace(/"/g,'""'),
+      Number(r.debit||0).toFixed(2),
+      Number(r.credit||0).toFixed(2),
+      b.bakiye_b ? b.bakiye_b.replace('₺','').trim() : '',
+      b.bakiye_a ? b.bakiye_a.replace('₺','').trim() : ''
+    ]);
+  });
+  const csv = '\ufeff' + csvRows.map(row => row.map(v => `"${String(v ?? '')}"`).join(';')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${(c.cari_name||'cari_extre').replace(/[^a-z0-9ığüşöçıİĞÜŞÖÇ -]/gi,'_')}_extre.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  notify("Excel dosyası indirildi.");
+}
 function openStatementOutput(){
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
   const card=getCariCard(state.selectedCariId);
@@ -476,7 +555,7 @@ function renderSelectedCariDetail(){
   <div class="btn-row" style="margin-bottom:14px">
     <button class="btn btn-blue" onclick="openCariEditModal()">Cariyi Düzenle</button>
     <button class="btn btn-soft" onclick="openPromiseModal()">Ödeme Sözü Gir</button>
-    <button class="btn btn-soft" onclick="openStatementOutput()">Extre Al</button>
+    <button class="btn btn-soft" onclick="openStatementPrecheck()">Extre Al</button>
   </div>
   ${hs.length?`<table><thead><tr><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Bakiye</th></tr></thead><tbody>${hs.map(h=>`<tr><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.debit||0)}</td><td class="text-right">${money(h.credit||0)}</td><td class="text-right">${balanceLabel(h.running_balance)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Seçili aralıkta hareket yok.</div>`}`;
   target.querySelectorAll("#detailDateChips .chip").forEach(btn=>btn.addEventListener("click",()=>{state.selectedRange=btn.dataset.range; renderSelectedCariDetail();}));
