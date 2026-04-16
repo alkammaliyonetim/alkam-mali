@@ -372,8 +372,8 @@ function computeRunningRows(rows){
 }
 function balanceLabel(v){
   const n=Number(v||0);
-  if(n>0) return `${money(n)} Borç Bakiyesi`;
-  if(n<0) return `${money(Math.abs(n))} Alacak Bakiyesi`;
+  if(n>0) return `${money(n)}`;
+  if(n<0) return `${money(Math.abs(n))}`;
   return `${money(0)} Bakiye`;
 }
 
