@@ -561,6 +561,8 @@ function renderSelectedCariDetail(){
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId); const card=getCariCard(state.selectedCariId); const target=document.getElementById("selectedCariDetail");
   if(!c){target.innerHTML=`<div class="empty">Bir cari seç.</div>`; return}
   const hs=computeRunningRows(rangeFilteredHareketler());
+  const currentBalanceValue = Number(c.bakiye || 0);
+  const currentBalanceHeader = currentBalanceValue > 0 ? 'Bakiye B' : (currentBalanceValue < 0 ? 'Bakiye A' : 'Bakiye');
   target.innerHTML=`
   <div class="hero-name">${escapeHtml(c.cari_name || 'Cari')}</div>
   <div class="hero-sub">
@@ -601,7 +603,7 @@ function renderSelectedCariDetail(){
     <button class="btn btn-soft" onclick="openPromiseModal()">Ödeme Sözü Gir</button>
     <button class="btn btn-soft" onclick="openStatementPrecheck()">Extre Al</button>
   </div>
-  ${hs.length?`<table><thead><tr><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Bakiye</th></tr></thead><tbody>${hs.map(h=>`<tr><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.debit||0)}</td><td class="text-right">${money(h.credit||0)}</td><td class="text-right">${balanceLabel(h.running_balance)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Seçili aralıkta hareket yok.</div>`}`;
+  ${hs.length?`<table><thead><tr><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Bakiye</th></tr></thead><tbody>${hs.map(h=>`<tr><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.debit||0)}</td><td class="text-right">${money(h.credit||0)}</td><td class="text-right">${money(Math.abs(Number(h.running_balance||0)))}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Seçili aralıkta hareket yok.</div>`}`;
   target.querySelectorAll("#detailDateChips .chip").forEach(btn=>btn.addEventListener("click",()=>{state.selectedRange=btn.dataset.range; renderSelectedCariDetail();}));
 }
 function renderAccounts(){
