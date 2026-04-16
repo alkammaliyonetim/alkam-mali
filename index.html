@@ -337,16 +337,19 @@ function computeRunningRows(rows){
 }
 function balanceLabel(v){
   const n=Number(v||0);
-  if(n>0) return `${money(n)} Alacak Bakiye`;
-  if(n<0) return `${money(Math.abs(n))} Borç Bakiye`;
+  if(n>0) return `${money(n)} Borç Bakiyesi`;
+  if(n<0) return `${money(Math.abs(n))} Alacak Bakiyesi`;
   return `${money(0)} Bakiye`;
 }
 
 function balanceColumns(v){
   const n=Number(v||0);
   return {
-    bakiye_b: n < 0 ? money(Math.abs(n)) : '',
-    bakiye_a: n > 0 ? money(n) : '',
+    // İş kuralı:
+    // Mükellef bize borçluysa -> Bakiye B
+    // Biz mükellefe borçluysak -> Bakiye A
+    bakiye_b: n > 0 ? money(n) : '',
+    bakiye_a: n < 0 ? money(Math.abs(n)) : '',
   };
 }
 
@@ -376,7 +379,7 @@ function openStatementPrecheck(){
       <div class="metric-mini"><div class="k">Kapanış Bakiye</div><div class="v">${balanceLabel(closingBalance)}</div></div>
     </div>
     <div style="margin-top:14px;padding:12px;border:1px solid #fecaca;background:#fff7f7;border-radius:12px;font-weight:800;color:#991b1b">
-      Belge oluşturmadan önce cari adı, cari kodu ve dönem bilgisini kontrol et. Yanlış müşteriye belge gitmemesi ana kuraldır.
+      Belge oluşturmadan önce cari adı, cari kodu, vergi no / TC no ve dönem bilgisini kontrol et. Yanlış müşteriye yanlış belge gitmemesi ana kuraldır.
     </div>`;
   document.getElementById('statementPrecheckModal').style.display='flex';
 }
@@ -469,7 +472,7 @@ function openStatementOutput(){
         </div>
       </div>
       <div class="sub" style="text-align:right">
-        Belge Türü: Müşteri Cari Ekstresi<br>
+        Belge Türü: Müşteri Cari Ekstresi<br>Kontrol Durumu: Onay sonrası oluşturuldu<br>
         Oluşturma: ${new Date().toLocaleString('tr-TR')}<br>
         Satır Sayısı: ${rows.length}
       </div>
@@ -477,8 +480,8 @@ function openStatementOutput(){
     <div class="boxwrap">
       <div class="box"><div class="k">Toplam Borç</div><div class="v">${money(totalDebit)}</div></div>
       <div class="box"><div class="k">Toplam Alacak</div><div class="v">${money(totalCredit)}</div></div>
-      <div class="box"><div class="k">Kapanış Bakiye A</div><div class="v">${closingBalance>0 ? money(closingBalance) : money(0)}</div></div>
-      <div class="box"><div class="k">Kapanış Bakiye B</div><div class="v">${closingBalance<0 ? money(Math.abs(closingBalance)) : money(0)}</div></div>
+      <div class="box"><div class="k">Kapanış Bakiye B</div><div class="v">${closingBalance>0 ? money(closingBalance) : money(0)}</div></div>
+      <div class="box"><div class="k">Kapanış Bakiye A</div><div class="v">${closingBalance<0 ? money(Math.abs(closingBalance)) : money(0)}</div></div>
     </div>
     <table>
       <thead>
@@ -520,9 +523,9 @@ function renderSelectedCariDetail(){
   target.innerHTML=`
   <div class="hero-name">${escapeHtml(c.cari_name || 'Cari')}</div>
   <div class="hero-sub">
-    <span>${escapeHtml(c.cari_code || '-')}</span>
+    <span><strong>Kod:</strong> ${escapeHtml(c.cari_code || '-')}</span>
     <span>•</span>
-    <span>${escapeHtml(c.taxpayer_type || card?.taxpayer_type || '-')}</span>
+    <span><strong>Tür:</strong> ${escapeHtml(c.taxpayer_type || card?.taxpayer_type || '-')}</span>
     ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''}
     ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}
   </div>
