@@ -335,7 +335,7 @@ function renderCariList(){
     <div class="tag ${Number(c.bakiye||0)>0?'red':'green'}">${money(c.bakiye||0)}</div></div>`).join(""):`<div class="empty">Cari bulunamadı.</div>`;
   list.querySelectorAll("[data-cari-id]").forEach(el=>el.addEventListener("click",async()=>{state.selectedCariId=el.dataset.cariId; await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail();}));
 }
-function rangeFilteredHareketler(){
+function getRangeStartDate(){
   const now=new Date(); let start=null;
   if(state.selectedRange==="1m"){start=new Date(now); start.setMonth(start.getMonth()-1)}
   if(state.selectedRange==="2m"){start=new Date(now); start.setMonth(start.getMonth()-2)}
@@ -343,6 +343,10 @@ function rangeFilteredHareketler(){
   if(state.selectedRange==="6m"){start=new Date(now); start.setMonth(start.getMonth()-6)}
   if(state.selectedRange==="1y"){start=new Date(now); start.setFullYear(start.getFullYear()-1)}
   if(state.selectedRange==="thisyear"){start=new Date(now.getFullYear(),0,1)}
+  return start;
+}
+function rangeFilteredHareketler(){
+  const start = getRangeStartDate();
   if(state.selectedRange==="all"||!start) return state.hareketler;
   return state.hareketler.filter(h=>new Date(h.line_date)>=start);
 }
@@ -362,13 +366,22 @@ async function runControlledAccrualForSelectedCari(){
   renderDashboard(); renderReports(); renderSelectedCariDetail();
 }
 
-function computeRunningRows(rows){
-  const ordered=[...rows].sort((a,b)=>new Date(a.line_date)-new Date(b.line_date));
+function computeRunningRows(allRows, startDate=null){
+  const ordered=[...allRows].sort((a,b)=>{
+    const d = new Date(a.line_date) - new Date(b.line_date);
+    if(d !== 0) return d;
+    return String(a.id||'').localeCompare(String(b.id||''));
+  });
   let balance=0;
-  return ordered.map(r=>{
+  const visible=[];
+  for(const r of ordered){
     balance += Number(r.debit||0) - Number(r.credit||0);
-    return {...r, running_balance: balance};
-  }).reverse();
+    const rowDate = new Date(r.line_date);
+    if(!startDate || rowDate >= startDate){
+      visible.push({...r, running_balance: balance});
+    }
+  }
+  return visible.reverse();
 }
 function balanceLabel(v){
   const n=Number(v||0);
@@ -389,7 +402,8 @@ function balanceColumns(v){
 }
 
 function currentStatementRows(){
-  const rows = computeRunningRows(rangeFilteredHareketler()).reverse();
+  const start = getRangeStartDate();
+  const rows = computeRunningRows(state.hareketler, state.selectedRange==="all" ? null : start).reverse();
   return rows;
 }
 function openStatementPrecheck(){
@@ -561,7 +575,8 @@ function openStatementOutput(){
 function renderSelectedCariDetail(){
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId); const card=getCariCard(state.selectedCariId); const target=document.getElementById("selectedCariDetail");
   if(!c){target.innerHTML=`<div class="empty">Bir cari seç.</div>`; return}
-  const hs=computeRunningRows(rangeFilteredHareketler());
+  const start = getRangeStartDate();
+  const hs=computeRunningRows(state.hareketler, state.selectedRange==="all" ? null : start);
   const currentBalanceValue = Number(c.bakiye || 0);
   const dynamicBalanceHeader = currentBalanceValue > 0 ? 'Bakiye B' : (currentBalanceValue < 0 ? 'Bakiye A' : 'Bakiye');
   target.innerHTML=`
