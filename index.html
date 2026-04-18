@@ -363,6 +363,7 @@
         </div></div>
       </div>
       <div class="section"><h2 class="section-title">Üretim Kontrol Merkezi</h2><div id="opsHealthWrap" class="empty">Yükleniyor...</div></div>
+      <div class="section"><h2 class="section-title">Üretim Sıkılaştırma Merkezi</h2><div id="prodHardeningWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
     <section id="tab-cariler" class="tab-page">
@@ -429,6 +430,7 @@
 
     <section id="tab-yedekleme" class="tab-page">
       <div class="section"><h2 class="section-title">Canlıya Alma Kontrolü</h2><div id="opsHealthWrapYedek" class="empty">Yükleniyor...</div></div>
+      <div class="section"><h2 class="section-title">Üretim Sıkılaştırma Merkezi</h2><div id="prodHardeningWrapYedek" class="empty">Yükleniyor...</div></div>
       <div class="grid-2">
         <div class="section"><h2 class="section-title">Yedekleme Merkezi</h2><div id="backupWrap" class="empty">Yükleniyor...</div></div>
         <div class="section"><h2 class="section-title">Restore / Geri Yükleme Planı</h2><div id="restoreWrap" class="empty">Yükleniyor...</div></div>
@@ -444,8 +446,8 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909";
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null};
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1";
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null};
 
 function money(v){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(Number(v||0))}
 function shortDate(v){if(!v) return "-"; const d=new Date(v); if(Number.isNaN(d.getTime())) return v; return new Intl.DateTimeFormat("tr-TR").format(d)}
@@ -454,6 +456,19 @@ function readLocalJson(key){ try{ const raw=localStorage.getItem(key); return ra
 function readLocalObject(key,fallback){ try{ const raw=localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }catch(_){ return fallback; } }
 function writeLocalJson(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
 function writeLocalObject(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
+function defaultProdSettings(){
+  return {
+    production_mode:false,
+    db_writeback_ready:false,
+    backup_job_ready:false,
+    drive_sync_ready:false,
+    restore_tested:false,
+    local_cleanup_done:false,
+    operator_name:'Yerel Giriş',
+    notes:'',
+    last_saved_at:null
+  };
+}
 function defaultBackupConfig(){
   return {
     env:'prod',
@@ -575,6 +590,7 @@ async function loadDocuments(){
   state.backupHistory = readLocalJson(LOCAL_BACKUP_HISTORY_KEY).map(x=>({...x, txn_id:txnId(x,'BKP')}));
   state.backupConfig = readLocalObject(LOCAL_BACKUP_CONFIG_KEY, defaultBackupConfig());
   state.restoreDrills = readLocalJson(LOCAL_RESTORE_DRILLS_KEY).map(x=>({...x, txn_id:txnId(x,'RST')}));
+  state.prodSettings = readLocalObject(LOCAL_PROD_SETTINGS_KEY, defaultProdSettings());
 }
 
 
@@ -618,8 +634,34 @@ function saveBackupConfig(){
 }
 
 function persistOpsHealth(){ writeLocalObject(LOCAL_OPS_HEALTH_KEY, state.opsHealth || null); }
+function getProdSettings(){ return state.prodSettings || defaultProdSettings(); }
+function persistProdSettings(){ writeLocalObject(LOCAL_PROD_SETTINGS_KEY, state.prodSettings || defaultProdSettings()); }
+function localOperationalPayloadCount(){
+  return Number(state.documents.length||0) + Number(state.bridgeCandidates.length||0) + Number((state.bankOps?.pending||[]).length||0) + Number(state.operationalLedger.length||0) + Number(state.auditTrail.length||0);
+}
+function buildProdHardeningReport(){
+  const prod = getProdSettings();
+  const localCount = localOperationalPayloadCount();
+  const readyCount = [prod.production_mode, prod.db_writeback_ready, prod.backup_job_ready, prod.drive_sync_ready, prod.restore_tested, prod.local_cleanup_done].filter(Boolean).length;
+  const score = Math.max(0, Math.min(100, Math.round((readyCount / 6) * 100) - (localCount>0 && prod.production_mode ? 10 : 0)));
+  return {
+    score,
+    local_count: localCount,
+    ready_count: readyCount,
+    checks:[
+      {label:'Üretim modu', status: prod.production_mode ? 'ok' : 'warn', detail: prod.production_mode ? 'Üretim modu işaretli.' : 'Hâlâ üretim modu açılmadı.'},
+      {label:'DB write-back hazırlığı', status: prod.db_writeback_ready ? 'ok' : 'warn', detail: prod.db_writeback_ready ? 'Gerçek DB write-back hazırlığı işaretli.' : 'Gerçek DB write-back hazırlığı işaretli değil.'},
+      {label:'Zamanlanmış backup işi', status: prod.backup_job_ready ? 'ok' : 'warn', detail: prod.backup_job_ready ? 'Görev zamanlayıcı / cron hazırlığı tamam.' : 'Görev zamanlayıcı / cron hazırlığı eksik.'},
+      {label:'Drive senkronu', status: prod.drive_sync_ready ? 'ok' : 'warn', detail: prod.drive_sync_ready ? 'Drive senkron hazırlığı tamam.' : 'Drive senkron hazırlığı eksik.'},
+      {label:'Restore tatbikatı', status: prod.restore_tested ? 'ok' : 'warn', detail: prod.restore_tested ? 'Restore tatbikatı üretim işaretine bağlandı.' : 'Restore tatbikatı üretim işaretinde eksik.'},
+      {label:'Yerel veri temizliği', status: (prod.local_cleanup_done && localCount===0) ? 'ok' : 'warn', detail: (prod.local_cleanup_done && localCount===0) ? 'Yerel operasyon verisi temiz.' : `Yerel operasyon katmanında ${localCount} kayıt izi görünüyor.`}
+    ],
+    notes: prod.notes || ''
+  };
+}
 function buildOpsHealthReport(){
   const cfg = getBackupConfig();
+  const prod = getProdSettings();
   const pendingRows = getPendingRows();
   const duplicateBridge = state.bridgeCandidates.filter(x=>x.is_duplicate).length;
   const lockedPending = pendingRows.filter(r=>approvalIsLocked(r)).length;
@@ -627,18 +669,22 @@ function buildOpsHealthReport(){
   const placeholderDrive = !cfg.drive_remote || String(cfg.drive_remote).trim()==='';
   const placeholderFolder = !cfg.drive_folder || String(cfg.drive_folder).trim()==='';
   const restoreMissing = !state.restoreDrills.length;
+  const localCount = localOperationalPayloadCount();
   const checks = [
     {code:'ids', label:'İşlem ID standardı', status:'ok', detail:'Ana katmanlarda ekran bazlı ID standardı aktif.'},
     {code:'backup_policy', label:'Yedekleme politikası', status:(placeholderDb || placeholderDrive || placeholderFolder) ? 'warn' : 'ok', detail:((placeholderDb ? 'DB URL placeholder görünüyor. ' : '') + (placeholderDrive ? 'Drive remote boş. ' : '') + (placeholderFolder ? 'Drive klasörü boş. ' : '')).trim() || 'Politika dolu.'},
     {code:'restore_drill', label:'Restore tatbikatı', status: restoreMissing ? 'warn' : 'ok', detail: restoreMissing ? 'Henüz restore tatbikatı kaydı yok.' : 'Restore tatbikatı kaydı mevcut.'},
     {code:'approval_lock', label:'Kilitli onay kuyruğu', status: lockedPending>0 ? 'warn' : 'ok', detail: lockedPending>0 ? `${lockedPending} kilitli kayıt operatör kararı bekliyor.` : 'Kilitli bekleyen kayıt yok.'},
     {code:'bridge_duplicate', label:'Köprü çift kayıt riski', status: duplicateBridge>0 ? 'warn' : 'ok', detail: duplicateBridge>0 ? `${duplicateBridge} satır muhtemel çift görünüyor.` : 'Çift riskli köprü satırı yok.'},
-    {code:'local_demo_data', label:'Yerel operasyon verisi', status:(state.documents.length || state.bridgeCandidates.length || (state.bankOps?.pending||[]).length) ? 'warn' : 'ok', detail:(state.documents.length || state.bridgeCandidates.length || (state.bankOps?.pending||[]).length) ? 'Local storage üzerinde operasyon verisi var; canlıda DB ile net ayrım korunmalı.' : 'Yerel demo verisi görünmüyor.'}
+    {code:'prod_mode', label:'Üretim modu işareti', status: prod.production_mode ? 'ok' : 'warn', detail: prod.production_mode ? 'Üretim modu açık.' : 'Üretim modu henüz açık değil.'},
+    {code:'db_writeback_ready', label:'DB write-back hazırlığı', status: prod.db_writeback_ready ? 'ok' : 'warn', detail: prod.db_writeback_ready ? 'DB write-back hazırlığı işaretli.' : 'DB write-back hazırlığı henüz işaretli değil.'},
+    {code:'scheduler_ready', label:'Zamanlanmış yedek işi', status: prod.backup_job_ready ? 'ok' : 'warn', detail: prod.backup_job_ready ? 'Zamanlanmış yedek işi hazır işaretli.' : 'Zamanlanmış yedek işi eksik.'},
+    {code:'local_demo_data', label:'Yerel operasyon verisi', status:localCount ? 'warn' : 'ok', detail:localCount ? `Yerel/local katmanda ${localCount} kayıt izi var. Canlıya almadan önce temizle veya DB’ye taşı.` : 'Yerel operasyon verisi görünmüyor.'}
   ];
   return {
     id: uid('ops_health'),
     created_at: new Date().toISOString(),
-    score: Math.max(0, 100 - checks.filter(x=>x.status==='warn').length * 12),
+    score: Math.max(0, 100 - checks.filter(x=>x.status==='warn').length * 10),
     summary: {
       pending_total: pendingRows.length,
       locked_pending: lockedPending,
@@ -647,11 +693,13 @@ function buildOpsHealthReport(){
       backup_history_count: state.backupHistory.length,
       local_document_count: state.documents.length,
       local_bridge_count: state.bridgeCandidates.length,
-      local_bank_queue_count: (state.bankOps?.pending||[]).length
+      local_bank_queue_count: (state.bankOps?.pending||[]).length,
+      production_mode: !!prod.production_mode
     },
     checks
   };
 }
+
 function healthTag(status){
   if(status==='ok') return '<span class="tag green">Tamam</span>';
   if(status==='warn') return '<span class="tag amber">Dikkat</span>';
@@ -693,6 +741,139 @@ function exportOpsHealthReport(){
   exportBlob(`alkam_ops_health_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`, JSON.stringify(report, null, 2));
   renderOpsHealthPanel();
   notify('Sağlık raporu indirildi.');
+}
+
+function saveProdSettings(){
+  const current=getProdSettings();
+  state.prodSettings = {
+    production_mode: !!document.getElementById('prodMode')?.checked,
+    db_writeback_ready: !!document.getElementById('prodDbWriteback')?.checked,
+    backup_job_ready: !!document.getElementById('prodBackupJob')?.checked,
+    drive_sync_ready: !!document.getElementById('prodDriveSync')?.checked,
+    restore_tested: !!document.getElementById('prodRestoreTested')?.checked,
+    local_cleanup_done: !!document.getElementById('prodLocalCleanup')?.checked,
+    operator_name: current.operator_name || 'Yerel Giriş',
+    notes: (document.getElementById('prodNotes')?.value || '').trim(),
+    last_saved_at: new Date().toISOString()
+  };
+  persistProdSettings();
+  state.opsHealth = buildOpsHealthReport();
+  persistOpsHealth();
+  renderProdHardeningPanel();
+  renderOpsHealthPanel();
+  notify('Üretim sıkılaştırma ayarları kaydedildi.');
+}
+function clearLocalOperationalData(){
+  const localCount = localOperationalPayloadCount();
+  if(!localCount){ notify('Temizlenecek yerel operasyon verisi yok.'); return; }
+  if(!confirm(`Yerel operasyon katmanındaki ${localCount} kayıt izini temizlemek istiyor musun? Bu işlem geri alınmaz.`)) return;
+  state.documents=[];
+  state.bridgeCandidates=[];
+  state.approvalOps={processed:[],rejected:[],handled_pending_ids:[]};
+  state.bankOps={pending:[],row_status:{},history:[]};
+  state.expenses=[];
+  state.operationalLedger=[];
+  state.auditTrail=[];
+  state.bridgeBatches=[];
+  writeLocalJson(LOCAL_DOCS_KEY, []);
+  writeLocalJson(LOCAL_BRIDGE_KEY, []);
+  writeLocalObject(LOCAL_APPROVAL_OPS_KEY, state.approvalOps);
+  writeLocalObject(LOCAL_BANK_OPS_KEY, state.bankOps);
+  writeLocalJson(LOCAL_EXPENSES_KEY, []);
+  writeLocalJson(LOCAL_LEDGER_KEY, []);
+  writeLocalJson(LOCAL_AUDIT_KEY, []);
+  writeLocalJson(LOCAL_BRIDGE_BATCHES_KEY, []);
+  state.prodSettings = {...getProdSettings(), local_cleanup_done:true, last_saved_at:new Date().toISOString()};
+  persistProdSettings();
+  state.opsHealth = buildOpsHealthReport();
+  persistOpsHealth();
+  renderDocuments();
+  renderExpenses();
+  renderApprovals();
+  renderAccounts();
+  renderBackup();
+  renderProdHardeningPanel();
+  renderOpsHealthPanel();
+  notify('Yerel operasyon verileri temizlendi.');
+}
+function exportProductionHandover(){
+  const payload = {
+    app:'ALKAM Mali Müşavirlik',
+    version: buildVersion(),
+    exported_at: new Date().toISOString(),
+    ops_health: buildOpsHealthReport(),
+    production_hardening: buildProdHardeningReport(),
+    backup_policy: getBackupConfig(),
+    counts: collectBackupPayload().counts,
+    go_live_rule:['Önce doğru cari','Sonra doğru belge','Sonra doğru bakiye']
+  };
+  exportBlob(`alkam_production_handover_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(payload,null,2));
+  notify('Üretim teslim notu indirildi.');
+}
+function exportDbBindingTemplate(){
+  const txt = [
+    'ALKAM MALİ - DB BAĞ ŞABLONU',
+    '',
+    '1) Kalıcı ID alanları:',
+    '- transaction_id',
+    '- source_row_id',
+    '- approval_id',
+    '- document_id',
+    '- ledger_id',
+    '',
+    '2) Canlı write-back zorunlu noktalar:',
+    '- banka montaj kararı',
+    '- onay işleme kararı',
+    '- belge/makbuz bağlama',
+    '- gider tahakkuk adayı',
+    '- köprü aday kaydı',
+    '',
+    '3) Kontrol kuralı:',
+    '- filtre sadece görünür satırı değiştirir',
+    '- bakiye tam hareket geçmişinden hesaplanır',
+    '',
+    '4) Yedekleme tarafı:',
+    '- pg_dump günlük',
+    '- Drive / rclone senkronu',
+    '- restore tatbikatı kaydı',
+    '',
+    `Sürüm: ${buildVersion()}`
+  ].join('\n');
+  exportBlob(`alkam_db_binding_template_${new Date().toISOString().slice(0,10)}.txt`, txt, 'text/plain;charset=utf-8;');
+  notify('DB bağ şablonu indirildi.');
+}
+function renderProdHardeningPanel(){
+  const target=document.getElementById('prodHardeningWrap');
+  const target2=document.getElementById('prodHardeningWrapYedek');
+  if(!target && !target2) return;
+  const prod = getProdSettings();
+  const report = buildProdHardeningReport();
+  const html = `
+    <div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn btn-blue" onclick="saveProdSettings()">Sıkılaştırma Ayarlarını Kaydet</button>
+      <button class="btn btn-soft" onclick="clearLocalOperationalData()">Yerel Operasyon Verisini Temizle</button>
+      <button class="btn btn-soft" onclick="exportProductionHandover()">Üretim Teslim JSON</button>
+      <button class="btn btn-soft" onclick="exportDbBindingTemplate()">DB Bağ Şablonu</button>
+    </div>
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Sıkılaştırma Skoru</div><div class="v">${report.score} / 100</div></div>
+      <div class="metric-mini"><div class="k">Hazır Kalem</div><div class="v">${report.ready_count} / 6</div></div>
+      <div class="metric-mini"><div class="k">Yerel İz</div><div class="v">${report.local_count}</div></div>
+      <div class="metric-mini"><div class="k">Son Kayıt</div><div class="v">${prod.last_saved_at ? shortDate(prod.last_saved_at) : '-'}</div></div>
+    </div>
+    <div class="form-grid-3" style="margin-bottom:14px;">
+      <label class="list-item" style="cursor:default;"><input type="checkbox" id="prodMode" ${prod.production_mode ? 'checked' : ''}> <div><div class="list-title">Üretim Modu</div><div class="list-meta">Canlı kullanım işareti</div></div></label>
+      <label class="list-item" style="cursor:default;"><input type="checkbox" id="prodDbWriteback" ${prod.db_writeback_ready ? 'checked' : ''}> <div><div class="list-title">DB Write-back Hazır</div><div class="list-meta">Gerçek kayıt yazımı için</div></div></label>
+      <label class="list-item" style="cursor:default;"><input type="checkbox" id="prodBackupJob" ${prod.backup_job_ready ? 'checked' : ''}> <div><div class="list-title">Zamanlanmış Backup Hazır</div><div class="list-meta">Görev zamanlayıcı / cron</div></div></label>
+      <label class="list-item" style="cursor:default;"><input type="checkbox" id="prodDriveSync" ${prod.drive_sync_ready ? 'checked' : ''}> <div><div class="list-title">Drive Senkron Hazır</div><div class="list-meta">rclone / remote bağlandı</div></div></label>
+      <label class="list-item" style="cursor:default;"><input type="checkbox" id="prodRestoreTested" ${prod.restore_tested ? 'checked' : ''}> <div><div class="list-title">Restore Testi Yapıldı</div><div class="list-meta">Tatbikat doğrulandı</div></div></label>
+      <label class="list-item" style="cursor:default;"><input type="checkbox" id="prodLocalCleanup" ${prod.local_cleanup_done ? 'checked' : ''}> <div><div class="list-title">Yerel Temizlik Tamam</div><div class="list-meta">Local izler temizlendi</div></div></label>
+    </div>
+    <div class="field" style="margin-bottom:14px;"><label>Üretim Notu</label><textarea id="prodNotes" rows="3" class="select-input">${escapeHtml(prod.notes || '')}</textarea></div>
+    ${(report.checks||[]).length ? `<table><thead><tr><th>Kontrol</th><th>Durum</th><th>Detay</th></tr></thead><tbody>${report.checks.map(c=>`<tr><td>${escapeHtml(c.label||'-')}</td><td>${healthTag(c.status)}</td><td>${escapeHtml(c.detail||'-')}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz sıkılaştırma raporu yok.</div>`}
+  `;
+  if(target) target.innerHTML = html;
+  if(target2) target2.innerHTML = html;
 }
 
 function collectBackupPayload(){
@@ -1005,6 +1186,7 @@ function renderBackup(){
         <button class="btn btn-soft" onclick="runBackupExport('powershell')">PowerShell Script</button>
         <button class="btn btn-soft" onclick="runBackupExport('bash')">Bash Script</button>
         <button class="btn btn-soft" onclick="runBackupExport('drive_plan')">Drive Klasör Planı</button>
+        <button class="btn btn-soft" onclick="exportProductionHandover()">Üretim Teslim JSON</button>
       </div>
       <div class="grid-4" style="margin-bottom:14px;">
         <div class="metric-mini"><div class="k">Belge</div><div class="v">${counts.documents}</div></div>
@@ -2774,6 +2956,7 @@ async function refreshAll(){
   renderApprovals();
   renderBackup();
   renderOpsHealthPanel();
+  renderProdHardeningPanel();
   if(state.selectedCariId) renderSelectedCariDetail();
 }
 document.getElementById("cariSearch").addEventListener("input",renderCariList);
