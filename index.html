@@ -35,7 +35,7 @@
     .toggle-password{position:absolute;top:50%;right:8px;transform:translateY(-50%);width:34px;height:34px;border:none;background:transparent;font-size:16px;cursor:pointer;color:#64748b;border-radius:10px}.login-btn{width:100%;height:48px;border:none;border-radius:14px;margin-top:14px;background:var(--blue);color:#fff;font-size:15px;font-weight:900;cursor:pointer}.login-error{min-height:20px;text-align:center;color:#dc2626;font-size:13px;font-weight:900;margin-top:12px}
     .field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;color:#334155;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
     .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.form-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-    .toast{position:fixed;right:16px;bottom:16px;z-index:999999;background:#0f172a;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);font-size:13px;font-weight:800;display:none;max-width:340px}
+    .toast{position:fixed;right:16px;bottom:16px;z-index:999999;background:#0f172a;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);font-size:13px;font-weight:800;display:none;max-width:340px}.click-row{cursor:pointer}.click-row:hover td{background:#f8fbff}.rule-box{padding:12px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;font-size:13px;font-weight:700;color:#334155;line-height:1.6}.muted-note{font-size:12px;color:#64748b;font-weight:700}
     .btn[disabled]{opacity:.55;cursor:not-allowed}
     @media (max-width:1200px){.cards,.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-2,.grid-3,.toolbar,.form-grid,.form-grid-3{grid-template-columns:1fr}.detail-sticky{position:static}}
     @media (max-width:860px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.main{padding:16px}.page-head h1{font-size:32px}}
@@ -178,6 +178,17 @@
       </div>
     </div>
   </div>
+
+</div>
+
+<div id="approvalDetailModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:980px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Onay Kaydı Detayı</h2>
+      <button class="btn btn-red" onclick="closeApprovalDetailModal()">Kapat</button>
+    </div>
+    <div id="approvalDetailContent"></div>
+  </div>
 </div>
 
 <div class="layout">
@@ -277,7 +288,7 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false};
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null};
 
 function money(v){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(Number(v||0))}
 function shortDate(v){if(!v) return "-"; const d=new Date(v); if(Number.isNaN(d.getTime())) return v; return new Intl.DateTimeFormat("tr-TR").format(d)}
@@ -845,27 +856,72 @@ function approvalFlags(r){
   if(text.includes("whatsapp") || text.includes("telegram") || text.includes("gorsel") || text.includes("görsel")) flags.push('<span class="tag gray">Belge Adayı</span>');
   return flags.join(' ') || '<span class="tag green">Standart</span>';
 }
+function bankRowConfidence(r){
+  return approvalConfidence(r);
+}
+function bankSuggestedTarget(r){
+  return r.suggested_cari_name || r.suggested_expense_name || r.suggested_financial_account_name || r.suggested_financial_account_type || "-";
+}
+function bankNeedsApproval(r){
+  const conf = bankRowConfidence(r);
+  const text = `${r.match_reason || ''} ${r.eslesme_sebebi || ''} ${r.description || ''} ${r.issue_type || ''}`.toLowerCase();
+  return !r.suggested_financial_account_type || !bankSuggestedTarget(r) || bankSuggestedTarget(r)==="-" || (conf && conf < 95) || text.includes('duplicate') || text.includes('çift') || text.includes('onay');
+}
+function bankControlBadge(r){
+  if(bankNeedsApproval(r)) return '<span class="tag red">Onaya Düşmeli</span>';
+  if((bankRowConfidence(r)||0) >= 95) return '<span class="tag green">İşlenebilir</span>';
+  return '<span class="tag amber">Kontrol Et</span>';
+}
+function mokaRowClass(r){
+  const text = `${r.eslesme_sebebi || ''} ${r.description || ''} ${r.match_reason || ''}`.toLowerCase();
+  if(text.includes('banka') || text.includes('aktar') || text.includes('virman') || text.includes('transfer')) return 'banka_aktarim';
+  if(text.includes('moka') || text.includes('pos') || text.includes('kredi kart')) return 'moka_tahsilat';
+  return 'belirsiz';
+}
+function mokaRecommendedAction(r){
+  const cls = mokaRowClass(r);
+  if(cls === 'moka_tahsilat') return 'Önce Moka United tahsilatı';
+  if(cls === 'banka_aktarim') return 'Sonra banka mahsup';
+  return 'Onaya düşür / manuel incele';
+}
 function renderAccounts(){
-  const ambiguousBankCount = state.bankPanel.filter(r=>!r.suggested_financial_account_type || String(r.suggested_financial_account_type).trim()==="").length;
-  const mokaTransferCount = state.mokaPanel.filter(r=>String(r.eslesme_sebebi||'').toLowerCase().includes('moka') || String(r.description||'').toLowerCase().includes('moka')).length;
+  const ambiguousBankCount = state.bankPanel.filter(r=>bankNeedsApproval(r)).length;
+  const processableBankCount = state.bankPanel.filter(r=>!bankNeedsApproval(r)).length;
+  const mokaTransferCount = state.mokaPanel.filter(r=>mokaRowClass(r)==='banka_aktarim').length;
+  const mokaTahsilatCount = state.mokaPanel.filter(r=>mokaRowClass(r)==='moka_tahsilat').length;
   document.getElementById("accountSummaryWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
     <div class="metric-mini"><div class="k">Toplam Hesap</div><div class="v">${state.accounts.length}</div></div>
-    <div class="metric-mini"><div class="k">Belirsiz Banka Satırı</div><div class="v">${ambiguousBankCount}</div></div>
-    <div class="metric-mini"><div class="k">Moka Aday Transfer</div><div class="v">${mokaTransferCount}</div></div>
+    <div class="metric-mini"><div class="k">İşlenebilir Banka</div><div class="v">${processableBankCount}</div></div>
+    <div class="metric-mini"><div class="k">Onaya Düşmeli</div><div class="v">${ambiguousBankCount}</div></div>
     <div class="metric-mini"><div class="k">Net Toplam</div><div class="v">${money(state.accounts.reduce((a,b)=>a+num(b.net_bakiye),0))}</div></div>
+  </div>
+  <div class="rule-box" style="margin-bottom:14px;">
+    Standart sıra: <strong>banka satırı önce aday eşleşme</strong> → emin değilse <strong>Onay Merkezi</strong> → Moka kaynaklıysa <strong>önce Moka United</strong> → bankaya aktarım geldiğinde <strong>mahsup</strong>.
   </div>` + (state.accounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${state.accounts.map(a=>`<tr><td>${escapeHtml(a.account_name)}</td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`);
-  document.getElementById("bankPanelWrap").innerHTML=state.bankPanel.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Öneri</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.bankPanel.map(r=>{
-    const suggestion = r.suggested_cari_name || r.suggested_financial_account_name || r.suggested_financial_account_type || "-";
-    const control = r.match_reason || r.eslesme_sebebi || (!r.suggested_financial_account_type ? 'Onaya düşmeli' : 'Kontrol et');
-    return `<tr><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}</td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${escapeHtml(control)}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
-  }).join("")}</tbody></table>`:`<div class="empty">Banka paneli boş.</div>`;
-  document.getElementById("mokaPanelWrap").innerHTML=state.mokaPanel.length?`<div class="grid-4" style="margin-bottom:14px">
+  document.getElementById("bankPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
+      <div class="metric-mini"><div class="k">Toplam Satır</div><div class="v">${state.bankPanel.length}</div></div>
+      <div class="metric-mini"><div class="k">İşlenebilir</div><div class="v">${processableBankCount}</div></div>
+      <div class="metric-mini"><div class="k">Onaylık</div><div class="v">${ambiguousBankCount}</div></div>
+      <div class="metric-mini"><div class="k">Kural</div><div class="v">Önce doğru cari</div></div>
+    </div>` + (state.bankPanel.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.bankPanel.map(r=>{
+    const suggestion = bankSuggestedTarget(r);
+    const conf = bankRowConfidence(r);
+    const reason = r.match_reason || r.eslesme_sebebi || (!r.suggested_financial_account_type ? 'Öneri yok' : 'Standart eşleşme');
+    return `<tr><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(reason)}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankControlBadge(r)}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
+  }).join("")}</tbody></table>`:`<div class="empty">Banka paneli boş.</div>`);
+  document.getElementById("mokaPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
       <div class="metric-mini"><div class="k">Toplam Moka Satırı</div><div class="v">${state.mokaPanel.length}</div></div>
-      <div class="metric-mini"><div class="k">Bankaya Aktarım Adayı</div><div class="v">${mokaTransferCount}</div></div>
-      <div class="metric-mini"><div class="k">İşlenmemiş Mantık</div><div class="v">Önce Moka United</div></div>
-      <div class="metric-mini"><div class="k">Standart</div><div class="v">Sonra Banka Mahsup</div></div>
+      <div class="metric-mini"><div class="k">Moka Tahsilat</div><div class="v">${mokaTahsilatCount}</div></div>
+      <div class="metric-mini"><div class="k">Banka Aktarım</div><div class="v">${mokaTransferCount}</div></div>
+      <div class="metric-mini"><div class="k">Standart</div><div class="v">Önce Moka sonra Banka</div></div>
     </div>
-    <table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Tür</th><th>İş Kuralı</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.mokaPanel.map(r=>`<tr><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}</td><td>${renderTag(r.eslesme_sebebi||"-")}</td><td>${escapeHtml(r.match_reason || "Önce Moka United, sonra banka mahsup")}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Moka hareketi yok.</div>`;
+    <div class="rule-box" style="margin-bottom:14px;">
+      Moka kredi kartı tahsilatı <strong>doğrudan bankaya gelir yazılmaz</strong>. İlk kayıt <strong>Moka United</strong> içinde tutulur. Vadesi gelince bankaya aktarılan tutar ayrıca işlenir ve <strong>Moka United → Banka</strong> mahsup mantığıyla kapatılır.
+    </div>` + (state.mokaPanel.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Önerilen İşlem</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.mokaPanel.map(r=>{
+      const cls = mokaRowClass(r);
+      const tag = cls==='moka_tahsilat' ? '<span class="tag blue">Moka Tahsilat</span>' : (cls==='banka_aktarim' ? '<span class="tag green">Banka Aktarım</span>' : '<span class="tag amber">Belirsiz</span>');
+      return `<tr><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(r.match_reason || r.eslesme_sebebi || '-')}</div></td><td>${tag}</td><td>${escapeHtml(mokaRecommendedAction(r))}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
+    }).join("")}</tbody></table>`:`<div class="empty">Moka hareketi yok.</div>`);
 }
 function renderReports(){
   const riskRows=state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).sort((a,b)=>num(b.bakiye)-num(a.bakiye)).slice(0,15);
@@ -879,17 +935,114 @@ function renderReports(){
   <div class="grid-2"><div class="section"><h2 class="section-title">Tahsilat Riski Olanlar</h2>${riskRows.length?`<table><thead><tr><th>Cari</th><th>Son Tahsilat</th><th class="text-right">Bakiye</th></tr></thead><tbody>${riskRows.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${shortDate(r.son_tahsilat_tarihi)} · ${money(r.son_tahsilat_tutari||0)}</td><td class="text-right">${balanceLabel(r.bakiye||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Riskli cari yok.</div>`}</div>
   <div class="section"><h2 class="section-title">En Yüksek Defter Ücretliler</h2><table><thead><tr><th>Cari</th><th>Tür</th><th class="text-right">Defter Ücreti</th></tr></thead><tbody>${topFee.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${escapeHtml(r.taxpayer_type||"-")}</td><td class="text-right">${money(r.defter_ucreti||0)}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
+function approvalSourceText(r){
+  const s = String(r.source_type || r.channel || r.raw_source || '-').toLowerCase();
+  if(s.includes('whatsapp')) return 'WhatsApp';
+  if(s.includes('telegram')) return 'Telegram';
+  if(s.includes('görsel') || s.includes('gorsel') || s.includes('image')) return 'Görsel / Belge';
+  if(s.includes('banka')) return 'Banka';
+  if(s.includes('moka')) return 'Moka';
+  return r.source_type || r.channel || r.raw_source || '-';
+}
+function approvalTextBlob(r){
+  return `${r.issue_type || ''} ${r.content_summary || ''} ${r.raw_content || ''} ${r.source_type || ''} ${r.channel || ''}`.toLowerCase();
+}
+function approvalIsDuplicate(r){
+  const text = approvalTextBlob(r);
+  return text.includes('duplicate') || text.includes('çift');
+}
+function approvalIsDocumentCandidate(r){
+  const text = approvalTextBlob(r);
+  return text.includes('whatsapp') || text.includes('telegram') || text.includes('görsel') || text.includes('gorsel') || text.includes('belge') || text.includes('makbuz');
+}
+function approvalIsLocked(r){
+  const conf = approvalConfidence(r);
+  return (conf && conf < 95) || approvalIsDuplicate(r);
+}
+function approvalLockReason(r){
+  const reasons = [];
+  const conf = approvalConfidence(r);
+  if(conf && conf < 95) reasons.push(`Güven puanı düşük (${conf.toFixed(0)})`);
+  if(approvalIsDuplicate(r)) reasons.push('Muhtemel çift kayıt');
+  return reasons.join(' · ') || 'Kilitsiz';
+}
+function filteredPendingApprovals(){
+  const rows = state.pending.map((r,i)=>({row:r,__i:i}));
+  if(state.approvalFilter === 'locked') return rows.filter(x=>approvalIsLocked(x.row));
+  if(state.approvalFilter === 'duplicate') return rows.filter(x=>approvalIsDuplicate(x.row));
+  if(state.approvalFilter === 'document') return rows.filter(x=>approvalIsDocumentCandidate(x.row));
+  return rows;
+}
+function openApprovalDetailModal(bucket, index){
+  state.selectedApprovalBucket = bucket;
+  state.selectedApprovalIndex = index;
+  const sourceRows = bucket === 'processed' ? state.processed : (bucket === 'rejected' ? state.rejected : state.pending);
+  const r = sourceRows[index];
+  if(!r){ notify('Kayıt bulunamadı.'); return; }
+  const conf = approvalConfidence(r);
+  const content = `
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Kova</div><div class="v">${escapeHtml(bucket === 'pending' ? 'Onay Bekleyen' : bucket === 'processed' ? 'İşlenen' : 'Reddedilen')}</div></div>
+      <div class="metric-mini"><div class="k">Kaynak</div><div class="v">${escapeHtml(approvalSourceText(r))}</div></div>
+      <div class="metric-mini"><div class="k">Güven</div><div class="v">${conf ? conf.toFixed(0) : '-'}</div></div>
+      <div class="metric-mini"><div class="k">Kilit</div><div class="v">${approvalIsLocked(r) ? 'Evet' : 'Hayır'}</div></div>
+    </div>
+    <div class="grid-2" style="margin-bottom:14px;">
+      <div class="rule-box">
+        <strong>Önerilen Hedef</strong><br>
+        Cari / Gider: ${escapeHtml(r.suggested_cari_name || r.suggested_expense_name || r.final_cari_name || r.final_expense_name || '-')}<br>
+        Hareket: ${escapeHtml(r.suggested_movement_type || r.final_movement_type || '-')}<br>
+        Tutar: ${money(r.suggested_amount || r.raw_amount || r.final_amount || 0)}
+      </div>
+      <div class="rule-box">
+        <strong>Kontrol Mantığı</strong><br>
+        ${approvalFlags(r)}<br>
+        ${escapeHtml(approvalLockReason(r))}<br>
+        ${escapeHtml(r.match_reason || r.decision_note || r.issue_type || 'Detay notu yok')}
+      </div>
+    </div>
+    <div class="section" style="box-shadow:none;margin-bottom:12px;">
+      <h3 class="section-title" style="font-size:18px;">Özet</h3>
+      <div class="rule-box">${escapeHtml(r.content_summary || r.raw_content || '-')}</div>
+    </div>
+    <div class="section" style="box-shadow:none;margin-bottom:12px;">
+      <h3 class="section-title" style="font-size:18px;">Ham İçerik / Belge Metni</h3>
+      <div class="rule-box" style="white-space:pre-wrap;">${escapeHtml(r.raw_content || r.content_summary || '-')}</div>
+    </div>
+    <div class="section" style="box-shadow:none;margin-bottom:0;">
+      <h3 class="section-title" style="font-size:18px;">Operasyon Kuralı</h3>
+      <div class="rule-box">
+        Bu ekranda kayıt <strong>inceleme amaçlı</strong> açılıyor. Kural sabit: <strong>emin olunmayan kayıt otomatik işlenmez</strong>. Düşük güven veya muhtemel çift varsa önce onay merkezinde doğrulanır, sonra muhasebe kaydı açılır.
+      </div>
+    </div>`;
+  document.getElementById('approvalDetailContent').innerHTML = content;
+  document.getElementById('approvalDetailModal').style.display = 'flex';
+}
+function closeApprovalDetailModal(){
+  document.getElementById('approvalDetailModal').style.display = 'none';
+}
 function renderApprovals(){
-  const lockedCount = state.pending.filter(r=>approvalConfidence(r) && approvalConfidence(r) < 95).length;
-  const duplicateCount = state.pending.filter(r=>`${r.issue_type || ''} ${r.content_summary || ''} ${r.raw_content || ''}`.toLowerCase().includes('duplicate') || `${r.issue_type || ''}`.toLowerCase().includes('çift')).length;
+  const pendingRows = filteredPendingApprovals();
+  const lockedCount = state.pending.filter(r=>approvalIsLocked(r)).length;
+  const duplicateCount = state.pending.filter(r=>approvalIsDuplicate(r)).length;
+  const documentCount = state.pending.filter(r=>approvalIsDocumentCandidate(r)).length;
   document.getElementById("pendingWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
       <div class="metric-mini"><div class="k">Onay Bekleyen</div><div class="v">${state.pending.length}</div></div>
-      <div class="metric-mini"><div class="k">Düşük Güven Kilidi</div><div class="v">${lockedCount}</div></div>
+      <div class="metric-mini"><div class="k">Düşük Güven / Kilit</div><div class="v">${lockedCount}</div></div>
       <div class="metric-mini"><div class="k">Muhtemel Çift</div><div class="v">${duplicateCount}</div></div>
-      <div class="metric-mini"><div class="k">Kural</div><div class="v">Emin değilsen onay</div></div>
-    </div>` + (state.pending.length?`<table><thead><tr><th>Kaynak</th><th>Özet</th><th>Öneri</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.pending.map(r=>`<tr><td>${escapeHtml(r.source_type||"-")}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.suggested_cari_name||r.suggested_expense_name||"-")} · ${escapeHtml(r.suggested_movement_type||"-")}<br><span style="font-size:12px;color:#64748b">Güven: ${approvalConfidence(r) ? approvalConfidence(r).toFixed(0) : '-'}</span></td><td>${approvalFlags(r)}</td><td class="text-right">${money(r.suggested_amount||r.raw_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`);
-  document.getElementById("processedWrap").innerHTML=state.processed.length?`<table><thead><tr><th>Kaynak</th><th>Karar</th><th>İz</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.processed.map(r=>`<tr><td>${escapeHtml(r.source_type||"-")}</td><td>${escapeHtml(r.final_cari_name||r.final_expense_name||"-")} · ${escapeHtml(r.final_movement_type||"-")}</td><td>${escapeHtml(r.decision_note || r.match_reason || 'İşlendi')}</td><td class="text-right">${money(r.final_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">İşlenen kayıt yok.</div>`;
-  document.getElementById("rejectedWrap").innerHTML=state.rejected.length?`<table><thead><tr><th>Kaynak</th><th>Özet</th><th>Not</th></tr></thead><tbody>${state.rejected.map(r=>`<tr><td>${escapeHtml(r.source_type||"-")}</td><td>${escapeHtml(r.content_summary||"-")}</td><td>${escapeHtml(r.decision_note||"-")}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Reddedilen kayıt yok.</div>`;
+      <div class="metric-mini"><div class="k">Belge Adayı</div><div class="v">${documentCount}</div></div>
+    </div>
+    <div class="filter-chips" id="approvalFilterChips">
+      <button class="chip ${state.approvalFilter==='all'?'active':''}" data-afilter="all">Tümü</button>
+      <button class="chip ${state.approvalFilter==='locked'?'active':''}" data-afilter="locked">Kilitli</button>
+      <button class="chip ${state.approvalFilter==='duplicate'?'active':''}" data-afilter="duplicate">Muhtemel Çift</button>
+      <button class="chip ${state.approvalFilter==='document'?'active':''}" data-afilter="document">WhatsApp / Telegram / Belge</button>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px;">Kural: güven puanı düşük, muhtemel çift, görselden okunan veya kopyala-yapıştır gelen kayıtlar otomatik işlenmez; önce onaya düşer.</div>` + (pendingRows.length?`<table><thead><tr><th>Kaynak</th><th>Özet</th><th>Öneri</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${pendingRows.map(({row:r,__i})=>`<tr class="click-row" data-approval-bucket="pending" data-approval-index="${__i}"><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.suggested_cari_name||r.suggested_expense_name||"-")} · ${escapeHtml(r.suggested_movement_type||"-")}<br><span style="font-size:12px;color:#64748b">Güven: ${approvalConfidence(r) ? approvalConfidence(r).toFixed(0) : '-'}</span></td><td>${approvalFlags(r)}<div class="muted-note">${escapeHtml(approvalLockReason(r))}</div></td><td class="text-right">${money(r.suggested_amount||r.raw_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Bu filtrede kayıt yok.</div>`);
+  document.getElementById("processedWrap").innerHTML=state.processed.length?`<table><thead><tr><th>Kaynak</th><th>Karar</th><th>İz</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.processed.map((r,i)=>`<tr class="click-row" data-approval-bucket="processed" data-approval-index="${i}"><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.final_cari_name||r.final_expense_name||"-")} · ${escapeHtml(r.final_movement_type||"-")}</td><td>${escapeHtml(r.decision_note || r.match_reason || 'İşlendi')}</td><td class="text-right">${money(r.final_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">İşlenen kayıt yok.</div>`;
+  document.getElementById("rejectedWrap").innerHTML=state.rejected.length?`<table><thead><tr><th>Kaynak</th><th>Özet</th><th>Not</th></tr></thead><tbody>${state.rejected.map((r,i)=>`<tr class="click-row" data-approval-bucket="rejected" data-approval-index="${i}"><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||"-")}</td><td>${escapeHtml(r.decision_note||"-")}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Reddedilen kayıt yok.</div>`;
+  document.querySelectorAll('#approvalFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.approvalFilter = btn.dataset.afilter; renderApprovals(); }));
+  document.querySelectorAll('[data-approval-bucket]').forEach(el=>el.addEventListener('click',()=>openApprovalDetailModal(el.dataset.approvalBucket, Number(el.dataset.approvalIndex))));
 }
 function openCariEditModal(){
   const card=getCariCard(state.selectedCariId); const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
