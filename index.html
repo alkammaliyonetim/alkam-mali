@@ -465,6 +465,7 @@ function openStatementOutput(){
   const totalDebit = rows.reduce((a,r)=>a+Number(r.debit||0),0);
   const totalCredit = rows.reduce((a,r)=>a+Number(r.credit||0),0);
   const closingBalance = rows.length ? Number(rows[rows.length-1].running_balance||0) : 0;
+  const dynamicBalanceHeader = closingBalance > 0 ? 'Bakiye B' : (closingBalance < 0 ? 'Bakiye A' : 'Bakiye');
   const win = window.open('', '_blank', 'width=1200,height=900');
   if(!win){ notify("Popup engellendi. Tarayıcıdan izin ver."); return; }
 
@@ -533,13 +534,13 @@ function openStatementOutput(){
           <th>Açıklama</th>
           <th class="r">Borç</th>
           <th class="r">Alacak</th>
-          <th class="r">Bakiye</th>
+          <th class="r">${dynamicBalanceHeader}</th>
         </tr>
       </thead>
       <tbody>
         ${rows.map(r=>{
           const b = balanceColumns(r.running_balance);
-          const bakiyeText = b.bakiye_b ? `${b.bakiye_b} B` : (b.bakiye_a ? `${b.bakiye_a} A` : money(0));
+          const bakiyeText = money(Math.abs(Number(r.running_balance||0)));
           return `<tr>
             <td>${shortDate(r.line_date)}</td>
             <td>${escapeHtml(r.movement_type||'-')}</td>
@@ -561,6 +562,7 @@ function renderSelectedCariDetail(){
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId); const card=getCariCard(state.selectedCariId); const target=document.getElementById("selectedCariDetail");
   if(!c){target.innerHTML=`<div class="empty">Bir cari seç.</div>`; return}
   const hs=computeRunningRows(rangeFilteredHareketler());
+  const dynamicBalanceHeader = currentBalanceValue > 0 ? 'Bakiye B' : (currentBalanceValue < 0 ? 'Bakiye A' : 'Bakiye');
   const currentBalanceValue = Number(c.bakiye || 0);
   const currentBalanceHeader = currentBalanceValue > 0 ? 'Bakiye B' : (currentBalanceValue < 0 ? 'Bakiye A' : 'Bakiye');
   target.innerHTML=`
