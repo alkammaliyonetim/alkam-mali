@@ -562,9 +562,8 @@ function renderSelectedCariDetail(){
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId); const card=getCariCard(state.selectedCariId); const target=document.getElementById("selectedCariDetail");
   if(!c){target.innerHTML=`<div class="empty">Bir cari seç.</div>`; return}
   const hs=computeRunningRows(rangeFilteredHareketler());
-  const dynamicBalanceHeader = currentBalanceValue > 0 ? 'Bakiye B' : (currentBalanceValue < 0 ? 'Bakiye A' : 'Bakiye');
   const currentBalanceValue = Number(c.bakiye || 0);
-  const currentBalanceHeader = currentBalanceValue > 0 ? 'Bakiye B' : (currentBalanceValue < 0 ? 'Bakiye A' : 'Bakiye');
+  const dynamicBalanceHeader = currentBalanceValue > 0 ? 'Bakiye B' : (currentBalanceValue < 0 ? 'Bakiye A' : 'Bakiye');
   target.innerHTML=`
   <div class="hero-name">${escapeHtml(c.cari_name || 'Cari')}</div>
   <div class="hero-sub">
