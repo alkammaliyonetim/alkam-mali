@@ -36,6 +36,7 @@
     .field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;color:#334155;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
     .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.form-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
     .toast{position:fixed;right:16px;bottom:16px;z-index:999999;background:#0f172a;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);font-size:13px;font-weight:800;display:none;max-width:340px}
+    .btn[disabled]{opacity:.55;cursor:not-allowed}
     @media (max-width:1200px){.cards,.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-2,.grid-3,.toolbar,.form-grid,.form-grid-3{grid-template-columns:1fr}.detail-sticky{position:static}}
     @media (max-width:860px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.main{padding:16px}.page-head h1{font-size:32px}}
     @media (max-width:640px){.cards,.grid-4{grid-template-columns:1fr}}
@@ -98,7 +99,8 @@
     <div class="btn-row" style="margin-top:16px;">
       <button class="btn btn-blue" onclick="saveCariCard()">Kaydet / Güncelle</button>
       <button class="btn btn-soft" onclick="openPromiseModal()">Ödeme Sözü Gir</button>
-      <button class="btn btn-soft" onclick="alert('Yazdır/Excel/PDF sonraki turda bağlanacak.')">Extre Al</button>
+      <button class="btn btn-soft" onclick="openStatementPrecheck()">Extre Al</button>
+      <button class="btn btn-soft" onclick="openFeeModal()">Ücret Geçmişi</button>
     </div>
   </div>
 </div>
@@ -132,8 +134,48 @@
     </div>
     <div id="statementPrecheckContent"></div>
     <div class="btn-row" style="margin-top:16px;">
-      <button class="btn btn-blue" onclick="confirmStatementOutput()">Yazdır / PDF Aç</button>
-      <button class="btn btn-soft" onclick="exportStatementExcel()">Excel İndir</button>
+      <button id="statementPrintBtn" class="btn btn-blue" onclick="confirmStatementOutput()">Yazdır / PDF Aç</button>
+      <button id="statementExcelBtn" class="btn btn-soft" onclick="exportStatementExcel()">Excel İndir</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="feeModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:1080px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Muhasebe Ücreti Yönetimi</h2>
+      <button class="btn btn-red" onclick="closeFeeModal()">Kapat</button>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div class="section" style="box-shadow:none;margin-bottom:12px;">
+          <h3 class="section-title" style="font-size:20px;">Ücret Geçmişi</h3>
+          <div id="feeTimelineWrap" class="empty">Yükleniyor...</div>
+        </div>
+      </div>
+      <div>
+        <div class="section" style="box-shadow:none;margin-bottom:12px;">
+          <h3 class="section-title" style="font-size:20px;">Yeni Dönem / Güncelleme</h3>
+          <div class="form-grid">
+            <div class="field"><label>Geçerlilik Başlangıcı</label><input id="feeValidFrom" type="date" /></div>
+            <div class="field"><label>Aylık Ücret</label><input id="feeAmountInput" type="number" min="0" step="0.01" /></div>
+          </div>
+          <div class="form-grid" style="margin-top:12px;">
+            <div class="field"><label>Önceki Açık Dönemi Kapat</label><select id="feeAutoClosePrev"><option value="true">Evet</option><option value="false">Hayır</option></select></div>
+            <div class="field"><label>Açıklama</label><input id="feeNoteInput" placeholder="Zam / indirim / özel not" /></div>
+          </div>
+          <div class="btn-row" style="margin-top:16px;">
+            <button class="btn btn-blue" onclick="saveFeePeriod()">Yeni Ücret Dönemi Ekle</button>
+            <button class="btn btn-soft" onclick="closeActiveFeePeriodToday()">Açık Dönemi Bugün Kapat</button>
+            <button class="btn btn-soft" onclick="runControlledAccrualForSelectedCari()">Kontrollü Tahakkuk Tara</button>
+          </div>
+        </div>
+        <div class="section" style="box-shadow:none;margin-bottom:0;">
+          <h3 class="section-title" style="font-size:20px;">Kontrol Sonuçları</h3>
+          <div id="feeControlWrap" class="empty">Yükleniyor...</div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -235,7 +277,7 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[]};
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false};
 
 function money(v){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(Number(v||0))}
 function shortDate(v){if(!v) return "-"; const d=new Date(v); if(Number.isNaN(d.getTime())) return v; return new Intl.DateTimeFormat("tr-TR").format(d)}
@@ -366,91 +408,198 @@ async function runControlledAccrualForSelectedCari(){
   renderDashboard(); renderReports(); renderSelectedCariDetail();
 }
 
-function computeRunningRows(allRows, startDate=null){
-  const ordered=[...allRows].sort((a,b)=>{
-    const d = new Date(a.line_date) - new Date(b.line_date);
-    if(d !== 0) return d;
-    return String(a.id||'').localeCompare(String(b.id||''));
+
+function num(v){ const n = Number(v); return Number.isFinite(n) ? n : 0; }
+function isoDate(v){
+  if(!v) return "";
+  const d = new Date(v);
+  if(Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0,10);
+}
+function dayBefore(v){
+  const d = new Date(v);
+  if(Number.isNaN(d.getTime())) return "";
+  d.setDate(d.getDate()-1);
+  return d.toISOString().slice(0,10);
+}
+function getRowDateValue(r){
+  return r.line_date || r.movement_date || r.period_start || r.created_at || r.updated_at || null;
+}
+function normalizeMovementAmounts(row){
+  const rawAmount = num(row.amount ?? row.net_amount ?? row.final_amount ?? row.raw_amount ?? row.suggested_amount ?? row.expected_amount ?? row.existing_amount ?? row.fee_amount);
+  let debit = row.debit;
+  let credit = row.credit;
+  if((debit===undefined || debit===null) && (credit===undefined || credit===null)){
+    const t = String(row.movement_type || row.final_movement_type || row.suggested_movement_type || "").toLowerCase();
+    const isCreditLike = t.includes("tahsilat") || t.includes("alacak") || t.includes("odeme") || t.includes("ödeme") || t.includes("mahsup_cikis");
+    debit = isCreditLike ? 0 : rawAmount;
+    credit = isCreditLike ? rawAmount : 0;
+  }
+  return { debit:num(debit), credit:num(credit), amount:rawAmount };
+}
+function sortStatementRows(rows){
+  return [...rows].sort((a,b)=>{
+    const da = new Date(getRowDateValue(a) || 0).getTime();
+    const db = new Date(getRowDateValue(b) || 0).getTime();
+    if(da !== db) return da - db;
+    return String(a.id || a.line_id || a.movement_id || "").localeCompare(String(b.id || b.line_id || b.movement_id || ""));
   });
-  let balance=0;
-  const visible=[];
+}
+function computeRunningRows(allRows, startDate=null){
+  const ordered = sortStatementRows(allRows).map(r=>{
+    const mv = normalizeMovementAmounts(r);
+    return { ...r, line_date:getRowDateValue(r), debit:mv.debit, credit:mv.credit, amount:mv.amount };
+  });
+  let balance = 0;
+  const visible = [];
   for(const r of ordered){
-    balance += Number(r.debit||0) - Number(r.credit||0);
-    const rowDate = new Date(r.line_date);
+    balance += num(r.debit) - num(r.credit);
+    const rowDate = new Date(r.line_date || 0);
     if(!startDate || rowDate >= startDate){
-      visible.push({...r, running_balance: balance});
+      visible.push({ ...r, running_balance: balance });
     }
   }
-  return visible.reverse();
+  return visible;
+}
+function getStatementOpeningBalance(startDate){
+  if(!startDate) return 0;
+  const ordered = sortStatementRows(state.hareketler).map(r=>{
+    const mv = normalizeMovementAmounts(r);
+    return { ...r, line_date:getRowDateValue(r), debit:mv.debit, credit:mv.credit };
+  });
+  let balance = 0;
+  for(const r of ordered){
+    const rowDate = new Date(r.line_date || 0);
+    if(rowDate >= startDate) break;
+    balance += num(r.debit) - num(r.credit);
+  }
+  return balance;
 }
 function balanceLabel(v){
-  const n=Number(v||0);
-  if(n>0) return `${money(n)}`;
-  if(n<0) return `${money(Math.abs(n))}`;
-  return `${money(0)} Bakiye`;
+  const n=num(v);
+  if(n>0) return `${money(n)} B`;
+  if(n<0) return `${money(Math.abs(n))} A`;
+  return `${money(0)}`;
 }
-
 function balanceColumns(v){
-  const n=Number(v||0);
+  const n=num(v);
   return {
-    // İş kuralı:
-    // Mükellef bize borçluysa -> Bakiye B
-    // Biz mükellefe borçluysak -> Bakiye A
     bakiye_b: n > 0 ? money(n) : '',
     bakiye_a: n < 0 ? money(Math.abs(n)) : '',
   };
 }
-
 function currentStatementRows(){
   const start = getRangeStartDate();
-  const rows = computeRunningRows(state.hareketler, state.selectedRange==="all" ? null : start).reverse();
-  return rows;
+  return computeRunningRows(state.hareketler, state.selectedRange==="all" ? null : start);
+}
+function getCurrentStatementMeta(){
+  const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
+  const start = getRangeStartDate();
+  const rowsAsc = currentStatementRows();
+  const rowsDesc = [...rowsAsc].reverse();
+  const openingBalance = state.selectedRange==="all" ? 0 : getStatementOpeningBalance(start);
+  const totalDebit = rowsAsc.reduce((a,r)=>a+num(r.debit),0);
+  const totalCredit = rowsAsc.reduce((a,r)=>a+num(r.credit),0);
+  const closingBalance = rowsAsc.length ? num(rowsAsc[rowsAsc.length-1].running_balance) : openingBalance;
+  const systemBalance = c ? num(c.bakiye) : closingBalance;
+  const diff = Math.abs(closingBalance - systemBalance);
+  return {
+    rowsAsc, rowsDesc, openingBalance, totalDebit, totalCredit,
+    closingBalance, systemBalance, diff, isConsistent: diff < 0.01
+  };
+}
+function buildStandardStatementTable(rowsDesc){
+  if(!rowsDesc.length) return `<div class="empty">Seçili aralıkta hareket yok.</div>`;
+  return `<table>
+    <thead>
+      <tr>
+        <th>Tarih</th>
+        <th>İşlem</th>
+        <th>Açıklama</th>
+        <th class="text-right">Borç</th>
+        <th class="text-right">Alacak</th>
+        <th class="text-right">Bakiye B</th>
+        <th class="text-right">Bakiye A</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsDesc.map(r=>{
+        const b = balanceColumns(r.running_balance);
+        return `<tr>
+          <td>${shortDate(r.line_date)}</td>
+          <td>${renderTag(r.movement_type || r.final_movement_type || r.suggested_movement_type || "-")}</td>
+          <td>${escapeHtml(r.description || r.content_summary || "-")}</td>
+          <td class="text-right">${money(r.debit||0)}</td>
+          <td class="text-right">${money(r.credit||0)}</td>
+          <td class="text-right">${b.bakiye_b || "-"}</td>
+          <td class="text-right">${b.bakiye_a || "-"}</td>
+        </tr>`;
+      }).join("")}
+    </tbody>
+  </table>`;
+}
+function setStatementActionsEnabled(enabled){
+  const printBtn = document.getElementById('statementPrintBtn');
+  const excelBtn = document.getElementById('statementExcelBtn');
+  if(printBtn) printBtn.disabled = !enabled;
+  if(excelBtn) excelBtn.disabled = !enabled;
 }
 function openStatementPrecheck(){
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
   const card=getCariCard(state.selectedCariId);
-  const rows=currentStatementRows();
+  const meta=getCurrentStatementMeta();
   if(!c){ notify("Cari seçili değil."); return; }
-  if(!rows.length){ notify("Seçili aralıkta extre satırı yok."); return; }
-  const totalDebit = rows.reduce((a,r)=>a+Number(r.debit||0),0);
-  const totalCredit = rows.reduce((a,r)=>a+Number(r.credit||0),0);
-  const closingBalance = rows.length ? Number(rows[rows.length-1].running_balance||0) : 0;
+  if(!meta.rowsAsc.length){ notify("Seçili aralıkta extre satırı yok."); return; }
   const periodMap = {'1m':'Son 1 Ay','2m':'Son 2 Ay','3m':'Son 3 Ay','6m':'Son 6 Ay','1y':'Son 1 Yıl','thisyear':'Bu Yıl','all':'Tümü'};
+  const hardFail = !c.cari_name || !c.cari_code || !meta.isConsistent;
+  state.statementPrecheckPassed = !hardFail;
   document.getElementById('statementPrecheckContent').innerHTML = `
     <div class="grid-2">
       <div class="metric-mini"><div class="k">Cari Adı</div><div class="v">${escapeHtml(c.cari_name||'-')}</div></div>
       <div class="metric-mini"><div class="k">Cari Kodu</div><div class="v">${escapeHtml(c.cari_code||'-')}</div></div>
       <div class="metric-mini"><div class="k">Vergi No / TC No</div><div class="v">${escapeHtml(card?.tax_no || card?.tc_no || '-')}</div></div>
       <div class="metric-mini"><div class="k">Dönem</div><div class="v">${escapeHtml(periodMap[state.selectedRange] || 'Özel')}</div></div>
-      <div class="metric-mini"><div class="k">Satır Sayısı</div><div class="v">${rows.length}</div></div>
-      <div class="metric-mini"><div class="k">Toplam Borç</div><div class="v">${money(totalDebit)}</div></div>
-      <div class="metric-mini"><div class="k">Toplam Alacak</div><div class="v">${money(totalCredit)}</div></div>
-      <div class="metric-mini"><div class="k">Kapanış Bakiye</div><div class="v">${balanceLabel(closingBalance)}</div></div>
+      <div class="metric-mini"><div class="k">Açılış Bakiye</div><div class="v">${balanceLabel(meta.openingBalance)}</div></div>
+      <div class="metric-mini"><div class="k">Satır Sayısı</div><div class="v">${meta.rowsAsc.length}</div></div>
+      <div class="metric-mini"><div class="k">Toplam Borç</div><div class="v">${money(meta.totalDebit)}</div></div>
+      <div class="metric-mini"><div class="k">Toplam Alacak</div><div class="v">${money(meta.totalCredit)}</div></div>
+      <div class="metric-mini"><div class="k">Extre Kapanış</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>
+      <div class="metric-mini"><div class="k">Sistem Bakiye</div><div class="v">${balanceLabel(meta.systemBalance)}</div></div>
+      <div class="metric-mini"><div class="k">Fark</div><div class="v">${money(meta.diff)}</div></div>
+      <div class="metric-mini"><div class="k">Durum</div><div class="v">${meta.isConsistent ? '<span class="tag green">UYUMLU</span>' : '<span class="tag red">UYUMSUZ</span>'}</div></div>
     </div>
-    <div style="margin-top:14px;padding:12px;border:1px solid #fecaca;background:#fff7f7;border-radius:12px;font-weight:800;color:#991b1b">
-      Belge oluşturmadan önce cari adı, cari kodu, vergi no / TC no ve dönem bilgisini kontrol et. Yanlış müşteriye yanlış belge gitmemesi ana kuraldır.
+    <div style="margin-top:14px;padding:12px;border:1px solid ${hardFail ? '#fecaca' : '#bbf7d0'};background:${hardFail ? '#fff7f7' : '#f0fdf4'};border-radius:12px;font-weight:800;color:${hardFail ? '#991b1b' : '#166534'}">
+      ${hardFail
+        ? `Son kontrol başarısız. Cari kodu eksik veya filtreli extre kapanışı sistem bakiyesi ile uyuşmuyor. Bu belge güvenlik gereği üretime kapatıldı.`
+        : `Son kontrol geçti. Bu extre ekran, yazdırma ve Excel tarafında aynı bakiye standardı ile üretilecek.`}
     </div>`;
+  setStatementActionsEnabled(!hardFail);
   document.getElementById('statementPrecheckModal').style.display='flex';
 }
 function closeStatementPrecheck(){ document.getElementById('statementPrecheckModal').style.display='none'; }
-function confirmStatementOutput(){ closeStatementPrecheck(); openStatementOutput(); }
+function confirmStatementOutput(){
+  if(!state.statementPrecheckPassed){ notify("Son kontrol geçmeden belge açılamaz."); return; }
+  closeStatementPrecheck();
+  openStatementOutput();
+}
 function exportStatementExcel(){
+  if(!state.statementPrecheckPassed){ notify("Son kontrol geçmeden Excel üretilemez."); return; }
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
-  const rows=currentStatementRows();
-  if(!c || !rows.length){ notify("Excel için extre satırı yok."); return; }
+  const meta=getCurrentStatementMeta();
+  if(!c || !meta.rowsAsc.length){ notify("Excel için extre satırı yok."); return; }
   const csvRows = [
     ['Tarih','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']
   ];
-  rows.forEach(r=>{
+  meta.rowsAsc.forEach(r=>{
     const b = balanceColumns(r.running_balance);
     csvRows.push([
       shortDate(r.line_date),
       r.movement_type || '',
       (r.description || '').replace(/"/g,'""'),
-      Number(r.debit||0).toFixed(2),
-      Number(r.credit||0).toFixed(2),
-      b.bakiye_b ? b.bakiye_b.replace('₺','').trim() : '',
-      b.bakiye_a ? b.bakiye_a.replace('₺','').trim() : ''
+      num(r.debit).toFixed(2),
+      num(r.credit).toFixed(2),
+      b.bakiye_b ? b.bakiye_b.replaceAll('.', '').replace('₺','').trim() : '',
+      b.bakiye_a ? b.bakiye_a.replaceAll('.', '').replace('₺','').trim() : ''
     ]);
   });
   const csv = '\ufeff' + csvRows.map(row => row.map(v => `"${String(v ?? '')}"`).join(';')).join('\n');
@@ -466,20 +615,17 @@ function exportStatementExcel(){
   notify("Excel dosyası indirildi.");
 }
 function openStatementOutput(){
+  if(!state.statementPrecheckPassed){ notify("Son kontrol geçmeden belge açılamaz."); return; }
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
   const card=getCariCard(state.selectedCariId);
+  const meta=getCurrentStatementMeta();
   if(!c){ notify("Cari seçili değil."); return; }
-  const rows=computeRunningRows(rangeFilteredHareketler()).reverse();
-  if(!rows.length){ notify("Seçili aralıkta extre satırı yok."); return; }
+  if(!meta.rowsAsc.length){ notify("Seçili aralıkta extre satırı yok."); return; }
 
   const dateRangeLabels = {
     '1m':'Son 1 Ay','2m':'Son 2 Ay','3m':'Son 3 Ay','6m':'Son 6 Ay','1y':'Son 1 Yıl','thisyear':'Bu Yıl','all':'Tümü'
   };
   const periodLabel = dateRangeLabels[state.selectedRange] || 'Özel Aralık';
-  const totalDebit = rows.reduce((a,r)=>a+Number(r.debit||0),0);
-  const totalCredit = rows.reduce((a,r)=>a+Number(r.credit||0),0);
-  const closingBalance = rows.length ? Number(rows[rows.length-1].running_balance||0) : 0;
-  const dynamicBalanceHeader = closingBalance > 0 ? 'Bakiye B' : (closingBalance < 0 ? 'Bakiye A' : 'Bakiye');
   const win = window.open('', '_blank', 'width=1200,height=900');
   if(!win){ notify("Popup engellendi. Tarayıcıdan izin ver."); return; }
 
@@ -529,43 +675,18 @@ function openStatementOutput(){
         </div>
       </div>
       <div class="sub" style="text-align:right">
-        Belge Türü: Müşteri Cari Ekstresi<br>Kontrol Durumu: Onay sonrası oluşturuldu<br>
+        Belge Türü: Müşteri Cari Ekstresi<br>Kontrol Durumu: Standart son kontrolden geçti<br>
         Oluşturma: ${new Date().toLocaleString('tr-TR')}<br>
-        Satır Sayısı: ${rows.length}
+        Satır Sayısı: ${meta.rowsAsc.length}
       </div>
     </div>
     <div class="boxwrap">
-      <div class="box"><div class="k">Toplam Borç</div><div class="v">${money(totalDebit)}</div></div>
-      <div class="box"><div class="k">Toplam Alacak</div><div class="v">${money(totalCredit)}</div></div>
-      <div class="box"><div class="k">Kapanış Bakiye B</div><div class="v">${closingBalance>0 ? money(closingBalance) : money(0)}</div></div>
-      <div class="box"><div class="k">Kapanış Bakiye A</div><div class="v">${closingBalance<0 ? money(Math.abs(closingBalance)) : money(0)}</div></div>
+      <div class="box"><div class="k">Açılış Bakiye</div><div class="v">${balanceLabel(meta.openingBalance)}</div></div>
+      <div class="box"><div class="k">Toplam Borç</div><div class="v">${money(meta.totalDebit)}</div></div>
+      <div class="box"><div class="k">Toplam Alacak</div><div class="v">${money(meta.totalCredit)}</div></div>
+      <div class="box"><div class="k">Kapanış Bakiye</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>
     </div>
-    <table>
-      <thead>
-        <tr>
-          <th>Tarih</th>
-          <th>İşlem</th>
-          <th>Açıklama</th>
-          <th class="r">Borç</th>
-          <th class="r">Alacak</th>
-          <th class="r">${dynamicBalanceHeader}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map(r=>{
-          const b = balanceColumns(r.running_balance);
-          const bakiyeText = money(Math.abs(Number(r.running_balance||0)));
-          return `<tr>
-            <td>${shortDate(r.line_date)}</td>
-            <td>${escapeHtml(r.movement_type||'-')}</td>
-            <td>${escapeHtml(r.description||'-')}</td>
-            <td class="r">${money(r.debit||0)}</td>
-            <td class="r">${money(r.credit||0)}</td>
-            <td class="r">${bakiyeText}</td>
-          </tr>`;
-        }).join('')}
-      </tbody>
-    </table>
+    ${buildStandardStatementTable(meta.rowsDesc).replaceAll('class="text-right"','class="r"')}
   </body>
   </html>`;
   win.document.open();
@@ -573,12 +694,11 @@ function openStatementOutput(){
   win.document.close();
 }
 function renderSelectedCariDetail(){
-  const c=state.cariler.find(x=>x.cari_id===state.selectedCariId); const card=getCariCard(state.selectedCariId); const target=document.getElementById("selectedCariDetail");
+  const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
+  const card=getCariCard(state.selectedCariId);
+  const target=document.getElementById("selectedCariDetail");
   if(!c){target.innerHTML=`<div class="empty">Bir cari seç.</div>`; return}
-  const start = getRangeStartDate();
-  const hs=computeRunningRows(state.hareketler, state.selectedRange==="all" ? null : start);
-  const currentBalanceValue = Number(c.bakiye || 0);
-  const dynamicBalanceHeader = currentBalanceValue > 0 ? 'Bakiye B' : (currentBalanceValue < 0 ? 'Bakiye A' : 'Bakiye');
+  const meta=getCurrentStatementMeta();
   target.innerHTML=`
   <div class="hero-name">${escapeHtml(c.cari_name || 'Cari')}</div>
   <div class="hero-sub">
@@ -587,6 +707,7 @@ function renderSelectedCariDetail(){
     <span><strong>Tür:</strong> ${escapeHtml(c.taxpayer_type || card?.taxpayer_type || '-')}</span>
     ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''}
     ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}
+    ${meta.isConsistent?'<span class="tag green">BAKİYE UYUMLU</span>':'<span class="tag red">BAKİYE KONTROL</span>'}
   </div>
   <div class="filter-chips" id="detailDateChips">
     <button class="chip ${state.selectedRange==='3m'?'active':''}" data-range="3m">3 Ay</button>
@@ -600,7 +721,7 @@ function renderSelectedCariDetail(){
   <div class="grid-4" style="margin-bottom:14px">
     <div class="metric-mini"><div class="k">Cari Kodu</div><div class="v">${escapeHtml(c.cari_code||"-")}</div></div>
     <div class="metric-mini"><div class="k">Mükellef Tipi</div><div class="v">${escapeHtml(c.taxpayer_type||card?.taxpayer_type||"-")}</div></div>
-    <div class="metric-mini"><div class="k">Defter Ücreti</div><div class="v">${money(card?.monthly_fee_amount||c.defter_ucreti||0)}</div></div>
+    <div class="metric-mini"><div class="k">Aktif Ücret</div><div class="v">${money(card?.monthly_fee_amount||c.defter_ucreti||0)}</div></div>
     <div class="metric-mini"><div class="k">Skor</div><div class="v">${Number(c.score_total||0).toFixed(0)} / 100</div></div>
   </div>
   <div class="grid-4" style="margin-bottom:14px">
@@ -609,37 +730,167 @@ function renderSelectedCariDetail(){
     <div class="metric-mini"><div class="k">Yetkili</div><div class="v">${escapeHtml(card?.contact_person||"-")}<br>${escapeHtml(card?.phone||"-")}</div></div>
     <div class="metric-mini"><div class="k">E-posta</div><div class="v">${escapeHtml(card?.email||"-")}</div></div>
   </div>
+  <div class="grid-4" style="margin-bottom:14px">
+    <div class="card"><div class="card-label">Güncel Bakiye</div><div class="card-value" style="font-size:24px">${balanceLabel(c.bakiye||0)}</div></div>
+    <div class="card"><div class="card-label">Açılış Bakiye</div><div class="card-value" style="font-size:20px">${balanceLabel(meta.openingBalance)}</div></div>
+    <div class="card"><div class="card-label">Filtre Kapanış</div><div class="card-value" style="font-size:20px">${balanceLabel(meta.closingBalance)}</div></div>
+    <div class="card"><div class="card-label">Bu Ay</div><div class="card-value" style="font-size:18px">Tahakkuk ${money(c.bu_ay_tahakkuk||0)}<br>Tahsilat ${money(c.bu_ay_tahsilat||0)}</div></div>
+  </div>
   <div class="grid-3" style="margin-bottom:14px">
-    <div class="card"><div class="card-label">Güncel Bakiye</div><div class="card-value" style="font-size:24px">${(() => { const n=Number(c.bakiye||0); if(n>0) return `${money(n)} B`; if(n<0) return `${money(Math.abs(n))} A`; return money(0); })()}</div></div>
-    <div class="card"><div class="card-label">Bu Ay</div><div class="card-value" style="font-size:20px">Tahakkuk ${money(c.bu_ay_tahakkuk||0)}<br>Tahsilat ${money(c.bu_ay_tahsilat||0)}</div></div>
     <div class="card"><div class="card-label">Tahsilat İstihbaratı</div><div class="card-value" style="font-size:18px">${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':'<span class="tag green">Normal</span>'}${c.aktif_odeme_sozu_var?`<div style="margin-top:8px;font-size:14px">Söz: ${shortDate(c.aktif_odeme_sozu_tarihi)} · ${money(c.aktif_odeme_sozu_tutari||0)} · ${escapeHtml(c.aktif_odeme_sozu_durum||"-")}</div>`:''}</div></div>
+    <div class="card"><div class="card-label">Standart Kontrol</div><div class="card-value" style="font-size:18px">${meta.isConsistent?'<span class="tag green">UYUMLU</span>':'<span class="tag red">EXTRE / BAKİYE FARKI</span>'}<div style="margin-top:8px;font-size:14px;color:#475569">Fark: ${money(meta.diff)}</div></div></div>
+    <div class="card"><div class="card-label">Ücret Yönetimi</div><div class="card-value" style="font-size:18px">${getFeeTimeline(state.selectedCariId).length} dönem<br><span style="font-size:14px;color:#475569">${getFeeControl(state.selectedCariId).length} kontrol kaydı</span></div></div>
   </div>
   <div class="btn-row" style="margin-bottom:14px">
     <button class="btn btn-blue" onclick="openCariEditModal()">Cariyi Düzenle</button>
     <button class="btn btn-soft" onclick="openPromiseModal()">Ödeme Sözü Gir</button>
+    <button class="btn btn-soft" onclick="openFeeModal()">Ücret Geçmişi</button>
     <button class="btn btn-soft" onclick="openStatementPrecheck()">Extre Al</button>
   </div>
-  ${hs.length?`<table><thead><tr><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Bakiye</th></tr></thead><tbody>${hs.map(h=>`<tr><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.debit||0)}</td><td class="text-right">${money(h.credit||0)}</td><td class="text-right">${money(Math.abs(Number(h.running_balance||0)))}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Seçili aralıkta hareket yok.</div>`}`;
+  ${buildStandardStatementTable(meta.rowsDesc)}`;
   target.querySelectorAll("#detailDateChips .chip").forEach(btn=>btn.addEventListener("click",()=>{state.selectedRange=btn.dataset.range; renderSelectedCariDetail();}));
 }
+function getOpenFeePeriod(id){
+  const rows = getFeeTimeline(id);
+  return rows.find(r=>!r.valid_to) || null;
+}
+function renderFeeModal(){
+  const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
+  if(!c){
+    document.getElementById("feeTimelineWrap").innerHTML = `<div class="empty">Cari seçili değil.</div>`;
+    document.getElementById("feeControlWrap").innerHTML = `<div class="empty">Cari seçili değil.</div>`;
+    return;
+  }
+  const periods = [...getFeeTimeline(state.selectedCariId)].sort((a,b)=>String(b.valid_from||"").localeCompare(String(a.valid_from||"")));
+  const controls = [...getFeeControl(state.selectedCariId)].sort((a,b)=>String(b.period_start||"").localeCompare(String(a.period_start||"")));
+  document.getElementById("feeTimelineWrap").innerHTML = periods.length ? `<table><thead><tr><th>Başlangıç</th><th>Bitiş</th><th class="text-right">Ücret</th><th>Durum</th><th>Not</th></tr></thead><tbody>${periods.map(r=>`<tr><td>${shortDate(r.valid_from)}</td><td>${r.valid_to ? shortDate(r.valid_to) : '<span class="tag green">Açık</span>'}</td><td class="text-right">${money(r.fee_amount || r.current_fee || r.amount || 0)}</td><td>${!r.valid_to ? '<span class="tag blue">Aktif Dönem</span>' : '<span class="tag gray">Kapalı</span>'}</td><td>${escapeHtml(r.note || r.change_reason || '-')}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Bu caride ücret geçmişi yok.</div>`;
+  document.getElementById("feeControlWrap").innerHTML = controls.length ? `<table><thead><tr><th>Dönem</th><th>Durum</th><th class="text-right">Beklenen</th><th class="text-right">Bulunan</th><th>Açıklama</th></tr></thead><tbody>${controls.map(r=>`<tr><td>${shortDate(r.period_start)}${r.period_end ? ' - ' + shortDate(r.period_end) : ''}</td><td>${renderTag(r.control_status || r.issue_type || (num(r.diff_amount) !== 0 ? 'farkli_tutar' : 'tamam'))}</td><td class="text-right">${money(r.expected_amount || r.expected_fee_amount || r.current_fee || 0)}</td><td class="text-right">${money(r.existing_amount || r.actual_amount || r.posted_amount || 0)}</td><td>${escapeHtml(r.note || r.issue_reason || r.status_note || '-')}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Bu cari için kontrol sorunu görünmüyor.</div>`;
+}
+function openFeeModal(){
+  if(!state.selectedCariId){ notify("Cari seçili değil."); return; }
+  const openPeriod = getOpenFeePeriod(state.selectedCariId);
+  document.getElementById("feeValidFrom").value = isoDate(new Date()) || "";
+  document.getElementById("feeAmountInput").value = openPeriod ? num(openPeriod.fee_amount || openPeriod.current_fee || openPeriod.amount) : "";
+  document.getElementById("feeNoteInput").value = "";
+  document.getElementById("feeAutoClosePrev").value = "true";
+  renderFeeModal();
+  document.getElementById("feeModal").style.display = "flex";
+}
+function closeFeeModal(){ document.getElementById("feeModal").style.display = "none"; }
+async function saveFeePeriod(){
+  if(!state.selectedCariId){ notify("Cari seçili değil."); return; }
+  const validFrom = document.getElementById("feeValidFrom").value;
+  const feeAmount = num(document.getElementById("feeAmountInput").value);
+  const note = document.getElementById("feeNoteInput").value.trim() || null;
+  const autoClosePrev = document.getElementById("feeAutoClosePrev").value === "true";
+  if(!validFrom || feeAmount <= 0){ notify("Başlangıç tarihi ve ücret zorunlu."); return; }
+  const openPeriod = getOpenFeePeriod(state.selectedCariId);
+  if(openPeriod && String(openPeriod.valid_from) === validFrom && num(openPeriod.fee_amount || openPeriod.current_fee || openPeriod.amount) === feeAmount){
+    notify("Aynı başlangıç tarihi ve tutarda açık dönem zaten var.");
+    return;
+  }
+  if(openPeriod && !autoClosePrev && !openPeriod.valid_to){
+    notify("Açık dönem var. Yeni dönem eklemek için önce eski dönemi kapat.");
+    return;
+  }
+  if(openPeriod && autoClosePrev && new Date(openPeriod.valid_from) >= new Date(validFrom)){
+    notify("Yeni dönem tarihi mevcut açık dönem başlangıcından sonra olmalı.");
+    return;
+  }
+  if(openPeriod && autoClosePrev){
+    const closePayload = { valid_to: dayBefore(validFrom), updated_at:new Date().toISOString() };
+    const closeRes = await supabaseClient.from("cari_fee_history").update(closePayload).eq("id", openPeriod.id);
+    if(closeRes.error){ notify("Önceki dönem kapatılamadı: " + closeRes.error.message); return; }
+  }
+  const insertPayload = {
+    cari_id: state.selectedCariId,
+    fee_amount: feeAmount,
+    valid_from: validFrom,
+    valid_to: null,
+    note,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+  const ins = await supabaseClient.from("cari_fee_history").insert([insertPayload]);
+  if(ins.error){ notify("Yeni ücret dönemi eklenemedi: " + ins.error.message); return; }
+  await supabaseClient.from("cari_cards").update({ monthly_fee_amount: feeAmount, monthly_fee_enabled: true, updated_at:new Date().toISOString() }).eq("id", state.selectedCariId);
+  notify("Ücret dönemi kaydedildi.");
+  await Promise.all([loadCariler(), loadFeeData()]);
+  renderSelectedCariDetail();
+  renderReports();
+  renderFeeModal();
+}
+async function closeActiveFeePeriodToday(){
+  if(!state.selectedCariId){ notify("Cari seçili değil."); return; }
+  const openPeriod = getOpenFeePeriod(state.selectedCariId);
+  if(!openPeriod){ notify("Açık ücret dönemi yok."); return; }
+  const today = new Date().toISOString().slice(0,10);
+  const res = await supabaseClient.from("cari_fee_history").update({ valid_to:today, updated_at:new Date().toISOString() }).eq("id", openPeriod.id);
+  if(res.error){ notify("Açık dönem kapatılamadı: " + res.error.message); return; }
+  notify("Açık ücret dönemi bugün kapatıldı.");
+  await Promise.all([loadCariler(), loadFeeData()]);
+  renderSelectedCariDetail();
+  renderReports();
+  renderFeeModal();
+}
+function approvalConfidence(r){
+  return num(r.confidence_score ?? r.match_confidence ?? r.guven_puani ?? r.ai_score ?? r.suggested_confidence);
+}
+function approvalFlags(r){
+  const flags = [];
+  const conf = approvalConfidence(r);
+  const text = `${r.issue_type || ''} ${r.content_summary || ''} ${r.raw_content || ''}`.toLowerCase();
+  if(text.includes("duplicate") || text.includes("çift")) flags.push('<span class="tag red">Muhtemel Çift</span>');
+  if(conf && conf < 95) flags.push('<span class="tag amber">Düşük Güven</span>');
+  if(text.includes("whatsapp") || text.includes("telegram") || text.includes("gorsel") || text.includes("görsel")) flags.push('<span class="tag gray">Belge Adayı</span>');
+  return flags.join(' ') || '<span class="tag green">Standart</span>';
+}
 function renderAccounts(){
-  document.getElementById("accountSummaryWrap").innerHTML=state.accounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${state.accounts.map(a=>`<tr><td>${escapeHtml(a.account_name)}</td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`;
-  document.getElementById("bankPanelWrap").innerHTML=state.bankPanel.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Öneri</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.bankPanel.map(r=>`<tr><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}</td><td>${renderTag(r.suggested_financial_account_type||"-")}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Banka paneli boş.</div>`;
-  document.getElementById("mokaPanelWrap").innerHTML=state.mokaPanel.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Tür</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.mokaPanel.map(r=>`<tr><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}</td><td>${renderTag(r.eslesme_sebebi||"-")}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Moka hareketi yok.</div>`;
+  const ambiguousBankCount = state.bankPanel.filter(r=>!r.suggested_financial_account_type || String(r.suggested_financial_account_type).trim()==="").length;
+  const mokaTransferCount = state.mokaPanel.filter(r=>String(r.eslesme_sebebi||'').toLowerCase().includes('moka') || String(r.description||'').toLowerCase().includes('moka')).length;
+  document.getElementById("accountSummaryWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
+    <div class="metric-mini"><div class="k">Toplam Hesap</div><div class="v">${state.accounts.length}</div></div>
+    <div class="metric-mini"><div class="k">Belirsiz Banka Satırı</div><div class="v">${ambiguousBankCount}</div></div>
+    <div class="metric-mini"><div class="k">Moka Aday Transfer</div><div class="v">${mokaTransferCount}</div></div>
+    <div class="metric-mini"><div class="k">Net Toplam</div><div class="v">${money(state.accounts.reduce((a,b)=>a+num(b.net_bakiye),0))}</div></div>
+  </div>` + (state.accounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${state.accounts.map(a=>`<tr><td>${escapeHtml(a.account_name)}</td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`);
+  document.getElementById("bankPanelWrap").innerHTML=state.bankPanel.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Öneri</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.bankPanel.map(r=>{
+    const suggestion = r.suggested_cari_name || r.suggested_financial_account_name || r.suggested_financial_account_type || "-";
+    const control = r.match_reason || r.eslesme_sebebi || (!r.suggested_financial_account_type ? 'Onaya düşmeli' : 'Kontrol et');
+    return `<tr><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}</td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${escapeHtml(control)}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
+  }).join("")}</tbody></table>`:`<div class="empty">Banka paneli boş.</div>`;
+  document.getElementById("mokaPanelWrap").innerHTML=state.mokaPanel.length?`<div class="grid-4" style="margin-bottom:14px">
+      <div class="metric-mini"><div class="k">Toplam Moka Satırı</div><div class="v">${state.mokaPanel.length}</div></div>
+      <div class="metric-mini"><div class="k">Bankaya Aktarım Adayı</div><div class="v">${mokaTransferCount}</div></div>
+      <div class="metric-mini"><div class="k">İşlenmemiş Mantık</div><div class="v">Önce Moka United</div></div>
+      <div class="metric-mini"><div class="k">Standart</div><div class="v">Sonra Banka Mahsup</div></div>
+    </div>
+    <table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Tür</th><th>İş Kuralı</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.mokaPanel.map(r=>`<tr><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}</td><td>${renderTag(r.eslesme_sebebi||"-")}</td><td>${escapeHtml(r.match_reason || "Önce Moka United, sonra banka mahsup")}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Moka hareketi yok.</div>`;
 }
 function renderReports(){
-  const riskRows=state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).sort((a,b)=>Number(b.bakiye||0)-Number(a.bakiye||0)).slice(0,15);
-  const topFee=[...state.cariler].sort((a,b)=>Number(b.defter_ucreti||0)-Number(a.defter_ucreti||0)).slice(0,10);
-  document.getElementById("reportWrap").innerHTML=`<div class="grid-2" style="margin-bottom:16px"><div class="card"><div class="card-label">Toplam Son Tahsilat Tutarı</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Number(b.son_tahsilat_tutari||0),0))}</div></div><div class="card"><div class="card-label">Pozitif Bakiye Toplamı</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Math.max(Number(b.bakiye||0),0),0))}</div></div></div>
+  const riskRows=state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).sort((a,b)=>num(b.bakiye)-num(a.bakiye)).slice(0,15);
+  const topFee=[...state.cariler].sort((a,b)=>num(b.defter_ucreti)-num(a.defter_ucreti)).slice(0,10);
+  const feeIssueCount = state.feeControl.filter(x=>String(x.control_status || x.issue_type || '').toLowerCase() !== 'tamam').length;
+  document.getElementById("reportWrap").innerHTML=`<div class="grid-3" style="margin-bottom:16px">
+    <div class="card"><div class="card-label">Toplam Son Tahsilat</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+num(b.son_tahsilat_tutari),0))}</div></div>
+    <div class="card"><div class="card-label">Pozitif Bakiye Toplamı</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Math.max(num(b.bakiye),0),0))}</div></div>
+    <div class="card"><div class="card-label">Ücret Kontrol Uyarısı</div><div class="card-value">${feeIssueCount}</div></div>
+  </div>
   <div class="grid-2"><div class="section"><h2 class="section-title">Tahsilat Riski Olanlar</h2>${riskRows.length?`<table><thead><tr><th>Cari</th><th>Son Tahsilat</th><th class="text-right">Bakiye</th></tr></thead><tbody>${riskRows.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${shortDate(r.son_tahsilat_tarihi)} · ${money(r.son_tahsilat_tutari||0)}</td><td class="text-right">${balanceLabel(r.bakiye||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Riskli cari yok.</div>`}</div>
   <div class="section"><h2 class="section-title">En Yüksek Defter Ücretliler</h2><table><thead><tr><th>Cari</th><th>Tür</th><th class="text-right">Defter Ücreti</th></tr></thead><tbody>${topFee.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${escapeHtml(r.taxpayer_type||"-")}</td><td class="text-right">${money(r.defter_ucreti||0)}</td></tr>`).join("")}</tbody></table></div></div>`;
 }
 function renderApprovals(){
-  document.getElementById("pendingWrap").innerHTML=state.pending.length?`<table><thead><tr><th>Kaynak</th><th>Özet</th><th>Öneri</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.pending.map(r=>`<tr><td>${escapeHtml(r.source_type||"-")}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.suggested_cari_name||r.suggested_expense_name||"-")} · ${escapeHtml(r.suggested_movement_type||"-")}</td><td class="text-right">${money(r.suggested_amount||r.raw_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`;
-  document.getElementById("processedWrap").innerHTML=state.processed.length?`<table><thead><tr><th>Kaynak</th><th>Karar</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.processed.map(r=>`<tr><td>${escapeHtml(r.source_type||"-")}</td><td>${escapeHtml(r.final_cari_name||r.final_expense_name||"-")} · ${escapeHtml(r.final_movement_type||"-")}</td><td class="text-right">${money(r.final_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">İşlenen kayıt yok.</div>`;
+  const lockedCount = state.pending.filter(r=>approvalConfidence(r) && approvalConfidence(r) < 95).length;
+  const duplicateCount = state.pending.filter(r=>`${r.issue_type || ''} ${r.content_summary || ''} ${r.raw_content || ''}`.toLowerCase().includes('duplicate') || `${r.issue_type || ''}`.toLowerCase().includes('çift')).length;
+  document.getElementById("pendingWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
+      <div class="metric-mini"><div class="k">Onay Bekleyen</div><div class="v">${state.pending.length}</div></div>
+      <div class="metric-mini"><div class="k">Düşük Güven Kilidi</div><div class="v">${lockedCount}</div></div>
+      <div class="metric-mini"><div class="k">Muhtemel Çift</div><div class="v">${duplicateCount}</div></div>
+      <div class="metric-mini"><div class="k">Kural</div><div class="v">Emin değilsen onay</div></div>
+    </div>` + (state.pending.length?`<table><thead><tr><th>Kaynak</th><th>Özet</th><th>Öneri</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.pending.map(r=>`<tr><td>${escapeHtml(r.source_type||"-")}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.suggested_cari_name||r.suggested_expense_name||"-")} · ${escapeHtml(r.suggested_movement_type||"-")}<br><span style="font-size:12px;color:#64748b">Güven: ${approvalConfidence(r) ? approvalConfidence(r).toFixed(0) : '-'}</span></td><td>${approvalFlags(r)}</td><td class="text-right">${money(r.suggested_amount||r.raw_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`);
+  document.getElementById("processedWrap").innerHTML=state.processed.length?`<table><thead><tr><th>Kaynak</th><th>Karar</th><th>İz</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.processed.map(r=>`<tr><td>${escapeHtml(r.source_type||"-")}</td><td>${escapeHtml(r.final_cari_name||r.final_expense_name||"-")} · ${escapeHtml(r.final_movement_type||"-")}</td><td>${escapeHtml(r.decision_note || r.match_reason || 'İşlendi')}</td><td class="text-right">${money(r.final_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">İşlenen kayıt yok.</div>`;
   document.getElementById("rejectedWrap").innerHTML=state.rejected.length?`<table><thead><tr><th>Kaynak</th><th>Özet</th><th>Not</th></tr></thead><tbody>${state.rejected.map(r=>`<tr><td>${escapeHtml(r.source_type||"-")}</td><td>${escapeHtml(r.content_summary||"-")}</td><td>${escapeHtml(r.decision_note||"-")}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Reddedilen kayıt yok.</div>`;
 }
-
 function openCariEditModal(){
   const card=getCariCard(state.selectedCariId); const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
   if(!card && !c){ notify("Cari bulunamadı."); return; }
@@ -730,7 +981,14 @@ async function savePaymentPromise(){
   renderReports();
 }
 
-async function refreshAll(){await Promise.all([loadDashboard(),loadCariler(),loadAccounts(),loadApprovals(),loadFeeData()]); renderDashboard(); renderAccounts(); renderReports(); renderApprovals()}
+async function refreshAll(){
+  await Promise.all([loadDashboard(),loadCariler(),loadAccounts(),loadApprovals(),loadFeeData()]);
+  renderDashboard();
+  renderAccounts();
+  renderReports();
+  renderApprovals();
+  if(state.selectedCariId) renderSelectedCariDetail();
+}
 document.getElementById("cariSearch").addEventListener("input",renderCariList);
 document.getElementById("taxpayerFilter").addEventListener("change",renderCariList);
 document.getElementById("sortBy").addEventListener("change",renderCariList);
