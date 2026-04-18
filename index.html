@@ -246,9 +246,35 @@
     <div class="field" style="margin-top:12px;"><label>Kısa Özet</label><input id="candidateSummary" placeholder="Örn: Moka kart tahsilatı ekran görüntüsü" /></div>
     <div class="field" style="margin-top:12px;"><label>Ham Metin / Kopyalanan İçerik</label><textarea id="candidateRawText" rows="8" class="select-input" placeholder="WhatsApp / Telegram / OCR metnini buraya yapıştır"></textarea></div>
     <div class="field" style="margin-top:12px;"><label>Not</label><textarea id="candidateNote" rows="3" class="select-input"></textarea></div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="field"><label>Güven Puanı</label><input id="candidateConfidence" type="number" min="0" max="100" step="1" /></div>
+      <div class="field"><label>Köprü Yardımı</label><div class="btn-row"><button class="btn btn-soft" type="button" onclick="analyzeCandidateBridgeText()">Metni Analiz Et</button><button class="btn btn-soft" type="button" onclick="quickFillCandidate('moka')">Moka Şablonu</button><button class="btn btn-soft" type="button" onclick="openBridgeBatchModal()">Toplu Mesaj Ayır</button></div></div>
+    </div>
+    <div id="candidateAnalysisBox" class="rule-box" style="margin-top:12px;">Köprü kuralı: mesaj doğrudan işlenmez. Önce analiz edilir, sonra aday kayıt olarak onaya düşer.</div>
     <div class="btn-row" style="margin-top:16px;">
       <button class="btn btn-blue" onclick="saveCandidateBridge()">Onaya Aday Olarak Kaydet</button>
     </div>
+  </div>
+</div>
+
+<div id="bridgeBatchModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:1100px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">WhatsApp / Telegram Toplu Mesaj Ayır</h2>
+      <button class="btn btn-red" onclick="closeBridgeBatchModal()">Kapat</button>
+    </div>
+    <div class="form-grid-3">
+      <div class="field"><label>Kaynak</label><select id="bridgeBatchSource" class="select-input"><option value="whatsapp">WhatsApp</option><option value="telegram">Telegram</option><option value="kopyala_yapistir">Kopyala Yapıştır</option></select></div>
+      <div class="field"><label>Varsayılan Hareket</label><select id="bridgeBatchMovement" class="select-input"><option value="tahsilat">Tahsilat</option><option value="tahakkuk">Tahakkuk</option><option value="gider">Gider</option></select></div>
+      <div class="field"><label>Oturum Başlığı</label><input id="bridgeBatchTitle" placeholder="Örn: 18.04.2026 Akşam Tahsilatları" /></div>
+    </div>
+    <div class="field" style="margin-top:12px;"><label>Ham Mesaj Dizisi</label><textarea id="bridgeBatchRaw" rows="10" class="select-input" placeholder="Her satıra bir mesaj gelecek şekilde yapıştır."></textarea></div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-blue" type="button" onclick="analyzeBridgeBatch()">Satırları Analiz Et</button>
+      <button class="btn btn-soft" type="button" onclick="saveBridgeBatchAsCandidates()">Tümünü Aday Kayıt Olarak Ata</button>
+    </div>
+    <div id="bridgeBatchInfo" class="rule-box" style="margin-top:12px;">Her boş olmayan satır ayrı aday kayda çevrilir. Çift riskli satırlar işaretlenir ve otomatik işlenmez.</div>
+    <div id="bridgeBatchPreview" style="margin-top:16px;"></div>
   </div>
 </div>
 
@@ -308,6 +334,7 @@
       <button class="nav-btn" data-tab="raporlar">Raporlar</button>
       <button class="nav-btn" data-tab="belgeler">Belgeler</button>
       <button class="nav-btn" data-tab="onay">Onay Merkezi</button>
+      <button class="nav-btn" data-tab="yedekleme">Yedekleme</button>
     </div>
     <div class="sidebar-box"><div class="mini">BAĞLANTI</div><div class="big" id="connState">Bağlantı kontrol ediliyor...</div></div>
     <div class="sidebar-box"><div class="mini">GİRİŞ YAPAN</div><div class="big" id="currentUserBox">-</div></div>
@@ -335,6 +362,7 @@
           <div class="metric-mini"><div class="k">Gecikmiş Söz</div><div class="v" id="promiseLateCount">0</div></div>
         </div></div>
       </div>
+      <div class="section"><h2 class="section-title">Üretim Kontrol Merkezi</h2><div id="opsHealthWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
     <section id="tab-cariler" class="tab-page">
@@ -387,6 +415,7 @@
         <div class="section"><h2 class="section-title">Belge / Makbuz Havuzu</h2><div id="documentWrap" class="empty">Yükleniyor...</div></div>
         <div class="section"><h2 class="section-title">Aday Kayıt Köprüsü</h2><div id="bridgeWrap" class="empty">Yükleniyor...</div></div>
       </div>
+      <div class="section"><h2 class="section-title">Tahsilat Köprüsü Oturumları</h2><div id="bridgeSessionWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
     <section id="tab-onay" class="tab-page">
@@ -396,6 +425,14 @@
         <div class="section"><h2 class="section-title">Reddedilenler</h2><div id="rejectedWrap" class="empty">Yükleniyor...</div></div>
       </div>
       <div class="section"><h2 class="section-title">Operasyon İzleri</h2><div id="approvalAuditWrap" class="empty">Yükleniyor...</div></div>
+    </section>
+
+    <section id="tab-yedekleme" class="tab-page">
+      <div class="section"><h2 class="section-title">Canlıya Alma Kontrolü</h2><div id="opsHealthWrapYedek" class="empty">Yükleniyor...</div></div>
+      <div class="grid-2">
+        <div class="section"><h2 class="section-title">Yedekleme Merkezi</h2><div id="backupWrap" class="empty">Yükleniyor...</div></div>
+        <div class="section"><h2 class="section-title">Restore / Geri Yükleme Planı</h2><div id="restoreWrap" class="empty">Yükleniyor...</div></div>
+      </div>
     </section>
   </main>
 </div>
@@ -407,8 +444,8 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909";
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[]};
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1";
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null};
 
 function money(v){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(Number(v||0))}
 function shortDate(v){if(!v) return "-"; const d=new Date(v); if(Number.isNaN(d.getTime())) return v; return new Intl.DateTimeFormat("tr-TR").format(d)}
@@ -417,6 +454,26 @@ function readLocalJson(key){ try{ const raw=localStorage.getItem(key); return ra
 function readLocalObject(key,fallback){ try{ const raw=localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }catch(_){ return fallback; } }
 function writeLocalJson(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
 function writeLocalObject(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
+function defaultBackupConfig(){
+  return {
+    env:'prod',
+    db_name:'alkam_mali',
+    daily_time:'23:30',
+    retention_days:30,
+    drive_remote:'gdrive',
+    drive_folder:'ALKAM_BACKUP/PROD',
+    db_url:'postgresql://USER:PASSWORD@HOST:5432/DBNAME',
+    db_dump_cmd:'pg_dump',
+    drive_tool:'rclone',
+    include_documents:true,
+    include_bridge:true,
+    include_audit:true,
+    include_bank:true,
+    include_approvals:true,
+    operator_name:'Yerel Giriş',
+    last_saved_at:null
+  };
+}
 function uid(prefix="id"){ return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
 function persistApprovalOps(){ writeLocalObject(LOCAL_APPROVAL_OPS_KEY, state.approvalOps); }
 function persistBankOps(){ writeLocalObject(LOCAL_BANK_OPS_KEY, state.bankOps); }
@@ -459,7 +516,7 @@ function togglePassword(){const i=document.getElementById("loginPassword"); i.ty
 function submitLogin(e){e.preventDefault(); const v=(document.getElementById("loginPassword").value||"").trim(); const err=document.getElementById("loginError"); err.textContent=""; if(v!==LOCAL_PASSWORD){err.textContent="Şifre hatalı."; return false} localStorage.setItem(SESSION_KEY,"ok"); openApp(); refreshAll(); return false}
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
 function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
-function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, batak, çek, senet, Moka"],giderler:["Gider Tahakkuk","Sabit ve değişken gider tahakkuk kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
+function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, batak, çek, senet, Moka"],giderler:["Gider Tahakkuk","Sabit ve değişken gider tahakkuk kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
 async function loadDashboard(){
@@ -514,8 +571,520 @@ async function loadDocuments(){
   state.expenses = readLocalJson(LOCAL_EXPENSES_KEY).map(x=>({...x, txn_id:txnId(x,'EXP')}));
   state.operationalLedger = readLocalJson(LOCAL_LEDGER_KEY).map(x=>({...x, txn_id:txnId(x,'LGR')}));
   state.auditTrail = readLocalJson(LOCAL_AUDIT_KEY).map(x=>({...x, txn_id:txnId(x,'LOG')}));
+  state.bridgeBatches = readLocalJson(LOCAL_BRIDGE_BATCHES_KEY).map(x=>({...x, txn_id:txnId(x,'BTH')}));
+  state.backupHistory = readLocalJson(LOCAL_BACKUP_HISTORY_KEY).map(x=>({...x, txn_id:txnId(x,'BKP')}));
+  state.backupConfig = readLocalObject(LOCAL_BACKUP_CONFIG_KEY, defaultBackupConfig());
+  state.restoreDrills = readLocalJson(LOCAL_RESTORE_DRILLS_KEY).map(x=>({...x, txn_id:txnId(x,'RST')}));
 }
 
+
+function exportBlob(filename, content, mime='application/json;charset=utf-8;'){
+  const blob = new Blob([content], {type:mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function getBackupConfig(){
+  return state.backupConfig || defaultBackupConfig();
+}
+function saveBackupConfig(){
+  const cfg = {
+    env: (document.getElementById('backupEnv')?.value || 'prod').trim() || 'prod',
+    db_name: (document.getElementById('backupDbName')?.value || 'alkam_mali').trim() || 'alkam_mali',
+    daily_time: (document.getElementById('backupDailyTime')?.value || '23:30').trim() || '23:30',
+    retention_days: Number(document.getElementById('backupRetention')?.value || 30),
+    drive_remote: (document.getElementById('backupDriveRemote')?.value || 'gdrive').trim() || 'gdrive',
+    drive_folder: (document.getElementById('backupDriveFolder')?.value || 'ALKAM_BACKUP/PROD').trim() || 'ALKAM_BACKUP/PROD',
+    db_url: (document.getElementById('backupDbUrl')?.value || 'postgresql://USER:PASSWORD@HOST:5432/DBNAME').trim() || 'postgresql://USER:PASSWORD@HOST:5432/DBNAME',
+    db_dump_cmd: (document.getElementById('backupDumpCmd')?.value || 'pg_dump').trim() || 'pg_dump',
+    drive_tool: (document.getElementById('backupDriveTool')?.value || 'rclone').trim() || 'rclone',
+    include_documents: !!document.getElementById('backupIncDocs')?.checked,
+    include_bridge: !!document.getElementById('backupIncBridge')?.checked,
+    include_audit: !!document.getElementById('backupIncAudit')?.checked,
+    include_bank: !!document.getElementById('backupIncBank')?.checked,
+    include_approvals: !!document.getElementById('backupIncApprovals')?.checked,
+    operator_name: (document.getElementById('backupOperator')?.value || 'Yerel Giriş').trim() || 'Yerel Giriş',
+    last_saved_at: new Date().toISOString()
+  };
+  state.backupConfig = cfg;
+  writeLocalObject(LOCAL_BACKUP_CONFIG_KEY, cfg);
+  notify('Yedekleme politikası kaydedildi.');
+  renderBackup();
+}
+
+function persistOpsHealth(){ writeLocalObject(LOCAL_OPS_HEALTH_KEY, state.opsHealth || null); }
+function buildOpsHealthReport(){
+  const cfg = getBackupConfig();
+  const pendingRows = getPendingRows();
+  const duplicateBridge = state.bridgeCandidates.filter(x=>x.is_duplicate).length;
+  const lockedPending = pendingRows.filter(r=>approvalIsLocked(r)).length;
+  const placeholderDb = !cfg.db_url || String(cfg.db_url).includes('USER:PASSWORD') || String(cfg.db_url).includes('DBNAME');
+  const placeholderDrive = !cfg.drive_remote || String(cfg.drive_remote).trim()==='';
+  const placeholderFolder = !cfg.drive_folder || String(cfg.drive_folder).trim()==='';
+  const restoreMissing = !state.restoreDrills.length;
+  const checks = [
+    {code:'ids', label:'İşlem ID standardı', status:'ok', detail:'Ana katmanlarda ekran bazlı ID standardı aktif.'},
+    {code:'backup_policy', label:'Yedekleme politikası', status:(placeholderDb || placeholderDrive || placeholderFolder) ? 'warn' : 'ok', detail:((placeholderDb ? 'DB URL placeholder görünüyor. ' : '') + (placeholderDrive ? 'Drive remote boş. ' : '') + (placeholderFolder ? 'Drive klasörü boş. ' : '')).trim() || 'Politika dolu.'},
+    {code:'restore_drill', label:'Restore tatbikatı', status: restoreMissing ? 'warn' : 'ok', detail: restoreMissing ? 'Henüz restore tatbikatı kaydı yok.' : 'Restore tatbikatı kaydı mevcut.'},
+    {code:'approval_lock', label:'Kilitli onay kuyruğu', status: lockedPending>0 ? 'warn' : 'ok', detail: lockedPending>0 ? `${lockedPending} kilitli kayıt operatör kararı bekliyor.` : 'Kilitli bekleyen kayıt yok.'},
+    {code:'bridge_duplicate', label:'Köprü çift kayıt riski', status: duplicateBridge>0 ? 'warn' : 'ok', detail: duplicateBridge>0 ? `${duplicateBridge} satır muhtemel çift görünüyor.` : 'Çift riskli köprü satırı yok.'},
+    {code:'local_demo_data', label:'Yerel operasyon verisi', status:(state.documents.length || state.bridgeCandidates.length || (state.bankOps?.pending||[]).length) ? 'warn' : 'ok', detail:(state.documents.length || state.bridgeCandidates.length || (state.bankOps?.pending||[]).length) ? 'Local storage üzerinde operasyon verisi var; canlıda DB ile net ayrım korunmalı.' : 'Yerel demo verisi görünmüyor.'}
+  ];
+  return {
+    id: uid('ops_health'),
+    created_at: new Date().toISOString(),
+    score: Math.max(0, 100 - checks.filter(x=>x.status==='warn').length * 12),
+    summary: {
+      pending_total: pendingRows.length,
+      locked_pending: lockedPending,
+      duplicate_bridge: duplicateBridge,
+      restore_drill_count: state.restoreDrills.length,
+      backup_history_count: state.backupHistory.length,
+      local_document_count: state.documents.length,
+      local_bridge_count: state.bridgeCandidates.length,
+      local_bank_queue_count: (state.bankOps?.pending||[]).length
+    },
+    checks
+  };
+}
+function healthTag(status){
+  if(status==='ok') return '<span class="tag green">Tamam</span>';
+  if(status==='warn') return '<span class="tag amber">Dikkat</span>';
+  return '<span class="tag gray">-</span>';
+}
+function renderOpsHealthPanel(){
+  const target=document.getElementById('opsHealthWrap');
+  const target2=document.getElementById('opsHealthWrapYedek');
+  if(!target && !target2) return;
+  const report = state.opsHealth || buildOpsHealthReport();
+  const warnCount = (report.checks||[]).filter(x=>x.status==='warn').length;
+  const html = `
+    <div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn btn-blue" onclick="runOpsHealthCheck()">Sağlık Kontrolü Çalıştır</button>
+      <button class="btn btn-soft" onclick="exportOpsHealthReport()">Sağlık Raporu JSON</button>
+    </div>
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Skor</div><div class="v">${report.score || 0} / 100</div></div>
+      <div class="metric-mini"><div class="k">Uyarı</div><div class="v">${warnCount}</div></div>
+      <div class="metric-mini"><div class="k">Kilitli Onay</div><div class="v">${report.summary?.locked_pending || 0}</div></div>
+      <div class="metric-mini"><div class="k">Çift Riskli Köprü</div><div class="v">${report.summary?.duplicate_bridge || 0}</div></div>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px;">Canlıya alma kuralı: önce doğru cari, sonra doğru belge, sonra doğru bakiye. Uyarılar temizlenmeden üretim güveni tam sayılmaz.</div>
+    ${(report.checks||[]).length ? `<table><thead><tr><th>Kontrol</th><th>Durum</th><th>Detay</th></tr></thead><tbody>${report.checks.map(c=>`<tr><td>${escapeHtml(c.label||'-')}</td><td>${healthTag(c.status)}</td><td>${escapeHtml(c.detail||'-')}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz sağlık raporu yok.</div>`}
+  `;
+  if(target) target.innerHTML = html;
+  if(target2) target2.innerHTML = html;
+}
+function runOpsHealthCheck(){
+  state.opsHealth = buildOpsHealthReport();
+  persistOpsHealth();
+  notify('Üretim sağlık kontrolü hazırlandı.');
+  renderOpsHealthPanel();
+}
+function exportOpsHealthReport(){
+  const report = buildOpsHealthReport();
+  state.opsHealth = report;
+  persistOpsHealth();
+  exportBlob(`alkam_ops_health_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`, JSON.stringify(report, null, 2));
+  renderOpsHealthPanel();
+  notify('Sağlık raporu indirildi.');
+}
+
+function collectBackupPayload(){
+  const cfg = getBackupConfig();
+  return {
+    meta:{app:'ALKAM Mali Müşavirlik', version:buildVersion(), exported_at:new Date().toISOString(), user:'Yerel Giriş', backup_policy:cfg},
+    counts:{documents:state.documents.length, bridge_candidates:state.bridgeCandidates.length, bridge_batches:state.bridgeBatches.length, approval_processed:getProcessedRows().length, approval_rejected:getRejectedRows().length, bank_queue:(state.bankOps?.pending||[]).length, expenses:state.expenses.length, ledger:state.operationalLedger.length, audit:state.auditTrail.length, restore_drills:state.restoreDrills.length},
+    local_store:{documents:state.documents, bridge_candidates:state.bridgeCandidates, bridge_batches:state.bridgeBatches, approval_ops:state.approvalOps, bank_ops:state.bankOps, expenses:state.expenses, operational_ledger:state.operationalLedger, audit_trail:state.auditTrail, backup_history:state.backupHistory, restore_drills:state.restoreDrills}
+  };
+}
+function buildBackupManifestData(){
+  const cfg=getBackupConfig();
+  const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+  return {
+    manifest_id: uid('manifest'),
+    created_at: new Date().toISOString(),
+    app_version: buildVersion(),
+    environment: cfg.env,
+    operator: cfg.operator_name,
+    schedule: { daily_time: cfg.daily_time, retention_days: cfg.retention_days },
+    target: { drive_tool: cfg.drive_tool, drive_remote: cfg.drive_remote, drive_folder: cfg.drive_folder },
+    package: {
+      root_folder: `${cfg.drive_folder}/daily/${stamp}`,
+      files: [
+        `${cfg.db_name}_${stamp}.dump`,
+        `alkam_app_export_${stamp}.json`,
+        `alkam_restore_plan_${stamp}.txt`,
+        cfg.include_bridge ? `alkam_bridge_queue_${stamp}.csv` : null,
+        cfg.include_documents ? `documents_manifest_${stamp}.json` : null,
+        cfg.include_audit ? `audit_manifest_${stamp}.json` : null
+      ].filter(Boolean)
+    },
+    includes: {
+      documents: !!cfg.include_documents,
+      bridge: !!cfg.include_bridge,
+      audit: !!cfg.include_audit,
+      bank: !!cfg.include_bank,
+      approvals: !!cfg.include_approvals
+    },
+    counts: collectBackupPayload().counts,
+    rules: [
+      'Önce DB dump alınır.',
+      'Sonra uygulama export dosyası alınır.',
+      'Sonra belge/ref listesi doğrulanır.',
+      'Sonra onay, banka, köprü ve audit sayaçları karşılaştırılır.',
+      'Restore test edilmeden yedek tamam sayılmaz.'
+    ]
+  };
+}
+function buildDriveFolderTreeText(){
+  const cfg=getBackupConfig();
+  return [
+    `ROOT: ${cfg.drive_remote}:${cfg.drive_folder}`,
+    '├─ daily/',
+    '│  └─ YYYY-MM-DD_HHMM/',
+    '│     ├─ db/',
+    '│     │  └─ alkam_mali.dump',
+    '│     ├─ app/',
+    '│     │  ├─ alkam_app_export.json',
+    '│     │  ├─ bridge_queue.csv',
+    '│     │  └─ audit_manifest.json',
+    '│     ├─ documents/',
+    '│     │  └─ belge_ref_manifest.json',
+    '│     └─ restore/',
+    '│        └─ restore_plan.txt',
+    '└─ weekly/',
+    '   └─ YYYY-WW/'
+  ].join('\n');
+}
+function buildBackupPowerShellScript(){
+  const cfg=getBackupConfig();
+  return [
+    '$ErrorActionPreference = "Stop"',
+    '$STAMP = Get-Date -Format "yyyy-MM-dd_HHmmss"',
+    `$ROOT = "${cfg.drive_folder}"`,
+    '$WORK = Join-Path $env:TEMP ("alkam_backup_" + $STAMP)',
+    'New-Item -ItemType Directory -Force -Path $WORK | Out-Null',
+    '$DBDIR = Join-Path $WORK "db"',
+    '$APPDIR = Join-Path $WORK "app"',
+    '$RESDIR = Join-Path $WORK "restore"',
+    'New-Item -ItemType Directory -Force -Path $DBDIR,$APPDIR,$RESDIR | Out-Null',
+    `& "${cfg.db_dump_cmd}" "${cfg.db_url}" -Fc -f (Join-Path $DBDIR "${cfg.db_name}_$STAMP.dump")`,
+    '# Uygulama export dosyasını ve restore planını bu klasöre koy',
+    `& "${cfg.drive_tool}" copy $WORK "${cfg.drive_remote}:${cfg.drive_folder}/daily/$STAMP" --create-empty-src-dirs`,
+    `& "${cfg.drive_tool}" delete "${cfg.drive_remote}:${cfg.drive_folder}/daily" --min-age ${cfg.retention_days}d`,
+    'Write-Host "ALKAM backup tamam."'
+  ].join('\r\n');
+}
+function buildBackupBashScript(){
+  const cfg=getBackupConfig();
+  return [
+    '#!/usr/bin/env bash',
+    'set -euo pipefail',
+    'STAMP=$(date +"%Y-%m-%d_%H%M%S")',
+    `ROOT="${cfg.drive_folder}"`,
+    'WORK="/tmp/alkam_backup_${STAMP}"',
+    'mkdir -p "$WORK/db" "$WORK/app" "$WORK/restore"',
+    `${cfg.db_dump_cmd} "${cfg.db_url}" -Fc -f "$WORK/db/${cfg.db_name}_${STAMP}.dump"`,
+    '# Uygulama export dosyasını ve restore planını bu klasöre koy',
+    `${cfg.drive_tool} copy "$WORK" "${cfg.drive_remote}:${cfg.drive_folder}/daily/${STAMP}" --create-empty-src-dirs`,
+    `${cfg.drive_tool} delete "${cfg.drive_remote}:${cfg.drive_folder}/daily" --min-age ${cfg.retention_days}d`,
+    'echo "ALKAM backup tamam."'
+  ].join('\n');
+}
+function registerBackupHistory(type, filename, note=''){
+  const row={id:uid('backup'), type, filename, note, created_at:new Date().toISOString(), counts:collectBackupPayload().counts};
+  state.backupHistory.unshift(row);
+  writeLocalJson(LOCAL_BACKUP_HISTORY_KEY, state.backupHistory);
+}
+function logRestoreDrill(){
+  const result=(document.getElementById('restoreDrillResult')?.value || 'basarili').trim();
+  const duration=Number(document.getElementById('restoreDrillDuration')?.value || 0);
+  const note=(document.getElementById('restoreDrillNote')?.value || '').trim() || 'Tatbikat notu girilmedi.';
+  const row={id:uid('restore'), result, duration_minutes:duration, note, created_at:new Date().toISOString()};
+  state.restoreDrills.unshift(row);
+  writeLocalJson(LOCAL_RESTORE_DRILLS_KEY, state.restoreDrills);
+  notify('Restore tatbikatı kaydedildi.');
+  renderBackup();
+}
+function runBackupExport(type='json'){
+  const payload=collectBackupPayload();
+  const manifest=buildBackupManifestData();
+  const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+  if(type==='json'){
+    const filename=`alkam_yedek_${stamp}.json`;
+    exportBlob(filename, JSON.stringify(payload,null,2));
+    registerBackupHistory('json', filename, 'Tam operasyon yedeği dışa aktarıldı.');
+    renderBackup();
+    notify('JSON yedeği indirildi.');
+    return;
+  }
+  if(type==='manifest_json'){
+    const filename=`alkam_backup_manifest_${stamp}.json`;
+    exportBlob(filename, JSON.stringify(manifest,null,2));
+    registerBackupHistory('manifest_json', filename, 'Backup manifest dosyası dışa aktarıldı.');
+    renderBackup();
+    notify('Backup manifest indirildi.');
+    return;
+  }
+  if(type==='bridge_csv'){
+    const rows=[['id','kaynak','cari','hareket','tarih','tutar','guven','ozet']];
+    state.bridgeCandidates.forEach(r=>rows.push([txnId(r,'BRG'),r.source_type||'',r.cari_name||'',r.suggested_movement_type||'',r.candidate_date||'',Number(r.suggested_amount||0).toFixed(2),Number(r.confidence_score||0),r.content_summary||'']));
+    const csv='\ufeff'+rows.map(row=>row.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(';')).join('\n');
+    const filename=`alkam_bridge_queue_${stamp}.csv`;
+    exportBlob(filename, csv, 'text/csv;charset=utf-8;');
+    registerBackupHistory('bridge_csv', filename, 'Tahsilat köprüsü kuyruğu dışa aktarıldı.');
+    renderBackup();
+    notify('Köprü kuyruğu CSV indirildi.');
+    return;
+  }
+  if(type==='powershell'){
+    const filename=`alkam_backup_job_${stamp}.ps1`;
+    exportBlob(filename, buildBackupPowerShellScript(), 'text/plain;charset=utf-8;');
+    registerBackupHistory('powershell', filename, 'PowerShell yedek scripti üretildi.');
+    renderBackup();
+    notify('PowerShell script indirildi.');
+    return;
+  }
+  if(type==='bash'){
+    const filename=`alkam_backup_job_${stamp}.sh`;
+    exportBlob(filename, buildBackupBashScript(), 'text/plain;charset=utf-8;');
+    registerBackupHistory('bash', filename, 'Bash yedek scripti üretildi.');
+    renderBackup();
+    notify('Bash script indirildi.');
+    return;
+  }
+  if(type==='drive_plan'){
+    const filename=`alkam_drive_klasor_plani_${stamp}.txt`;
+    exportBlob(filename, buildDriveFolderTreeText(), 'text/plain;charset=utf-8;');
+    registerBackupHistory('drive_plan', filename, 'Drive klasör planı dışa aktarıldı.');
+    renderBackup();
+    notify('Drive klasör planı indirildi.');
+    return;
+  }
+  if(type==='restore_plan'){
+    const txt = buildRestorePlanText();
+    const filename=`alkam_restore_plani_${stamp}.txt`;
+    exportBlob(filename, txt, 'text/plain;charset=utf-8;');
+    registerBackupHistory('restore_plan', filename, 'Restore planı dışa aktarıldı.');
+    renderBackup();
+    notify('Restore planı indirildi.');
+  }
+}
+function buildRestorePlanText(){
+  const p=collectBackupPayload();
+  const cfg=getBackupConfig();
+  return [
+    'ALKAM MALİ MÜŞAVİRLİK - RESTORE PLANI',
+    `Oluşturma: ${new Date().toLocaleString('tr-TR')}`,
+    `Ortam: ${cfg.env}`,
+    `Günlük saat: ${cfg.daily_time}`,
+    `Retention: ${cfg.retention_days} gün`,
+    '',
+    '1) Önce DB dump geri yüklenir.',
+    '2) Sonra uygulama export dosyası içeri alınır.',
+    '3) Sonra belge / makbuz referansları geri bağlanır.',
+    '4) Sonra onay merkezi ve banka operasyon kuyruğu doğrulanır.',
+    '5) Son olarak köprü aday kayıtları ve audit trail içeriği kontrol edilir.',
+    '6) Restore sonrası 3 kritik cari için bakiye doğrulaması yapılır.',
+    '',
+    'Yedek İçerik Sayıları:',
+    ...Object.entries(p.counts).map(([k,v])=>`- ${k}: ${v}`),
+    '',
+    'Kritik Kurallar:',
+    '- Yanlış cariye yanlış belge gitmez.',
+    '- Çift kayıtlar otomatik işlenmez.',
+    '- Emin olunmayan tüm satırlar onaydan geçer.',
+    '- Bakiye filtreye göre değil, tam hareket geçmişine göre hesaplanır.',
+    '- Restore test edilmeden backup tamam sayılmaz.'
+  ].join('\n');
+}
+function batchDuplicateExists(cariId, amount, date, raw){
+  const amt = Number(amount||0).toFixed(2);
+  const d = String(date||'');
+  const rawN = normalizeText(raw||'');
+  return state.bridgeCandidates.some(r=>{
+    const sameCari = String(r.cari_id||'')===String(cariId||'');
+    const sameAmt = Number(r.suggested_amount||0).toFixed(2)===amt;
+    const sameDate = String(r.candidate_date||'')===d;
+    const sameRaw = rawN && normalizeText(r.raw_content||'')===rawN;
+    return sameRaw || (sameCari && sameAmt && sameDate && amt!=='0.00');
+  });
+}
+function renderBridgeBatchPreview(){
+  const wrap=document.getElementById('bridgeBatchPreview');
+  if(!wrap) return;
+  const rows=state.bridgeBatchPreview||[];
+  wrap.innerHTML = rows.length ? `<table><thead><tr><th>#</th><th>Cari</th><th>Öneri</th><th>Tarih</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${i+1}</td><td>${escapeHtml(r.cari_name||'-')}</td><td>${escapeHtml(r.suggested_movement_type||'-')}<div class="muted-note">${escapeHtml(r.content_summary||'-')}</div></td><td>${escapeHtml(r.candidate_date||'-')}</td><td>${r.is_duplicate ? '<span class="tag red">Muhtemel Çift</span>' : '<span class="tag green">Temiz</span>'}<div class="muted-note">Güven: ${Number(r.confidence_score||0).toFixed(0)}</div></td><td class="text-right">${money(r.suggested_amount||0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Analiz ön izlemi yok.</div>`;
+}
+function analyzeBridgeBatch(){
+  const raw=document.getElementById('bridgeBatchRaw')?.value || '';
+  if(!raw.trim()){ notify('Önce toplu mesajı yapıştır.'); return; }
+  const source=document.getElementById('bridgeBatchSource')?.value || 'whatsapp';
+  const defMove=document.getElementById('bridgeBatchMovement')?.value || 'tahsilat';
+  const lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  state.bridgeBatchPreview = lines.map((line,idx)=>{
+    const detectedCari = detectCariFromText(line);
+    const amount = parseMoneyFromText(line);
+    const date = parseDateFromText(line) || new Date().toISOString().slice(0,10);
+    const movement = detectMovementFromText(line) || defMove;
+    let conf=50;
+    if(amount>0) conf+=20;
+    if(detectedCari) conf+=15;
+    if(date) conf+=10;
+    if(/moka|fast|havale|eft|kart|dekont/.test(normalizeText(line))) conf+=5;
+    const row={
+      id: uid('batch_bridge'),
+      source_type: source,
+      suggested_movement_type: movement,
+      candidate_date: date,
+      suggested_amount: amount,
+      content_summary: line.slice(0,140),
+      raw_content: line,
+      cari_id: detectedCari?.cari_id || null,
+      cari_name: detectedCari?.cari_name || null,
+      confidence_score: Math.min(100, conf),
+      created_at: new Date().toISOString(),
+      batch_title: (document.getElementById('bridgeBatchTitle')?.value || '').trim() || null,
+      is_duplicate: batchDuplicateExists(detectedCari?.cari_id, amount, date, line)
+    };
+    return row;
+  });
+  document.getElementById('bridgeBatchInfo').innerHTML = `<strong>Toplu analiz</strong><br>Satır: ${lines.length} · Muhtemel çift: ${state.bridgeBatchPreview.filter(x=>x.is_duplicate).length} · Cari bulunan: ${state.bridgeBatchPreview.filter(x=>x.cari_id).length}`;
+  renderBridgeBatchPreview();
+  notify('Toplu mesaj analizi hazır.');
+}
+function openBridgeBatchModal(){
+  document.getElementById('bridgeBatchSource').value = document.getElementById('candidateSource')?.value || 'whatsapp';
+  document.getElementById('bridgeBatchMovement').value = 'tahsilat';
+  document.getElementById('bridgeBatchTitle').value = '';
+  document.getElementById('bridgeBatchRaw').value = document.getElementById('candidateRawText')?.value || '';
+  state.bridgeBatchPreview = [];
+  document.getElementById('bridgeBatchInfo').innerHTML = 'Her boş olmayan satır ayrı aday kayda çevrilir. Çift riskli satırlar işaretlenir ve otomatik işlenmez.';
+  renderBridgeBatchPreview();
+  document.getElementById('bridgeBatchModal').style.display='flex';
+}
+function closeBridgeBatchModal(){ document.getElementById('bridgeBatchModal').style.display='none'; }
+function saveBridgeBatchAsCandidates(){
+  if(!(state.bridgeBatchPreview||[]).length){ notify('Önce toplu analizi çalıştır.'); return; }
+  const batchId = uid('bridge_session');
+  const title=(document.getElementById('bridgeBatchTitle')?.value || '').trim() || `Köprü Oturumu ${shortDate(new Date().toISOString())}`;
+  const cleanRows=state.bridgeBatchPreview.map(r=>({...r, id:uid('bridge'), status:'onay_bekliyor', batch_id:batchId}));
+  state.bridgeCandidates = [...cleanRows, ...state.bridgeCandidates];
+  state.bridgeBatches.unshift({id:batchId, title, source_type:document.getElementById('bridgeBatchSource')?.value || 'whatsapp', created_at:new Date().toISOString(), total_rows:cleanRows.length, duplicate_rows:cleanRows.filter(x=>x.is_duplicate).length, linked_rows:cleanRows.filter(x=>x.cari_id).length});
+  writeLocalJson(LOCAL_BRIDGE_KEY, state.bridgeCandidates);
+  writeLocalJson(LOCAL_BRIDGE_BATCHES_KEY, state.bridgeBatches);
+  closeBridgeBatchModal();
+  closeCandidateBridgeModal();
+  renderDocuments();
+  renderApprovals();
+  renderBackup();
+  notify('Toplu mesajlar onay kuyruğuna eklendi.');
+}
+function renderBackup(){
+  const counts=collectBackupPayload().counts;
+  const cfg=getBackupConfig();
+  const backupWrap=document.getElementById('backupWrap');
+  const restoreWrap=document.getElementById('restoreWrap');
+  const lastJson=(state.backupHistory.find(x=>x.type==='json')?.filename)||'-';
+  const lastManifest=(state.backupHistory.find(x=>x.type==='manifest_json')?.filename)||'-';
+  const lastDrill=state.restoreDrills[0]||null;
+  if(backupWrap){
+    backupWrap.innerHTML = `<div class="btn-row" style="margin-bottom:14px;">
+        <button class="btn btn-blue" onclick="runBackupExport('json')">Tam Yedek İndir</button>
+        <button class="btn btn-soft" onclick="runBackupExport('manifest_json')">Manifest JSON</button>
+        <button class="btn btn-soft" onclick="runBackupExport('bridge_csv')">Köprü Kuyruğu CSV</button>
+        <button class="btn btn-soft" onclick="runBackupExport('restore_plan')">Restore Planı TXT</button>
+      </div>
+      <div class="btn-row" style="margin-bottom:14px;">
+        <button class="btn btn-soft" onclick="runBackupExport('powershell')">PowerShell Script</button>
+        <button class="btn btn-soft" onclick="runBackupExport('bash')">Bash Script</button>
+        <button class="btn btn-soft" onclick="runBackupExport('drive_plan')">Drive Klasör Planı</button>
+      </div>
+      <div class="grid-4" style="margin-bottom:14px;">
+        <div class="metric-mini"><div class="k">Belge</div><div class="v">${counts.documents}</div></div>
+        <div class="metric-mini"><div class="k">Köprü Adayı</div><div class="v">${counts.bridge_candidates}</div></div>
+        <div class="metric-mini"><div class="k">İşlem Defteri</div><div class="v">${counts.ledger}</div></div>
+        <div class="metric-mini"><div class="k">Restore Tatbikatı</div><div class="v">${counts.restore_drills}</div></div>
+      </div>
+      <div class="rule-box" style="margin-bottom:14px;">Bu merkez artık sadece manuel export değil; yedek politikası, script üretimi, Drive klasör standardı ve restore tatbikat izini tek yerde toplar. Dürüst gerçek: otomatik cron/scheduler bağlanmadan kendi kendine gece dump atmaz.</div>
+      <div class="section" style="padding:14px;margin-bottom:14px;">
+        <h3 style="margin:0 0 12px;font-size:18px;font-weight:900;">Yedekleme Politikası</h3>
+        <div class="form-grid-3">
+          <div class="field"><label>Ortam</label><input id="backupEnv" value="${escapeHtml(cfg.env||'prod')}" /></div>
+          <div class="field"><label>Veritabanı Adı</label><input id="backupDbName" value="${escapeHtml(cfg.db_name||'alkam_mali')}" /></div>
+          <div class="field"><label>Günlük Saat</label><input id="backupDailyTime" type="time" value="${escapeHtml(cfg.daily_time||'23:30')}" /></div>
+        </div>
+        <div class="form-grid-3" style="margin-top:12px;">
+          <div class="field"><label>Retention (Gün)</label><input id="backupRetention" type="number" min="1" value="${Number(cfg.retention_days||30)}" /></div>
+          <div class="field"><label>Drive Remote</label><input id="backupDriveRemote" value="${escapeHtml(cfg.drive_remote||'gdrive')}" /></div>
+          <div class="field"><label>Drive Klasörü</label><input id="backupDriveFolder" value="${escapeHtml(cfg.drive_folder||'ALKAM_BACKUP/PROD')}" /></div>
+        </div>
+        <div class="form-grid" style="margin-top:12px;">
+          <div class="field"><label>DB URL</label><input id="backupDbUrl" value="${escapeHtml(cfg.db_url||'postgresql://USER:PASSWORD@HOST:5432/DBNAME')}" /></div>
+          <div class="field"><label>Dump Komutu</label><input id="backupDumpCmd" value="${escapeHtml(cfg.db_dump_cmd||'pg_dump')}" /></div>
+        </div>
+        <div class="form-grid" style="margin-top:12px;">
+          <div class="field"><label>Drive Aracı</label><input id="backupDriveTool" value="${escapeHtml(cfg.drive_tool||'rclone')}" /></div>
+          <div class="field"><label>Operatör</label><input id="backupOperator" value="${escapeHtml(cfg.operator_name||'Yerel Giriş')}" /></div>
+        </div>
+        <div class="btn-row" style="margin-top:12px;">
+          <label class="tag gray" style="gap:8px;padding:8px 12px;"><input id="backupIncDocs" type="checkbox" ${cfg.include_documents?'checked':''}/> Belge</label>
+          <label class="tag gray" style="gap:8px;padding:8px 12px;"><input id="backupIncBridge" type="checkbox" ${cfg.include_bridge?'checked':''}/> Köprü</label>
+          <label class="tag gray" style="gap:8px;padding:8px 12px;"><input id="backupIncAudit" type="checkbox" ${cfg.include_audit?'checked':''}/> Audit</label>
+          <label class="tag gray" style="gap:8px;padding:8px 12px;"><input id="backupIncBank" type="checkbox" ${cfg.include_bank?'checked':''}/> Banka</label>
+          <label class="tag gray" style="gap:8px;padding:8px 12px;"><input id="backupIncApprovals" type="checkbox" ${cfg.include_approvals?'checked':''}/> Onay</label>
+        </div>
+        <div class="btn-row" style="margin-top:12px;">
+          <button class="btn btn-blue" onclick="saveBackupConfig()">Politikayı Kaydet</button>
+          <span class="tag ${cfg.last_saved_at ? 'green' : 'amber'}">${cfg.last_saved_at ? 'Kaydedildi' : 'Henüz kaydedilmedi'}</span>
+        </div>
+      </div>` + (state.backupHistory.length ? `<table><thead><tr><th>ID</th><th>Tür</th><th>Dosya</th><th>Not</th><th>Tarih</th></tr></thead><tbody>${state.backupHistory.map(r=>`<tr><td>${escapeHtml(txnId(r,'BKP'))}</td><td>${escapeHtml(r.type||'-')}</td><td>${escapeHtml(r.filename||'-')}</td><td>${escapeHtml(r.note||'-')}</td><td>${shortDate(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz yedek geçmişi yok.</div>`);
+  }
+  if(restoreWrap){
+    restoreWrap.innerHTML = `<div class="grid-3" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Son JSON Yedeği</div><div class="v">${escapeHtml(lastJson)}</div></div>
+      <div class="metric-mini"><div class="k">Son Manifest</div><div class="v">${escapeHtml(lastManifest)}</div></div>
+      <div class="metric-mini"><div class="k">Son Tatbikat</div><div class="v">${lastDrill ? `${escapeHtml(lastDrill.result||'-')} · ${shortDate(lastDrill.created_at)}` : '-'}</div></div>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px; white-space:pre-line;">${escapeHtml(buildRestorePlanText())}</div>
+    <div class="section" style="padding:14px;margin-bottom:14px;">
+      <h3 style="margin:0 0 12px;font-size:18px;font-weight:900;">Restore Tatbikatı Kaydı</h3>
+      <div class="form-grid-3">
+        <div class="field"><label>Sonuç</label><select id="restoreDrillResult"><option value="basarili">Başarılı</option><option value="kismi">Kısmi</option><option value="basarisiz">Başarısız</option></select></div>
+        <div class="field"><label>Süre (Dakika)</label><input id="restoreDrillDuration" type="number" min="0" value="0" /></div>
+        <div class="field"><label>Not</label><input id="restoreDrillNote" placeholder="Ne eksikti, ne doğrulandı?" /></div>
+      </div>
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn btn-blue" onclick="logRestoreDrill()">Tatbikatı Kaydet</button>
+      </div>
+    </div>
+    <div class="section" style="padding:14px;">
+      <h3 style="margin:0 0 12px;font-size:18px;font-weight:900;">Drive ve Görev Zamanlayıcı Notu</h3>
+      <div class="rule-box" style="white-space:pre-line;">${escapeHtml(buildDriveFolderTreeText())}</div>
+      ${state.restoreDrills.length ? `<table style="margin-top:14px;"><thead><tr><th>ID</th><th>Sonuç</th><th>Süre</th><th>Not</th><th>Tarih</th></tr></thead><tbody>${state.restoreDrills.map(r=>`<tr><td>${escapeHtml(txnId(r,'RST'))}</td><td>${escapeHtml(r.result||'-')}</td><td>${Number(r.duration_minutes||0)} dk</td><td>${escapeHtml(r.note||'-')}</td><td>${shortDate(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz restore tatbikatı yok.</div>`}
+    </div>`;
+  }
+}
+function renderBridgeSessions(){
+  const wrap=document.getElementById('bridgeSessionWrap');
+  if(!wrap) return;
+  const sourceStats={whatsapp:0, telegram:0, gorsel:0, kopyala_yapistir:0};
+  state.bridgeCandidates.forEach(r=>{ const k=r.source_type||'kopyala_yapistir'; sourceStats[k]=(sourceStats[k]||0)+1; });
+  wrap.innerHTML = `<div class="btn-row" style="margin-bottom:14px;"><button class="btn btn-blue" onclick="openBridgeBatchModal()">Toplu Mesaj Ayır</button><button class="btn btn-soft" onclick="runBackupExport('bridge_csv')">Kuyruğu CSV Al</button></div>
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">WhatsApp</div><div class="v">${sourceStats.whatsapp||0}</div></div>
+      <div class="metric-mini"><div class="k">Telegram</div><div class="v">${sourceStats.telegram||0}</div></div>
+      <div class="metric-mini"><div class="k">Muhtemel Çift</div><div class="v">${state.bridgeCandidates.filter(x=>x.is_duplicate).length}</div></div>
+      <div class="metric-mini"><div class="k">Oturum</div><div class="v">${state.bridgeBatches.length}</div></div>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px;">Köprü standardı: mesaj → analiz → aday kayıt → onay → belge/banka/moka ilişkisi. Otomatik muhasebe kaydı yok, kör işlem yok.</div>` + (state.bridgeBatches.length ? `<table><thead><tr><th>ID</th><th>Başlık</th><th>Kaynak</th><th>Satır</th><th>Kontrol</th><th>Tarih</th></tr></thead><tbody>${state.bridgeBatches.map(b=>`<tr><td>${escapeHtml(txnId(b,'BTH'))}</td><td>${escapeHtml(b.title||'-')}</td><td>${escapeHtml(b.source_type||'-')}</td><td>${b.total_rows||0}</td><td>${b.duplicate_rows||0} çift · ${b.linked_rows||0} cari eşleşti</td><td>${shortDate(b.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz köprü oturumu yok.</div>`);
+}
 function renderDashboard(){
   document.getElementById("kpiToplamCari").textContent=Number(state.dashboard?.toplam_cari||state.cariler.length||0);
   document.getElementById("kpiAktifCari").textContent=Number(state.dashboard?.aktif_cari||state.cariler.filter(x=>x.is_active).length||0);
@@ -1378,7 +1947,7 @@ function renderBankMatchHistory(){
   };
   const target=document.getElementById('bankMatchWrap');
   if(!target) return;
-  target.innerHTML = `<div class="grid-4" style="margin-bottom:14px;">
+  const html = `<div class="grid-4" style="margin-bottom:14px;">
       <div class="metric-mini"><div class="k">Montaj Kaydı</div><div class="v">${summary.total}</div></div>
       <div class="metric-mini"><div class="k">Cariye Giden</div><div class="v">${summary.cari}</div></div>
       <div class="metric-mini"><div class="k">Gidere Giden</div><div class="v">${summary.gider}</div></div>
@@ -1396,7 +1965,7 @@ function renderApprovalAudit(){
   };
   const target=document.getElementById('approvalAuditWrap');
   if(!target) return;
-  target.innerHTML = `<div class="grid-4" style="margin-bottom:14px;">
+  const html = `<div class="grid-4" style="margin-bottom:14px;">
       <div class="metric-mini"><div class="k">Toplam İz</div><div class="v">${summary.total}</div></div>
       <div class="metric-mini"><div class="k">Onay İşlemi</div><div class="v">${summary.approval}</div></div>
       <div class="metric-mini"><div class="k">Banka/Moka İşlemi</div><div class="v">${summary.bank}</div></div>
@@ -1547,6 +2116,8 @@ function renderDocuments(){
   const pendingBridge = bridgeCandidatesAsPendingRows();
   document.getElementById("bridgeWrap").innerHTML=`<div class="btn-row" style="margin-bottom:14px;">
       <button class="btn btn-blue" onclick="openCandidateBridgeModal(state.selectedCariId)">Aday Kayıt Ekle</button>
+      <button class="btn btn-soft" onclick="openBridgeBatchModal()">Toplu Mesaj Ayır</button>
+      <button class="btn btn-soft" onclick="runBackupExport('bridge_csv')">Kuyruğu CSV Al</button>
     </div>
     <div class="grid-4" style="margin-bottom:14px;">
       <div class="metric-mini"><div class="k">Manuel Aday</div><div class="v">${state.bridgeCandidates.length}</div></div>
@@ -1560,6 +2131,7 @@ function renderDocuments(){
   const typeEl = document.getElementById('documentTypeFilter');
   if(typeEl) typeEl.addEventListener('change', e=>{ state.documentFilter = e.target.value; renderDocuments(); });
   document.querySelectorAll('[data-doc-id]').forEach(el=>el.addEventListener('click',()=>openDocumentDetailModal(el.dataset.docId)));
+  renderBridgeSessions();
 }
 function renderApprovals(){
   const allPending = getAllPendingApprovals();
@@ -2090,6 +2662,7 @@ async function saveCandidateBridge(){
     status: 'onay_bekliyor',
     created_at: new Date().toISOString()
   };
+  payload.is_duplicate = batchDuplicateExists(payload.cari_id, payload.suggested_amount, payload.candidate_date, payload.raw_content);
   if(!payload.content_summary || !payload.raw_content){ notify('Kısa özet ve ham metin zorunlu.'); return; }
   state.bridgeCandidates.unshift(payload);
   writeLocalJson(LOCAL_BRIDGE_KEY, state.bridgeCandidates);
@@ -2097,6 +2670,7 @@ async function saveCandidateBridge(){
   renderDocuments();
   renderExpenses();
   renderApprovals();
+  renderBackup();
   notify('Aday kayıt onay akışına eklendi.');
 }
 
@@ -2198,6 +2772,8 @@ async function refreshAll(){
   renderDocuments();
   renderExpenses();
   renderApprovals();
+  renderBackup();
+  renderOpsHealthPanel();
   if(state.selectedCariId) renderSelectedCariDetail();
 }
 document.getElementById("cariSearch").addEventListener("input",renderCariList);
