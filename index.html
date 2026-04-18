@@ -252,6 +252,16 @@
   </div>
 </div>
 
+<div id="bankActionModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:980px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Banka / Moka Operasyon Detayı</h2>
+      <button class="btn btn-red" onclick="closeBankActionModal()">Kapat</button>
+    </div>
+    <div id="bankActionContent"></div>
+  </div>
+</div>
+
 <div class="layout">
   <aside class="sidebar">
     <div style="text-align:center;margin-bottom:16px;"><img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" style="width:120px;display:block;margin:0 auto 10px;"></div>
@@ -357,8 +367,8 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909";
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},documentFilter:"all",documentSearch:"",selectedDocumentId:null};
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1";
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null};
 
 function money(v){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(Number(v||0))}
 function shortDate(v){if(!v) return "-"; const d=new Date(v); if(Number.isNaN(d.getTime())) return v; return new Intl.DateTimeFormat("tr-TR").format(d)}
@@ -369,6 +379,7 @@ function writeLocalJson(key,val){ localStorage.setItem(key, JSON.stringify(val))
 function writeLocalObject(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
 function uid(prefix="id"){ return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
 function persistApprovalOps(){ writeLocalObject(LOCAL_APPROVAL_OPS_KEY, state.approvalOps); }
+function persistBankOps(){ writeLocalObject(LOCAL_BANK_OPS_KEY, state.bankOps); }
 function approvalRowKey(r){ return String(r.id || [r.source_type||'',r.content_summary||'',r.raw_content||'',r.suggested_amount||r.raw_amount||r.final_amount||0,r.created_at||''].join('|')); }
 function isPendingHandled(r){ return state.approvalOps.handled_pending_ids.includes(approvalRowKey(r)); }
 function markPendingHandled(r){ const key=approvalRowKey(r); if(!state.approvalOps.handled_pending_ids.includes(key)) state.approvalOps.handled_pending_ids.push(key); }
@@ -452,6 +463,7 @@ async function loadDocuments(){
   state.documents = readLocalJson(LOCAL_DOCS_KEY);
   state.bridgeCandidates = readLocalJson(LOCAL_BRIDGE_KEY);
   state.approvalOps = readLocalObject(LOCAL_APPROVAL_OPS_KEY, {processed:[], rejected:[], handled_pending_ids:[]});
+  state.bankOps = readLocalObject(LOCAL_BANK_OPS_KEY, {pending:[], row_status:{}, history:[]});
 }
 
 function renderDashboard(){
@@ -827,7 +839,7 @@ function bridgeCandidatesAsPendingRows(){
   }));
 }
 function getAllPendingApprovals(){
-  return [...state.pending, ...bridgeCandidatesAsPendingRows()].filter(r=>!isPendingHandled(r));
+  return [...state.pending, ...bridgeCandidatesAsPendingRows(), ...bankPendingRowsAsApprovalRows()].filter(r=>!isPendingHandled(r));
 }
 function renderSelectedCariDetail(){
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
@@ -1019,44 +1031,283 @@ function mokaRecommendedAction(r){
   if(cls === 'banka_aktarim') return 'Sonra banka mahsup';
   return 'Onaya düşür / manuel incele';
 }
+function bankRowKey(r,bucket='bank'){
+  return `${bucket}|${r.id || ''}|${r.movement_date || ''}|${r.description || ''}|${num(r.net_amount || r.amount || 0).toFixed(2)}`;
+}
+function bankStatusInfo(r,bucket='bank'){
+  return state.bankOps?.row_status?.[bankRowKey(r,bucket)] || null;
+}
+function bankStatusCode(r,bucket='bank'){
+  const info = bankStatusInfo(r,bucket);
+  if(info?.status) return info.status;
+  return bankNeedsApproval(r) ? 'needs_approval' : 'processable';
+}
+function bankStatusBadge(r,bucket='bank'){
+  const code = bankStatusCode(r,bucket);
+  if(code==='queued') return '<span class="tag amber">Onaya Gönderildi</span>';
+  if(code==='processed') return '<span class="tag green">İşlendi</span>';
+  if(code==='ignored') return '<span class="tag gray">İşlenmeyen</span>';
+  if(code==='rejected') return '<span class="tag red">Reddedildi</span>';
+  if(code==='needs_approval') return '<span class="tag red">Onaya Düşmeli</span>';
+  return '<span class="tag green">İşlenebilir</span>';
+}
+function bankStatusNote(r,bucket='bank'){
+  const info = bankStatusInfo(r,bucket);
+  if(info?.note) return info.note;
+  return r.match_reason || r.eslesme_sebebi || (bankNeedsApproval(r) ? 'Operatör kararı gerekli' : 'Standart eşleşme');
+}
+function bankPendingRowsAsApprovalRows(){
+  return (state.bankOps.pending || []).map(r=>({...r, is_local_bank_queue:true}));
+}
+function rowMatchesBankFilter(r,bucket='bank'){
+  const filter = bucket==='bank' ? state.bankFilter : state.mokaFilter;
+  const code = bankStatusCode(r,bucket);
+  if(filter==='all') return true;
+  if(filter==='processable') return code==='processable';
+  if(filter==='needs_approval') return code==='needs_approval';
+  if(filter==='queued') return code==='queued';
+  if(filter==='processed') return code==='processed';
+  if(filter==='ignored') return code==='ignored' || code==='rejected';
+  if(bucket==='moka' && filter==='moka_tahsilat') return mokaRowClass(r)==='moka_tahsilat';
+  if(bucket==='moka' && filter==='banka_aktarim') return mokaRowClass(r)==='banka_aktarim';
+  return true;
+}
+function getBankTargetDefaults(r,bucket='bank'){
+  if(bucket==='moka'){
+    const cls=mokaRowClass(r);
+    if(cls==='moka_tahsilat') return {targetType:'moka_united', movementType:'tahsilat', targetName:'Moka United', note:'Önce Moka United tahsilatı'};
+    if(cls==='banka_aktarim') return {targetType:'hesap', movementType:'mahsup', targetName:'Moka United -> Banka', note:'Moka aktarımı banka mahsup'};
+  }
+  return {
+    targetType: bankNeedsApproval(r) ? 'cari' : (r.suggested_financial_account_type || 'hesap'),
+    movementType: (r.suggested_movement_type || (bankNeedsApproval(r) ? 'tahsilat' : 'mahsup')),
+    targetName: bankSuggestedTarget(r) === '-' ? '' : bankSuggestedTarget(r),
+    note: bankStatusNote(r,bucket)
+  };
+}
+function syncBankTargetNameFromCari(){
+  const cariId=document.getElementById('bankDecisionCariId')?.value || '';
+  const input=document.getElementById('bankDecisionTargetName');
+  if(!input || !cariId) return;
+  const cari=state.cariler.find(x=>String(x.cari_id)===String(cariId));
+  if(cari) input.value = cari.cari_name || '';
+}
+function getSelectedBankRow(){
+  const arr = state.selectedBankBucket==='moka' ? state.mokaPanel : state.bankPanel;
+  return arr.find(r=>bankRowKey(r,state.selectedBankBucket)===state.selectedBankKey) || null;
+}
+function openBankActionModal(bucket,key){
+  state.selectedBankBucket=bucket;
+  state.selectedBankKey=key;
+  const r=getSelectedBankRow();
+  if(!r){ notify('Banka satırı bulunamadı.'); return; }
+  const defs=getBankTargetDefaults(r,bucket);
+  const info=bankStatusInfo(r,bucket);
+  const amount=num(r.net_amount || r.amount || 0);
+  const recommended=bucket==='moka' ? mokaRecommendedAction(r) : (bankNeedsApproval(r) ? 'Önce onay merkezine gönder' : 'Doğrudan işlenebilir');
+  const content=`
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Kaynak</div><div class="v">${escapeHtml(bucket==='moka' ? 'Moka' : 'Banka')}</div></div>
+      <div class="metric-mini"><div class="k">Durum</div><div class="v">${bankStatusBadge(r,bucket)}</div></div>
+      <div class="metric-mini"><div class="k">Güven</div><div class="v">${bankRowConfidence(r) ? bankRowConfidence(r).toFixed(0) : '-'}</div></div>
+      <div class="metric-mini"><div class="k">Tutar</div><div class="v">${money(amount)}</div></div>
+    </div>
+    <div class="grid-2" style="margin-bottom:14px;">
+      <div class="rule-box"><strong>Açıklama</strong><br>${escapeHtml(r.description || '-')}</div>
+      <div class="rule-box"><strong>Operasyon Kuralı</strong><br>${escapeHtml(recommended)}<br>${escapeHtml(bankStatusNote(r,bucket))}</div>
+    </div>
+    <div class="form-grid-3">
+      <div class="field"><label>Hedef Tip</label><select id="bankDecisionTargetType" class="select-input"><option value="cari" ${defs.targetType==='cari'?'selected':''}>Cari</option><option value="gider" ${defs.targetType==='gider'?'selected':''}>Gider</option><option value="hesap" ${defs.targetType==='hesap'?'selected':''}>Hesap</option><option value="moka_united" ${defs.targetType==='moka_united'?'selected':''}>Moka United</option></select></div>
+      <div class="field"><label>Hareket</label><select id="bankDecisionMovementType" class="select-input"><option value="tahsilat" ${defs.movementType==='tahsilat'?'selected':''}>tahsilat</option><option value="tahakkuk" ${defs.movementType==='tahakkuk'?'selected':''}>tahakkuk</option><option value="mahsup" ${defs.movementType==='mahsup'?'selected':''}>mahsup</option><option value="gider" ${defs.movementType==='gider'?'selected':''}>gider</option></select></div>
+      <div class="field"><label>Tutar</label><input id="bankDecisionAmount" type="number" min="0" step="0.01" value="${amount}" /></div>
+    </div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="field"><label>Cari Seç</label><select id="bankDecisionCariId" class="select-input" onchange="syncBankTargetNameFromCari()"><option value="">Cari seçiniz</option>${state.cariler.map(c=>`<option value="${escapeHtml(c.cari_id)}" ${(c.cari_name||'')===defs.targetName?'selected':''}>${escapeHtml(c.cari_name||'-')}</option>`).join('')}</select></div>
+      <div class="field"><label>Hedef Ad</label><input id="bankDecisionTargetName" value="${escapeHtml(defs.targetName || '')}" placeholder="Cari / gider / hesap adı" /></div>
+    </div>
+    <div class="field" style="margin-top:12px;"><label>Operasyon Notu</label><input id="bankDecisionNote" value="${escapeHtml(info?.note || defs.note || '')}" /></div>
+    <div class="field" style="margin-top:12px;"><label>Kontrol</label><div class="rule-box"><label style="display:flex;gap:8px;align-items:flex-start;font-weight:800;"><input id="bankDecisionForceCheck" type="checkbox" ${bankNeedsApproval(r)||bucket==='moka'?'':'checked'} /> Satırı kontrol ettim. Yanlış cari / yanlış mahsup / yanlış belge olmayacağını doğruladım.</label></div></div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-blue" onclick="queueSelectedBankRowToApproval()">Onay Merkezine Gönder</button>
+      <button class="btn btn-soft" onclick="processSelectedBankRowDirect()">Doğrudan İşle</button>
+      <button class="btn btn-red" onclick="ignoreSelectedBankRow()">İşlenmeyen Olarak İşaretle</button>
+    </div>`;
+  document.getElementById('bankActionContent').innerHTML=content;
+  document.getElementById('bankActionModal').style.display='flex';
+}
+function closeBankActionModal(){ document.getElementById('bankActionModal').style.display='none'; }
+function updateBankRowStatus(r,bucket,status,note,extra={}){
+  state.bankOps.row_status[bankRowKey(r,bucket)] = {status, note: note || '', updated_at:new Date().toISOString(), bucket, amount:num(r.net_amount||r.amount||0), description:r.description||'', ...extra};
+  state.bankOps.history = state.bankOps.history || [];
+  state.bankOps.history.unshift({status, note: note || '', updated_at:new Date().toISOString(), bucket, row_key:bankRowKey(r,bucket), amount:num(r.net_amount||r.amount||0), description:r.description||''});
+  persistBankOps();
+}
+function queueSelectedBankRowToApproval(){
+  const r=getSelectedBankRow();
+  if(!r){ notify('Satır bulunamadı.'); return; }
+  const targetType=document.getElementById('bankDecisionTargetType')?.value || 'cari';
+  const movementType=document.getElementById('bankDecisionMovementType')?.value || 'tahsilat';
+  const amount=num(document.getElementById('bankDecisionAmount')?.value || r.net_amount || 0);
+  const targetName=(document.getElementById('bankDecisionTargetName')?.value || '').trim();
+  const note=(document.getElementById('bankDecisionNote')?.value || '').trim() || 'Banka panelinden onaya gönderildi';
+  const forceOk=!!document.getElementById('bankDecisionForceCheck')?.checked;
+  if(!targetName){ notify('Hedef adı gir.'); return; }
+  if((bankNeedsApproval(r) || state.selectedBankBucket==='moka') && !forceOk){ notify('Kontrol kutusunu işaretle.'); return; }
+  const originKey = bankRowKey(r,state.selectedBankBucket);
+  state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.bank_origin_key)!==String(originKey));
+  const pendingId=uid('bank_pending');
+  const pendingRow={
+    id:pendingId,
+    source_type: state.selectedBankBucket==='moka' ? 'moka_panel' : 'banka_panel',
+    content_summary:r.description || 'Banka satırı',
+    raw_content:`${shortDate(r.movement_date)} | ${r.description || '-'} | ${money(amount)}`,
+    suggested_cari_name: targetType==='cari' ? targetName : null,
+    suggested_expense_name: targetType==='gider' ? targetName : null,
+    suggested_financial_account_name: targetType==='hesap' || targetType==='moka_united' ? targetName : null,
+    suggested_amount: amount,
+    raw_amount: amount,
+    suggested_movement_type: movementType,
+    confidence_score: bankRowConfidence(r) || 80,
+    issue_type:'bank_manual_queue',
+    match_reason: note,
+    created_at:new Date().toISOString(),
+    bank_origin_key: originKey,
+    bank_origin_bucket: state.selectedBankBucket,
+    is_local_bank_queue:true
+  };
+  state.bankOps.pending = state.bankOps.pending || [];
+  state.bankOps.pending.unshift(pendingRow);
+  updateBankRowStatus(r,state.selectedBankBucket,'queued',note,{pending_id:pendingId,target_type:targetType,target_name:targetName,movement_type:movementType});
+  persistBankOps();
+  closeBankActionModal();
+  renderAccounts();
+  renderApprovals();
+  notify('Satır onay merkezine gönderildi.');
+}
+function processSelectedBankRowDirect(){
+  const r=getSelectedBankRow();
+  if(!r){ notify('Satır bulunamadı.'); return; }
+  const targetType=document.getElementById('bankDecisionTargetType')?.value || 'cari';
+  const movementType=document.getElementById('bankDecisionMovementType')?.value || 'tahsilat';
+  const amount=num(document.getElementById('bankDecisionAmount')?.value || r.net_amount || 0);
+  const targetName=(document.getElementById('bankDecisionTargetName')?.value || '').trim();
+  const note=(document.getElementById('bankDecisionNote')?.value || '').trim() || 'Banka panelinden doğrudan işlendi';
+  const forceOk=!!document.getElementById('bankDecisionForceCheck')?.checked;
+  if(!targetName){ notify('Hedef adı gir.'); return; }
+  if((bankNeedsApproval(r) || state.selectedBankBucket==='moka') && !forceOk){ notify('Kontrol kutusunu işaretle.'); return; }
+  const originKey = bankRowKey(r,state.selectedBankBucket);
+  state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.bank_origin_key)!==String(originKey));
+  const processed={
+    id:uid('bank_processed'),
+    source_type: state.selectedBankBucket==='moka' ? 'moka_panel' : 'banka_panel',
+    content_summary:r.description || 'Banka satırı',
+    raw_content:r.description || '',
+    final_target_type:targetType,
+    final_cari_name: targetType==='cari' ? targetName : null,
+    final_expense_name: targetType==='gider' ? targetName : null,
+    final_financial_account_name: targetType==='hesap' || targetType==='moka_united' ? targetName : null,
+    final_movement_type:movementType,
+    final_amount:amount,
+    decision_note:note,
+    processed_at:new Date().toISOString(),
+    processed_locally:true,
+    bank_origin_key: originKey,
+    bank_origin_bucket: state.selectedBankBucket
+  };
+  state.approvalOps.processed.unshift(processed);
+  persistApprovalOps();
+  updateBankRowStatus(r,state.selectedBankBucket,'processed',note,{target_type:targetType,target_name:targetName,movement_type:movementType});
+  closeBankActionModal();
+  renderAccounts();
+  renderApprovals();
+  notify('Satır işlendi.');
+}
+function ignoreSelectedBankRow(){
+  const r=getSelectedBankRow();
+  if(!r){ notify('Satır bulunamadı.'); return; }
+  const note=(document.getElementById('bankDecisionNote')?.value || '').trim() || 'Operatör tarafından işlenmeyen olarak bırakıldı';
+  const originKey = bankRowKey(r,state.selectedBankBucket);
+  state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.bank_origin_key)!==String(originKey));
+  updateBankRowStatus(r,state.selectedBankBucket,'ignored',note,{});
+  closeBankActionModal();
+  renderAccounts();
+  renderApprovals();
+  notify('Satır işlenmeyen olarak işaretlendi.');
+}
 function renderAccounts(){
-  const ambiguousBankCount = state.bankPanel.filter(r=>bankNeedsApproval(r)).length;
-  const processableBankCount = state.bankPanel.filter(r=>!bankNeedsApproval(r)).length;
-  const mokaTransferCount = state.mokaPanel.filter(r=>mokaRowClass(r)==='banka_aktarim').length;
-  const mokaTahsilatCount = state.mokaPanel.filter(r=>mokaRowClass(r)==='moka_tahsilat').length;
+  const bankRows = state.bankPanel.filter(r=>rowMatchesBankFilter(r,'bank'));
+  const mokaRows = state.mokaPanel.filter(r=>rowMatchesBankFilter(r,'moka'));
+  const bankStats = {
+    total: state.bankPanel.length,
+    processable: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='processable').length,
+    needs_approval: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='needs_approval').length,
+    queued: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='queued').length,
+    processed: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='processed').length,
+    ignored: state.bankPanel.filter(r=>['ignored','rejected'].includes(bankStatusCode(r,'bank'))).length,
+  };
+  const mokaStats = {
+    total: state.mokaPanel.length,
+    tahsilat: state.mokaPanel.filter(r=>mokaRowClass(r)==='moka_tahsilat').length,
+    aktarim: state.mokaPanel.filter(r=>mokaRowClass(r)==='banka_aktarim').length,
+    queued: state.mokaPanel.filter(r=>bankStatusCode(r,'moka')==='queued').length,
+    processed: state.mokaPanel.filter(r=>bankStatusCode(r,'moka')==='processed').length,
+    ignored: state.mokaPanel.filter(r=>['ignored','rejected'].includes(bankStatusCode(r,'moka'))).length,
+  };
   document.getElementById("accountSummaryWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
     <div class="metric-mini"><div class="k">Toplam Hesap</div><div class="v">${state.accounts.length}</div></div>
-    <div class="metric-mini"><div class="k">İşlenebilir Banka</div><div class="v">${processableBankCount}</div></div>
-    <div class="metric-mini"><div class="k">Onaya Düşmeli</div><div class="v">${ambiguousBankCount}</div></div>
+    <div class="metric-mini"><div class="k">Banka Onay Kuyruğu</div><div class="v">${bankStats.queued}</div></div>
+    <div class="metric-mini"><div class="k">Banka İşlenen</div><div class="v">${bankStats.processed}</div></div>
     <div class="metric-mini"><div class="k">Net Toplam</div><div class="v">${money(state.accounts.reduce((a,b)=>a+num(b.net_bakiye),0))}</div></div>
   </div>
   <div class="rule-box" style="margin-bottom:14px;">
-    Standart sıra: <strong>banka satırı önce aday eşleşme</strong> → emin değilse <strong>Onay Merkezi</strong> → Moka kaynaklıysa <strong>önce Moka United</strong> → bankaya aktarım geldiğinde <strong>mahsup</strong>.
+    Standart sıra: <strong>banka satırı incele</strong> → hedefi doğrula → <strong>emin değilsen Onay Merkezi</strong> → Moka kaynaklıysa <strong>önce Moka United</strong> → bankaya aktarım geldiğinde <strong>mahsup</strong>.
   </div>` + (state.accounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${state.accounts.map(a=>`<tr><td>${escapeHtml(a.account_name)}</td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`);
+
   document.getElementById("bankPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
-      <div class="metric-mini"><div class="k">Toplam Satır</div><div class="v">${state.bankPanel.length}</div></div>
-      <div class="metric-mini"><div class="k">İşlenebilir</div><div class="v">${processableBankCount}</div></div>
-      <div class="metric-mini"><div class="k">Onaylık</div><div class="v">${ambiguousBankCount}</div></div>
-      <div class="metric-mini"><div class="k">Kural</div><div class="v">Önce doğru cari</div></div>
-    </div>` + (state.bankPanel.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.bankPanel.map(r=>{
+      <div class="metric-mini"><div class="k">Toplam Satır</div><div class="v">${bankStats.total}</div></div>
+      <div class="metric-mini"><div class="k">İşlenebilir</div><div class="v">${bankStats.processable}</div></div>
+      <div class="metric-mini"><div class="k">Onaya Düşmeli</div><div class="v">${bankStats.needs_approval}</div></div>
+      <div class="metric-mini"><div class="k">Kuyruk / İşlenen</div><div class="v">${bankStats.queued} / ${bankStats.processed}</div></div>
+    </div>
+    <div class="filter-chips" id="bankFilterChips">
+      <button class="chip ${state.bankFilter==='all'?'active':''}" data-bfilter="all">Tümü</button>
+      <button class="chip ${state.bankFilter==='processable'?'active':''}" data-bfilter="processable">İşlenebilir</button>
+      <button class="chip ${state.bankFilter==='needs_approval'?'active':''}" data-bfilter="needs_approval">Onaya Düşmeli</button>
+      <button class="chip ${state.bankFilter==='queued'?'active':''}" data-bfilter="queued">Onay Kuyruğu</button>
+      <button class="chip ${state.bankFilter==='processed'?'active':''}" data-bfilter="processed">İşlenen</button>
+      <button class="chip ${state.bankFilter==='ignored'?'active':''}" data-bfilter="ignored">İşlenmeyen</button>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez.</div>` + (bankRows.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{
     const suggestion = bankSuggestedTarget(r);
     const conf = bankRowConfidence(r);
-    const reason = r.match_reason || r.eslesme_sebebi || (!r.suggested_financial_account_type ? 'Öneri yok' : 'Standart eşleşme');
-    return `<tr><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(reason)}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankControlBadge(r)}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
-  }).join("")}</tbody></table>`:`<div class="empty">Banka paneli boş.</div>`);
+    return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
+  }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
+
   document.getElementById("mokaPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
-      <div class="metric-mini"><div class="k">Toplam Moka Satırı</div><div class="v">${state.mokaPanel.length}</div></div>
-      <div class="metric-mini"><div class="k">Moka Tahsilat</div><div class="v">${mokaTahsilatCount}</div></div>
-      <div class="metric-mini"><div class="k">Banka Aktarım</div><div class="v">${mokaTransferCount}</div></div>
-      <div class="metric-mini"><div class="k">Standart</div><div class="v">Önce Moka sonra Banka</div></div>
+      <div class="metric-mini"><div class="k">Toplam Moka Satırı</div><div class="v">${mokaStats.total}</div></div>
+      <div class="metric-mini"><div class="k">Moka Tahsilat</div><div class="v">${mokaStats.tahsilat}</div></div>
+      <div class="metric-mini"><div class="k">Banka Aktarım</div><div class="v">${mokaStats.aktarim}</div></div>
+      <div class="metric-mini"><div class="k">Kuyruk / İşlenen</div><div class="v">${mokaStats.queued} / ${mokaStats.processed}</div></div>
+    </div>
+    <div class="filter-chips" id="mokaFilterChips">
+      <button class="chip ${state.mokaFilter==='all'?'active':''}" data-mfilter="all">Tümü</button>
+      <button class="chip ${state.mokaFilter==='moka_tahsilat'?'active':''}" data-mfilter="moka_tahsilat">Moka Tahsilat</button>
+      <button class="chip ${state.mokaFilter==='banka_aktarim'?'active':''}" data-mfilter="banka_aktarim">Banka Aktarım</button>
+      <button class="chip ${state.mokaFilter==='queued'?'active':''}" data-mfilter="queued">Onay Kuyruğu</button>
+      <button class="chip ${state.mokaFilter==='processed'?'active':''}" data-mfilter="processed">İşlenen</button>
+      <button class="chip ${state.mokaFilter==='ignored'?'active':''}" data-mfilter="ignored">İşlenmeyen</button>
     </div>
     <div class="rule-box" style="margin-bottom:14px;">
       Moka kredi kartı tahsilatı <strong>doğrudan bankaya gelir yazılmaz</strong>. İlk kayıt <strong>Moka United</strong> içinde tutulur. Vadesi gelince bankaya aktarılan tutar ayrıca işlenir ve <strong>Moka United → Banka</strong> mahsup mantığıyla kapatılır.
-    </div>` + (state.mokaPanel.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Önerilen İşlem</th><th class="text-right">Tutar</th></tr></thead><tbody>${state.mokaPanel.map(r=>{
+    </div>` + (mokaRows.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{
       const cls = mokaRowClass(r);
       const tag = cls==='moka_tahsilat' ? '<span class="tag blue">Moka Tahsilat</span>' : (cls==='banka_aktarim' ? '<span class="tag green">Banka Aktarım</span>' : '<span class="tag amber">Belirsiz</span>');
-      return `<tr><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(r.match_reason || r.eslesme_sebebi || '-')}</div></td><td>${tag}</td><td>${escapeHtml(mokaRecommendedAction(r))}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
-    }).join("")}</tbody></table>`:`<div class="empty">Moka hareketi yok.</div>`);
+      return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
+    }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede Moka satırı yok.</div>`);
+
+  document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
+  document.querySelectorAll('#mokaFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.mokaFilter = btn.dataset.mfilter; renderAccounts(); }));
+  document.querySelectorAll('[data-bank-key]').forEach(el=>el.addEventListener('click',()=>openBankActionModal(el.dataset.bankBucket, el.dataset.bankKey)));
 }
 function renderReports(){
   const riskRows=state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).sort((a,b)=>num(b.bakiye)-num(a.bakiye)).slice(0,15);
@@ -1354,6 +1605,11 @@ function processSelectedApproval(){
     state.bridgeCandidates = state.bridgeCandidates.filter(x=>String(x.id)!==String(r.id));
     writeLocalJson(LOCAL_BRIDGE_KEY, state.bridgeCandidates);
   }
+  if(r.is_local_bank_queue && r.bank_origin_key){
+    state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.id)!==String(r.id));
+    state.bankOps.row_status[r.bank_origin_key] = {...(state.bankOps.row_status[r.bank_origin_key] || {}), status:'processed', note, updated_at:new Date().toISOString()};
+    persistBankOps();
+  }
   persistApprovalOps();
   closeApprovalDetailModal();
   renderDocuments();
@@ -1377,6 +1633,11 @@ function rejectSelectedApproval(){
   if(r.is_local_bridge){
     state.bridgeCandidates = state.bridgeCandidates.filter(x=>String(x.id)!==String(r.id));
     writeLocalJson(LOCAL_BRIDGE_KEY, state.bridgeCandidates);
+  }
+  if(r.is_local_bank_queue && r.bank_origin_key){
+    state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.id)!==String(r.id));
+    state.bankOps.row_status[r.bank_origin_key] = {...(state.bankOps.row_status[r.bank_origin_key] || {}), status:'rejected', note, updated_at:new Date().toISOString()};
+    persistBankOps();
   }
   persistApprovalOps();
   closeApprovalDetailModal();
