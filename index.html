@@ -371,6 +371,7 @@
         <div class="section"><h2 class="section-title">Banka Montaj Paneli</h2><div id="bankPanelWrap" class="empty">Yükleniyor...</div></div>
       </div>
       <div class="section"><h2 class="section-title">Moka Transfer Paneli</h2><div id="mokaPanelWrap" class="empty">Yükleniyor...</div></div>
+      <div class="section"><h2 class="section-title">Banka / Moka Montaj Geçmişi</h2><div id="bankMatchWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
     <section id="tab-giderler" class="tab-page">
@@ -394,6 +395,7 @@
         <div class="section"><h2 class="section-title">İşlenenler</h2><div id="processedWrap" class="empty">Yükleniyor...</div></div>
         <div class="section"><h2 class="section-title">Reddedilenler</h2><div id="rejectedWrap" class="empty">Yükleniyor...</div></div>
       </div>
+      <div class="section"><h2 class="section-title">Operasyon İzleri</h2><div id="approvalAuditWrap" class="empty">Yükleniyor...</div></div>
     </section>
   </main>
 </div>
@@ -405,8 +407,8 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909";
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null};
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1";
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[]};
 
 function money(v){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(Number(v||0))}
 function shortDate(v){if(!v) return "-"; const d=new Date(v); if(Number.isNaN(d.getTime())) return v; return new Intl.DateTimeFormat("tr-TR").format(d)}
@@ -418,6 +420,13 @@ function writeLocalObject(key,val){ localStorage.setItem(key, JSON.stringify(val
 function uid(prefix="id"){ return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
 function persistApprovalOps(){ writeLocalObject(LOCAL_APPROVAL_OPS_KEY, state.approvalOps); }
 function persistBankOps(){ writeLocalObject(LOCAL_BANK_OPS_KEY, state.bankOps); }
+function persistLedger(){ writeLocalJson(LOCAL_LEDGER_KEY, state.operationalLedger); }
+function persistAudit(){ writeLocalJson(LOCAL_AUDIT_KEY, state.auditTrail); }
+function decisionRef(prefix='OP'){ const d=new Date(); const p=n=>String(n).padStart(2,'0'); return `${prefix}-${String(d.getFullYear()).slice(-2)}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
+function stableHash(input=''){ let h=0; const s=String(input||''); for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return Math.abs(h).toString(36).toUpperCase(); }
+function txnId(obj,prefix='TRX'){ if(!obj) return `${prefix}-YOK`; const existing=obj.txn_id || obj.transaction_id || obj.event_ref || obj.ledger_ref || obj.decision_ref || obj.document_no || obj.id || obj.line_id || obj.movement_id || obj.pending_id; if(existing) return String(existing); const raw=[prefix,getRowDateValue(obj)||'',obj.description||obj.content_summary||obj.raw_content||'',obj.cari_id||obj.cari_name||'',num(obj.amount ?? obj.net_amount ?? obj.final_amount ?? obj.raw_amount ?? obj.suggested_amount ?? 0).toFixed(2),obj.source_type||obj.movement_type||obj.suggested_movement_type||''].join('|'); return `${prefix}-${stableHash(raw)}`; }
+function addAuditEvent(type,payload={}){ state.auditTrail = state.auditTrail || []; state.auditTrail.unshift({ id:uid('audit'), event_type:type, event_ref:payload.event_ref || decisionRef('LOG'), actor:'Yerel Giriş', created_at:new Date().toISOString(), ...payload }); persistAudit(); }
+function addLedgerEntry(entry={}){ state.operationalLedger = state.operationalLedger || []; state.operationalLedger.unshift({ id:uid('ledger'), ledger_ref:entry.ledger_ref || decisionRef('LGR'), created_at:new Date().toISOString(), actor:'Yerel Giriş', status:'taslak işlendi', ...entry }); persistLedger(); }
 function approvalRowKey(r){ return String(r.id || [r.source_type||'',r.content_summary||'',r.raw_content||'',r.suggested_amount||r.raw_amount||r.final_amount||0,r.created_at||''].join('|')); }
 function isPendingHandled(r){ return state.approvalOps.handled_pending_ids.includes(approvalRowKey(r)); }
 function markPendingHandled(r){ const key=approvalRowKey(r); if(!state.approvalOps.handled_pending_ids.includes(key)) state.approvalOps.handled_pending_ids.push(key); }
@@ -470,7 +479,7 @@ async function loadCariler(){
 async function loadSelectedCariHareketler(){
   if(!state.selectedCariId){state.hareketler=[];return}
   const {data}=await supabaseClient.from("v_cari_hareket_dokumu").select("*").eq("cari_id",state.selectedCariId).order("line_date",{ascending:false}).limit(500);
-  state.hareketler=data||[];
+  state.hareketler=(data||[]).map(x=>({...x, txn_id:txnId(x,'HRK')}));
 }
 async function loadAccounts(){
   const [a,b,m]=await Promise.all([
@@ -478,7 +487,7 @@ async function loadAccounts(){
     supabaseClient.from("v_banka_montaj_paneli").select("*").limit(50),
     supabaseClient.from("v_moka_transfer_paneli").select("*").limit(50)
   ]);
-  state.accounts=a.data||[]; state.bankPanel=b.data||[]; state.mokaPanel=m.data||[];
+  state.accounts=(a.data||[]).map(x=>({...x, txn_id:txnId(x,'ACC')})); state.bankPanel=(b.data||[]).map(x=>({...x, txn_id:txnId(x,'BNK')})); state.mokaPanel=(m.data||[]).map(x=>({...x, txn_id:txnId(x,'MOK')}));
 }
 
 async function loadFeeData(){
@@ -495,14 +504,16 @@ async function loadApprovals(){
     supabaseClient.from("v_approval_processed").select("*").limit(100),
     supabaseClient.from("v_approval_rejected").select("*").limit(100)
   ]);
-  state.pending=p.data||[]; state.processed=pr.data||[]; state.rejected=r.data||[];
+  state.pending=(p.data||[]).map(x=>({...x, txn_id:txnId(x,'APR')})); state.processed=(pr.data||[]).map(x=>({...x, txn_id:txnId(x,'APR')})); state.rejected=(r.data||[]).map(x=>({...x, txn_id:txnId(x,'APR')}));
 }
 async function loadDocuments(){
-  state.documents = readLocalJson(LOCAL_DOCS_KEY);
-  state.bridgeCandidates = readLocalJson(LOCAL_BRIDGE_KEY);
+  state.documents = readLocalJson(LOCAL_DOCS_KEY).map(x=>({...x, txn_id:txnId(x,'DOC')}));
+  state.bridgeCandidates = readLocalJson(LOCAL_BRIDGE_KEY).map(x=>({...x, txn_id:txnId(x,'BRG')}));
   state.approvalOps = readLocalObject(LOCAL_APPROVAL_OPS_KEY, {processed:[], rejected:[], handled_pending_ids:[]});
   state.bankOps = readLocalObject(LOCAL_BANK_OPS_KEY, {pending:[], row_status:{}, history:[]});
-  state.expenses = readLocalJson(LOCAL_EXPENSES_KEY);
+  state.expenses = readLocalJson(LOCAL_EXPENSES_KEY).map(x=>({...x, txn_id:txnId(x,'EXP')}));
+  state.operationalLedger = readLocalJson(LOCAL_LEDGER_KEY).map(x=>({...x, txn_id:txnId(x,'LGR')}));
+  state.auditTrail = readLocalJson(LOCAL_AUDIT_KEY).map(x=>({...x, txn_id:txnId(x,'LOG')}));
 }
 
 function renderDashboard(){
@@ -515,7 +526,7 @@ function renderDashboard(){
   document.getElementById("promiseCount").textContent=state.cariler.filter(x=>x.aktif_odeme_sozu_var).length;
   document.getElementById("promiseLateCount").textContent=state.cariler.filter(x=>x.aktif_odeme_sozu_durum==="gecikmis").length;
   const latest=[...state.hareketler].slice(0,10);
-  document.getElementById("lastMovementsWrap").innerHTML=latest.length?`<table><thead><tr><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${latest.map(h=>`<tr><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hareket yok.</div>`;
+  document.getElementById("lastMovementsWrap").innerHTML=latest.length?`<table><thead><tr><th>ID</th><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${latest.map(h=>`<tr><td>${escapeHtml(txnId(h,'HRK'))}</td><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hareket yok.</div>`;
 }
 function filteredCariler(){
   const q=(document.getElementById("cariSearch").value||"").trim().toLowerCase();
@@ -744,11 +755,12 @@ function exportStatementExcel(){
   const meta=getCurrentStatementMeta();
   if(!c || !meta.rowsAsc.length){ notify("Excel için extre satırı yok."); return; }
   const csvRows = [
-    ['Tarih','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']
+    ['ID','Tarih','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']
   ];
   meta.rowsAsc.forEach(r=>{
     const b = balanceColumns(r.running_balance);
     csvRows.push([
+      txnId(r,'HRK'),
       shortDate(r.line_date),
       r.movement_type || '',
       (r.description || '').replace(/"/g,'""'),
@@ -1146,6 +1158,7 @@ function openBankActionModal(bucket,key){
   const recommended=bucket==='moka' ? mokaRecommendedAction(r) : (bankNeedsApproval(r) ? 'Önce onay merkezine gönder' : 'Doğrudan işlenebilir');
   const content=`
     <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">İşlem ID</div><div class="v">${escapeHtml(txnId(r,bucket==='moka' ? 'MOK' : 'BNK'))}</div></div>
       <div class="metric-mini"><div class="k">Kaynak</div><div class="v">${escapeHtml(bucket==='moka' ? 'Moka' : 'Banka')}</div></div>
       <div class="metric-mini"><div class="k">Durum</div><div class="v">${bankStatusBadge(r,bucket)}</div></div>
       <div class="metric-mini"><div class="k">Güven</div><div class="v">${bankRowConfidence(r) ? bankRowConfidence(r).toFixed(0) : '-'}</div></div>
@@ -1197,6 +1210,7 @@ function queueSelectedBankRowToApproval(){
   const pendingId=uid('bank_pending');
   const pendingRow={
     id:pendingId,
+    txn_id:pendingId,
     source_type: state.selectedBankBucket==='moka' ? 'moka_panel' : 'banka_panel',
     content_summary:r.description || 'Banka satırı',
     raw_content:`${shortDate(r.movement_date)} | ${r.description || '-'} | ${money(amount)}`,
@@ -1236,8 +1250,12 @@ function processSelectedBankRowDirect(){
   if((bankNeedsApproval(r) || state.selectedBankBucket==='moka') && !forceOk){ notify('Kontrol kutusunu işaretle.'); return; }
   const originKey = bankRowKey(r,state.selectedBankBucket);
   state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.bank_origin_key)!==String(originKey));
+  const bankRef = decisionRef('BNK');
+  const bankProcessedId=uid('bank_processed');
   const processed={
-    id:uid('bank_processed'),
+    id:bankProcessedId,
+    txn_id:bankProcessedId,
+    decision_ref: bankRef,
     source_type: state.selectedBankBucket==='moka' ? 'moka_panel' : 'banka_panel',
     content_summary:r.description || 'Banka satırı',
     raw_content:r.description || '',
@@ -1255,7 +1273,9 @@ function processSelectedBankRowDirect(){
   };
   state.approvalOps.processed.unshift(processed);
   persistApprovalOps();
-  updateBankRowStatus(r,state.selectedBankBucket,'processed',note,{target_type:targetType,target_name:targetName,movement_type:movementType});
+  updateBankRowStatus(r,state.selectedBankBucket,'processed',note,{target_type:targetType,target_name:targetName,movement_type:movementType,decision_ref:bankRef});
+  addLedgerEntry({ledger_ref:bankRef, source_module:state.selectedBankBucket==='moka'?'moka_panel':'bank_panel', source_summary:r.description || 'Banka satırı', target_type:targetType, target_name:targetName, movement_type:movementType, amount, decision_note:note});
+  addAuditEvent('bank_processed_direct',{event_ref:bankRef, source_module:state.selectedBankBucket==='moka'?'moka_panel':'bank_panel', source_type:r.source_type || state.selectedBankBucket, target_name:targetName, target_type:targetType, movement_type:movementType, amount, note});
   closeBankActionModal();
   renderAccounts();
   renderApprovals();
@@ -1316,10 +1336,10 @@ function renderAccounts(){
       <button class="chip ${state.bankFilter==='processed'?'active':''}" data-bfilter="processed">İşlenen</button>
       <button class="chip ${state.bankFilter==='ignored'?'active':''}" data-bfilter="ignored">İşlenmeyen</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez.</div>` + (bankRows.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{
+    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez.</div>` + (bankRows.length?`<table><thead><tr><th>ID</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{
     const suggestion = bankSuggestedTarget(r);
     const conf = bankRowConfidence(r);
-    return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
+    return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(txnId(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
   }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
 
   document.getElementById("mokaPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
@@ -1338,16 +1358,53 @@ function renderAccounts(){
     </div>
     <div class="rule-box" style="margin-bottom:14px;">
       Moka kredi kartı tahsilatı <strong>doğrudan bankaya gelir yazılmaz</strong>. İlk kayıt <strong>Moka United</strong> içinde tutulur. Vadesi gelince bankaya aktarılan tutar ayrıca işlenir ve <strong>Moka United → Banka</strong> mahsup mantığıyla kapatılır.
-    </div>` + (mokaRows.length?`<table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{
+    </div>` + (mokaRows.length?`<table><thead><tr><th>ID</th><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{
       const cls = mokaRowClass(r);
       const tag = cls==='moka_tahsilat' ? '<span class="tag blue">Moka Tahsilat</span>' : (cls==='banka_aktarim' ? '<span class="tag green">Banka Aktarım</span>' : '<span class="tag amber">Belirsiz</span>');
-      return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
+      return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${escapeHtml(txnId(r,'MOK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
     }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede Moka satırı yok.</div>`);
 
   document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
   document.querySelectorAll('#mokaFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.mokaFilter = btn.dataset.mfilter; renderAccounts(); }));
   document.querySelectorAll('[data-bank-key]').forEach(el=>el.addEventListener('click',()=>openBankActionModal(el.dataset.bankBucket, el.dataset.bankKey)));
 }
+function renderBankMatchHistory(){
+  const rows = [...(state.operationalLedger || [])].filter(x=>['bank_panel','moka_panel','approval_center'].includes(x.source_module || '')).slice(0,20);
+  const summary = {
+    total: rows.length,
+    cari: rows.filter(x=>x.target_type==='cari').length,
+    gider: rows.filter(x=>x.target_type==='gider').length,
+    hesap: rows.filter(x=>['hesap','moka_united'].includes(x.target_type)).length,
+  };
+  const target=document.getElementById('bankMatchWrap');
+  if(!target) return;
+  target.innerHTML = `<div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Montaj Kaydı</div><div class="v">${summary.total}</div></div>
+      <div class="metric-mini"><div class="k">Cariye Giden</div><div class="v">${summary.cari}</div></div>
+      <div class="metric-mini"><div class="k">Gidere Giden</div><div class="v">${summary.gider}</div></div>
+      <div class="metric-mini"><div class="k">Hesap/Moka</div><div class="v">${summary.hesap}</div></div>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px;">Bu tablo uygulama içi montaj defteridir. Hangi banka/Moka satırının hangi hedefe, hangi hareket tipiyle işlendiği iz bırakır.</div>` + (rows.length ? `<table><thead><tr><th>Ref</th><th>Kaynak</th><th>Hedef</th><th>Hareket</th><th class="text-right">Tutar</th><th>Tarih</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.ledger_ref || '-')}</td><td>${escapeHtml(r.source_module || '-')}<br><span style="color:var(--muted);font-weight:700;">${escapeHtml(r.source_summary || '-')}</span></td><td>${escapeHtml(r.target_name || '-')}<br><span style="color:var(--muted);font-weight:700;">${escapeHtml(r.target_type || '-')}</span></td><td>${escapeHtml(r.movement_type || '-')}</td><td class="text-right">${money(r.amount || 0)}</td><td>${shortDate(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz montaj kaydı yok.</div>`);
+}
+function renderApprovalAudit(){
+  const rows=[...(state.auditTrail || [])].slice(0,25);
+  const summary={
+    total: rows.length,
+    approval: rows.filter(x=>String(x.event_type||'').includes('approval')).length,
+    bank: rows.filter(x=>String(x.event_type||'').includes('bank')).length,
+    reject: rows.filter(x=>String(x.event_type||'').includes('reject')).length,
+  };
+  const target=document.getElementById('approvalAuditWrap');
+  if(!target) return;
+  target.innerHTML = `<div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Toplam İz</div><div class="v">${summary.total}</div></div>
+      <div class="metric-mini"><div class="k">Onay İşlemi</div><div class="v">${summary.approval}</div></div>
+      <div class="metric-mini"><div class="k">Banka/Moka İşlemi</div><div class="v">${summary.bank}</div></div>
+      <div class="metric-mini"><div class="k">Red / Ignore</div><div class="v">${summary.reject}</div></div>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px;">Bu ekran karar izi defteridir. Kimlik, kaynak, karar notu ve hedef bilgisi tekrar açıldığında kaybolmaz.</div>` + (rows.length ? `<table><thead><tr><th>Ref</th><th>Olay</th><th>Kaynak</th><th>Hedef</th><th>Not</th><th>Tarih</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.event_ref || '-')}</td><td>${escapeHtml(r.event_type || '-')}</td><td>${escapeHtml(r.source_module || r.source_type || '-')}</td><td>${escapeHtml(r.target_name || '-')}</td><td>${escapeHtml(r.note || r.decision_note || '-')}</td><td>${shortDate(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz operasyon izi yok.</div>`);
+}
+
 function renderReports(){
   const riskRows=state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).sort((a,b)=>num(b.bakiye)-num(a.bakiye)).slice(0,15);
   const topFee=[...state.cariler].sort((a,b)=>num(b.defter_ucreti)-num(a.defter_ucreti)).slice(0,10);
@@ -1408,11 +1465,13 @@ function openApprovalDetailModal(bucket, index){
   const conf = approvalConfidence(r);
   const content = `
     <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">İşlem ID</div><div class="v">${escapeHtml(txnId(r,'APR'))}</div></div>
       <div class="metric-mini"><div class="k">Kova</div><div class="v">${escapeHtml(bucket === 'pending' ? 'Onay Bekleyen' : bucket === 'processed' ? 'İşlenen' : 'Reddedilen')}</div></div>
       <div class="metric-mini"><div class="k">Kaynak</div><div class="v">${escapeHtml(approvalSourceText(r))}</div></div>
       <div class="metric-mini"><div class="k">Güven</div><div class="v">${conf ? conf.toFixed(0) : '-'}</div></div>
       <div class="metric-mini"><div class="k">Kilit</div><div class="v">${approvalIsLocked(r) ? 'Evet' : 'Hayır'}</div></div>
     </div>
+    <div class="rule-box" style="margin-bottom:14px;"><strong>Karar Ref</strong>: ${escapeHtml(r.decision_ref || '-') }${r.processed_at ? `<br><strong>İşlendi</strong>: ${shortDate(r.processed_at)}` : ''}${r.rejected_at ? `<br><strong>Reddedildi</strong>: ${shortDate(r.rejected_at)}` : ''}</div>
     <div class="grid-2" style="margin-bottom:14px;">
       <div class="rule-box">
         <strong>Önerilen Hedef</strong><br>
@@ -1484,7 +1543,7 @@ function renderDocuments(){
       </select>
       <button class="btn btn-soft" onclick="state.documentSearch=''; state.documentFilter='all'; renderDocuments();">Filtreyi Temizle</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Belge katmanında kural sabit: belge doğrudan muhasebe fişi üretmez. Önce doğru cariye bağlanır, sonra onay / kontrol akışıyla ilerler.</div>` + (docs.length ? `<table><thead><tr><th>Tarih</th><th>Cari</th><th>Belge</th><th>Kaynak</th><th class="text-right">Tutar</th></tr></thead><tbody>${docs.map(d=>`<tr class="click-row" data-doc-id="${escapeHtml(d.id)}"><td>${shortDate(d.document_date || d.created_at)}</td><td>${escapeHtml(d.cari_name || '-')}</td><td>${documentTypeTag(d.document_type)} ${escapeHtml(d.document_title || d.document_no || '-')}<div class="muted-note">${escapeHtml(d.file_ref || d.note || '-')}</div></td><td>${escapeHtml(d.source_type || '-')}</td><td class="text-right">${money(d.amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Bu filtrede belge yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">Belge katmanında kural sabit: belge doğrudan muhasebe fişi üretmez. Önce doğru cariye bağlanır, sonra onay / kontrol akışıyla ilerler.</div>` + (docs.length ? `<table><thead><tr><th>ID</th><th>Tarih</th><th>Cari</th><th>Belge</th><th>Kaynak</th><th class="text-right">Tutar</th></tr></thead><tbody>${docs.map(d=>`<tr class="click-row" data-doc-id="${escapeHtml(d.id)}"><td>${escapeHtml(txnId(d,'DOC'))}</td><td>${shortDate(d.document_date || d.created_at)}</td><td>${escapeHtml(d.cari_name || '-')}</td><td>${documentTypeTag(d.document_type)} ${escapeHtml(d.document_title || d.document_no || '-')}<div class="muted-note">${escapeHtml(d.file_ref || d.note || '-')}</div></td><td>${escapeHtml(d.source_type || '-')}</td><td class="text-right">${money(d.amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Bu filtrede belge yok.</div>`);
   const pendingBridge = bridgeCandidatesAsPendingRows();
   document.getElementById("bridgeWrap").innerHTML=`<div class="btn-row" style="margin-bottom:14px;">
       <button class="btn btn-blue" onclick="openCandidateBridgeModal(state.selectedCariId)">Aday Kayıt Ekle</button>
@@ -1495,7 +1554,7 @@ function renderDocuments(){
       <div class="metric-mini"><div class="k">Belge Kaynağı</div><div class="v">${getAllPendingApprovals().filter(r=>approvalIsDocumentCandidate(r)).length}</div></div>
       <div class="metric-mini"><div class="k">Standart</div><div class="v">Otomatik işlem yok</div></div>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">WhatsApp, Telegram, OCR veya kopyala-yapıştır gelen tahsilat metinleri burada aday kayıt olur. Otomatik işlenmez, doğrudan onay mantığına düşer.</div>` + (state.bridgeCandidates.length ? `<table><thead><tr><th>Tarih</th><th>Kaynak</th><th>Cari</th><th>Öneri</th><th class="text-right">Tutar</th></tr></thead><tbody>${[...state.bridgeCandidates].sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''))).map(r=>`<tr><td>${shortDate(r.created_at)}</td><td>${escapeHtml(r.source_type || '-')}</td><td>${escapeHtml(r.cari_name || '-')}</td><td>${escapeHtml(r.suggested_movement_type || '-')}<div class="muted-note">${escapeHtml(r.content_summary || '-')}</div></td><td class="text-right">${money(r.suggested_amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz aday kayıt yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">WhatsApp, Telegram, OCR veya kopyala-yapıştır gelen tahsilat metinleri burada aday kayıt olur. Otomatik işlenmez, doğrudan onay mantığına düşer.</div>` + (state.bridgeCandidates.length ? `<table><thead><tr><th>ID</th><th>Tarih</th><th>Kaynak</th><th>Cari</th><th>Öneri</th><th class="text-right">Tutar</th></tr></thead><tbody>${[...state.bridgeCandidates].sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''))).map(r=>`<tr><td>${escapeHtml(txnId(r,'BRG'))}</td><td>${shortDate(r.created_at)}</td><td>${escapeHtml(r.source_type || '-')}</td><td>${escapeHtml(r.cari_name || '-')}</td><td>${escapeHtml(r.suggested_movement_type || '-')}<div class="muted-note">${escapeHtml(r.content_summary || '-')}</div></td><td class="text-right">${money(r.suggested_amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz aday kayıt yok.</div>`);
   const searchEl = document.getElementById('documentSearchInput');
   if(searchEl) searchEl.addEventListener('input', e=>{ state.documentSearch = e.target.value; renderDocuments(); });
   const typeEl = document.getElementById('documentTypeFilter');
@@ -1524,9 +1583,9 @@ function renderApprovals(){
       <button class="chip ${state.approvalFilter==='duplicate'?'active':''}" data-afilter="duplicate">Muhtemel Çift</button>
       <button class="chip ${state.approvalFilter==='document'?'active':''}" data-afilter="document">WhatsApp / Telegram / Belge</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Kural: güven puanı düşük, muhtemel çift, görselden okunan veya kopyala-yapıştır gelen kayıtlar otomatik işlenmez; önce onaya düşer. İşleme alınan kayıt karar izi ile işlenenlere taşınır.</div>` + (pendingRows.length?`<table><thead><tr><th>Kaynak</th><th>Özet</th><th>Öneri</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${pendingRows.map(({row:r,__i})=>`<tr class="click-row" data-approval-bucket="pending" data-approval-index="${__i}"><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.suggested_cari_name||r.suggested_expense_name||"-")} · ${escapeHtml(r.suggested_movement_type||"-")}<br><span style="font-size:12px;color:#64748b">Güven: ${approvalConfidence(r) ? approvalConfidence(r).toFixed(0) : '-'}</span></td><td>${approvalFlags(r)}<div class="muted-note">${escapeHtml(approvalLockReason(r))}</div></td><td class="text-right">${money(r.suggested_amount||r.raw_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Bu filtrede kayıt yok.</div>`);
-  document.getElementById("processedWrap").innerHTML=processedRows.length?`<table><thead><tr><th>Kaynak</th><th>Karar</th><th>İz</th><th class="text-right">Tutar</th></tr></thead><tbody>${processedRows.map((r,i)=>`<tr class="click-row" data-approval-bucket="processed" data-approval-index="${i}"><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.final_cari_name||r.final_expense_name||r.suggested_cari_name||"-")} · ${escapeHtml(r.final_movement_type||r.suggested_movement_type||"-")}</td><td>${escapeHtml(r.decision_note || r.match_reason || 'İşlendi')}</td><td class="text-right">${money(r.final_amount||r.suggested_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">İşlenen kayıt yok.</div>`;
-  document.getElementById("rejectedWrap").innerHTML=rejectedRows.length?`<table><thead><tr><th>Kaynak</th><th>Özet</th><th>Not</th></tr></thead><tbody>${rejectedRows.map((r,i)=>`<tr class="click-row" data-approval-bucket="rejected" data-approval-index="${i}"><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.decision_note||"-")}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Reddedilen kayıt yok.</div>`;
+    <div class="rule-box" style="margin-bottom:14px;">Kural: güven puanı düşük, muhtemel çift, görselden okunan veya kopyala-yapıştır gelen kayıtlar otomatik işlenmez; önce onaya düşer. İşleme alınan kayıt karar izi ile işlenenlere taşınır.</div>` + (pendingRows.length?`<table><thead><tr><th>ID</th><th>Kaynak</th><th>Özet</th><th>Öneri</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${pendingRows.map(({row:r,__i})=>`<tr class="click-row" data-approval-bucket="pending" data-approval-index="${__i}"><td>${escapeHtml(txnId(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.suggested_cari_name||r.suggested_expense_name||"-")} · ${escapeHtml(r.suggested_movement_type||"-")}<br><span style="font-size:12px;color:#64748b">Güven: ${approvalConfidence(r) ? approvalConfidence(r).toFixed(0) : '-'}</span></td><td>${approvalFlags(r)}<div class="muted-note">${escapeHtml(approvalLockReason(r))}</div></td><td class="text-right">${money(r.suggested_amount||r.raw_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Bu filtrede kayıt yok.</div>`);
+  document.getElementById("processedWrap").innerHTML=processedRows.length?`<table><thead><tr><th>ID</th><th>Kaynak</th><th>Karar</th><th>İz</th><th class="text-right">Tutar</th></tr></thead><tbody>${processedRows.map((r,i)=>`<tr class="click-row" data-approval-bucket="processed" data-approval-index="${i}"><td>${escapeHtml(txnId(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.final_cari_name||r.final_expense_name||r.suggested_cari_name||"-")} · ${escapeHtml(r.final_movement_type||r.suggested_movement_type||"-")}</td><td>${escapeHtml(r.decision_note || r.match_reason || 'İşlendi')}</td><td class="text-right">${money(r.final_amount||r.suggested_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">İşlenen kayıt yok.</div>`;
+  document.getElementById("rejectedWrap").innerHTML=rejectedRows.length?`<table><thead><tr><th>ID</th><th>Kaynak</th><th>Özet</th><th>Not</th></tr></thead><tbody>${rejectedRows.map((r,i)=>`<tr class="click-row" data-approval-bucket="rejected" data-approval-index="${i}"><td>${escapeHtml(txnId(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.decision_note||"-")}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Reddedilen kayıt yok.</div>`;
   document.querySelectorAll('#approvalFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.approvalFilter = btn.dataset.afilter; renderApprovals(); }));
   document.querySelectorAll('[data-approval-bucket]').forEach(el=>el.addEventListener('click',()=>openApprovalDetailModal(el.dataset.approvalBucket, Number(el.dataset.approvalIndex))));
 }
@@ -1546,6 +1605,7 @@ function openApprovalDetailModal(bucket, index){
   const canOperate = bucket === 'pending';
   const content = `
     <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">İşlem ID</div><div class="v">${escapeHtml(txnId(r,'APR'))}</div></div>
       <div class="metric-mini"><div class="k">Kova</div><div class="v">${escapeHtml(bucket === 'pending' ? 'Onay Bekleyen' : bucket === 'processed' ? 'İşlenen' : 'Reddedilen')}</div></div>
       <div class="metric-mini"><div class="k">Kaynak</div><div class="v">${escapeHtml(approvalSourceText(r))}</div></div>
       <div class="metric-mini"><div class="k">Güven</div><div class="v">${conf ? conf.toFixed(0) : '-'}</div></div>
@@ -1627,8 +1687,13 @@ function processSelectedApproval(){
   const forceOk = !!document.getElementById('approvalForceCheck')?.checked;
   if(!targetName){ notify('Hedef adını gir.'); return; }
   if(approvalIsLocked(r) && !forceOk){ notify('Kilitli kayıtta operatör kontrol kutusunu işaretle.'); return; }
+  const approvalRef = decisionRef('APR');
+  const approvalProcessedId = uid('approval_processed');
   const processed = {
     ...r,
+    id: approvalProcessedId,
+    txn_id: approvalProcessedId,
+    decision_ref: approvalRef,
     final_target_type: targetType,
     final_cari_name: targetType === 'cari' ? targetName : null,
     final_expense_name: targetType === 'gider' ? targetName : null,
@@ -1647,13 +1712,16 @@ function processSelectedApproval(){
   }
   if(r.is_local_bank_queue && r.bank_origin_key){
     state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.id)!==String(r.id));
-    state.bankOps.row_status[r.bank_origin_key] = {...(state.bankOps.row_status[r.bank_origin_key] || {}), status:'processed', note, updated_at:new Date().toISOString()};
+    state.bankOps.row_status[r.bank_origin_key] = {...(state.bankOps.row_status[r.bank_origin_key] || {}), status:'processed', note, updated_at:new Date().toISOString(), decision_ref:approvalRef};
     persistBankOps();
   }
+  addLedgerEntry({ledger_ref:approvalRef, source_module:'approval_center', source_summary:r.content_summary || r.raw_content || 'Onay kaydı', target_type:targetType, target_name:targetName, movement_type:movementType, amount, decision_note:note});
+  addAuditEvent('approval_processed',{event_ref:approvalRef, source_module:'approval_center', source_type:r.source_type || 'approval', target_name:targetName, target_type:targetType, movement_type, amount, note});
   persistApprovalOps();
   closeApprovalDetailModal();
   renderDocuments();
   renderExpenses();
+  renderAccounts();
   renderApprovals();
   notify('Kayıt işlenenlere taşındı.');
 }
@@ -1663,8 +1731,13 @@ function rejectSelectedApproval(){
   const note = (document.getElementById('approvalDecisionNote')?.value || '').trim() || 'Operatör tarafından reddedildi';
   const forceOk = !!document.getElementById('approvalForceCheck')?.checked;
   if(approvalIsLocked(r) && !forceOk){ notify('Kilitli kayıtta operatör kontrol kutusunu işaretle.'); return; }
+  const rejectRef = decisionRef('REJ');
+  const approvalRejectedId = uid('approval_rejected');
   const rejected = {
     ...r,
+    id: approvalRejectedId,
+    txn_id: approvalRejectedId,
+    decision_ref: rejectRef,
     decision_note: note,
     rejected_at: new Date().toISOString(),
     rejected_locally: true
@@ -1677,13 +1750,15 @@ function rejectSelectedApproval(){
   }
   if(r.is_local_bank_queue && r.bank_origin_key){
     state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.id)!==String(r.id));
-    state.bankOps.row_status[r.bank_origin_key] = {...(state.bankOps.row_status[r.bank_origin_key] || {}), status:'rejected', note, updated_at:new Date().toISOString()};
+    state.bankOps.row_status[r.bank_origin_key] = {...(state.bankOps.row_status[r.bank_origin_key] || {}), status:'rejected', note, updated_at:new Date().toISOString(), decision_ref:rejectRef};
     persistBankOps();
   }
+  addAuditEvent('approval_rejected',{event_ref:rejectRef, source_module:'approval_center', source_type:r.source_type || 'approval', target_name:r.suggested_cari_name || r.suggested_expense_name || '-', target_type:r.suggested_movement_type || '-', movement_type:'rejected', amount:num(r.suggested_amount || r.raw_amount || 0), note});
   persistApprovalOps();
   closeApprovalDetailModal();
   renderDocuments();
   renderExpenses();
+  renderAccounts();
   renderApprovals();
   notify('Kayıt reddedilenlere taşındı.');
 }
@@ -1696,6 +1771,7 @@ function openDocumentDetailModal(docId){
   const cariJson = JSON.stringify(String(doc.cari_id || ''));
   document.getElementById('documentDetailContent').innerHTML = `
     <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Belge ID</div><div class="v">${escapeHtml(txnId(doc,'DOC'))}</div></div>
       <div class="metric-mini"><div class="k">Belge Türü</div><div class="v">${documentTypeTag(doc.document_type)}</div></div>
       <div class="metric-mini"><div class="k">Cari</div><div class="v">${escapeHtml(doc.cari_name || '-')}</div></div>
       <div class="metric-mini"><div class="k">Tarih</div><div class="v">${shortDate(doc.document_date || doc.created_at)}</div></div>
@@ -1739,8 +1815,10 @@ function closeDocumentModal(){ document.getElementById('documentModal').style.di
 async function saveDocumentRecord(){
   const cariId = document.getElementById('documentCariId').value || null;
   const cari = state.cariler.find(x=>x.cari_id===cariId);
+  const docId = uid('doc');
   const payload = {
-    id: uid('doc'),
+    id: docId,
+    txn_id: docId,
     cari_id: cariId,
     cari_name: cari?.cari_name || null,
     document_type: document.getElementById('documentType').value,
@@ -1883,8 +1961,10 @@ function closeExpenseModal(){ document.getElementById('expenseModal').style.disp
 function saveExpenseAccrual(){
   const title=(document.getElementById('expenseTitle').value||'').trim();
   if(!title){ notify('Gider adı zorunlu.'); return; }
+  const expenseId = state.selectedExpenseId || uid('expense');
   const payload={
-    id: state.selectedExpenseId || uid('expense'),
+    id: expenseId,
+    txn_id: expenseId,
     title,
     category:(document.getElementById('expenseCategory').value||'').trim() || null,
     vendor_name:(document.getElementById('expenseVendor').value||'').trim() || null,
@@ -1913,8 +1993,10 @@ function queueExpenseCandidate(expenseId){
   if(!exp){ notify('Gider kartı bulunamadı.'); return; }
   const periodKey=getCurrentPeriodKey();
   if(String(exp.last_candidate_period||'')===periodKey){ notify('Bu gider için bu ay zaten aday oluşturulmuş.'); return; }
+  const bridgeId = uid('bridge');
   const payload={
-    id: uid('bridge'),
+    id: bridgeId,
+    txn_id: bridgeId,
     expense_id: exp.id,
     expense_title: exp.title,
     cari_id: null,
