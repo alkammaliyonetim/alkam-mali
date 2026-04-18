@@ -252,6 +252,39 @@
   </div>
 </div>
 
+<div id="expenseModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:980px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Gider Tahakkuk Kartı</h2>
+      <button class="btn btn-red" onclick="closeExpenseModal()">Kapat</button>
+    </div>
+    <div class="form-grid-3">
+      <div class="field"><label>Gider Adı</label><input id="expenseTitle" /></div>
+      <div class="field"><label>Kategori</label><input id="expenseCategory" placeholder="Kira / SGK / Elektrik / Yazılım" /></div>
+      <div class="field"><label>Tedarikçi / Hedef</label><input id="expenseVendor" placeholder="Firma / kişi adı" /></div>
+    </div>
+    <div class="form-grid-3" style="margin-top:12px;">
+      <div class="field"><label>Tür</label><select id="expenseType" class="select-input"><option value="fixed">Sabit Gider</option><option value="variable">Değişken Gider</option></select></div>
+      <div class="field"><label>Politika</label><select id="expenseApprovalPolicy" class="select-input"><option value="approval">Onaya Düşsün</option><option value="ready">Hazır / Operatör Kontrolü</option></select></div>
+      <div class="field"><label>Aylık Tutar</label><input id="expenseAmount" type="number" min="0" step="0.01" /></div>
+    </div>
+    <div class="form-grid-3" style="margin-top:12px;">
+      <div class="field"><label>Başlangıç</label><input id="expenseStartDate" type="date" /></div>
+      <div class="field"><label>Bitiş</label><input id="expenseEndDate" type="date" /></div>
+      <div class="field"><label>Vade Günü</label><input id="expenseDueDay" type="number" min="1" max="31" step="1" /></div>
+    </div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="field"><label>Aktif</label><select id="expenseIsActive" class="select-input"><option value="true">Aktif</option><option value="false">Pasif</option></select></div>
+      <div class="field"><label>Not</label><input id="expenseNote" /></div>
+    </div>
+    <div id="expenseModalInfo" class="rule-box" style="margin-top:12px;">Gider tahakkuku doğrudan fiş üretmez. Önce gider kartı tanımlanır, sonra bu ay için aday kayıt oluşturulur ve gerekiyorsa onaya düşer.</div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-blue" onclick="saveExpenseAccrual()">Kaydet / Güncelle</button>
+      <button class="btn btn-soft" onclick="queueExpenseForCurrentMonth()">Bu Ay Aday Oluştur</button>
+    </div>
+  </div>
+</div>
+
 <div id="bankActionModal" class="modal-overlay" style="display:none;">
   <div class="modal-card" style="max-width:980px;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
@@ -271,6 +304,7 @@
       <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
       <button class="nav-btn" data-tab="cariler">Cariler</button>
       <button class="nav-btn" data-tab="hesaplar">Hesaplar</button>
+      <button class="nav-btn" data-tab="giderler">Gider Tahakkuk</button>
       <button class="nav-btn" data-tab="raporlar">Raporlar</button>
       <button class="nav-btn" data-tab="belgeler">Belgeler</button>
       <button class="nav-btn" data-tab="onay">Onay Merkezi</button>
@@ -339,6 +373,10 @@
       <div class="section"><h2 class="section-title">Moka Transfer Paneli</h2><div id="mokaPanelWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
+    <section id="tab-giderler" class="tab-page">
+      <div class="section"><h2 class="section-title">Gider Tahakkuk Kontrol Paneli</h2><div id="expenseWrap" class="empty">Yükleniyor...</div></div>
+    </section>
+
     <section id="tab-raporlar" class="tab-page">
       <div class="section"><h2 class="section-title">Raporlar</h2><div id="reportWrap" class="empty">Yükleniyor...</div></div>
     </section>
@@ -367,8 +405,8 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909";
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null};
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1";
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null};
 
 function money(v){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(Number(v||0))}
 function shortDate(v){if(!v) return "-"; const d=new Date(v); if(Number.isNaN(d.getTime())) return v; return new Intl.DateTimeFormat("tr-TR").format(d)}
@@ -412,7 +450,7 @@ function togglePassword(){const i=document.getElementById("loginPassword"); i.ty
 function submitLogin(e){e.preventDefault(); const v=(document.getElementById("loginPassword").value||"").trim(); const err=document.getElementById("loginError"); err.textContent=""; if(v!==LOCAL_PASSWORD){err.textContent="Şifre hatalı."; return false} localStorage.setItem(SESSION_KEY,"ok"); openApp(); refreshAll(); return false}
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
 function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
-function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, batak, çek, senet, Moka"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
+function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, batak, çek, senet, Moka"],giderler:["Gider Tahakkuk","Sabit ve değişken gider tahakkuk kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
 async function loadDashboard(){
@@ -464,6 +502,7 @@ async function loadDocuments(){
   state.bridgeCandidates = readLocalJson(LOCAL_BRIDGE_KEY);
   state.approvalOps = readLocalObject(LOCAL_APPROVAL_OPS_KEY, {processed:[], rejected:[], handled_pending_ids:[]});
   state.bankOps = readLocalObject(LOCAL_BANK_OPS_KEY, {pending:[], row_status:{}, history:[]});
+  state.expenses = readLocalJson(LOCAL_EXPENSES_KEY);
 }
 
 function renderDashboard(){
@@ -1328,6 +1367,7 @@ function approvalSourceText(r){
   if(s.includes('görsel') || s.includes('gorsel') || s.includes('image')) return 'Görsel / Belge';
   if(s.includes('banka')) return 'Banka';
   if(s.includes('moka')) return 'Moka';
+  if(s.includes('gider_tahakkuk') || s.includes('gider tahakkuk')) return 'Gider Tahakkuk';
   return r.source_type || r.channel || r.raw_source || '-';
 }
 function approvalTextBlob(r){
@@ -1613,6 +1653,7 @@ function processSelectedApproval(){
   persistApprovalOps();
   closeApprovalDetailModal();
   renderDocuments();
+  renderExpenses();
   renderApprovals();
   notify('Kayıt işlenenlere taşındı.');
 }
@@ -1642,6 +1683,7 @@ function rejectSelectedApproval(){
   persistApprovalOps();
   closeApprovalDetailModal();
   renderDocuments();
+  renderExpenses();
   renderApprovals();
   notify('Kayıt reddedilenlere taşındı.');
 }
@@ -1719,6 +1761,220 @@ async function saveDocumentRecord(){
   if(state.selectedCariId) renderSelectedCariDetail();
   notify('Belge kaydı eklendi.');
 }
+function normalizeText(v){ return String(v||'').toLocaleLowerCase('tr-TR'); }
+function parseMoneyFromText(text){
+  const matches = String(text||'').match(/\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})|\d+(?:[.,]\d{2})/g) || [];
+  if(!matches.length) return 0;
+  const cleaned = matches.map(m=>Number(String(m).replace(/\./g,'').replace(',', '.'))).filter(Number.isFinite);
+  return cleaned.sort((a,b)=>b-a)[0] || 0;
+}
+function parseDateFromText(text){
+  const s=String(text||'');
+  let m=s.match(/(\d{2})[./-](\d{2})[./-](\d{4})/);
+  if(m) return `${m[3]}-${m[2]}-${m[1]}`;
+  m=s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return `${m[1]}-${m[2]}-${m[3]}`;
+  return '';
+}
+function detectCariFromText(text){
+  const normalized = normalizeText(text);
+  let best=null;
+  let score=0;
+  for(const c of state.cariler){
+    const name=normalizeText(c.cari_name||'');
+    if(!name || name.length<3) continue;
+    if(normalized.includes(name) && name.length>score){ best=c; score=name.length; }
+  }
+  return best;
+}
+function detectMovementFromText(text){
+  const n=normalizeText(text);
+  if(/moka|tahsil|ödeme al|havale|eft|fast|kredi kart|virman geldi/.test(n)) return 'tahsilat';
+  if(/gider|kira|sgk|elektrik|su fatur|internet|telefon|yazılım|yazilim|stopaj|vergi|muhasebe ofis gider/.test(n)) return 'gider';
+  if(/tahakkuk|ücret|ucret/.test(n)) return 'tahakkuk';
+  return 'tahsilat';
+}
+function detectSourceFromText(text, fallback='whatsapp'){
+  const n=normalizeText(text);
+  if(n.includes('telegram')) return 'telegram';
+  if(n.includes('whatsapp')) return 'whatsapp';
+  if(n.includes('dekont') || n.includes('makbuz') || n.includes('pdf') || n.includes('görsel') || n.includes('gorsel')) return 'gorsel';
+  return fallback;
+}
+function candidateAnalysisSummary(obj){
+  return `Kaynak: ${obj.source || '-'} · Hareket: ${obj.movement || '-'} · Tutar: ${money(obj.amount || 0)} · Tarih: ${obj.date || '-'} · Cari: ${obj.cariName || '-'}`;
+}
+function analyzeCandidateBridgeText(){
+  const raw = document.getElementById('candidateRawText')?.value || '';
+  if(!raw.trim()){ notify('Önce ham metni yapıştır.'); return; }
+  const amount = parseMoneyFromText(raw);
+  const date = parseDateFromText(raw) || new Date().toISOString().slice(0,10);
+  const movement = detectMovementFromText(raw);
+  const source = detectSourceFromText(raw, document.getElementById('candidateSource')?.value || 'whatsapp');
+  const cari = detectCariFromText(raw + ' ' + (document.getElementById('candidateSummary')?.value || ''));
+  const summary = raw.split(/\n+/).map(x=>x.trim()).filter(Boolean)[0]?.slice(0,140) || 'Mesajdan aday kayıt üretildi';
+  let conf = 55;
+  if(amount>0) conf += 15;
+  if(date) conf += 10;
+  if(movement) conf += 10;
+  if(cari) conf += 10;
+  document.getElementById('candidateAmount').value = amount || document.getElementById('candidateAmount').value;
+  document.getElementById('candidateDate').value = date;
+  document.getElementById('candidateMovementType').value = movement;
+  document.getElementById('candidateSource').value = source;
+  if(cari){ fillCariOptions('candidateCariId', true, 'Cari seçiniz'); document.getElementById('candidateCariId').value = cari.cari_id; }
+  if(!document.getElementById('candidateSummary').value.trim()) document.getElementById('candidateSummary').value = summary;
+  document.getElementById('candidateConfidence').value = String(conf);
+  const info = {source, movement, amount, date, cariName:cari?.cari_name || ''};
+  document.getElementById('candidateAnalysisBox').innerHTML = `<strong>Analiz sonucu</strong><br>${escapeHtml(candidateAnalysisSummary(info))}<br>Güven puanı: ${conf}`;
+  notify('Metin analiz edildi.');
+}
+function quickFillCandidate(kind){
+  if(kind==='moka'){
+    document.getElementById('candidateSource').value='whatsapp';
+    document.getElementById('candidateMovementType').value='tahsilat';
+    document.getElementById('candidateSummary').value='Moka kredi kartı tahsilat paylaşımı';
+    document.getElementById('candidateNote').value='Moka paylaşımı otomatik işlenmez, onaydan geçer.';
+    document.getElementById('candidateAnalysisBox').innerHTML='<strong>Moka şablonu</strong><br>Moka tahsilatı önce Moka United aday kaydı olarak onaya düşer. Bankaya gelen aktarım daha sonra mahsup edilir.';
+    document.getElementById('candidateConfidence').value='72';
+  }
+}
+function getCurrentPeriodKey(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function expenseStatusInfo(exp){
+  const now=new Date();
+  const periodKey=getCurrentPeriodKey();
+  const active = exp.is_active !== false && (!exp.start_date || new Date(exp.start_date) <= now) && (!exp.end_date || new Date(exp.end_date) >= new Date(now.getFullYear(), now.getMonth(), 1));
+  if(!active) return {code:'passive', label:'Pasif', cls:'gray'};
+  if(String(exp.last_candidate_period||'')===periodKey) return {code:'queued', label:'Bu Ay Aday Oluştu', cls:'amber'};
+  const dueDay = Math.max(1, Math.min(31, Number(exp.due_day || 1)));
+  const today = now.getDate();
+  if(today < dueDay) return {code:'upcoming', label:'Yaklaşan', cls:'amber'};
+  if(String(exp.approval_policy||'approval')==='ready') return {code:'ready', label:'Hazır / Kontrol', cls:'green'};
+  return {code:'approval', label:'Onaya Düşmeli', cls:'red'};
+}
+function expenseStatusTag(exp){ const s=expenseStatusInfo(exp); return `<span class="tag ${s.cls}">${escapeHtml(s.label)}</span>`; }
+function filteredExpenses(){
+  if(state.expenseFilter==='all') return state.expenses;
+  if(state.expenseFilter==='fixed') return state.expenses.filter(x=>x.expense_type==='fixed');
+  if(state.expenseFilter==='variable') return state.expenses.filter(x=>x.expense_type==='variable');
+  if(state.expenseFilter==='approval') return state.expenses.filter(x=>expenseStatusInfo(x).code==='approval');
+  if(state.expenseFilter==='queued') return state.expenses.filter(x=>expenseStatusInfo(x).code==='queued');
+  if(state.expenseFilter==='passive') return state.expenses.filter(x=>expenseStatusInfo(x).code==='passive');
+  return state.expenses;
+}
+function openExpenseModal(expenseId=''){
+  const exp = state.expenses.find(x=>String(x.id)===String(expenseId));
+  state.selectedExpenseId = exp?.id || null;
+  document.getElementById('expenseTitle').value = exp?.title || '';
+  document.getElementById('expenseCategory').value = exp?.category || '';
+  document.getElementById('expenseVendor').value = exp?.vendor_name || '';
+  document.getElementById('expenseType').value = exp?.expense_type || 'fixed';
+  document.getElementById('expenseApprovalPolicy').value = exp?.approval_policy || 'approval';
+  document.getElementById('expenseAmount').value = exp?.amount || '';
+  document.getElementById('expenseStartDate').value = exp?.start_date || new Date().toISOString().slice(0,10);
+  document.getElementById('expenseEndDate').value = exp?.end_date || '';
+  document.getElementById('expenseDueDay').value = exp?.due_day || 1;
+  document.getElementById('expenseIsActive').value = String(exp?.is_active !== false);
+  document.getElementById('expenseNote').value = exp?.note || '';
+  document.getElementById('expenseModalInfo').innerHTML = exp ? `<strong>Durum</strong><br>${expenseStatusTag(exp)}<br>Son aday dönem: ${escapeHtml(exp.last_candidate_period || '-')}<br>Son aday tarihi: ${shortDate(exp.last_candidate_at)}` : 'Yeni gider tanımı oluşturuluyor. Kural: gider tahakkuku doğrudan fiş üretmez; bu ay için aday kayıt oluşturur.';
+  document.getElementById('expenseModal').style.display='flex';
+}
+function closeExpenseModal(){ document.getElementById('expenseModal').style.display='none'; }
+function saveExpenseAccrual(){
+  const title=(document.getElementById('expenseTitle').value||'').trim();
+  if(!title){ notify('Gider adı zorunlu.'); return; }
+  const payload={
+    id: state.selectedExpenseId || uid('expense'),
+    title,
+    category:(document.getElementById('expenseCategory').value||'').trim() || null,
+    vendor_name:(document.getElementById('expenseVendor').value||'').trim() || null,
+    expense_type:document.getElementById('expenseType').value || 'fixed',
+    approval_policy:document.getElementById('expenseApprovalPolicy').value || 'approval',
+    amount:num(document.getElementById('expenseAmount').value || 0),
+    start_date:document.getElementById('expenseStartDate').value || new Date().toISOString().slice(0,10),
+    end_date:document.getElementById('expenseEndDate').value || null,
+    due_day:num(document.getElementById('expenseDueDay').value || 1),
+    is_active:document.getElementById('expenseIsActive').value === 'true',
+    note:(document.getElementById('expenseNote').value||'').trim() || null,
+    updated_at:new Date().toISOString(),
+    created_at: state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId))?.created_at || new Date().toISOString(),
+    last_candidate_period: state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId))?.last_candidate_period || null,
+    last_candidate_at: state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId))?.last_candidate_at || null,
+  };
+  const idx = state.expenses.findIndex(x=>String(x.id)===String(payload.id));
+  if(idx>=0) state.expenses[idx]=payload; else state.expenses.unshift(payload);
+  writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses);
+  closeExpenseModal();
+  renderExpenses();
+  notify('Gider tahakkuk kartı kaydedildi.');
+}
+function queueExpenseCandidate(expenseId){
+  const exp = state.expenses.find(x=>String(x.id)===String(expenseId));
+  if(!exp){ notify('Gider kartı bulunamadı.'); return; }
+  const periodKey=getCurrentPeriodKey();
+  if(String(exp.last_candidate_period||'')===periodKey){ notify('Bu gider için bu ay zaten aday oluşturulmuş.'); return; }
+  const payload={
+    id: uid('bridge'),
+    expense_id: exp.id,
+    expense_title: exp.title,
+    cari_id: null,
+    cari_name: exp.vendor_name || exp.title,
+    source_type: 'gider_tahakkuk',
+    suggested_movement_type: 'gider',
+    candidate_date: new Date().toISOString().slice(0,10),
+    suggested_amount: num(exp.amount || 0),
+    content_summary: `${exp.title} gider tahakkuk adayı`,
+    raw_content: `${periodKey} dönemi için gider tahakkuk adayı oluşturuldu. Kategori: ${exp.category || '-'} · Hedef: ${exp.vendor_name || '-'} · Tutar: ${exp.amount || 0}`,
+    note: exp.note || 'Gider tahakkuk ekranından üretildi',
+    confidence_score: exp.approval_policy === 'ready' ? 92 : 78,
+    status: 'onay_bekliyor',
+    created_at: new Date().toISOString()
+  };
+  state.bridgeCandidates.unshift(payload);
+  exp.last_candidate_period = periodKey;
+  exp.last_candidate_at = new Date().toISOString();
+  writeLocalJson(LOCAL_BRIDGE_KEY, state.bridgeCandidates);
+  writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses);
+  renderExpenses();
+  renderDocuments();
+  renderApprovals();
+  notify('Gider tahakkuk adayı onaya gönderildi.');
+}
+function queueExpenseForCurrentMonth(){
+  if(!state.selectedExpenseId){ notify('Önce kayıtlı bir gider kartı seç.'); return; }
+  queueExpenseCandidate(state.selectedExpenseId);
+}
+function renderExpenses(){
+  const rows=filteredExpenses();
+  const total=state.expenses.length;
+  const fixed=state.expenses.filter(x=>x.expense_type==='fixed').length;
+  const variable=state.expenses.filter(x=>x.expense_type==='variable').length;
+  const approval=state.expenses.filter(x=>expenseStatusInfo(x).code==='approval').length;
+  const queued=state.expenses.filter(x=>expenseStatusInfo(x).code==='queued').length;
+  const wrap=document.getElementById('expenseWrap'); if(!wrap) return;
+  wrap.innerHTML = `<div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn btn-blue" onclick="state.selectedExpenseId=null; openExpenseModal()">Yeni Gider Tanımı</button>
+      <button class="btn btn-soft" onclick="switchTab('onay')">Onay Merkezi'ne Git</button>
+    </div>
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Toplam Gider Kartı</div><div class="v">${total}</div></div>
+      <div class="metric-mini"><div class="k">Sabit</div><div class="v">${fixed}</div></div>
+      <div class="metric-mini"><div class="k">Değişken</div><div class="v">${variable}</div></div>
+      <div class="metric-mini"><div class="k">Bu Ay Onaya Düşecek</div><div class="v">${approval}</div></div>
+    </div>
+    <div class="grid-4" style="margin-bottom:14px;">
+      <button class="chip ${state.expenseFilter==='all'?'active':''}" onclick="state.expenseFilter='all'; renderExpenses()">Tümü</button>
+      <button class="chip ${state.expenseFilter==='fixed'?'active':''}" onclick="state.expenseFilter='fixed'; renderExpenses()">Sabit</button>
+      <button class="chip ${state.expenseFilter==='variable'?'active':''}" onclick="state.expenseFilter='variable'; renderExpenses()">Değişken</button>
+      <button class="chip ${state.expenseFilter==='approval'?'active':''}" onclick="state.expenseFilter='approval'; renderExpenses()">Onaya Düşmeli</button>
+      <button class="chip ${state.expenseFilter==='queued'?'active':''}" onclick="state.expenseFilter='queued'; renderExpenses()">Bu Ay Aday Oluştu</button>
+      <button class="chip ${state.expenseFilter==='passive'?'active':''}" onclick="state.expenseFilter='passive'; renderExpenses()">Pasif</button>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px;">Standart: gider kartı tek kaynak olur. Sabit ve değişken gider tanımlanır. Bu ekranda doğrudan muhasebe kaydı oluşmaz; aday kayıt üretimi ve onay akışı tetiklenir. Bu ay aday oluşmuş gider sayısı: <strong>${queued}</strong></div>` +
+    (rows.length ? `<table><thead><tr><th>Gider</th><th>Tür</th><th>Politika</th><th>Dönem</th><th>Durum</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>`<tr class="click-row" data-expense-id="${escapeHtml(r.id)}"><td>${escapeHtml(r.title)}<div class="muted-note">${escapeHtml(r.category || '-')} · ${escapeHtml(r.vendor_name || '-')}</div></td><td>${r.expense_type==='fixed' ? '<span class="tag blue">Sabit</span>' : '<span class="tag amber">Değişken</span>'}</td><td>${r.approval_policy==='ready' ? '<span class="tag green">Hazır</span>' : '<span class="tag red">Onay</span>'}</td><td>${shortDate(r.start_date)}${r.end_date ? ` → ${shortDate(r.end_date)}` : ' → Açık'}</td><td>${expenseStatusTag(r)}<div class="muted-note">Son aday: ${escapeHtml(r.last_candidate_period || '-')}</div></td><td class="text-right">${money(r.amount || 0)}</td><td><button class="btn btn-soft" onclick="event.stopPropagation(); queueExpenseCandidate('${escapeHtml(r.id)}')">Bu Ay Aday Oluştur</button></td></tr>`).join('')}</tbody></table>` : `<div class="empty">Bu filtrede gider kartı yok.</div>`);
+  wrap.querySelectorAll('[data-expense-id]').forEach(el=>el.addEventListener('click',()=>openExpenseModal(el.dataset.expenseId)));
+}
+
 function openCandidateBridgeModal(cariId=state.selectedCariId){
   fillCariOptions('candidateCariId', true, 'Cari seçiniz');
   document.getElementById('candidateCariId').value = cariId || '';
@@ -1729,6 +1985,8 @@ function openCandidateBridgeModal(cariId=state.selectedCariId){
   document.getElementById('candidateSummary').value = '';
   document.getElementById('candidateRawText').value = '';
   document.getElementById('candidateNote').value = '';
+  document.getElementById('candidateConfidence').value = '70';
+  document.getElementById('candidateAnalysisBox').innerHTML = 'Köprü kuralı: mesaj doğrudan işlenmez. Önce analiz edilir, sonra aday kayıt olarak onaya düşer.';
   document.getElementById('candidateBridgeModal').style.display='flex';
 }
 function closeCandidateBridgeModal(){ document.getElementById('candidateBridgeModal').style.display='none'; }
@@ -1746,7 +2004,7 @@ async function saveCandidateBridge(){
     content_summary: document.getElementById('candidateSummary').value.trim(),
     raw_content: document.getElementById('candidateRawText').value.trim(),
     note: document.getElementById('candidateNote').value.trim() || null,
-    confidence_score: 70,
+    confidence_score: num(document.getElementById('candidateConfidence')?.value || 70),
     status: 'onay_bekliyor',
     created_at: new Date().toISOString()
   };
@@ -1755,6 +2013,7 @@ async function saveCandidateBridge(){
   writeLocalJson(LOCAL_BRIDGE_KEY, state.bridgeCandidates);
   closeCandidateBridgeModal();
   renderDocuments();
+  renderExpenses();
   renderApprovals();
   notify('Aday kayıt onay akışına eklendi.');
 }
@@ -1855,6 +2114,7 @@ async function refreshAll(){
   renderAccounts();
   renderReports();
   renderDocuments();
+  renderExpenses();
   renderApprovals();
   if(state.selectedCariId) renderSelectedCariDetail();
 }
