@@ -433,6 +433,10 @@
         </div>
         <div class="btn-row" style="margin-bottom:14px;">
           <button class="btn btn-blue" onclick="loadYearTransitionData(true)">2026 Kontrolünü Yenile</button>
+          <button class="btn btn-soft" onclick="buildOpeningEntries2026()">Açılış Önerilerini Üret</button>
+          <button class="btn btn-soft" onclick="applyOpeningEntries2026()">Açılışları Yaz</button>
+          <button class="btn btn-soft" onclick="buildAccrualSuggestions2026()">Tahakkuk Öneri Listesi Üret</button>
+          <button class="btn btn-soft" onclick="pushAccrualSuggestionsToApprovals()">Önerileri Onaya At</button>
           <button class="btn btn-soft" onclick="exportYearTransitionJson()">2026 Kontrol JSON</button>
         </div>
         <div class="grid-2">
@@ -459,6 +463,16 @@
       <div class="section">
         <h2 class="section-title">Ocak 2026'dan İtibaren Eksik Muhasebe Ücreti Ayları</h2>
         <div id="y26MissingMonthsWrap" class="empty">Yükleniyor...</div>
+      </div>
+      <div class="grid-2">
+        <div class="section">
+          <h2 class="section-title">31.12.2025 Açılış Öneri Listesi</h2>
+          <div id="y26OpeningWrap" class="empty">Yükleniyor...</div>
+        </div>
+        <div class="section">
+          <h2 class="section-title">2026 Tahakkuk Öneri Listesi</h2>
+          <div id="y26AccrualSuggestionWrap" class="empty">Yükleniyor...</div>
+        </div>
       </div>
     </section>
 
@@ -515,8 +529,8 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[]}};
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
 
 function money(v){
   const n=Number(v||0);
@@ -728,7 +742,7 @@ async function loadYearTransitionData(force=false){
       }
     }
   }
-  state.year2026={opening_date:'2025-12-31',moka_opening:0,fee_cards:feeCards,fee_rows:feeRows,missing_rows:missingRows,march_missing:marchMissing,april_missing:aprilMissing,last_month:monthDetected,doc_rules:defaultDocRules2026()};
+  state.year2026={opening_date:'2025-12-31',moka_opening:0,fee_cards:feeCards,fee_rows:feeRows,missing_rows:missingRows,march_missing:marchMissing,april_missing:aprilMissing,last_month:monthDetected,doc_rules:defaultDocRules2026(),opening_entries:readLocalJson(LOCAL_2026_OPENING_KEY),accrual_suggestions:readLocalJson(LOCAL_2026_ACCRUAL_KEY),openings_written_at:(readLocalJson(LOCAL_2026_OPENING_KEY).find(x=>x.written_at)?.written_at)||null};
   renderYearTransitionPanel();
 }
 function renderYearTransitionPanel(){
@@ -737,6 +751,8 @@ function renderYearTransitionPanel(){
   const missingRows=y.missing_rows||[];
   const marchMissing=y.march_missing||[];
   const aprilMissing=y.april_missing||[];
+  const openingEntries=y.opening_entries||[];
+  const accrualSuggestions=y.accrual_suggestions||[];
   const fmtList=(rows)=> rows.length ? `<table><thead><tr><th>Cari</th><th>Ay</th><th class="text-right">Beklenen Ücret</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${escapeHtml(r.month_label)}</td><td class="text-right">${money(r.expected_fee||0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Eksik kayıt yok.</div>`;
   const grouped = {};
   missingRows.forEach(r=>{ const k=r.cari_name||'-'; if(!grouped[k]) grouped[k]=[]; grouped[k].push(r.month_token); });
@@ -744,12 +760,16 @@ function renderYearTransitionPanel(){
   document.getElementById('y26FeeCariCount').textContent = feeCards.length;
   document.getElementById('y26MissingCount').textContent = missingRows.length;
   document.getElementById('y26RuleWrap').innerHTML = `<div style="padding:12px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;font-weight:800;line-height:1.7;">
-    Açılış kesiti <strong>31.12.2025</strong> alınır. <strong>Moka açılışı 0</strong> kabul edilir. 2026 yılı için muhasebe ücreti, aktif ve ücretli cari kartlarından okunur. Ocak 2026'dan itibaren ilgili ay için satış/tahakkuk yoksa kayıt <strong>eksik ay</strong> olarak listelenir ve kör otomasyon yapılmaz.
+    Açılış kesiti <strong>31.12.2025</strong> alınır. <strong>Moka açılışı 0</strong> kabul edilir. 2026 yılı için muhasebe ücreti, aktif ve ücretli cari kartlarından okunur. Ocak 2026'dan itibaren ilgili ay için satış/tahakkuk yoksa kayıt <strong>eksik ay</strong> olarak listelenir. Geçmiş hareketler görünür ama <strong>read-only arşiv</strong> olarak kalır; canlı motor <strong>açılış + 2026</strong> ile yürür.
   </div>`;
   document.getElementById('y26DocRuleWrap').innerHTML = y.doc_rules?.length ? `<table><thead><tr><th>Belge Türü</th><th>Yön</th><th>Açıklama</th></tr></thead><tbody>${y.doc_rules.map(r=>`<tr><td>${escapeHtml(r.belge)}</td><td><span class="tag ${(r.yon||'').toLowerCase()==='borç'?'blue':'green'}">${escapeHtml(r.yon)}</span></td><td>${escapeHtml(r.aciklama)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Kural yok.</div>`;
   document.getElementById('y26MarchMissingWrap').innerHTML = fmtList(marchMissing);
   document.getElementById('y26AprilMissingWrap').innerHTML = fmtList(aprilMissing);
   document.getElementById('y26MissingMonthsWrap').innerHTML = Object.keys(grouped).length ? `<table><thead><tr><th>Cari</th><th>Eksik Aylar</th></tr></thead><tbody>${Object.entries(grouped).sort((a,b)=>a[0].localeCompare(b[0],'tr')).map(([name,months])=>`<tr><td>${escapeHtml(name)}</td><td>${escapeHtml(months.join(', '))}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Eksik muhasebe ücreti ayı yok.</div>`;
+  document.getElementById('y26OpeningWrap').innerHTML = openingEntries.length ? `
+    <div style="margin-bottom:10px;font-size:13px;font-weight:800;color:#475569;">Yazım Durumu: ${y.openings_written_at ? `<span class="tag green">YAZILDI</span> <span style="margin-left:6px;">${shortDate(y.openings_written_at)}</span>` : `<span class="tag amber">ÖNERİ</span>`}</div>
+    <table><thead><tr><th>Cari</th><th>Kaynak</th><th>Durum</th><th class="text-right">Açılış B</th><th class="text-right">Açılış A</th></tr></thead><tbody>${openingEntries.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${escapeHtml(r.source_field||'-')}</td><td>${r.strict_source?'<span class="tag green">Hazır</span>':'<span class="tag amber">Onay Gerekli</span>'}</td><td class="text-right">${r.debit?money(r.debit):'-'}</td><td class="text-right">${r.credit?money(r.credit):'-'}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz açılış öneri listesi üretilmedi.</div>`;
+  document.getElementById('y26AccrualSuggestionWrap').innerHTML = accrualSuggestions.length ? `<table><thead><tr><th>Cari</th><th>Ay</th><th>Belge</th><th class="text-right">Tutar</th></tr></thead><tbody>${accrualSuggestions.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${escapeHtml(r.month_token)}</td><td>${escapeHtml(r.document_type)}</td><td class="text-right">${money(r.suggested_amount||0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz tahakkuk öneri listesi üretilmedi.</div>`;
 }
 function exportYearTransitionJson(){
   const y=state.year2026||{};
@@ -761,6 +781,9 @@ function exportYearTransitionJson(){
     march_missing:y.march_missing||[],
     april_missing:y.april_missing||[],
     missing_rows:y.missing_rows||[],
+    opening_entries:y.opening_entries||[],
+    accrual_suggestions:y.accrual_suggestions||[],
+    openings_written_at:y.openings_written_at||null,
     doc_rules:y.doc_rules||[]
   };
   downloadJson(payload, `alkam_2026_gecis_kontrol_${new Date().toISOString().slice(0,10)}.json`);
@@ -2001,7 +2024,7 @@ function computeRunningRows(allRows, startDate=null){
 }
 function getStatementOpeningBalance(startDate){
   if(!startDate) return 0;
-  const ordered = sortStatementRows(state.hareketler).map(r=>{
+  const ordered = sortStatementRows(getStatementBaseRows()).map(r=>{
     const mv = normalizeMovementAmounts(r);
     return { ...r, line_date:getRowDateValue(r), debit:mv.debit, credit:mv.credit };
   });
@@ -2028,7 +2051,8 @@ function balanceColumns(v){
 }
 function currentStatementRows(){
   const start = getRangeStartDate();
-  return computeRunningRows(state.hareketler, state.selectedRange==="all" ? null : start);
+  const effectiveStart = state.selectedRange==="all" ? null : start;
+  return computeRunningRows(getStatementBaseRows(), effectiveStart);
 }
 function getCurrentStatementMeta(){
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
@@ -2284,6 +2308,11 @@ function renderSelectedCariDetail(){
     ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}
     ${meta.isConsistent?'<span class="tag green">BAKİYE UYUMLU</span>':'<span class="tag red">BAKİYE KONTROL</span>'}
   </div>
+  <div class="filter-chips" id="detailLedgerViewChips">
+    <button class="chip ${state.selectedLedgerView==='live2026'?'active':''}" data-ledger-view="live2026">Canlı Ekstre (Açılış + 2026)</button>
+    <button class="chip ${state.selectedLedgerView==='allhistory'?'active':''}" data-ledger-view="allhistory">Tüm Geçmiş (Read-Only)</button>
+  </div>
+  <div style="margin:-4px 0 12px 0;font-size:13px;color:#475569;font-weight:800;">${state.selectedLedgerView==='allhistory' ? 'Geçmiş kayıtlar görünür ama read-only arşivdir; bakiye motoruna müdahale etmez.' : 'Canlı görünüm açılış bakiyesi + 2026 hareketleri ile çalışır.'}</div>
   <div class="filter-chips" id="detailDateChips">
     <button class="chip ${state.selectedRange==='3m'?'active':''}" data-range="3m">3 Ay</button>
     <button class="chip ${state.selectedRange==='1m'?'active':''}" data-range="1m">1 Ay</button>
@@ -2332,6 +2361,7 @@ function renderSelectedCariDetail(){
     ${docs.length ? `<table><thead><tr><th>Tarih</th><th>Belge</th><th>Kaynak</th><th class="text-right">Tutar</th></tr></thead><tbody>${docs.map(d=>`<tr class="click-row" data-cari-doc-id="${escapeHtml(d.id)}"><td>${shortDate(d.document_date || d.created_at)}</td><td>${documentTypeTag(d.document_type)} ${escapeHtml(d.document_title || d.document_no || '-')}<div class="muted-note">${escapeHtml(d.note || '-')}</div></td><td>${escapeHtml(d.source_type || '-')}</td><td class="text-right">${money(d.amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Bu cariye bağlı belge yok.</div>`}
   </div>`;
   target.querySelectorAll("#detailDateChips .chip").forEach(btn=>btn.addEventListener("click",()=>{state.selectedRange=btn.dataset.range; renderSelectedCariDetail();}));
+  target.querySelectorAll("#detailLedgerViewChips .chip").forEach(btn=>btn.addEventListener("click",()=>{state.selectedLedgerView=btn.dataset.ledgerView; renderSelectedCariDetail();}));
   target.querySelectorAll('[data-cari-doc-id]').forEach(el=>el.addEventListener('click',()=>openDocumentDetailModal(el.dataset.cariDocId)));
 }
 function getOpenFeePeriod(id){
