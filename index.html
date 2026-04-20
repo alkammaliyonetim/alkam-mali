@@ -201,6 +201,29 @@
   </div>
 </div>
 
+<div id="deleteAuthModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:520px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Silme Yetki Kontrolü</h2>
+      <button class="btn btn-red" onclick="closeDeleteAuthModal()">Kapat</button>
+    </div>
+    <div id="deleteAuthInfo" class="rule-box" style="margin-bottom:12px;">Bu işlem parola korumalıdır.</div>
+    <div class="field"><label>Silme Parolası</label><input id="deleteAuthPassword" type="password" placeholder="Giriş şifresinin tersi" /></div>
+    <div class="field" style="margin-top:12px;"><label>Silme Notu</label><input id="deleteAuthReason" placeholder="Silme sebebi / kısa not" /></div>
+    <div class="btn-row" style="margin-top:16px;"><button class="btn btn-blue" onclick="confirmDeleteAuth()">Onayla</button></div>
+  </div>
+</div>
+
+<div id="auditDetailModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:860px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">İşlem İz Detayı</h2>
+      <button class="btn btn-red" onclick="closeAuditDetailModal()">Kapat</button>
+    </div>
+    <div id="auditDetailContent"></div>
+  </div>
+</div>
+
 <div id="documentModal" class="modal-overlay" style="display:none;">
   <div class="modal-card" style="max-width:920px;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
@@ -307,6 +330,7 @@
     <div class="btn-row" style="margin-top:16px;">
       <button class="btn btn-blue" onclick="saveExpenseAccrual()">Kaydet / Güncelle</button>
       <button class="btn btn-soft" onclick="queueExpenseForCurrentMonth()">Bu Ay Aday Oluştur</button>
+      <button class="btn btn-red" onclick="requestDeleteSelectedExpense()">Gider Kartını Sil</button>
     </div>
   </div>
 </div>
@@ -364,6 +388,8 @@
       </div>
       <div class="section"><h2 class="section-title">Üretim Kontrol Merkezi</h2><div id="opsHealthWrap" class="empty">Yükleniyor...</div></div>
       <div class="section"><h2 class="section-title">Üretim Sıkılaştırma Merkezi</h2><div id="prodHardeningWrap" class="empty">Yükleniyor...</div></div>
+      <div class="section"><h2 class="section-title">İşlem İz Kısa Defteri</h2><div id="globalAuditWrap" class="empty">Yükleniyor...</div></div>
+      <div class="section"><h2 class="section-title">Silme Arşivi</h2><div id="deleteArchiveWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
     <section id="tab-cariler" class="tab-page">
@@ -401,6 +427,7 @@
       </div>
       <div class="section"><h2 class="section-title">Moka Transfer Paneli</h2><div id="mokaPanelWrap" class="empty">Yükleniyor...</div></div>
       <div class="section"><h2 class="section-title">Banka / Moka Montaj Geçmişi</h2><div id="bankMatchWrap" class="empty">Yükleniyor...</div></div>
+      <div class="section"><h2 class="section-title">Hesap Hareketi Test Merkezi</h2><div id="movementTestWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
     <section id="tab-giderler" class="tab-page">
@@ -445,9 +472,9 @@
 const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909";
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null};
+const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null};
 
 function money(v){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(Number(v||0))}
 function shortDate(v){if(!v) return "-"; const d=new Date(v); if(Number.isNaN(d.getTime())) return v; return new Intl.DateTimeFormat("tr-TR").format(d)}
@@ -490,6 +517,16 @@ function defaultBackupConfig(){
   };
 }
 function uid(prefix="id"){ return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
+function nextBusinessNo(prefix='TRX'){ const seq=readLocalObject(LOCAL_SEQ_KEY, {}); seq[prefix]=Number(seq[prefix]||0)+1; writeLocalObject(LOCAL_SEQ_KEY, seq); return `${prefix}-${String(seq[prefix]).padStart(6,'0')}`; }
+function shortDateTime(v){ if(!v) return '-'; const d=new Date(v); if(Number.isNaN(d.getTime())) return v; return new Intl.DateTimeFormat('tr-TR',{dateStyle:'short',timeStyle:'medium'}).format(d); }
+function stampRecordIds(obj,prefix='TRX'){ if(!obj) return obj; if(!obj.id) obj.id=uid(prefix.toLowerCase()); if(!obj.txn_id) obj.txn_id=`${prefix}-${stableHash([obj.id,obj.created_at||obj.updated_at||'',obj.description||obj.content_summary||obj.title||''].join('|'))}`; if(!obj.operation_no) obj.operation_no=nextBusinessNo(prefix); return obj; }
+function normalizeNumberedList(list,prefix='TRX'){ let changed=false; const rows=(list||[]).map(x=>{ const before=JSON.stringify([x?.id,x?.txn_id,x?.operation_no]); const row=stampRecordIds({...x},prefix); const after=JSON.stringify([row?.id,row?.txn_id,row?.operation_no]); if(before!==after) changed=true; return row; }); return {rows, changed}; }
+function persistDeleteArchive(){ writeLocalJson(LOCAL_DELETE_ARCHIVE_KEY, state.deleteArchive||[]); }
+function archiveDeletion(module_name, payload, reason='Silindi'){ state.deleteArchive = state.deleteArchive || []; const archived=stampRecordIds({ archive_id: uid('delarc'), source_module: module_name, reason, snapshot: payload, created_at:new Date().toISOString(), event_ref: decisionRef('DEL') }, 'DEL'); state.deleteArchive.unshift(archived); persistDeleteArchive(); addAuditEvent('delete_archive',{event_ref:archived.event_ref, source_module:module_name, target_name: payload?.document_title || payload?.title || payload?.cari_name || payload?.description || '-', note: reason, summary:`Silme arşivi · ${module_name} · ${reason}`}); }
+function openDeleteAuthModal(label='Silme işlemi', callback=null){ window.__deleteAuthCallback = callback; document.getElementById('deleteAuthInfo').innerHTML = `<strong>${escapeHtml(label)}</strong><br>Bu işlem silme parolasına bağlıdır. Parola: giriş şifresinin tersi.`; document.getElementById('deleteAuthPassword').value=''; document.getElementById('deleteAuthReason').value=''; document.getElementById('deleteAuthModal').style.display='flex'; }
+function closeDeleteAuthModal(){ document.getElementById('deleteAuthModal').style.display='none'; window.__deleteAuthCallback = null; }
+function confirmDeleteAuth(){ const pwd=(document.getElementById('deleteAuthPassword').value||'').trim(); const reason=(document.getElementById('deleteAuthReason').value||'').trim() || 'Operatör silme işlemi'; if(pwd!==DELETE_PASSWORD){ notify('Silme parolası hatalı.'); return; } const cb=window.__deleteAuthCallback; closeDeleteAuthModal(); if(typeof cb==='function') cb(reason); }
+function logSystemError(module_name,msg,extra={}){ addAuditEvent('system_error',{source_module:module_name, note:msg, summary:`Hata · ${module_name} · ${msg}`,...extra}); }
 function persistApprovalOps(){ writeLocalObject(LOCAL_APPROVAL_OPS_KEY, state.approvalOps); }
 function persistBankOps(){ writeLocalObject(LOCAL_BANK_OPS_KEY, state.bankOps); }
 function persistLedger(){ writeLocalJson(LOCAL_LEDGER_KEY, state.operationalLedger); }
@@ -497,8 +534,8 @@ function persistAudit(){ writeLocalJson(LOCAL_AUDIT_KEY, state.auditTrail); }
 function decisionRef(prefix='OP'){ const d=new Date(); const p=n=>String(n).padStart(2,'0'); return `${prefix}-${String(d.getFullYear()).slice(-2)}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
 function stableHash(input=''){ let h=0; const s=String(input||''); for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return Math.abs(h).toString(36).toUpperCase(); }
 function txnId(obj,prefix='TRX'){ if(!obj) return `${prefix}-YOK`; const existing=obj.txn_id || obj.transaction_id || obj.event_ref || obj.ledger_ref || obj.decision_ref || obj.document_no || obj.id || obj.line_id || obj.movement_id || obj.pending_id; if(existing) return String(existing); const raw=[prefix,getRowDateValue(obj)||'',obj.description||obj.content_summary||obj.raw_content||'',obj.cari_id||obj.cari_name||'',num(obj.amount ?? obj.net_amount ?? obj.final_amount ?? obj.raw_amount ?? obj.suggested_amount ?? 0).toFixed(2),obj.source_type||obj.movement_type||obj.suggested_movement_type||''].join('|'); return `${prefix}-${stableHash(raw)}`; }
-function addAuditEvent(type,payload={}){ state.auditTrail = state.auditTrail || []; state.auditTrail.unshift({ id:uid('audit'), event_type:type, event_ref:payload.event_ref || decisionRef('LOG'), actor:'Yerel Giriş', created_at:new Date().toISOString(), ...payload }); persistAudit(); }
-function addLedgerEntry(entry={}){ state.operationalLedger = state.operationalLedger || []; state.operationalLedger.unshift({ id:uid('ledger'), ledger_ref:entry.ledger_ref || decisionRef('LGR'), created_at:new Date().toISOString(), actor:'Yerel Giriş', status:'taslak işlendi', ...entry }); persistLedger(); }
+function addAuditEvent(type,payload={}){ state.auditTrail = state.auditTrail || []; const row=stampRecordIds({ id:uid('audit'), event_type:type, event_ref:payload.event_ref || decisionRef('LOG'), actor:'Yerel Giriş', created_at:new Date().toISOString(), summary: payload.summary || [type,payload.target_name||payload.source_module||'', payload.note||''].filter(Boolean).join(' · '), ...payload }, 'LOG'); state.auditTrail.unshift(row); persistAudit(); }
+function addLedgerEntry(entry={}){ state.operationalLedger = state.operationalLedger || []; const row=stampRecordIds({ id:uid('ledger'), ledger_ref:entry.ledger_ref || decisionRef('LGR'), created_at:new Date().toISOString(), actor:'Yerel Giriş', status:'taslak işlendi', ...entry }, 'LGR'); state.operationalLedger.unshift(row); persistLedger(); }
 function approvalRowKey(r){ return String(r.id || [r.source_type||'',r.content_summary||'',r.raw_content||'',r.suggested_amount||r.raw_amount||r.final_amount||0,r.created_at||''].join('|')); }
 function isPendingHandled(r){ return state.approvalOps.handled_pending_ids.includes(approvalRowKey(r)); }
 function markPendingHandled(r){ const key=approvalRowKey(r); if(!state.approvalOps.handled_pending_ids.includes(key)) state.approvalOps.handled_pending_ids.push(key); }
@@ -559,7 +596,13 @@ async function loadAccounts(){
     supabaseClient.from("v_banka_montaj_paneli").select("*").limit(50),
     supabaseClient.from("v_moka_transfer_paneli").select("*").limit(50)
   ]);
-  state.accounts=(a.data||[]).map(x=>({...x, txn_id:txnId(x,'ACC')})); state.bankPanel=(b.data||[]).map(x=>({...x, txn_id:txnId(x,'BNK')})); state.mokaPanel=(m.data||[]).map(x=>({...x, txn_id:txnId(x,'MOK')}));
+  const importedMovements = readLocalJson(LOCAL_MOVEMENT_TEST_KEY).map(x=>({...x, txn_id:txnId(x,'IMP')}));
+  state.movementTests = importedMovements;
+  const importedBank = importedMovements.filter(x=>x.import_bucket!=='moka').map(x=>({...x, is_imported_test:true}));
+  const importedMoka = importedMovements.filter(x=>x.import_bucket==='moka').map(x=>({...x, is_imported_test:true}));
+  state.accounts=(a.data||[]).map(x=>({...x, txn_id:txnId(x,'ACC')}));
+  state.bankPanel=[...(b.data||[]).map(x=>({...x, txn_id:txnId(x,'BNK')})), ...importedBank];
+  state.mokaPanel=[...(m.data||[]).map(x=>({...x, txn_id:txnId(x,'MOK')})), ...importedMoka];
 }
 
 async function loadFeeData(){
@@ -591,8 +634,26 @@ async function loadDocuments(){
   state.backupConfig = readLocalObject(LOCAL_BACKUP_CONFIG_KEY, defaultBackupConfig());
   state.restoreDrills = readLocalJson(LOCAL_RESTORE_DRILLS_KEY).map(x=>({...x, txn_id:txnId(x,'RST')}));
   state.prodSettings = readLocalObject(LOCAL_PROD_SETTINGS_KEY, defaultProdSettings());
+  state.movementTests = readLocalJson(LOCAL_MOVEMENT_TEST_KEY).map(x=>({...x, txn_id:txnId(x,'IMP')}));
+  state.deleteArchive = readLocalJson(LOCAL_DELETE_ARCHIVE_KEY).map(x=>({...x, txn_id:txnId(x,'DEL')}));
 }
 
+
+function normalizeStateIds(){
+  const docs = normalizeNumberedList(state.documents,'DOC'); state.documents = docs.rows; if(docs.changed) writeLocalJson(LOCAL_DOCS_KEY, state.documents);
+  const bridge = normalizeNumberedList(state.bridgeCandidates,'BRG'); state.bridgeCandidates = bridge.rows; if(bridge.changed) writeLocalJson(LOCAL_BRIDGE_KEY, state.bridgeCandidates);
+  const exps = normalizeNumberedList(state.expenses,'EXP'); state.expenses = exps.rows; if(exps.changed) writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses);
+  const audit = normalizeNumberedList(state.auditTrail,'LOG'); state.auditTrail = audit.rows; if(audit.changed) persistAudit();
+  const led = normalizeNumberedList(state.operationalLedger,'LGR'); state.operationalLedger = led.rows; if(led.changed) persistLedger();
+  const mov = normalizeNumberedList(state.movementTests,'IMP'); state.movementTests = mov.rows; if(mov.changed) persistMovementTests();
+  const del = normalizeNumberedList(state.deleteArchive,'DEL'); state.deleteArchive = del.rows; if(del.changed) persistDeleteArchive();
+  state.approvalOps.processed = normalizeNumberedList(state.approvalOps.processed||[],'APR').rows;
+  state.approvalOps.rejected = normalizeNumberedList(state.approvalOps.rejected||[],'APR').rows;
+  persistApprovalOps();
+  state.bankOps.pending = normalizeNumberedList(state.bankOps.pending||[],'BNKQ').rows;
+  state.bankOps.history = normalizeNumberedList(state.bankOps.history||[],'BNKH').rows;
+  persistBankOps();
+}
 
 function exportBlob(filename, content, mime='application/json;charset=utf-8;'){
   const blob = new Blob([content], {type:mime});
@@ -604,6 +665,119 @@ function exportBlob(filename, content, mime='application/json;charset=utf-8;'){
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+function persistMovementTests(){ writeLocalJson(LOCAL_MOVEMENT_TEST_KEY, state.movementTests || []); }
+function parseTrNumber(v){
+  const raw=String(v||'').trim();
+  if(!raw) return 0;
+  const cleaned=raw.replace(/[₺\s]/g,'').replace(/\.(?=\d{3}(\D|$))/g,'').replace(',','.');
+  const n=Number(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+function normalizeImportDate(v){
+  const raw=String(v||'').trim();
+  if(!raw) return new Date().toISOString().slice(0,10);
+  const m = raw.match(/^(\d{1,2})[\.\/\-](\d{1,2})[\.\/\-](\d{2,4})$/);
+  if(m){
+    const y = m[3].length===2 ? `20${m[3]}` : m[3];
+    return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+  }
+  const d = new Date(raw);
+  return Number.isNaN(d.getTime()) ? new Date().toISOString().slice(0,10) : d.toISOString().slice(0,10);
+}
+function movementImportClassifier(desc=''){
+  const s=String(desc||'').toLowerCase();
+  if(/moka|united|sanal pos|pos /.test(s)) return 'moka';
+  return 'bank';
+}
+function parseMovementImportRows(rawText='', sourceLabel='manuel_yapistir'){
+  const sessionRef = decisionRef('IMP');
+  const lines = String(rawText||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const rows = [];
+  for(const line of lines){
+    if(/^(tarih|date|aciklama|açıklama|tutar|amount|islem|işlem)/i.test(line)) continue;
+    const delim = line.includes('\t') ? '\t' : (line.includes(';') ? ';' : ',');
+    const cols = line.split(delim).map(x=>x.trim()).filter(x=>x!=='');
+    if(cols.length < 2) continue;
+    let dateVal='', descVal='', amountVal='';
+    const numericCols = cols.filter(c=>/[\d]/.test(c) && /[\d,.]/.test(c));
+    if(cols.length >= 3){
+      dateVal = cols[0];
+      const amountIndex = cols.findIndex((c,i)=>i>0 && /[\d]/.test(c) && /[\d,.]/.test(c));
+      if(amountIndex > 0){
+        amountVal = cols[amountIndex];
+        descVal = cols.filter((_,i)=>i!==0 && i!==amountIndex).join(' ');
+      }else{
+        descVal = cols[1];
+        amountVal = cols[2];
+      }
+    }else{
+      dateVal = cols[0];
+      const secondIsNum = /[\d]/.test(cols[1]) && /[\d,.]/.test(cols[1]);
+      amountVal = secondIsNum ? cols[1] : (numericCols[0] || '0');
+      descVal = secondIsNum ? '' : cols[1];
+    }
+    const amount = parseTrNumber(amountVal);
+    if(!amount && !descVal) continue;
+    const import_bucket = movementImportClassifier(descVal);
+    rows.push({
+      id: uid('movimp'),
+      import_session_ref: sessionRef,
+      import_source: sourceLabel,
+      import_bucket,
+      movement_date: normalizeImportDate(dateVal),
+      description: descVal || `${sourceLabel} hareketi`,
+      net_amount: amount,
+      suggested_financial_account_type: import_bucket === 'moka' ? 'moka_united' : 'banka',
+      source_type: 'movement_import',
+      source_origin: sourceLabel,
+      imported_at: new Date().toISOString(),
+      is_test_import: true,
+      txn_id: txnId({ id: uid('seed'), movement_date: normalizeImportDate(dateVal), description: descVal, amount }, 'IMP')
+    });
+  }
+  return rows;
+}
+function analyzeMovementImport(){
+  const raw = document.getElementById('movementImportText')?.value || '';
+  const sourceLabel = document.getElementById('movementImportSource')?.value || 'manuel_yapistir';
+  const parsed = parseMovementImportRows(raw, sourceLabel);
+  if(!parsed.length){ notify('İçe alınacak hesap hareketi bulunamadı.'); return; }
+  const existing = state.movementTests || [];
+  const existingKeys = new Set(existing.map(x=>`${x.movement_date}|${x.description}|${num(x.net_amount).toFixed(2)}|${x.import_bucket}`));
+  const newRows = parsed.filter(x=>!existingKeys.has(`${x.movement_date}|${x.description}|${num(x.net_amount).toFixed(2)}|${x.import_bucket}`));
+  state.movementTests = [...newRows, ...existing];
+  persistMovementTests();
+  document.getElementById('movementImportText').value = '';
+  addAuditEvent('movement_import',{source_module:'movement_test', target_name:sourceLabel, amount:newRows.reduce((a,b)=>a+num(b.net_amount),0), note:`Yeni ${newRows.length} · Çift engel ${parsed.length-newRows.length}`, summary:`Hesap hareketi içeri alındı · ${newRows.length} yeni · ${parsed.length-newRows.length} çift engel`});
+  if(parsed.length-newRows.length>0) addAuditEvent('duplicate_blocked',{source_module:'movement_test', note:`${parsed.length-newRows.length} test satırı çift kayıt filtresine takıldı.`, summary:`Çift kayıt engeli · movement_test · ${parsed.length-newRows.length} satır`});
+  notify(`${newRows.length} hesap hareketi test merkezine alındı.`);
+  refreshAll();
+}
+function clearMovementImport(){
+  const rows=[...(state.movementTests||[])];
+  if(!rows.length){ notify('Temizlenecek test kaydı yok.'); return; }
+  openDeleteAuthModal(`Test hareketi temizleme (${rows.length} kayıt)`, (reason)=>{ archiveDeletion('movement_test_clear',{count:rows.length, rows:rows.slice(0,100)},reason); state.movementTests = []; persistMovementTests(); notify('Hesap hareketi test kayıtları temizlendi.'); refreshAll(); });
+}
+function exportMovementImportJson(){
+  const rows = state.movementTests || [];
+  exportBlob(`alkam_hesap_hareketi_test_${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.json`, JSON.stringify(rows, null, 2));
+  notify('Hesap hareketi test JSON indirildi.');
+}
+function handleMovementFileImport(ev){
+  const file = ev?.target?.files?.[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const raw = String(e.target?.result || '');
+    const current = document.getElementById('movementImportText');
+    if(current) current.value = raw;
+    const source = document.getElementById('movementImportSource');
+    if(source) source.value = file.name;
+    notify(`Dosya okundu: ${file.name}`);
+  };
+  reader.readAsText(file, 'utf-8');
 }
 function getBackupConfig(){
   return state.backupConfig || defaultBackupConfig();
@@ -637,7 +811,7 @@ function persistOpsHealth(){ writeLocalObject(LOCAL_OPS_HEALTH_KEY, state.opsHea
 function getProdSettings(){ return state.prodSettings || defaultProdSettings(); }
 function persistProdSettings(){ writeLocalObject(LOCAL_PROD_SETTINGS_KEY, state.prodSettings || defaultProdSettings()); }
 function localOperationalPayloadCount(){
-  return Number(state.documents.length||0) + Number(state.bridgeCandidates.length||0) + Number((state.bankOps?.pending||[]).length||0) + Number(state.operationalLedger.length||0) + Number(state.auditTrail.length||0);
+  return Number(state.documents.length||0) + Number(state.bridgeCandidates.length||0) + Number((state.bankOps?.pending||[]).length||0) + Number(state.operationalLedger.length||0) + Number(state.auditTrail.length||0) + Number((state.movementTests||[]).length||0);
 }
 function buildProdHardeningReport(){
   const prod = getProdSettings();
@@ -670,8 +844,10 @@ function buildOpsHealthReport(){
   const placeholderFolder = !cfg.drive_folder || String(cfg.drive_folder).trim()==='';
   const restoreMissing = !state.restoreDrills.length;
   const localCount = localOperationalPayloadCount();
+  const importedMovements = (state.movementTests || readLocalJson(LOCAL_MOVEMENT_TEST_KEY) || []).length;
   const checks = [
     {code:'ids', label:'İşlem ID standardı', status:'ok', detail:'Ana katmanlarda ekran bazlı ID standardı aktif.'},
+    {code:'movement_test', label:'Hesap hareketi test yükü', status: importedMovements>0 ? 'ok' : 'warn', detail: importedMovements>0 ? `${importedMovements} test hareketi sisteme alındı.` : 'Henüz hesap hareketi test satırı yok.'},
     {code:'backup_policy', label:'Yedekleme politikası', status:(placeholderDb || placeholderDrive || placeholderFolder) ? 'warn' : 'ok', detail:((placeholderDb ? 'DB URL placeholder görünüyor. ' : '') + (placeholderDrive ? 'Drive remote boş. ' : '') + (placeholderFolder ? 'Drive klasörü boş. ' : '')).trim() || 'Politika dolu.'},
     {code:'restore_drill', label:'Restore tatbikatı', status: restoreMissing ? 'warn' : 'ok', detail: restoreMissing ? 'Henüz restore tatbikatı kaydı yok.' : 'Restore tatbikatı kaydı mevcut.'},
     {code:'approval_lock', label:'Kilitli onay kuyruğu', status: lockedPending>0 ? 'warn' : 'ok', detail: lockedPending>0 ? `${lockedPending} kilitli kayıt operatör kararı bekliyor.` : 'Kilitli bekleyen kayıt yok.'},
@@ -694,6 +870,8 @@ function buildOpsHealthReport(){
       local_document_count: state.documents.length,
       local_bridge_count: state.bridgeCandidates.length,
       local_bank_queue_count: (state.bankOps?.pending||[]).length,
+      delete_archive_count: (state.deleteArchive||[]).length,
+      imported_movements: importedMovements,
       production_mode: !!prod.production_mode
     },
     checks
@@ -721,6 +899,7 @@ function renderOpsHealthPanel(){
       <div class="metric-mini"><div class="k">Uyarı</div><div class="v">${warnCount}</div></div>
       <div class="metric-mini"><div class="k">Kilitli Onay</div><div class="v">${report.summary?.locked_pending || 0}</div></div>
       <div class="metric-mini"><div class="k">Çift Riskli Köprü</div><div class="v">${report.summary?.duplicate_bridge || 0}</div></div>
+      <div class="metric-mini"><div class="k">Test Hareketi</div><div class="v">${report.summary?.imported_movements || 0}</div></div>
     </div>
     <div class="rule-box" style="margin-bottom:14px;">Canlıya alma kuralı: önce doğru cari, sonra doğru belge, sonra doğru bakiye. Uyarılar temizlenmeden üretim güveni tam sayılmaz.</div>
     ${(report.checks||[]).length ? `<table><thead><tr><th>Kontrol</th><th>Durum</th><th>Detay</th></tr></thead><tbody>${report.checks.map(c=>`<tr><td>${escapeHtml(c.label||'-')}</td><td>${healthTag(c.status)}</td><td>${escapeHtml(c.detail||'-')}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz sağlık raporu yok.</div>`}
@@ -766,35 +945,13 @@ function saveProdSettings(){
 function clearLocalOperationalData(){
   const localCount = localOperationalPayloadCount();
   if(!localCount){ notify('Temizlenecek yerel operasyon verisi yok.'); return; }
-  if(!confirm(`Yerel operasyon katmanındaki ${localCount} kayıt izini temizlemek istiyor musun? Bu işlem geri alınmaz.`)) return;
-  state.documents=[];
-  state.bridgeCandidates=[];
-  state.approvalOps={processed:[],rejected:[],handled_pending_ids:[]};
-  state.bankOps={pending:[],row_status:{},history:[]};
-  state.expenses=[];
-  state.operationalLedger=[];
-  state.auditTrail=[];
-  state.bridgeBatches=[];
-  writeLocalJson(LOCAL_DOCS_KEY, []);
-  writeLocalJson(LOCAL_BRIDGE_KEY, []);
-  writeLocalObject(LOCAL_APPROVAL_OPS_KEY, state.approvalOps);
-  writeLocalObject(LOCAL_BANK_OPS_KEY, state.bankOps);
-  writeLocalJson(LOCAL_EXPENSES_KEY, []);
-  writeLocalJson(LOCAL_LEDGER_KEY, []);
-  writeLocalJson(LOCAL_AUDIT_KEY, []);
-  writeLocalJson(LOCAL_BRIDGE_BATCHES_KEY, []);
-  state.prodSettings = {...getProdSettings(), local_cleanup_done:true, last_saved_at:new Date().toISOString()};
-  persistProdSettings();
-  state.opsHealth = buildOpsHealthReport();
-  persistOpsHealth();
-  renderDocuments();
-  renderExpenses();
-  renderApprovals();
-  renderAccounts();
-  renderBackup();
-  renderProdHardeningPanel();
-  renderOpsHealthPanel();
-  notify('Yerel operasyon verileri temizlendi.');
+  openDeleteAuthModal(`Yerel operasyon temizliği (${localCount} kayıt izi)`, (reason)=>{
+    archiveDeletion('local_cleanup',{localCount,documents:(state.documents||[]).length,bridge:(state.bridgeCandidates||[]).length,bank_pending:(state.bankOps?.pending||[]).length,audit:(state.auditTrail||[]).length,ledger:(state.operationalLedger||[]).length,movement_tests:(state.movementTests||[]).length}, reason);
+    state.documents=[]; state.bridgeCandidates=[]; state.approvalOps={processed:[],rejected:[],handled_pending_ids:[]}; state.bankOps={pending:[],row_status:{},history:[]}; state.expenses=[]; state.operationalLedger=[]; state.auditTrail=[]; state.bridgeBatches=[]; state.movementTests=[];
+    writeLocalJson(LOCAL_DOCS_KEY, []); writeLocalJson(LOCAL_BRIDGE_KEY, []); writeLocalObject(LOCAL_APPROVAL_OPS_KEY, state.approvalOps); writeLocalObject(LOCAL_BANK_OPS_KEY, state.bankOps); writeLocalJson(LOCAL_EXPENSES_KEY, []); writeLocalJson(LOCAL_LEDGER_KEY, []); writeLocalJson(LOCAL_AUDIT_KEY, []); writeLocalJson(LOCAL_BRIDGE_BATCHES_KEY, []); writeLocalJson(LOCAL_MOVEMENT_TEST_KEY, []);
+    state.prodSettings = {...getProdSettings(), local_cleanup_done:true, last_saved_at:new Date().toISOString()}; persistProdSettings(); state.opsHealth = buildOpsHealthReport(); persistOpsHealth();
+    renderDocuments(); renderExpenses(); renderApprovals(); renderAccounts(); renderBackup(); renderProdHardeningPanel(); renderOpsHealthPanel(); renderGlobalAuditLog(); renderDeleteArchive(); notify('Yerel operasyon verileri temizlendi.');
+  });
 }
 function exportProductionHandover(){
   const payload = {
@@ -880,8 +1037,8 @@ function collectBackupPayload(){
   const cfg = getBackupConfig();
   return {
     meta:{app:'ALKAM Mali Müşavirlik', version:buildVersion(), exported_at:new Date().toISOString(), user:'Yerel Giriş', backup_policy:cfg},
-    counts:{documents:state.documents.length, bridge_candidates:state.bridgeCandidates.length, bridge_batches:state.bridgeBatches.length, approval_processed:getProcessedRows().length, approval_rejected:getRejectedRows().length, bank_queue:(state.bankOps?.pending||[]).length, expenses:state.expenses.length, ledger:state.operationalLedger.length, audit:state.auditTrail.length, restore_drills:state.restoreDrills.length},
-    local_store:{documents:state.documents, bridge_candidates:state.bridgeCandidates, bridge_batches:state.bridgeBatches, approval_ops:state.approvalOps, bank_ops:state.bankOps, expenses:state.expenses, operational_ledger:state.operationalLedger, audit_trail:state.auditTrail, backup_history:state.backupHistory, restore_drills:state.restoreDrills}
+    counts:{documents:state.documents.length, bridge_candidates:state.bridgeCandidates.length, bridge_batches:state.bridgeBatches.length, approval_processed:getProcessedRows().length, approval_rejected:getRejectedRows().length, bank_queue:(state.bankOps?.pending||[]).length, expenses:state.expenses.length, ledger:state.operationalLedger.length, audit:state.auditTrail.length, restore_drills:state.restoreDrills.length, movement_tests:(state.movementTests||[]).length},
+    local_store:{documents:state.documents, bridge_candidates:state.bridgeCandidates, bridge_batches:state.bridgeBatches, approval_ops:state.approvalOps, bank_ops:state.bankOps, expenses:state.expenses, movement_tests:state.movementTests, operational_ledger:state.operationalLedger, audit_trail:state.auditTrail, backup_history:state.backupHistory, restore_drills:state.restoreDrills}
   };
 }
 function buildBackupManifestData(){
@@ -1983,6 +2140,7 @@ function queueSelectedBankRowToApproval(){
   state.bankOps.pending.unshift(pendingRow);
   updateBankRowStatus(r,state.selectedBankBucket,'queued',note,{pending_id:pendingId,target_type:targetType,target_name:targetName,movement_type:movementType});
   persistBankOps();
+  addAuditEvent('bank_queued_for_approval',{source_module:state.selectedBankBucket==='moka'?'moka_panel':'bank_panel', target_name:targetName, amount, note, summary:`Banka/Moka satırı onaya gönderildi · ${targetName}`});
   closeBankActionModal();
   renderAccounts();
   renderApprovals();
@@ -2039,6 +2197,7 @@ function ignoreSelectedBankRow(){
   const originKey = bankRowKey(r,state.selectedBankBucket);
   state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.bank_origin_key)!==String(originKey));
   updateBankRowStatus(r,state.selectedBankBucket,'ignored',note,{});
+  addAuditEvent('bank_ignored',{source_module:state.selectedBankBucket==='moka'?'moka_panel':'bank_panel', target_name:r.description || '-', amount:num(r.net_amount||r.amount||0), note, summary:`Banka/Moka satırı işlenmeyen yapıldı · ${r.description || '-'}`});
   closeBankActionModal();
   renderAccounts();
   renderApprovals();
@@ -2118,6 +2277,8 @@ function renderAccounts(){
   document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
   document.querySelectorAll('#mokaFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.mokaFilter = btn.dataset.mfilter; renderAccounts(); }));
   document.querySelectorAll('[data-bank-key]').forEach(el=>el.addEventListener('click',()=>openBankActionModal(el.dataset.bankBucket, el.dataset.bankKey)));
+  renderBankMatchHistory();
+  renderMovementTestCenter();
 }
 function renderBankMatchHistory(){
   const rows = [...(state.operationalLedger || [])].filter(x=>['bank_panel','moka_panel','approval_center'].includes(x.source_module || '')).slice(0,20);
@@ -2139,21 +2300,49 @@ function renderBankMatchHistory(){
 }
 function renderApprovalAudit(){
   const rows=[...(state.auditTrail || [])].slice(0,25);
-  const summary={
-    total: rows.length,
-    approval: rows.filter(x=>String(x.event_type||'').includes('approval')).length,
-    bank: rows.filter(x=>String(x.event_type||'').includes('bank')).length,
-    reject: rows.filter(x=>String(x.event_type||'').includes('reject')).length,
-  };
-  const target=document.getElementById('approvalAuditWrap');
+  const summary={ total: rows.length, approval: rows.filter(x=>String(x.event_type||'').includes('approval')).length, bank: rows.filter(x=>String(x.event_type||'').includes('bank')).length, reject: rows.filter(x=>String(x.event_type||'').includes('reject')).length };
+  const target=document.getElementById('approvalAuditWrap'); if(!target) return;
+  const html = `<div class="grid-4" style="margin-bottom:14px;"><div class="metric-mini"><div class="k">Toplam İz</div><div class="v">${summary.total}</div></div><div class="metric-mini"><div class="k">Onay İşlemi</div><div class="v">${summary.approval}</div></div><div class="metric-mini"><div class="k">Banka/Moka İşlemi</div><div class="v">${summary.bank}</div></div><div class="metric-mini"><div class="k">Red / Ignore</div><div class="v">${summary.reject}</div></div></div><div class="rule-box" style="margin-bottom:14px;">Bu ekran karar izi defteridir. Kimlik, kaynak, karar notu ve hedef bilgisi tekrar açıldığında kaybolmaz.</div>` + (rows.length ? `<table><thead><tr><th>No</th><th>Ref</th><th>Olay</th><th>Kısa İz</th><th>Tarih Saat</th></tr></thead><tbody>${rows.map(r=>`<tr class="click-row" data-audit-id="${escapeHtml(r.id || '')}"><td>${escapeHtml(r.operation_no || '-')}</td><td>${escapeHtml(r.event_ref || '-')}</td><td>${escapeHtml(r.event_type || '-')}</td><td>${escapeHtml(r.summary || r.note || r.decision_note || '-')}</td><td>${shortDateTime(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz operasyon izi yok.</div>`);
+  target.innerHTML = html; target.querySelectorAll('[data-audit-id]').forEach(el=>el.addEventListener('click',()=>openAuditDetailModal(el.dataset.auditId)));
+}
+function getAuditRows(){ return [...(state.auditTrail || [])].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)); }
+function openAuditDetailModal(auditId){ const row = getAuditRows().find(x=>String(x.id)===String(auditId)); if(!row){ notify('İz kaydı bulunamadı.'); return; } state.selectedAuditId = row.id; document.getElementById('auditDetailContent').innerHTML = `<div class="grid-4" style="margin-bottom:14px;"><div class="metric-mini"><div class="k">İşlem No</div><div class="v">${escapeHtml(row.operation_no || '-')}</div></div><div class="metric-mini"><div class="k">İşlem ID</div><div class="v">${escapeHtml(txnId(row,'LOG'))}</div></div><div class="metric-mini"><div class="k">Ref</div><div class="v">${escapeHtml(row.event_ref || '-')}</div></div><div class="metric-mini"><div class="k">Tarih Saat</div><div class="v">${escapeHtml(shortDateTime(row.created_at))}</div></div></div><div class="rule-box" style="margin-bottom:12px;"><strong>Kısa İz</strong><br>${escapeHtml(row.summary || '-')}</div><table><tbody><tr><th>Olay</th><td>${escapeHtml(row.event_type || '-')}</td></tr><tr><th>Kaynak</th><td>${escapeHtml(row.source_module || row.source_type || '-')}</td></tr><tr><th>Hedef</th><td>${escapeHtml(row.target_name || '-')}</td></tr><tr><th>Not</th><td>${escapeHtml(row.note || row.decision_note || '-')}</td></tr><tr><th>Tutar</th><td>${money(row.amount || 0)}</td></tr><tr><th>Operatör</th><td>${escapeHtml(row.actor || '-')}</td></tr></tbody></table>`; document.getElementById('auditDetailModal').style.display='flex'; }
+function closeAuditDetailModal(){ document.getElementById('auditDetailModal').style.display='none'; }
+function renderGlobalAuditLog(){ const target=document.getElementById('globalAuditWrap'); if(!target) return; const rows=getAuditRows().slice(0,30); target.innerHTML = `<div class="grid-4" style="margin-bottom:14px;"><div class="metric-mini"><div class="k">Toplam İz</div><div class="v">${getAuditRows().length}</div></div><div class="metric-mini"><div class="k">Bugün</div><div class="v">${getAuditRows().filter(x=>String(x.created_at||'').slice(0,10)===new Date().toISOString().slice(0,10)).length}</div></div><div class="metric-mini"><div class="k">Hata</div><div class="v">${getAuditRows().filter(x=>String(x.event_type||'').includes('error')).length}</div></div><div class="metric-mini"><div class="k">Çift Engel</div><div class="v">${getAuditRows().filter(x=>String(x.event_type||'').includes('duplicate')).length}</div></div></div><div class="rule-box" style="margin-bottom:14px;">Bütün operasyonlar kısa iz olarak tarih-saat damgasıyla burada tutulur. Satıra tıkla, detayı aç.</div>` + (rows.length ? `<table><thead><tr><th>No</th><th>ID</th><th>Kısa İz</th><th>Tarih Saat</th></tr></thead><tbody>${rows.map(r=>`<tr class="click-row" data-audit-id="${escapeHtml(r.id || '')}"><td>${escapeHtml(r.operation_no || '-')}</td><td>${escapeHtml(txnId(r,'LOG'))}</td><td>${escapeHtml(r.summary || r.note || '-')}</td><td>${shortDateTime(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz işlem izi yok.</div>`); target.querySelectorAll('[data-audit-id]').forEach(el=>el.addEventListener('click',()=>openAuditDetailModal(el.dataset.auditId))); }
+function renderDeleteArchive(){ const target=document.getElementById('deleteArchiveWrap'); if(!target) return; const rows=[...(state.deleteArchive||[])].slice(0,20); target.innerHTML = `<div class="grid-4" style="margin-bottom:14px;"><div class="metric-mini"><div class="k">Arşiv Kayıt</div><div class="v">${(state.deleteArchive||[]).length}</div></div><div class="metric-mini"><div class="k">Son Silme</div><div class="v">${rows[0] ? shortDateTime(rows[0].created_at) : '-'}</div></div><div class="metric-mini"><div class="k">Modül</div><div class="v">${rows[0] ? escapeHtml(rows[0].source_module || '-') : '-'}</div></div><div class="metric-mini"><div class="k">Koruma</div><div class="v">Parola</div></div></div><div class="rule-box" style="margin-bottom:14px;">Silinen yerel kayıtlar tamamen kaybolmaz; kısa arşiv izi burada tutulur. Silme parolası giriş şifresinin tersidir.</div>` + (rows.length ? `<table><thead><tr><th>No</th><th>Ref</th><th>Modül</th><th>Sebep</th><th>Tarih Saat</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.operation_no || '-')}</td><td>${escapeHtml(r.event_ref || '-')}</td><td>${escapeHtml(r.source_module || '-')}</td><td>${escapeHtml(r.reason || '-')}</td><td>${shortDateTime(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz silme arşivi yok.</div>`); }
+
+function renderMovementTestCenter(){
+  const target = document.getElementById('movementTestWrap');
   if(!target) return;
-  const html = `<div class="grid-4" style="margin-bottom:14px;">
-      <div class="metric-mini"><div class="k">Toplam İz</div><div class="v">${summary.total}</div></div>
-      <div class="metric-mini"><div class="k">Onay İşlemi</div><div class="v">${summary.approval}</div></div>
-      <div class="metric-mini"><div class="k">Banka/Moka İşlemi</div><div class="v">${summary.bank}</div></div>
-      <div class="metric-mini"><div class="k">Red / Ignore</div><div class="v">${summary.reject}</div></div>
+  const rows = state.movementTests || [];
+  const summary = {
+    total: rows.length,
+    bank: rows.filter(x=>x.import_bucket!=='moka').length,
+    moka: rows.filter(x=>x.import_bucket==='moka').length,
+    total_amount: rows.reduce((a,b)=>a+num(b.net_amount),0)
+  };
+  target.innerHTML = `<div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn btn-blue" onclick="analyzeMovementImport()">Yapıştırılan Hareketleri İçeri Al</button>
+      <button class="btn btn-soft" onclick="exportMovementImportJson()">Test JSON</button>
+      <button class="btn btn-red" onclick="clearMovementImport()">Test Kayıtlarını Temizle</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Bu ekran karar izi defteridir. Kimlik, kaynak, karar notu ve hedef bilgisi tekrar açıldığında kaybolmaz.</div>` + (rows.length ? `<table><thead><tr><th>Ref</th><th>Olay</th><th>Kaynak</th><th>Hedef</th><th>Not</th><th>Tarih</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.event_ref || '-')}</td><td>${escapeHtml(r.event_type || '-')}</td><td>${escapeHtml(r.source_module || r.source_type || '-')}</td><td>${escapeHtml(r.target_name || '-')}</td><td>${escapeHtml(r.note || r.decision_note || '-')}</td><td>${shortDate(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz operasyon izi yok.</div>`);
+    <div class="form-grid" style="margin-bottom:14px;">
+      <div class="field"><label>Kaynak</label><input id="movementImportSource" value="manuel_yapistir" placeholder="manuel_yapistir / hesap_hareketleri.csv"></div>
+      <div class="field"><label>Dosya Oku</label><input id="movementImportFile" type="file" accept=".txt,.csv,.tsv,.log,text/plain"></div>
+    </div>
+    <div class="field" style="margin-bottom:14px;">
+      <label>Hesap Hareketi Yapıştır</label>
+      <textarea id="movementImportText" rows="8" class="select-input" placeholder="Örnek:\n18.04.2026;FAST GELEN HAVALE ABC LTD;12.500,00\n18.04.2026;MOKA UNITED AKTARIM;8.245,50"></textarea>
+    </div>
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Test Satırı</div><div class="v">${summary.total}</div></div>
+      <div class="metric-mini"><div class="k">Banka</div><div class="v">${summary.bank}</div></div>
+      <div class="metric-mini"><div class="k">Moka</div><div class="v">${summary.moka}</div></div>
+      <div class="metric-mini"><div class="k">Toplam</div><div class="v">${money(summary.total_amount)}</div></div>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px;">Bu merkez gerçek hesap hareketi dosyasını simüle etmek içindir. Yapıştırılan satırlar Banka/Moka paneline test satırı olarak düşer. Kör işleme yapmaz; yine inceleme ve onay mantığı geçerlidir.</div>`
+    + (rows.length ? `<table><thead><tr><th>No</th><th>ID</th><th>Kaynak</th><th>Tarih</th><th>Açıklama</th><th>Tip</th><th class="text-right">Tutar</th></tr></thead><tbody>${rows.slice(0,50).map(r=>`<tr><td>${escapeHtml(r.operation_no || '-')}</td><td>${escapeHtml(txnId(r,'IMP'))}</td><td>${escapeHtml(r.import_source || '-')}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description || '-')}</td><td>${renderTag(r.import_bucket==='moka' ? 'moka_united' : 'banka')}</td><td class="text-right">${money(r.net_amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz test hareketi yok. Dosya oku ya da metin yapıştır.</div>`);
+  document.getElementById('movementImportFile')?.addEventListener('change', handleMovementFileImport);
 }
 
 function renderReports(){
@@ -2470,7 +2659,7 @@ function processSelectedApproval(){
     persistBankOps();
   }
   addLedgerEntry({ledger_ref:approvalRef, source_module:'approval_center', source_summary:r.content_summary || r.raw_content || 'Onay kaydı', target_type:targetType, target_name:targetName, movement_type:movementType, amount, decision_note:note});
-  addAuditEvent('approval_processed',{event_ref:approvalRef, source_module:'approval_center', source_type:r.source_type || 'approval', target_name:targetName, target_type:targetType, movement_type, amount, note});
+  addAuditEvent('approval_processed',{event_ref:approvalRef, source_module:'approval_center', source_type:r.source_type || 'approval', target_name:targetName, target_type:targetType, movement_type, amount, note, summary:`Onay işlendi · ${targetName} · ${movementType}`});
   persistApprovalOps();
   closeApprovalDetailModal();
   renderDocuments();
@@ -2507,7 +2696,7 @@ function rejectSelectedApproval(){
     state.bankOps.row_status[r.bank_origin_key] = {...(state.bankOps.row_status[r.bank_origin_key] || {}), status:'rejected', note, updated_at:new Date().toISOString(), decision_ref:rejectRef};
     persistBankOps();
   }
-  addAuditEvent('approval_rejected',{event_ref:rejectRef, source_module:'approval_center', source_type:r.source_type || 'approval', target_name:r.suggested_cari_name || r.suggested_expense_name || '-', target_type:r.suggested_movement_type || '-', movement_type:'rejected', amount:num(r.suggested_amount || r.raw_amount || 0), note});
+  addAuditEvent('approval_rejected',{event_ref:rejectRef, source_module:'approval_center', source_type:r.source_type || 'approval', target_name:r.suggested_cari_name || r.suggested_expense_name || '-', target_type:r.suggested_movement_type || '-', movement_type:'rejected', amount:num(r.suggested_amount || r.raw_amount || 0), note, summary:`Onay reddedildi · ${r.suggested_cari_name || r.suggested_expense_name || '-'}`});
   persistApprovalOps();
   closeApprovalDetailModal();
   renderDocuments();
@@ -2540,10 +2729,12 @@ function openDocumentDetailModal(docId){
       <button class="btn btn-soft" onclick='copyPlainText(${refJson}, "Belge referansı kopyalandı.")'>Belge Ref Kopyala</button>
       ${canOpenUrl ? `<button class="btn btn-soft" onclick='window.open(${refJson}, "_blank")'>Belge Linkini Aç</button>` : ``}
       ${doc.cari_id ? `<button class="btn btn-blue" onclick='focusCariFromDocument(${cariJson})'>Cariye Git</button>` : ``}
+      <button class="btn btn-red" onclick="requestDeleteSelectedDocument()">Belgeyi Sil</button>
     </div>`;
   document.getElementById('documentDetailModal').style.display='flex';
 }
 function closeDocumentDetailModal(){ document.getElementById('documentDetailModal').style.display='none'; }
+function requestDeleteSelectedDocument(){ const doc = state.documents.find(x=>String(x.id)===String(state.selectedDocumentId)); if(!doc){ notify('Belge bulunamadı.'); return; } openDeleteAuthModal(`Belge silme · ${doc.document_title || doc.document_no || doc.id}`, (reason)=>{ archiveDeletion('documents', doc, reason); state.documents = state.documents.filter(x=>String(x.id)!==String(doc.id)); writeLocalJson(LOCAL_DOCS_KEY, state.documents); addAuditEvent('document_deleted',{source_module:'documents', target_name:doc.document_title || doc.document_no || doc.id, amount:doc.amount, note:reason, summary:`Belge silindi · ${doc.document_title || doc.document_no || doc.id}`}); closeDocumentDetailModal(); renderDocuments(); if(state.selectedCariId) renderSelectedCariDetail(); renderDeleteArchive(); renderGlobalAuditLog(); notify('Belge silindi.'); }); }
 function focusCariFromDocument(cariId){
   if(!cariId){ notify('Cari bağlantısı yok.'); return; }
   state.selectedCariId = cariId;
@@ -2586,8 +2777,12 @@ async function saveDocumentRecord(){
     created_at: new Date().toISOString()
   };
   if(!payload.document_title && !payload.document_no){ notify('Belge başlığı veya belge no gir.'); return; }
+  const isDup = state.documents.some(x=>String(x.cari_id||'')===String(payload.cari_id||'') && String(x.document_no||'')===String(payload.document_no||'') && String(x.document_date||'')===String(payload.document_date||'') && num(x.amount)===num(payload.amount));
+  if(isDup){ addAuditEvent('duplicate_blocked',{source_module:'documents', target_name:payload.cari_name || '-', amount:payload.amount, note:'Belge çift kayıt engellendi.', summary:`Çift kayıt engeli · belge · ${payload.document_no || payload.document_title || '-'}`}); notify('Muhtemel çift belge kaydı engellendi.'); return; }
+  stampRecordIds(payload,'DOC');
   state.documents.unshift(payload);
   writeLocalJson(LOCAL_DOCS_KEY, state.documents);
+  addAuditEvent('document_saved',{source_module:'documents', target_name:payload.cari_name || '-', amount:payload.amount, note:payload.document_title || payload.document_no || 'Belge kaydedildi', summary:`Belge kaydedildi · ${payload.document_title || payload.document_no || '-'}`});
   closeDocumentModal();
   renderDocuments();
   if(state.selectedCariId) renderSelectedCariDetail();
@@ -2712,6 +2907,7 @@ function openExpenseModal(expenseId=''){
   document.getElementById('expenseModal').style.display='flex';
 }
 function closeExpenseModal(){ document.getElementById('expenseModal').style.display='none'; }
+function requestDeleteSelectedExpense(){ const exp = state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId)); if(!exp){ notify('Silinecek gider kartı bulunamadı.'); return; } openDeleteAuthModal(`Gider kartı silme · ${exp.title}`, (reason)=>{ archiveDeletion('expenses', exp, reason); state.expenses = state.expenses.filter(x=>String(x.id)!==String(exp.id)); writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses); addAuditEvent('expense_deleted',{source_module:'expenses', target_name:exp.title, amount:exp.amount, note:reason, summary:`Gider kartı silindi · ${exp.title}`}); closeExpenseModal(); renderExpenses(); renderDeleteArchive(); renderGlobalAuditLog(); notify('Gider kartı silindi.'); }); }
 function saveExpenseAccrual(){
   const title=(document.getElementById('expenseTitle').value||'').trim();
   if(!title){ notify('Gider adı zorunlu.'); return; }
@@ -2738,6 +2934,7 @@ function saveExpenseAccrual(){
   const idx = state.expenses.findIndex(x=>String(x.id)===String(payload.id));
   if(idx>=0) state.expenses[idx]=payload; else state.expenses.unshift(payload);
   writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses);
+  addAuditEvent('expense_saved',{source_module:'expenses', target_name:payload.title, amount:payload.amount, note:payload.approval_policy==='ready' ? 'Hazır politika' : 'Onay politikası', summary:`Gider kartı kaydedildi · ${payload.title}`});
   closeExpenseModal();
   renderExpenses();
   notify('Gider tahakkuk kartı kaydedildi.');
@@ -2746,7 +2943,7 @@ function queueExpenseCandidate(expenseId){
   const exp = state.expenses.find(x=>String(x.id)===String(expenseId));
   if(!exp){ notify('Gider kartı bulunamadı.'); return; }
   const periodKey=getCurrentPeriodKey();
-  if(String(exp.last_candidate_period||'')===periodKey){ notify('Bu gider için bu ay zaten aday oluşturulmuş.'); return; }
+  if(String(exp.last_candidate_period||'')===periodKey){ addAuditEvent('duplicate_blocked',{source_module:'expenses', target_name:exp.title, note:'Bu gider için bu ay ikinci aday engellendi.', summary:`Çift kayıt engeli · gider adayı · ${exp.title}`}); notify('Bu gider için bu ay zaten aday oluşturulmuş.'); return; }
   const bridgeId = uid('bridge');
   const payload={
     id: bridgeId,
@@ -2766,7 +2963,9 @@ function queueExpenseCandidate(expenseId){
     status: 'onay_bekliyor',
     created_at: new Date().toISOString()
   };
+  stampRecordIds(payload,'BRG');
   state.bridgeCandidates.unshift(payload);
+  addAuditEvent('expense_candidate_queued',{source_module:'expenses', target_name:exp.title, amount:payload.suggested_amount, note:`${periodKey} dönemi için onaya gönderildi.`, summary:`Gider adayı üretildi · ${exp.title}`});
   exp.last_candidate_period = periodKey;
   exp.last_candidate_at = new Date().toISOString();
   writeLocalJson(LOCAL_BRIDGE_KEY, state.bridgeCandidates);
@@ -2807,7 +3006,7 @@ function renderExpenses(){
       <button class="chip ${state.expenseFilter==='passive'?'active':''}" onclick="state.expenseFilter='passive'; renderExpenses()">Pasif</button>
     </div>
     <div class="rule-box" style="margin-bottom:14px;">Standart: gider kartı tek kaynak olur. Sabit ve değişken gider tanımlanır. Bu ekranda doğrudan muhasebe kaydı oluşmaz; aday kayıt üretimi ve onay akışı tetiklenir. Bu ay aday oluşmuş gider sayısı: <strong>${queued}</strong></div>` +
-    (rows.length ? `<table><thead><tr><th>Gider</th><th>Tür</th><th>Politika</th><th>Dönem</th><th>Durum</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>`<tr class="click-row" data-expense-id="${escapeHtml(r.id)}"><td>${escapeHtml(r.title)}<div class="muted-note">${escapeHtml(r.category || '-')} · ${escapeHtml(r.vendor_name || '-')}</div></td><td>${r.expense_type==='fixed' ? '<span class="tag blue">Sabit</span>' : '<span class="tag amber">Değişken</span>'}</td><td>${r.approval_policy==='ready' ? '<span class="tag green">Hazır</span>' : '<span class="tag red">Onay</span>'}</td><td>${shortDate(r.start_date)}${r.end_date ? ` → ${shortDate(r.end_date)}` : ' → Açık'}</td><td>${expenseStatusTag(r)}<div class="muted-note">Son aday: ${escapeHtml(r.last_candidate_period || '-')}</div></td><td class="text-right">${money(r.amount || 0)}</td><td><button class="btn btn-soft" onclick="event.stopPropagation(); queueExpenseCandidate('${escapeHtml(r.id)}')">Bu Ay Aday Oluştur</button></td></tr>`).join('')}</tbody></table>` : `<div class="empty">Bu filtrede gider kartı yok.</div>`);
+    (rows.length ? `<table><thead><tr><th>No</th><th>Gider</th><th>Tür</th><th>Politika</th><th>Dönem</th><th>Durum</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>`<tr class="click-row" data-expense-id="${escapeHtml(r.id)}"><td>${escapeHtml(r.operation_no || txnId(r,'EXP'))}</td><td>${escapeHtml(r.title)}<div class="muted-note">${escapeHtml(r.category || '-')} · ${escapeHtml(r.vendor_name || '-')}</div></td><td>${r.expense_type==='fixed' ? '<span class="tag blue">Sabit</span>' : '<span class="tag amber">Değişken</span>'}</td><td>${r.approval_policy==='ready' ? '<span class="tag green">Hazır</span>' : '<span class="tag red">Onay</span>'}</td><td>${shortDate(r.start_date)}${r.end_date ? ` → ${shortDate(r.end_date)}` : ' → Açık'}</td><td>${expenseStatusTag(r)}<div class="muted-note">Son aday: ${escapeHtml(r.last_candidate_period || '-')}</div></td><td class="text-right">${money(r.amount || 0)}</td><td><button class="btn btn-soft" onclick="event.stopPropagation(); queueExpenseCandidate('${escapeHtml(r.id)}')">Bu Ay Aday Oluştur</button></td></tr>`).join('')}</tbody></table>` : `<div class="empty">Bu filtrede gider kartı yok.</div>`);
   wrap.querySelectorAll('[data-expense-id]').forEach(el=>el.addEventListener('click',()=>openExpenseModal(el.dataset.expenseId)));
 }
 
@@ -2846,8 +3045,10 @@ async function saveCandidateBridge(){
   };
   payload.is_duplicate = batchDuplicateExists(payload.cari_id, payload.suggested_amount, payload.candidate_date, payload.raw_content);
   if(!payload.content_summary || !payload.raw_content){ notify('Kısa özet ve ham metin zorunlu.'); return; }
+  stampRecordIds(payload,'BRG');
   state.bridgeCandidates.unshift(payload);
   writeLocalJson(LOCAL_BRIDGE_KEY, state.bridgeCandidates);
+  addAuditEvent(payload.is_duplicate ? 'bridge_duplicate_candidate' : 'bridge_candidate_saved',{source_module:'bridge', target_name:payload.cari_name || '-', amount:payload.suggested_amount, note:payload.is_duplicate ? 'Muhtemel çift olarak onaya alındı.' : 'Aday kayıt oluşturuldu.', summary: payload.is_duplicate ? `Köprü adayı · muhtemel çift · ${payload.content_summary}` : `Köprü adayı oluşturuldu · ${payload.content_summary}`});
   closeCandidateBridgeModal();
   renderDocuments();
   renderExpenses();
@@ -2903,7 +3104,8 @@ async function saveCariCard(){
     updated_at: new Date().toISOString()
   };
   const {error} = await supabaseClient.from("cari_cards").update(payload).eq("id", state.selectedCariId);
-  if(error){ notify("Cari kaydedilemedi: " + error.message); return; }
+  if(error){ logSystemError('cari_cards', error.message, {target_name:payload.cari_name || state.selectedCariId}); notify("Cari kaydedilemedi: " + error.message); return; }
+  addAuditEvent('cari_card_updated',{source_module:'cari_cards', target_name:payload.cari_name || state.selectedCariId, note:'Cari kartı güncellendi.', summary:`Cari kartı güncellendi · ${payload.cari_name || state.selectedCariId}`});
   notify("Cari kartı güncellendi.");
   closeCariEditModal();
   await loadCariler();
@@ -2938,7 +3140,8 @@ async function savePaymentPromise(){
   if(!payload.promised_payment_date || !payload.promised_amount){ notify("Ödeme tarihi ve tutar zorunlu."); return; }
   await supabaseClient.from("payment_promises").update({status:"revize"}).eq("cari_id", state.selectedCariId).eq("status","aktif");
   const {error} = await supabaseClient.from("payment_promises").insert([payload]);
-  if(error){ notify("Ödeme sözü kaydedilemedi: " + error.message); return; }
+  if(error){ logSystemError('payment_promises', error.message, {target_name:state.selectedCariId, amount:payload.promised_amount}); notify("Ödeme sözü kaydedilemedi: " + error.message); return; }
+  addAuditEvent('payment_promise_saved',{source_module:'payment_promises', target_name:state.selectedCariId, amount:payload.promised_amount, note:payload.note || 'Ödeme sözü kaydedildi.', summary:`Ödeme sözü kaydedildi · ${money(payload.promised_amount)}`});
   notify("Ödeme sözü kaydedildi.");
   closePromiseModal();
   await loadCariler();
@@ -2948,6 +3151,7 @@ async function savePaymentPromise(){
 
 async function refreshAll(){
   await Promise.all([loadDashboard(),loadCariler(),loadAccounts(),loadApprovals(),loadFeeData(),loadDocuments()]);
+  normalizeStateIds();
   renderDashboard();
   renderAccounts();
   renderReports();
@@ -2957,6 +3161,8 @@ async function refreshAll(){
   renderBackup();
   renderOpsHealthPanel();
   renderProdHardeningPanel();
+  renderGlobalAuditLog();
+  renderDeleteArchive();
   if(state.selectedCariId) renderSelectedCariDetail();
 }
 document.getElementById("cariSearch").addEventListener("input",renderCariList);
