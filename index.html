@@ -1588,6 +1588,8 @@ function buildStandardStatementTable(rowsDesc){
   return `<table>
     <thead>
       <tr>
+        <th>No</th>
+        <th>İşlem ID</th>
         <th>Tarih</th>
         <th>İşlem</th>
         <th>Açıklama</th>
@@ -1598,9 +1600,13 @@ function buildStandardStatementTable(rowsDesc){
       </tr>
     </thead>
     <tbody>
-      ${rowsDesc.map(r=>{
+      ${rowsDesc.map((r,idx)=>{
         const b = balanceColumns(r.running_balance);
+        const rowTxnId = txnId(r,'HRK');
+        const rowNo = r.operation_no || rowTxnId;
         return `<tr>
+          <td>${escapeHtml(rowNo)}</td>
+          <td>${escapeHtml(rowTxnId)}</td>
           <td>${shortDate(r.line_date)}</td>
           <td>${renderTag(r.movement_type || r.final_movement_type || r.suggested_movement_type || "-")}</td>
           <td>${escapeHtml(r.description || r.content_summary || "-")}</td>
@@ -1663,11 +1669,12 @@ function exportStatementExcel(){
   const meta=getCurrentStatementMeta();
   if(!c || !meta.rowsAsc.length){ notify("Excel için extre satırı yok."); return; }
   const csvRows = [
-    ['ID','Tarih','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']
+    ['No','İşlem ID','Tarih','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']
   ];
   meta.rowsAsc.forEach(r=>{
     const b = balanceColumns(r.running_balance);
     csvRows.push([
+      r.operation_no || txnId(r,'HRK'),
       txnId(r,'HRK'),
       shortDate(r.line_date),
       r.movement_type || '',
@@ -1753,7 +1760,7 @@ function openStatementOutput(){
       <div class="sub" style="text-align:right">
         Belge Türü: Müşteri Cari Ekstresi<br>Kontrol Durumu: Standart son kontrolden geçti<br>
         Oluşturma: ${new Date().toLocaleString('tr-TR')}<br>
-        Satır Sayısı: ${meta.rowsAsc.length}
+        Satır Sayısı: ${meta.rowsAsc.length}<br>İşlem Kimliği: Her satırda görünür
       </div>
     </div>
     <div class="boxwrap">
@@ -1762,6 +1769,7 @@ function openStatementOutput(){
       <div class="box"><div class="k">Toplam Alacak</div><div class="v">${money(meta.totalCredit)}</div></div>
       <div class="box"><div class="k">Kapanış Bakiye</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>
     </div>
+    <div style="margin:10px 0 14px;padding:10px 12px;border:1px solid #dbe3ef;border-radius:12px;font-size:12px;color:#475569;font-weight:700;">Bu extrede her satır için benzersiz <strong>İşlem ID</strong> ve görünür <strong>No</strong> sütunu gösterilir. Aynı işlem aynı kimlikle izlenir.</div>
     ${buildStandardStatementTable(meta.rowsDesc).replaceAll('class="text-right"','class="r"')}
   </body>
   </html>`;
