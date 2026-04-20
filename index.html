@@ -1,281 +1,166 @@
 
--- ALKAM MALİ
--- 2026 muhasebe ücretlerini canlı DB'ye yazma + eksik ay tahakkuk üretimi
+-- ALKAM MALİ - ACİL DÜZELTME
 -- Amaç:
--- 1) Jan-Mar 2026 tahakkuklarından aylık muhasebe ücretini infer et
--- 2) cari_cards monthly_fee alanlarını canlı güncelle
--- 3) 2026-01-01 başlangıçlı cari_fee_history dönemini yaz / düzelt
--- 4) 2026 Ocak'tan içinde bulunulan aya kadar eksik tahakkukları üret
--- 5) farklı tutar / duplicate ayları raporla
+-- 1) cari_fee_history şemasını uygulamanın beklediği alanlarla uyumlu hale getirmek
+-- 2) fee_amount / note ile monthly_fee_amount / reason_note alanlarını senkronlamak
+-- 3) v_cari_fee_timeline ve v_monthly_fee_accrual_control görünümlerini yeniden kurmak
+-- 4) siteyi tekrar ayağa kaldırmak
 
 begin;
 
-create extension if not exists pgcrypto;
-
-create table if not exists cari_fee_history (
+-- 0) Tablo yoksa sadece uygulamanın beklediği minimal uyumlu şemayı kur
+create table if not exists public.cari_fee_history (
   id uuid primary key default gen_random_uuid(),
-  cari_id uuid not null references cari_cards(id) on delete cascade,
+  cari_id uuid not null references public.cari_cards(id) on delete cascade,
   valid_from date not null,
   valid_to date,
-  monthly_fee_amount numeric(18,2) not null,
-  currency_code text not null default 'TRY',
-  increase_rate numeric(9,4),
+  fee_amount numeric(18,2),
+  monthly_fee_amount numeric(18,2),
+  note text,
   reason_note text,
+  currency_code text default 'TRY',
   created_by text default 'system',
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
-create index if not exists idx_cari_fee_history_cari on cari_fee_history(cari_id);
-create index if not exists idx_cari_fee_history_period on cari_fee_history(cari_id, valid_from, valid_to);
+-- 1) Eksik kolonları ekle
+alter table public.cari_fee_history add column if not exists fee_amount numeric(18,2);
+alter table public.cari_fee_history add column if not exists monthly_fee_amount numeric(18,2);
+alter table public.cari_fee_history add column if not exists note text;
+alter table public.cari_fee_history add column if not exists reason_note text;
+alter table public.cari_fee_history add column if not exists currency_code text default 'TRY';
+alter table public.cari_fee_history add column if not exists created_by text default 'system';
+alter table public.cari_fee_history add column if not exists is_active boolean not null default true;
+alter table public.cari_fee_history add column if not exists created_at timestamptz not null default now();
+alter table public.cari_fee_history add column if not exists updated_at timestamptz not null default now();
 
-drop table if exists tmp_alkam_2026_fee_inference;
-create temp table tmp_alkam_2026_fee_inference as
-with monthly_raw as (
-  select
-    l.cari_id,
-    c.cari_name,
-    date_trunc('month', l.line_date)::date as period_start,
-    sum(coalesce(l.debit,0))::numeric(18,2) as fee_amount,
-    count(*) as source_row_count,
-    string_agg(coalesce(l.description,''), ' || ' order by l.line_date, l.id) as descriptions
-  from cari_ekstre_lines l
-  join cari_cards c on c.id = l.cari_id
-  where l.movement_type = 'tahakkuk'
-    and l.line_date >= date '2026-01-01'
-    and l.line_date <  date '2026-04-01'
-    and (
-      upper(coalesce(l.description,'')) like '%OCAK26%'
-      or upper(coalesce(l.description,'')) like '%ŞUBAT26%'
-      or upper(coalesce(l.description,'')) like '%SUBAT26%'
-      or upper(coalesce(l.description,'')) like '%MART26%'
-      or upper(coalesce(l.description,'')) like 'AYLIK MUHASEBE ÜCRETİ%'
-    )
-  group by l.cari_id, c.cari_name, date_trunc('month', l.line_date)::date
-),
-fee_candidates as (
-  select
-    cari_id,
-    cari_name,
-    fee_amount,
-    count(*) as months_covered,
-    max(period_start) as latest_period,
-    string_agg(to_char(period_start,'YYYY-MM') || '=' || fee_amount::text, ', ' order by period_start) as month_fee_map
-  from monthly_raw
-  where fee_amount > 0
-  group by cari_id, cari_name, fee_amount
-),
-picked as (
-  select
-    *,
-    row_number() over (
-      partition by cari_id
-      order by months_covered desc, latest_period desc, fee_amount desc
-    ) as rn
-  from fee_candidates
-)
-select
-  cari_id,
-  cari_name,
-  fee_amount as inferred_monthly_fee,
-  months_covered,
-  latest_period,
-  month_fee_map
-from picked
-where rn = 1;
-
--- cari kartlarını canlı güncelle
-update cari_cards c
+-- 2) Çift yönlü senkron
+update public.cari_fee_history
 set
-  monthly_fee_enabled = true,
-  monthly_fee_amount = i.inferred_monthly_fee,
-  updated_at = now()
-from tmp_alkam_2026_fee_inference i
-where c.id = i.cari_id
-  and (
-    coalesce(c.monthly_fee_enabled,false) is distinct from true
-    or coalesce(c.monthly_fee_amount,0) is distinct from i.inferred_monthly_fee
-  );
+  fee_amount = coalesce(fee_amount, monthly_fee_amount),
+  monthly_fee_amount = coalesce(monthly_fee_amount, fee_amount),
+  note = coalesce(note, reason_note),
+  reason_note = coalesce(reason_note, note),
+  currency_code = coalesce(currency_code, 'TRY'),
+  created_by = coalesce(created_by, 'system'),
+  is_active = coalesce(is_active, true),
+  updated_at = now();
 
--- 2026 başlangıcını kes: 2026-01-01'i kapsayan eski açık dönemleri kapat
-update cari_fee_history f
-set
-  valid_to = date '2025-12-31',
-  updated_at = now()
-from tmp_alkam_2026_fee_inference i
-where f.cari_id = i.cari_id
-  and f.is_active = true
-  and f.valid_from < date '2026-01-01'
-  and coalesce(f.valid_to, date '2999-12-31') >= date '2026-01-01';
+create index if not exists idx_cari_fee_history_cari on public.cari_fee_history(cari_id);
+create index if not exists idx_cari_fee_history_period on public.cari_fee_history(cari_id, valid_from, valid_to);
 
--- 2026-01-01 satırı varsa düzelt
-update cari_fee_history f
-set
-  monthly_fee_amount = i.inferred_monthly_fee,
-  currency_code = 'TRY',
-  reason_note = coalesce(f.reason_note, '2026 Jan-Mar tahakkuklarından infer edildi'),
-  created_by = coalesce(f.created_by, 'system'),
-  is_active = true,
-  valid_to = null,
-  updated_at = now()
-from tmp_alkam_2026_fee_inference i
-where f.cari_id = i.cari_id
-  and f.valid_from = date '2026-01-01';
-
--- 2026-01-01 satırı yoksa ekle
-insert into cari_fee_history (
-  cari_id, valid_from, valid_to, monthly_fee_amount,
-  currency_code, reason_note, created_by, is_active
-)
+-- 3) Uygulama uyumlu timeline görünümü
+create or replace view public.v_cari_fee_timeline as
 select
-  i.cari_id,
-  date '2026-01-01',
-  null,
-  i.inferred_monthly_fee,
-  'TRY',
-  '2026 Jan-Mar tahakkuklarından infer edildi',
-  'system',
-  true
-from tmp_alkam_2026_fee_inference i
-where not exists (
-  select 1
-  from cari_fee_history f
-  where f.cari_id = i.cari_id
-    and f.valid_from = date '2026-01-01'
-);
-
--- yardımcı görünüm: 2026 aktif ücret ayları
-create or replace view v_alkam_2026_fee_months as
-select
+  f.id,
   f.cari_id,
   c.cari_name,
   c.cari_code,
-  gs::date as period_start,
-  f.monthly_fee_amount as expected_fee
-from cari_fee_history f
-join cari_cards c on c.id = f.cari_id
-cross join lateral generate_series(
-  date '2026-01-01',
-  date_trunc('month', current_date)::date,
-  interval '1 month'
-) gs
-where f.is_active = true
-  and gs::date >= date_trunc('month', f.valid_from)::date
-  and gs::date <= date_trunc('month', coalesce(f.valid_to, current_date))::date
-  and f.monthly_fee_amount > 0;
+  f.valid_from,
+  f.valid_to,
+  coalesce(f.fee_amount, f.monthly_fee_amount, 0)::numeric(18,2) as fee_amount,
+  coalesce(f.monthly_fee_amount, f.fee_amount, 0)::numeric(18,2) as current_fee,
+  coalesce(f.fee_amount, f.monthly_fee_amount, 0)::numeric(18,2) as amount,
+  coalesce(f.note, f.reason_note, '') as note,
+  coalesce(f.reason_note, f.note, '') as change_reason,
+  f.currency_code,
+  f.created_by,
+  coalesce(f.is_active, true) as is_active,
+  f.created_at,
+  f.updated_at
+from public.cari_fee_history f
+left join public.cari_cards c on c.id = f.cari_id;
 
-create or replace view v_alkam_2026_fee_control as
-with existing as (
+-- 4) Ücret kontrol görünümü
+create or replace view public.v_monthly_fee_accrual_control as
+with fee_months as (
+  select
+    f.cari_id,
+    c.cari_name,
+    c.cari_code,
+    gs::date as period_start,
+    (date_trunc('month', gs)::date + interval '1 month - 1 day')::date as period_end,
+    coalesce(f.fee_amount, f.monthly_fee_amount, 0)::numeric(18,2) as expected_amount
+  from public.cari_fee_history f
+  join public.cari_cards c on c.id = f.cari_id
+  cross join lateral generate_series(
+    date_trunc('month', greatest(f.valid_from, date '2026-01-01'))::date,
+    date_trunc('month', coalesce(f.valid_to, current_date))::date,
+    interval '1 month'
+  ) gs
+  where coalesce(f.is_active, true) = true
+    and coalesce(f.fee_amount, f.monthly_fee_amount, 0) > 0
+    and coalesce(f.valid_to, current_date) >= date '2026-01-01'
+),
+existing as (
   select
     l.cari_id,
     date_trunc('month', l.line_date)::date as period_start,
     count(*) as tahakkuk_satir_sayisi,
-    sum(coalesce(l.debit,0))::numeric(18,2) as mevcut_tahakkuk,
-    string_agg(coalesce(l.description,''), ' || ' order by l.line_date, l.id) as tahakkuk_aciklamalari
-  from cari_ekstre_lines l
+    sum(coalesce(l.debit,0))::numeric(18,2) as existing_amount,
+    string_agg(coalesce(l.description,''), ' || ' order by l.line_date, l.id) as note
+  from public.cari_ekstre_lines l
   where l.movement_type = 'tahakkuk'
     and l.line_date >= date '2026-01-01'
-    and l.line_date <  date_trunc('month', current_date)::date + interval '1 month'
   group by l.cari_id, date_trunc('month', l.line_date)::date
 )
 select
-  e.cari_id,
-  e.cari_name,
-  e.cari_code,
-  e.period_start,
-  e.expected_fee,
-  x.tahakkuk_satir_sayisi,
-  x.mevcut_tahakkuk,
-  x.tahakkuk_aciklamalari,
+  m.cari_id,
+  m.cari_name,
+  m.cari_code,
+  m.period_start,
+  m.period_end,
+  m.expected_amount,
+  m.expected_amount as expected_fee_amount,
+  m.expected_amount as current_fee,
+  coalesce(e.existing_amount,0)::numeric(18,2) as existing_amount,
+  coalesce(e.existing_amount,0)::numeric(18,2) as actual_amount,
+  coalesce(e.existing_amount,0)::numeric(18,2) as posted_amount,
+  (coalesce(e.existing_amount,0) - m.expected_amount)::numeric(18,2) as diff_amount,
   case
-    when x.cari_id is null then 'eksik'
-    when x.tahakkuk_satir_sayisi > 1 then 'muhtemel_duplicate'
-    when x.mevcut_tahakkuk <> e.expected_fee then 'farkli_tutar'
+    when e.cari_id is null then 'eksik'
+    when e.tahakkuk_satir_sayisi > 1 then 'muhtemel_duplicate'
+    when coalesce(e.existing_amount,0) <> m.expected_amount then 'farkli_tutar'
     else 'tamam'
-  end as control_status
-from v_alkam_2026_fee_months e
-left join existing x
-  on x.cari_id = e.cari_id
- and x.period_start = e.period_start
-order by e.cari_name, e.period_start;
+  end as control_status,
+  coalesce(e.note, '') as note,
+  case
+    when e.cari_id is null then 'Beklenen ay tahakkuku bulunamadı'
+    when e.tahakkuk_satir_sayisi > 1 then 'Aynı ayda birden fazla tahakkuk var'
+    when coalesce(e.existing_amount,0) <> m.expected_amount then 'Beklenen ücret ile bulunan tahakkuk farklı'
+    else 'Kontrol tamam'
+  end as issue_reason,
+  case
+    when e.cari_id is null then 'Eksik tahakkuk'
+    when e.tahakkuk_satir_sayisi > 1 then 'Muhtemel çift kayıt'
+    when coalesce(e.existing_amount,0) <> m.expected_amount then 'Farklı tutar'
+    else 'Tamam'
+  end as status_note
+from fee_months m
+left join existing e
+  on e.cari_id = m.cari_id
+ and e.period_start = m.period_start;
 
-create or replace view v_alkam_2026_missing_fee_accruals as
+create or replace view public.v_missing_monthly_fee_accruals as
 select *
-from v_alkam_2026_fee_control
-where control_status in ('eksik','farkli_tutar','muhtemel_duplicate')
-order by cari_name, period_start;
-
--- sadece eksik ayları üret; farklı tutar ve duplicate'leri raporla
-insert into cari_ekstre_lines (
-  cari_id,
-  line_date,
-  description,
-  debit,
-  credit,
-  movement_type,
-  process_status,
-  is_special,
-  row_hash,
-  raw_payload
-)
-select
-  c.cari_id,
-  c.period_start,
-  upper(to_char(c.period_start, 'TMMonth YYYY')) || ' AYLIK MUHASEBE ÜCRETİ',
-  c.expected_fee,
-  0,
-  'tahakkuk',
-  'auto_processed',
-  false,
-  md5(c.cari_id::text || '|' || c.period_start::text || '|monthly_fee_inferred_2026|' || c.expected_fee::text),
-  jsonb_build_object(
-    'auto_generated', true,
-    'rule', 'monthly_fee_inferred_2026',
-    'period_start', c.period_start,
-    'expected_fee', c.expected_fee,
-    'internal_only', false
-  )
-from v_alkam_2026_fee_control c
-where c.control_status = 'eksik'
-on conflict (row_hash) do nothing;
+from public.v_monthly_fee_accrual_control
+where control_status in ('eksik','farkli_tutar','muhtemel_duplicate');
 
 commit;
 
--- ========= ÇIKTILAR =========
--- 1) Hangi carilere ücret yazıldı
-select
-  cari_name,
-  inferred_monthly_fee as aylik_ucret,
-  months_covered as ocak_mart_kapsam,
-  month_fee_map
-from tmp_alkam_2026_fee_inference
-order by cari_name;
+-- 5) Kontrol çıktıları
+select 'cari_fee_history_kolon_kontrolu' as kontrol, column_name
+from information_schema.columns
+where table_schema='public' and table_name='cari_fee_history'
+  and column_name in ('fee_amount','monthly_fee_amount','note','reason_note')
+order by column_name;
 
--- 2) Ücreti infer edilemeyen cariler
-select
-  c.cari_name,
-  c.cari_code,
-  c.monthly_fee_enabled,
-  c.monthly_fee_amount
-from cari_cards c
-where coalesce(c.is_active, true) = true
-  and not exists (
-    select 1
-    from tmp_alkam_2026_fee_inference i
-    where i.cari_id = c.id
-  )
-order by c.cari_name;
+select 'timeline_ornek' as kontrol, *
+from public.v_cari_fee_timeline
+limit 5;
 
--- 3) Hala sorunlu aylar
-select *
-from v_alkam_2026_missing_fee_accruals
-order by cari_name, period_start;
-
--- 4) Özet sayaçlar
-select
-  (select count(*) from tmp_alkam_2026_fee_inference) as ucret_yazilan_cari,
-  (select count(*) from v_alkam_2026_fee_control where control_status = 'eksik') as eksik_ay_sayisi,
-  (select count(*) from v_alkam_2026_fee_control where control_status = 'farkli_tutar') as farkli_tutar_ay_sayisi,
-  (select count(*) from v_alkam_2026_fee_control where control_status = 'muhtemel_duplicate') as duplicate_ay_sayisi,
-  (select count(*) from v_alkam_2026_fee_control where control_status = 'tamam') as tamam_ay_sayisi;
+select 'fee_control_ornek' as kontrol, *
+from public.v_monthly_fee_accrual_control
+limit 10;
