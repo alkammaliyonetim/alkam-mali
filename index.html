@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ALKAM Mali Müşavirlik</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root{--bg:#f4f7fb;--panel:#fff;--line:#e6ebf3;--text:#0f172a;--muted:#64748b;--nav1:#0a1730;--nav2:#102c5f;--blue:#2f67e8;--red:#dc2626;--green:#059669;--amber:#d97706;--shadow:0 18px 40px rgba(15,23,42,.08);--radius:18px}
     *{box-sizing:border-box} html,body{margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
@@ -476,7 +477,13 @@ const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const D
 const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
 const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null};
 
-function money(v){return new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(Number(v||0))}
+function money(v){
+  const n=Number(v||0);
+  const abs=Math.abs(n);
+  const formatted=new Intl.NumberFormat("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}).format(abs);
+  return `${n<0?'-':''}${formatted} TL`;
+}
+function displayTxnNo(obj,prefix='TRX'){ return String(obj?.operation_no || txnId(obj,prefix)); }
 function shortDate(v){if(!v) return "-"; const d=new Date(v); if(Number.isNaN(d.getTime())) return v; return new Intl.DateTimeFormat("tr-TR").format(d)}
 function escapeHtml(s){return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;")}
 function readLocalJson(key){ try{ const raw=localStorage.getItem(key); return raw ? JSON.parse(raw) : []; }catch(_){ return []; } }
@@ -647,12 +654,23 @@ function normalizeStateIds(){
   const led = normalizeNumberedList(state.operationalLedger,'LGR'); state.operationalLedger = led.rows; if(led.changed) persistLedger();
   const mov = normalizeNumberedList(state.movementTests,'IMP'); state.movementTests = mov.rows; if(mov.changed) persistMovementTests();
   const del = normalizeNumberedList(state.deleteArchive,'DEL'); state.deleteArchive = del.rows; if(del.changed) persistDeleteArchive();
+  const bth = normalizeNumberedList(state.bridgeBatches,'BTH'); state.bridgeBatches = bth.rows; if(bth.changed) writeLocalJson(LOCAL_BRIDGE_BATCHES_KEY, state.bridgeBatches);
+  const bkp = normalizeNumberedList(state.backupHistory,'BKP'); state.backupHistory = bkp.rows; if(bkp.changed) writeLocalJson(LOCAL_BACKUP_HISTORY_KEY, state.backupHistory);
+  const rst = normalizeNumberedList(state.restoreDrills,'RST'); state.restoreDrills = rst.rows; if(rst.changed) writeLocalJson(LOCAL_RESTORE_DRILLS_KEY, state.restoreDrills);
+
   state.approvalOps.processed = normalizeNumberedList(state.approvalOps.processed||[],'APR').rows;
   state.approvalOps.rejected = normalizeNumberedList(state.approvalOps.rejected||[],'APR').rows;
   persistApprovalOps();
   state.bankOps.pending = normalizeNumberedList(state.bankOps.pending||[],'BNKQ').rows;
   state.bankOps.history = normalizeNumberedList(state.bankOps.history||[],'BNKH').rows;
   persistBankOps();
+
+  state.hareketler = normalizeNumberedList((state.hareketler||[]).map(x=>({...x, txn_id:txnId(x,'HRK')})),'HRK').rows;
+  state.bankPanel = normalizeNumberedList((state.bankPanel||[]).map(x=>({...x, txn_id:txnId(x,'BNK')})),'BNK').rows;
+  state.mokaPanel = normalizeNumberedList((state.mokaPanel||[]).map(x=>({...x, txn_id:txnId(x,'MOK')})),'MOK').rows;
+  state.pending = normalizeNumberedList((state.pending||[]).map(x=>({...x, txn_id:txnId(x,'APR')})),'APR').rows;
+  state.processed = normalizeNumberedList((state.processed||[]).map(x=>({...x, txn_id:txnId(x,'APR')})),'APR').rows;
+  state.rejected = normalizeNumberedList((state.rejected||[]).map(x=>({...x, txn_id:txnId(x,'APR')})),'APR').rows;
 }
 
 function exportBlob(filename, content, mime='application/json;charset=utf-8;'){
@@ -696,64 +714,141 @@ function parseMovementImportRows(rawText='', sourceLabel='manuel_yapistir'){
   const lines = String(rawText||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
   const rows = [];
   for(const line of lines){
-    if(/^(tarih|date|aciklama|açıklama|tutar|amount|islem|işlem)/i.test(line)) continue;
-    const delim = line.includes('\t') ? '\t' : (line.includes(';') ? ';' : ',');
-    const cols = line.split(delim).map(x=>x.trim()).filter(x=>x!=='');
-    if(cols.length < 2) continue;
-    let dateVal='', descVal='', amountVal='';
-    const numericCols = cols.filter(c=>/[\d]/.test(c) && /[\d,.]/.test(c));
-    if(cols.length >= 3){
-      dateVal = cols[0];
-      const amountIndex = cols.findIndex((c,i)=>i>0 && /[\d]/.test(c) && /[\d,.]/.test(c));
-      if(amountIndex > 0){
-        amountVal = cols[amountIndex];
-        descVal = cols.filter((_,i)=>i!==0 && i!==amountIndex).join(' ');
+    if(/^(tarih|date|aciklama|açıklama|tutar|amount|islem|işlem|tarih saat işlem no miktar bakiye işlem adı)/i.test(line)) continue;
+
+    let dateVal='', descVal='', amountVal='', externalRef='';
+
+    const bankStmtMatch = line.match(/^(\d{2}[.\/-]\d{2}[.\/-]\d{4})(?:\s+\d{2}:\d{2}(?::\d{2})?)?\s+([A-Z0-9\-]{8,})\s+(-?[\d.]+,\d{2})\s+[\d.]+,\d{2}\s+(.+)$/i);
+    if(bankStmtMatch){
+      dateVal = bankStmtMatch[1];
+      externalRef = bankStmtMatch[2];
+      amountVal = bankStmtMatch[3];
+      descVal = bankStmtMatch[4];
+    } else {
+      const delim = line.includes('\t') ? '\t' : (line.includes(';') ? ';' : ',');
+      const cols = line.split(delim).map(x=>x.trim()).filter(x=>x!=='');
+      if(cols.length < 2) continue;
+      const numericCols = cols.filter(c=>/[\d]/.test(c) && /[\d,.]/.test(c));
+      if(cols.length >= 3){
+        dateVal = cols[0];
+        const amountIndex = cols.findIndex((c,i)=>i>0 && /[\d]/.test(c) && /[\d,.]/.test(c));
+        if(amountIndex > 0){
+          amountVal = cols[amountIndex];
+          descVal = cols.filter((_,i)=>i!==0 && i!==amountIndex).join(' ');
+        }else{
+          descVal = cols[1];
+          amountVal = cols[2];
+        }
       }else{
-        descVal = cols[1];
-        amountVal = cols[2];
+        dateVal = cols[0];
+        const secondIsNum = /[\d]/.test(cols[1]) && /[\d,.]/.test(cols[1]);
+        amountVal = secondIsNum ? cols[1] : (numericCols[0] || '0');
+        descVal = secondIsNum ? '' : cols[1];
       }
-    }else{
-      dateVal = cols[0];
-      const secondIsNum = /[\d]/.test(cols[1]) && /[\d,.]/.test(cols[1]);
-      amountVal = secondIsNum ? cols[1] : (numericCols[0] || '0');
-      descVal = secondIsNum ? '' : cols[1];
     }
+
     const amount = parseTrNumber(amountVal);
     if(!amount && !descVal) continue;
+    const normalizedDate = normalizeImportDate(dateVal);
     const import_bucket = movementImportClassifier(descVal);
     rows.push({
       id: uid('movimp'),
       import_session_ref: sessionRef,
       import_source: sourceLabel,
       import_bucket,
-      movement_date: normalizeImportDate(dateVal),
+      movement_date: normalizedDate,
       description: descVal || `${sourceLabel} hareketi`,
       net_amount: amount,
+      external_ref: externalRef || null,
       suggested_financial_account_type: import_bucket === 'moka' ? 'moka_united' : 'banka',
       source_type: 'movement_import',
       source_origin: sourceLabel,
       imported_at: new Date().toISOString(),
       is_test_import: true,
-      txn_id: txnId({ id: uid('seed'), movement_date: normalizeImportDate(dateVal), description: descVal, amount }, 'IMP')
+      txn_id: txnId({ id: uid('seed'), movement_date: normalizedDate, description: descVal, amount, external_ref: externalRef }, 'IMP')
     });
   }
   return rows;
+}
+function importMovementRows(parsed=[], sourceLabel='manuel_yapistir'){
+  if(!parsed.length){ notify('İçe alınacak hesap hareketi bulunamadı.'); return 0; }
+  const existing = state.movementTests || [];
+  const existingKeys = new Set(existing.map(x=>`${x.movement_date}|${x.description}|${num(x.net_amount).toFixed(2)}|${x.import_bucket}|${x.external_ref||''}`));
+  const newRows = [];
+  let duplicateCount = 0;
+  for(const row of parsed){
+    const key = `${row.movement_date}|${row.description}|${num(row.net_amount).toFixed(2)}|${row.import_bucket}|${row.external_ref||''}`;
+    if(existingKeys.has(key)){ duplicateCount++; continue; }
+    existingKeys.add(key);
+    if(!row.operation_no) row.operation_no = displayTxnNo(row,'IMP');
+    if(!row.txn_id) row.txn_id = txnId(row,'IMP');
+    newRows.push(row);
+  }
+  state.movementTests = [...newRows, ...existing];
+  persistMovementTests();
+  addAuditEvent('movement_import',{source_module:'movement_test', target_name:sourceLabel, amount:newRows.reduce((a,b)=>a+num(b.net_amount),0), note:`Yeni ${newRows.length} · Çift engel ${duplicateCount}`, summary:`Hesap hareketi içeri alındı · ${newRows.length} yeni · ${duplicateCount} çift engel`});
+  if(duplicateCount>0) addAuditEvent('duplicate_blocked',{source_module:'movement_test', note:`${duplicateCount} test satırı çift kayıt filtresine takıldı.`, summary:`Çift kayıt engeli · movement_test · ${duplicateCount} satır`});
+  notify(`${newRows.length} hesap hareketi test merkezine alındı.`);
+  refreshAll();
+  return newRows.length;
+}
+function parseImportReadyWorksheetRows(records=[], sourceLabel='import_hazir'){
+  const pick = (obj, names=[])=>{
+    for(const name of names){
+      if(obj?.[name] != null && String(obj[name]).trim() !== '') return obj[name];
+      const found = Object.keys(obj||{}).find(k=>String(k).trim().toLowerCase() === String(name).trim().toLowerCase());
+      if(found && String(obj[found]).trim() !== '') return obj[found];
+    }
+    return '';
+  };
+  const parseExcelDate = (val)=>{
+    if(typeof val === 'number' && window.XLSX?.SSF){
+      const d = XLSX.SSF.parse_date_code(val);
+      if(d && d.y && d.m && d.d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+    }
+    return normalizeImportDate(val);
+  };
+  return records.map((rec)=>{
+    const description = String(pick(rec,['Açıklama','Aciklama','description']) || '').trim();
+    const dateRaw = pick(rec,['Tarih','movement_date','date']);
+    const amountRaw = pick(rec,['Tutar','Miktar','net_amount']);
+    const bucketRaw = String(pick(rec,['Önerilen Sınıf','Onerilen Sinif','import_bucket','Sınıf','Sinif']) || '').trim().toLowerCase();
+    const hareketRaw = String(pick(rec,['Önerilen Hareket','Onerilen Hareket','movement_type']) || '').trim();
+    const noRaw = String(pick(rec,['İşlem No','Islem No','operation_no','No']) || '').trim();
+    const refRaw = String(pick(rec,['Kaynak Refler','Kaynak Ref','İşlem Referansı','Islem Referansi','external_ref']) || '').trim();
+    const amount = parseTrNumber(amountRaw);
+    const normalizedDate = parseExcelDate(dateRaw);
+    const import_bucket = bucketRaw.includes('moka') ? 'moka' : movementImportClassifier(description || hareketRaw);
+    const row = {
+      id: uid('movimp'),
+      import_session_ref: decisionRef('IMP'),
+      import_source: sourceLabel,
+      import_bucket,
+      movement_date: normalizedDate,
+      description: description || `${sourceLabel} hareketi`,
+      net_amount: amount,
+      external_ref: refRaw || null,
+      suggested_financial_account_type: import_bucket === 'moka' ? 'moka_united' : 'banka',
+      suggested_movement_type: hareketRaw || null,
+      source_type: 'movement_import',
+      source_origin: sourceLabel,
+      imported_at: new Date().toISOString(),
+      is_test_import: true,
+      operation_no: noRaw || null,
+      txn_id: null
+    };
+    row.txn_id = txnId({ id: row.id, movement_date: row.movement_date, description: row.description, amount: row.net_amount, external_ref: row.external_ref || row.operation_no }, 'IMP');
+    if(!row.operation_no) row.operation_no = displayTxnNo(row,'IMP');
+    return row;
+  }).filter(r=>r.description || r.net_amount || r.movement_date);
 }
 function analyzeMovementImport(){
   const raw = document.getElementById('movementImportText')?.value || '';
   const sourceLabel = document.getElementById('movementImportSource')?.value || 'manuel_yapistir';
   const parsed = parseMovementImportRows(raw, sourceLabel);
   if(!parsed.length){ notify('İçe alınacak hesap hareketi bulunamadı.'); return; }
-  const existing = state.movementTests || [];
-  const existingKeys = new Set(existing.map(x=>`${x.movement_date}|${x.description}|${num(x.net_amount).toFixed(2)}|${x.import_bucket}`));
-  const newRows = parsed.filter(x=>!existingKeys.has(`${x.movement_date}|${x.description}|${num(x.net_amount).toFixed(2)}|${x.import_bucket}`));
-  state.movementTests = [...newRows, ...existing];
-  persistMovementTests();
+  importMovementRows(parsed, sourceLabel);
   document.getElementById('movementImportText').value = '';
-  addAuditEvent('movement_import',{source_module:'movement_test', target_name:sourceLabel, amount:newRows.reduce((a,b)=>a+num(b.net_amount),0), note:`Yeni ${newRows.length} · Çift engel ${parsed.length-newRows.length}`, summary:`Hesap hareketi içeri alındı · ${newRows.length} yeni · ${parsed.length-newRows.length} çift engel`});
-  if(parsed.length-newRows.length>0) addAuditEvent('duplicate_blocked',{source_module:'movement_test', note:`${parsed.length-newRows.length} test satırı çift kayıt filtresine takıldı.`, summary:`Çift kayıt engeli · movement_test · ${parsed.length-newRows.length} satır`});
-  notify(`${newRows.length} hesap hareketi test merkezine alındı.`);
-  refreshAll();
 }
 function clearMovementImport(){
   const rows=[...(state.movementTests||[])];
@@ -768,13 +863,46 @@ function exportMovementImportJson(){
 function handleMovementFileImport(ev){
   const file = ev?.target?.files?.[0];
   if(!file) return;
+  const source = document.getElementById('movementImportSource');
+  if(source) source.value = file.name;
+  const lower = String(file.name || '').toLowerCase();
+
+  if((lower.endsWith('.xlsx') || lower.endsWith('.xls') || lower.endsWith('.csv')) && window.XLSX){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try{
+        const wb = XLSX.read(e.target?.result, {type:'array'});
+        const targetSheetName = wb.SheetNames.includes('Import_Hazir') ? 'Import_Hazir' : wb.SheetNames[0];
+        const ws = wb.Sheets[targetSheetName];
+        const json = XLSX.utils.sheet_to_json(ws, {defval:''});
+        const hasStructuredHeaders = json.length && Object.keys(json[0]).some(k=>/(işlem no|islem no|tarih|açıklama|aciklama|tutar)/i.test(String(k)));
+        if(hasStructuredHeaders){
+          const parsed = parseImportReadyWorksheetRows(json, file.name);
+          if(parsed.length){
+            importMovementRows(parsed, file.name);
+            const current = document.getElementById('movementImportText');
+            if(current) current.value = '';
+            notify(`Import_Hazir dosyası işlendi: ${file.name}`);
+            return;
+          }
+        }
+        const csvRaw = XLSX.utils.sheet_to_csv(ws);
+        const current = document.getElementById('movementImportText');
+        if(current) current.value = csvRaw;
+        notify(`Dosya okundu: ${file.name}`);
+      }catch(err){
+        notify(`Dosya okunamadı: ${err?.message || 'bilinmeyen hata'}`);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+    return;
+  }
+
   const reader = new FileReader();
   reader.onload = function(e){
     const raw = String(e.target?.result || '');
     const current = document.getElementById('movementImportText');
     if(current) current.value = raw;
-    const source = document.getElementById('movementImportSource');
-    if(source) source.value = file.name;
     notify(`Dosya okundu: ${file.name}`);
   };
   reader.readAsText(file, 'utf-8');
@@ -846,7 +974,7 @@ function buildOpsHealthReport(){
   const localCount = localOperationalPayloadCount();
   const importedMovements = (state.movementTests || readLocalJson(LOCAL_MOVEMENT_TEST_KEY) || []).length;
   const checks = [
-    {code:'ids', label:'İşlem ID standardı', status:'ok', detail:'Ana katmanlarda ekran bazlı ID standardı aktif.'},
+    {code:'ids', label:'İşlem ID standardı', status:'ok', detail:'Tüm işlem katmanlarında zorunlu tek görünür işlem no standardı aktif.'},
     {code:'movement_test', label:'Hesap hareketi test yükü', status: importedMovements>0 ? 'ok' : 'warn', detail: importedMovements>0 ? `${importedMovements} test hareketi sisteme alındı.` : 'Henüz hesap hareketi test satırı yok.'},
     {code:'backup_policy', label:'Yedekleme politikası', status:(placeholderDb || placeholderDrive || placeholderFolder) ? 'warn' : 'ok', detail:((placeholderDb ? 'DB URL placeholder görünüyor. ' : '') + (placeholderDrive ? 'Drive remote boş. ' : '') + (placeholderFolder ? 'Drive klasörü boş. ' : '')).trim() || 'Politika dolu.'},
     {code:'restore_drill', label:'Restore tatbikatı', status: restoreMissing ? 'warn' : 'ok', detail: restoreMissing ? 'Henüz restore tatbikatı kaydı yok.' : 'Restore tatbikatı kaydı mevcut.'},
@@ -1383,7 +1511,7 @@ function renderBackup(){
           <button class="btn btn-blue" onclick="saveBackupConfig()">Politikayı Kaydet</button>
           <span class="tag ${cfg.last_saved_at ? 'green' : 'amber'}">${cfg.last_saved_at ? 'Kaydedildi' : 'Henüz kaydedilmedi'}</span>
         </div>
-      </div>` + (state.backupHistory.length ? `<table><thead><tr><th>ID</th><th>Tür</th><th>Dosya</th><th>Not</th><th>Tarih</th></tr></thead><tbody>${state.backupHistory.map(r=>`<tr><td>${escapeHtml(txnId(r,'BKP'))}</td><td>${escapeHtml(r.type||'-')}</td><td>${escapeHtml(r.filename||'-')}</td><td>${escapeHtml(r.note||'-')}</td><td>${shortDate(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz yedek geçmişi yok.</div>`);
+      </div>` + (state.backupHistory.length ? `<table><thead><tr><th>İşlem No</th><th>Tür</th><th>Dosya</th><th>Not</th><th>Tarih</th></tr></thead><tbody>${state.backupHistory.map(r=>`<tr><td>${escapeHtml(displayTxnNo(r,'BKP'))}</td><td>${escapeHtml(r.type||'-')}</td><td>${escapeHtml(r.filename||'-')}</td><td>${escapeHtml(r.note||'-')}</td><td>${shortDate(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz yedek geçmişi yok.</div>`);
   }
   if(restoreWrap){
     restoreWrap.innerHTML = `<div class="grid-3" style="margin-bottom:14px;">
@@ -1406,7 +1534,7 @@ function renderBackup(){
     <div class="section" style="padding:14px;">
       <h3 style="margin:0 0 12px;font-size:18px;font-weight:900;">Drive ve Görev Zamanlayıcı Notu</h3>
       <div class="rule-box" style="white-space:pre-line;">${escapeHtml(buildDriveFolderTreeText())}</div>
-      ${state.restoreDrills.length ? `<table style="margin-top:14px;"><thead><tr><th>ID</th><th>Sonuç</th><th>Süre</th><th>Not</th><th>Tarih</th></tr></thead><tbody>${state.restoreDrills.map(r=>`<tr><td>${escapeHtml(txnId(r,'RST'))}</td><td>${escapeHtml(r.result||'-')}</td><td>${Number(r.duration_minutes||0)} dk</td><td>${escapeHtml(r.note||'-')}</td><td>${shortDate(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz restore tatbikatı yok.</div>`}
+      ${state.restoreDrills.length ? `<table style="margin-top:14px;"><thead><tr><th>İşlem No</th><th>Sonuç</th><th>Süre</th><th>Not</th><th>Tarih</th></tr></thead><tbody>${state.restoreDrills.map(r=>`<tr><td>${escapeHtml(displayTxnNo(r,'RST'))}</td><td>${escapeHtml(r.result||'-')}</td><td>${Number(r.duration_minutes||0)} dk</td><td>${escapeHtml(r.note||'-')}</td><td>${shortDate(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz restore tatbikatı yok.</div>`}
     </div>`;
   }
 }
@@ -1422,7 +1550,7 @@ function renderBridgeSessions(){
       <div class="metric-mini"><div class="k">Muhtemel Çift</div><div class="v">${state.bridgeCandidates.filter(x=>x.is_duplicate).length}</div></div>
       <div class="metric-mini"><div class="k">Oturum</div><div class="v">${state.bridgeBatches.length}</div></div>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Köprü standardı: mesaj → analiz → aday kayıt → onay → belge/banka/moka ilişkisi. Otomatik muhasebe kaydı yok, kör işlem yok.</div>` + (state.bridgeBatches.length ? `<table><thead><tr><th>ID</th><th>Başlık</th><th>Kaynak</th><th>Satır</th><th>Kontrol</th><th>Tarih</th></tr></thead><tbody>${state.bridgeBatches.map(b=>`<tr><td>${escapeHtml(txnId(b,'BTH'))}</td><td>${escapeHtml(b.title||'-')}</td><td>${escapeHtml(b.source_type||'-')}</td><td>${b.total_rows||0}</td><td>${b.duplicate_rows||0} çift · ${b.linked_rows||0} cari eşleşti</td><td>${shortDate(b.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz köprü oturumu yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">Köprü standardı: mesaj → analiz → aday kayıt → onay → belge/banka/moka ilişkisi. Otomatik muhasebe kaydı yok, kör işlem yok.</div>` + (state.bridgeBatches.length ? `<table><thead><tr><th>İşlem No</th><th>Başlık</th><th>Kaynak</th><th>Satır</th><th>Kontrol</th><th>Tarih</th></tr></thead><tbody>${state.bridgeBatches.map(b=>`<tr><td>${escapeHtml(displayTxnNo(b,'BTH'))}</td><td>${escapeHtml(b.title||'-')}</td><td>${escapeHtml(b.source_type||'-')}</td><td>${b.total_rows||0}</td><td>${b.duplicate_rows||0} çift · ${b.linked_rows||0} cari eşleşti</td><td>${shortDate(b.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz köprü oturumu yok.</div>`);
 }
 function renderDashboard(){
   document.getElementById("kpiToplamCari").textContent=Number(state.dashboard?.toplam_cari||state.cariler.length||0);
@@ -1434,7 +1562,7 @@ function renderDashboard(){
   document.getElementById("promiseCount").textContent=state.cariler.filter(x=>x.aktif_odeme_sozu_var).length;
   document.getElementById("promiseLateCount").textContent=state.cariler.filter(x=>x.aktif_odeme_sozu_durum==="gecikmis").length;
   const latest=[...state.hareketler].slice(0,10);
-  document.getElementById("lastMovementsWrap").innerHTML=latest.length?`<table><thead><tr><th>ID</th><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${latest.map(h=>`<tr><td>${escapeHtml(txnId(h,'HRK'))}</td><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hareket yok.</div>`;
+  document.getElementById("lastMovementsWrap").innerHTML=latest.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${latest.map(h=>`<tr><td>${escapeHtml(displayTxnNo(h,'HRK'))}</td><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hareket yok.</div>`;
 }
 function filteredCariler(){
   const q=(document.getElementById("cariSearch").value||"").trim().toLowerCase();
@@ -1588,8 +1716,7 @@ function buildStandardStatementTable(rowsDesc){
   return `<table>
     <thead>
       <tr>
-        <th>No</th>
-        <th>İşlem ID</th>
+        <th>İşlem No</th>
         <th>Tarih</th>
         <th>İşlem</th>
         <th>Açıklama</th>
@@ -1602,11 +1729,9 @@ function buildStandardStatementTable(rowsDesc){
     <tbody>
       ${rowsDesc.map((r,idx)=>{
         const b = balanceColumns(r.running_balance);
-        const rowTxnId = txnId(r,'HRK');
-        const rowNo = r.operation_no || rowTxnId;
+        const rowNo = displayTxnNo(r,'HRK');
         return `<tr>
           <td>${escapeHtml(rowNo)}</td>
-          <td>${escapeHtml(rowTxnId)}</td>
           <td>${shortDate(r.line_date)}</td>
           <td>${renderTag(r.movement_type || r.final_movement_type || r.suggested_movement_type || "-")}</td>
           <td>${escapeHtml(r.description || r.content_summary || "-")}</td>
@@ -1669,13 +1794,12 @@ function exportStatementExcel(){
   const meta=getCurrentStatementMeta();
   if(!c || !meta.rowsAsc.length){ notify("Excel için extre satırı yok."); return; }
   const csvRows = [
-    ['No','İşlem ID','Tarih','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']
+    ['İşlem No','Tarih','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']
   ];
   meta.rowsAsc.forEach(r=>{
     const b = balanceColumns(r.running_balance);
     csvRows.push([
-      r.operation_no || txnId(r,'HRK'),
-      txnId(r,'HRK'),
+      displayTxnNo(r,'HRK'),
       shortDate(r.line_date),
       r.movement_type || '',
       (r.description || '').replace(/"/g,'""'),
@@ -1760,7 +1884,7 @@ function openStatementOutput(){
       <div class="sub" style="text-align:right">
         Belge Türü: Müşteri Cari Ekstresi<br>Kontrol Durumu: Standart son kontrolden geçti<br>
         Oluşturma: ${new Date().toLocaleString('tr-TR')}<br>
-        Satır Sayısı: ${meta.rowsAsc.length}<br>İşlem Kimliği: Her satırda görünür
+        Satır Sayısı: ${meta.rowsAsc.length}<br>İşlem No: Her satırda görünür
       </div>
     </div>
     <div class="boxwrap">
@@ -1769,7 +1893,7 @@ function openStatementOutput(){
       <div class="box"><div class="k">Toplam Alacak</div><div class="v">${money(meta.totalCredit)}</div></div>
       <div class="box"><div class="k">Kapanış Bakiye</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>
     </div>
-    <div style="margin:10px 0 14px;padding:10px 12px;border:1px solid #dbe3ef;border-radius:12px;font-size:12px;color:#475569;font-weight:700;">Bu extrede her satır için benzersiz <strong>İşlem ID</strong> ve görünür <strong>No</strong> sütunu gösterilir. Aynı işlem aynı kimlikle izlenir.</div>
+    <div style="margin:10px 0 14px;padding:10px 12px;border:1px solid #dbe3ef;border-radius:12px;font-size:12px;color:#475569;font-weight:700;">Bu sistemde her işlem görünürde tek bir <strong>İşlem No</strong> ile izlenir. Teknik kimlik sistem içinde korunur, ekranda tekrar edilmez.</div>
     ${buildStandardStatementTable(meta.rowsDesc).replaceAll('class="text-right"','class="r"')}
   </body>
   </html>`;
@@ -2254,10 +2378,10 @@ function renderAccounts(){
       <button class="chip ${state.bankFilter==='processed'?'active':''}" data-bfilter="processed">İşlenen</button>
       <button class="chip ${state.bankFilter==='ignored'?'active':''}" data-bfilter="ignored">İşlenmeyen</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez.</div>` + (bankRows.length?`<table><thead><tr><th>ID</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{
+    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez.</div>` + (bankRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{
     const suggestion = bankSuggestedTarget(r);
     const conf = bankRowConfidence(r);
-    return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(txnId(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
+    return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(displayTxnNo(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
   }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
 
   document.getElementById("mokaPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
@@ -2276,10 +2400,10 @@ function renderAccounts(){
     </div>
     <div class="rule-box" style="margin-bottom:14px;">
       Moka kredi kartı tahsilatı <strong>doğrudan bankaya gelir yazılmaz</strong>. İlk kayıt <strong>Moka United</strong> içinde tutulur. Vadesi gelince bankaya aktarılan tutar ayrıca işlenir ve <strong>Moka United → Banka</strong> mahsup mantığıyla kapatılır.
-    </div>` + (mokaRows.length?`<table><thead><tr><th>ID</th><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{
+    </div>` + (mokaRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{
       const cls = mokaRowClass(r);
       const tag = cls==='moka_tahsilat' ? '<span class="tag blue">Moka Tahsilat</span>' : (cls==='banka_aktarim' ? '<span class="tag green">Banka Aktarım</span>' : '<span class="tag amber">Belirsiz</span>');
-      return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${escapeHtml(txnId(r,'MOK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
+      return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${escapeHtml(displayTxnNo(r,'MOK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
     }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede Moka satırı yok.</div>`);
 
   document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
@@ -2336,11 +2460,11 @@ function renderMovementTestCenter(){
     </div>
     <div class="form-grid" style="margin-bottom:14px;">
       <div class="field"><label>Kaynak</label><input id="movementImportSource" value="manuel_yapistir" placeholder="manuel_yapistir / hesap_hareketleri.csv"></div>
-      <div class="field"><label>Dosya Oku</label><input id="movementImportFile" type="file" accept=".txt,.csv,.tsv,.log,text/plain"></div>
+      <div class="field"><label>Dosya Oku</label><input id="movementImportFile" type="file" accept=".txt,.csv,.tsv,.log,.xlsx,.xls,text/plain"></div>
     </div>
     <div class="field" style="margin-bottom:14px;">
       <label>Hesap Hareketi Yapıştır</label>
-      <textarea id="movementImportText" rows="8" class="select-input" placeholder="Örnek:\n18.04.2026;FAST GELEN HAVALE ABC LTD;12.500,00\n18.04.2026;MOKA UNITED AKTARIM;8.245,50"></textarea>
+      <textarea id="movementImportText" rows="8" class="select-input" placeholder="Örnek:\n18.04.2026;FAST GELEN HAVALE ABC LTD;12.500,00\n18.04.2026;MOKA UNITED AKTARIM;8.245,50\n23.03.2026 16:40 2026003110812404 11.000,00 188.621,07 Gelen FAST Anlık Ödeme"></textarea>
     </div>
     <div class="grid-4" style="margin-bottom:14px;">
       <div class="metric-mini"><div class="k">Test Satırı</div><div class="v">${summary.total}</div></div>
@@ -2348,8 +2472,8 @@ function renderMovementTestCenter(){
       <div class="metric-mini"><div class="k">Moka</div><div class="v">${summary.moka}</div></div>
       <div class="metric-mini"><div class="k">Toplam</div><div class="v">${money(summary.total_amount)}</div></div>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Bu merkez gerçek hesap hareketi dosyasını simüle etmek içindir. Yapıştırılan satırlar Banka/Moka paneline test satırı olarak düşer. Kör işleme yapmaz; yine inceleme ve onay mantığı geçerlidir.</div>`
-    + (rows.length ? `<table><thead><tr><th>No</th><th>ID</th><th>Kaynak</th><th>Tarih</th><th>Açıklama</th><th>Tip</th><th class="text-right">Tutar</th></tr></thead><tbody>${rows.slice(0,50).map(r=>`<tr><td>${escapeHtml(r.operation_no || '-')}</td><td>${escapeHtml(txnId(r,'IMP'))}</td><td>${escapeHtml(r.import_source || '-')}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description || '-')}</td><td>${renderTag(r.import_bucket==='moka' ? 'moka_united' : 'banka')}</td><td class="text-right">${money(r.net_amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz test hareketi yok. Dosya oku ya da metin yapıştır.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">Bu merkez gerçek hesap hareketi metnini içeri almak içindir. CSV satırı ya da banka ekstresi metnini yapıştırabilirsin. Satırlar Banka/Moka paneline test kaydı olarak düşer; kör işleme yapmaz, yine inceleme ve onay mantığı geçerlidir.</div>`
+    + (rows.length ? `<table><thead><tr><th>İşlem No</th><th>Kaynak</th><th>Tarih</th><th>Açıklama</th><th>Tip</th><th class="text-right">Tutar</th></tr></thead><tbody>${rows.slice(0,50).map(r=>`<tr><td>${escapeHtml(displayTxnNo(r,'IMP'))}</td><td>${escapeHtml(r.import_source || '-')}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description || '-')}</td><td>${renderTag(r.import_bucket==='moka' ? 'moka_united' : 'banka')}</td><td class="text-right">${money(r.net_amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz test hareketi yok. Dosya oku ya da metin yapıştır.</div>`);
   document.getElementById('movementImportFile')?.addEventListener('change', handleMovementFileImport);
 }
 
@@ -2491,7 +2615,7 @@ function renderDocuments(){
       </select>
       <button class="btn btn-soft" onclick="state.documentSearch=''; state.documentFilter='all'; renderDocuments();">Filtreyi Temizle</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Belge katmanında kural sabit: belge doğrudan muhasebe fişi üretmez. Önce doğru cariye bağlanır, sonra onay / kontrol akışıyla ilerler.</div>` + (docs.length ? `<table><thead><tr><th>ID</th><th>Tarih</th><th>Cari</th><th>Belge</th><th>Kaynak</th><th class="text-right">Tutar</th></tr></thead><tbody>${docs.map(d=>`<tr class="click-row" data-doc-id="${escapeHtml(d.id)}"><td>${escapeHtml(txnId(d,'DOC'))}</td><td>${shortDate(d.document_date || d.created_at)}</td><td>${escapeHtml(d.cari_name || '-')}</td><td>${documentTypeTag(d.document_type)} ${escapeHtml(d.document_title || d.document_no || '-')}<div class="muted-note">${escapeHtml(d.file_ref || d.note || '-')}</div></td><td>${escapeHtml(d.source_type || '-')}</td><td class="text-right">${money(d.amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Bu filtrede belge yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">Belge katmanında kural sabit: belge doğrudan muhasebe fişi üretmez. Önce doğru cariye bağlanır, sonra onay / kontrol akışıyla ilerler.</div>` + (docs.length ? `<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Cari</th><th>Belge</th><th>Kaynak</th><th class="text-right">Tutar</th></tr></thead><tbody>${docs.map(d=>`<tr class="click-row" data-doc-id="${escapeHtml(d.id)}"><td>${escapeHtml(displayTxnNo(d,'DOC'))}</td><td>${shortDate(d.document_date || d.created_at)}</td><td>${escapeHtml(d.cari_name || '-')}</td><td>${documentTypeTag(d.document_type)} ${escapeHtml(d.document_title || d.document_no || '-')}<div class="muted-note">${escapeHtml(d.file_ref || d.note || '-')}</div></td><td>${escapeHtml(d.source_type || '-')}</td><td class="text-right">${money(d.amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Bu filtrede belge yok.</div>`);
   const pendingBridge = bridgeCandidatesAsPendingRows();
   document.getElementById("bridgeWrap").innerHTML=`<div class="btn-row" style="margin-bottom:14px;">
       <button class="btn btn-blue" onclick="openCandidateBridgeModal(state.selectedCariId)">Aday Kayıt Ekle</button>
@@ -2504,7 +2628,7 @@ function renderDocuments(){
       <div class="metric-mini"><div class="k">Belge Kaynağı</div><div class="v">${getAllPendingApprovals().filter(r=>approvalIsDocumentCandidate(r)).length}</div></div>
       <div class="metric-mini"><div class="k">Standart</div><div class="v">Otomatik işlem yok</div></div>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">WhatsApp, Telegram, OCR veya kopyala-yapıştır gelen tahsilat metinleri burada aday kayıt olur. Otomatik işlenmez, doğrudan onay mantığına düşer.</div>` + (state.bridgeCandidates.length ? `<table><thead><tr><th>ID</th><th>Tarih</th><th>Kaynak</th><th>Cari</th><th>Öneri</th><th class="text-right">Tutar</th></tr></thead><tbody>${[...state.bridgeCandidates].sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''))).map(r=>`<tr><td>${escapeHtml(txnId(r,'BRG'))}</td><td>${shortDate(r.created_at)}</td><td>${escapeHtml(r.source_type || '-')}</td><td>${escapeHtml(r.cari_name || '-')}</td><td>${escapeHtml(r.suggested_movement_type || '-')}<div class="muted-note">${escapeHtml(r.content_summary || '-')}</div></td><td class="text-right">${money(r.suggested_amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz aday kayıt yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">WhatsApp, Telegram, OCR veya kopyala-yapıştır gelen tahsilat metinleri burada aday kayıt olur. Otomatik işlenmez, doğrudan onay mantığına düşer.</div>` + (state.bridgeCandidates.length ? `<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Kaynak</th><th>Cari</th><th>Öneri</th><th class="text-right">Tutar</th></tr></thead><tbody>${[...state.bridgeCandidates].sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''))).map(r=>`<tr><td>${escapeHtml(displayTxnNo(r,'BRG'))}</td><td>${shortDate(r.created_at)}</td><td>${escapeHtml(r.source_type || '-')}</td><td>${escapeHtml(r.cari_name || '-')}</td><td>${escapeHtml(r.suggested_movement_type || '-')}<div class="muted-note">${escapeHtml(r.content_summary || '-')}</div></td><td class="text-right">${money(r.suggested_amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz aday kayıt yok.</div>`);
   const searchEl = document.getElementById('documentSearchInput');
   if(searchEl) searchEl.addEventListener('input', e=>{ state.documentSearch = e.target.value; renderDocuments(); });
   const typeEl = document.getElementById('documentTypeFilter');
@@ -2534,9 +2658,9 @@ function renderApprovals(){
       <button class="chip ${state.approvalFilter==='duplicate'?'active':''}" data-afilter="duplicate">Muhtemel Çift</button>
       <button class="chip ${state.approvalFilter==='document'?'active':''}" data-afilter="document">WhatsApp / Telegram / Belge</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Kural: güven puanı düşük, muhtemel çift, görselden okunan veya kopyala-yapıştır gelen kayıtlar otomatik işlenmez; önce onaya düşer. İşleme alınan kayıt karar izi ile işlenenlere taşınır.</div>` + (pendingRows.length?`<table><thead><tr><th>ID</th><th>Kaynak</th><th>Özet</th><th>Öneri</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${pendingRows.map(({row:r,__i})=>`<tr class="click-row" data-approval-bucket="pending" data-approval-index="${__i}"><td>${escapeHtml(txnId(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.suggested_cari_name||r.suggested_expense_name||"-")} · ${escapeHtml(r.suggested_movement_type||"-")}<br><span style="font-size:12px;color:#64748b">Güven: ${approvalConfidence(r) ? approvalConfidence(r).toFixed(0) : '-'}</span></td><td>${approvalFlags(r)}<div class="muted-note">${escapeHtml(approvalLockReason(r))}</div></td><td class="text-right">${money(r.suggested_amount||r.raw_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Bu filtrede kayıt yok.</div>`);
-  document.getElementById("processedWrap").innerHTML=processedRows.length?`<table><thead><tr><th>ID</th><th>Kaynak</th><th>Karar</th><th>İz</th><th class="text-right">Tutar</th></tr></thead><tbody>${processedRows.map((r,i)=>`<tr class="click-row" data-approval-bucket="processed" data-approval-index="${i}"><td>${escapeHtml(txnId(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.final_cari_name||r.final_expense_name||r.suggested_cari_name||"-")} · ${escapeHtml(r.final_movement_type||r.suggested_movement_type||"-")}</td><td>${escapeHtml(r.decision_note || r.match_reason || 'İşlendi')}</td><td class="text-right">${money(r.final_amount||r.suggested_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">İşlenen kayıt yok.</div>`;
-  document.getElementById("rejectedWrap").innerHTML=rejectedRows.length?`<table><thead><tr><th>ID</th><th>Kaynak</th><th>Özet</th><th>Not</th></tr></thead><tbody>${rejectedRows.map((r,i)=>`<tr class="click-row" data-approval-bucket="rejected" data-approval-index="${i}"><td>${escapeHtml(txnId(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.decision_note||"-")}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Reddedilen kayıt yok.</div>`;
+    <div class="rule-box" style="margin-bottom:14px;">Kural: güven puanı düşük, muhtemel çift, görselden okunan veya kopyala-yapıştır gelen kayıtlar otomatik işlenmez; önce onaya düşer. İşleme alınan kayıt karar izi ile işlenenlere taşınır.</div>` + (pendingRows.length?`<table><thead><tr><th>İşlem No</th><th>Kaynak</th><th>Özet</th><th>Öneri</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${pendingRows.map(({row:r,__i})=>`<tr class="click-row" data-approval-bucket="pending" data-approval-index="${__i}"><td>${escapeHtml(displayTxnNo(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.suggested_cari_name||r.suggested_expense_name||"-")} · ${escapeHtml(r.suggested_movement_type||"-")}<br><span style="font-size:12px;color:#64748b">Güven: ${approvalConfidence(r) ? approvalConfidence(r).toFixed(0) : '-'}</span></td><td>${approvalFlags(r)}<div class="muted-note">${escapeHtml(approvalLockReason(r))}</div></td><td class="text-right">${money(r.suggested_amount||r.raw_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Bu filtrede kayıt yok.</div>`);
+  document.getElementById("processedWrap").innerHTML=processedRows.length?`<table><thead><tr><th>İşlem No</th><th>Kaynak</th><th>Karar</th><th>İz</th><th class="text-right">Tutar</th></tr></thead><tbody>${processedRows.map((r,i)=>`<tr class="click-row" data-approval-bucket="processed" data-approval-index="${i}"><td>${escapeHtml(displayTxnNo(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.final_cari_name||r.final_expense_name||r.suggested_cari_name||"-")} · ${escapeHtml(r.final_movement_type||r.suggested_movement_type||"-")}</td><td>${escapeHtml(r.decision_note || r.match_reason || 'İşlendi')}</td><td class="text-right">${money(r.final_amount||r.suggested_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">İşlenen kayıt yok.</div>`;
+  document.getElementById("rejectedWrap").innerHTML=rejectedRows.length?`<table><thead><tr><th>İşlem No</th><th>Kaynak</th><th>Özet</th><th>Not</th></tr></thead><tbody>${rejectedRows.map((r,i)=>`<tr class="click-row" data-approval-bucket="rejected" data-approval-index="${i}"><td>${escapeHtml(displayTxnNo(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.decision_note||"-")}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Reddedilen kayıt yok.</div>`;
   document.querySelectorAll('#approvalFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.approvalFilter = btn.dataset.afilter; renderApprovals(); }));
   document.querySelectorAll('[data-approval-bucket]').forEach(el=>el.addEventListener('click',()=>openApprovalDetailModal(el.dataset.approvalBucket, Number(el.dataset.approvalIndex))));
 }
