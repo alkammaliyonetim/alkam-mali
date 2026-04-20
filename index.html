@@ -354,6 +354,7 @@
     <div class="nav">
       <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
       <button class="nav-btn" data-tab="cariler">Cariler</button>
+      <button class="nav-btn" data-tab="gecis2026">2026 Geçiş</button>
       <button class="nav-btn" data-tab="hesaplar">Hesaplar</button>
       <button class="nav-btn" data-tab="giderler">Gider Tahakkuk</button>
       <button class="nav-btn" data-tab="raporlar">Raporlar</button>
@@ -421,6 +422,46 @@
       </div>
     </section>
 
+    <section id="tab-gecis2026" class="tab-page">
+      <div class="section">
+        <h2 class="section-title">2026 Temiz Başlangıç Merkezi</h2>
+        <div class="grid-4" style="margin-bottom:14px;">
+          <div class="metric-mini"><div class="k">Açılış Tarihi</div><div class="v">31.12.2025</div></div>
+          <div class="metric-mini"><div class="k">Moka Açılışı</div><div class="v" id="y26MokaOpen">0,00 TL</div></div>
+          <div class="metric-mini"><div class="k">Ücretli Cari</div><div class="v" id="y26FeeCariCount">0</div></div>
+          <div class="metric-mini"><div class="k">Eksik Ay Kaydı</div><div class="v" id="y26MissingCount">0</div></div>
+        </div>
+        <div class="btn-row" style="margin-bottom:14px;">
+          <button class="btn btn-blue" onclick="loadYearTransitionData(true)">2026 Kontrolünü Yenile</button>
+          <button class="btn btn-soft" onclick="exportYearTransitionJson()">2026 Kontrol JSON</button>
+        </div>
+        <div class="grid-2">
+          <div class="section" style="margin-bottom:0;">
+            <h2 class="section-title" style="font-size:18px;">Kural</h2>
+            <div id="y26RuleWrap" class="empty">Yükleniyor...</div>
+          </div>
+          <div class="section" style="margin-bottom:0;">
+            <h2 class="section-title" style="font-size:18px;">Belge Türü → Yön</h2>
+            <div id="y26DocRuleWrap" class="empty">Yükleniyor...</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="section">
+          <h2 class="section-title">Mart 2026 Satış / Tahakkuk Olmayanlar</h2>
+          <div id="y26MarchMissingWrap" class="empty">Yükleniyor...</div>
+        </div>
+        <div class="section">
+          <h2 class="section-title">Nisan 2026 Satış / Tahakkuk Olmayanlar</h2>
+          <div id="y26AprilMissingWrap" class="empty">Yükleniyor...</div>
+        </div>
+      </div>
+      <div class="section">
+        <h2 class="section-title">Ocak 2026'dan İtibaren Eksik Muhasebe Ücreti Ayları</h2>
+        <div id="y26MissingMonthsWrap" class="empty">Yükleniyor...</div>
+      </div>
+    </section>
+
     <section id="tab-hesaplar" class="tab-page">
       <div class="grid-2">
         <div class="section"><h2 class="section-title">Hesap Özeti</h2><div id="accountSummaryWrap" class="empty">Yükleniyor...</div></div>
@@ -475,7 +516,7 @@ const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
 const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null};
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[]}};
 
 function money(v){
   const n=Number(v||0);
@@ -575,7 +616,7 @@ function togglePassword(){const i=document.getElementById("loginPassword"); i.ty
 function submitLogin(e){e.preventDefault(); const v=(document.getElementById("loginPassword").value||"").trim(); const err=document.getElementById("loginError"); err.textContent=""; if(v!==LOCAL_PASSWORD){err.textContent="Şifre hatalı."; return false} localStorage.setItem(SESSION_KEY,"ok"); openApp(); refreshAll(); return false}
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
 function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
-function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, batak, çek, senet, Moka"],giderler:["Gider Tahakkuk","Sabit ve değişken gider tahakkuk kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
+function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],gecis2026:["2026 Geçiş","31.12.2025 açılışı, Moka 0, eksik muhasebe ücreti ay kontrolü"],hesaplar:["Hesaplar","Kasa, banka, batak, çek, senet, Moka"],giderler:["Gider Tahakkuk","Sabit ve değişken gider tahakkuk kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
 async function loadDashboard(){
@@ -620,6 +661,111 @@ async function loadFeeData(){
   state.feeTimeline = t.data || [];
   state.feeControl = c.data || [];
 }
+function monthTokenTR(monthNo){
+  return ['','OCAK26','ŞUBAT26','MART26','NİSAN26','MAYIS26','HAZİRAN26','TEMMUZ26','AĞUSTOS26','EYLÜL26','EKİM26','KASIM26','ARALIK26'][monthNo] || '';
+}
+function monthLabelTR(monthNo){
+  return ['','Ocak 2026','Şubat 2026','Mart 2026','Nisan 2026','Mayıs 2026','Haziran 2026','Temmuz 2026','Ağustos 2026','Eylül 2026','Ekim 2026','Kasım 2026','Aralık 2026'][monthNo] || '';
+}
+function isFeeMovement2026(row){
+  const movement = normalizeMatchText(row?.movement_type || '');
+  const desc = normalizeMatchText(row?.description || '');
+  if(!/tahakkuk|satis faturasi|satış faturası/.test(movement + ' ' + desc)) return false;
+  if(/defter2026|ocak26|subat26|şubat26|mart26|nisan26|mayis26|haziran26|temmuz26|agustos26|ağustos26|eylul26|eylül26|ekim26|kasim26|kasım26|aralik26|aralık26/.test(desc)) return true;
+  if(/2026 yil[iı] muhasebe ucreti|2026 yılı muhasebe ücreti|muhasebe ucreti|muhasebe ücreti/.test(desc)) return true;
+  return false;
+}
+function feeMonthFromRow(row){
+  const desc = normalizeMatchText(row?.description || '');
+  const dt = new Date(row?.line_date || row?.movement_date || row?.date || '');
+  const monthByDate = Number.isNaN(dt.getTime()) ? 0 : dt.getMonth()+1;
+  const map = {ocak26:1,subat26:2,'şubat26':2,mart26:3,nisan26:4,mayis26:5,haziran26:6,temmuz26:7,agustos26:8,'ağustos26':8,eylul26:9,'eylül26':9,ekim26:10,kasim26:11,'kasım26':11,aralik26:12,'aralık26':12};
+  for(const [k,v] of Object.entries(map)) if(desc.includes(k)) return v;
+  if(desc.includes('defter2026')) return 0;
+  return monthByDate;
+}
+function defaultDocRules2026(){
+  return [
+    {belge:'Satış Faturası', yon:'Borç', aciklama:'Cariyi borçlandırır'},
+    {belge:'Muhasebe Ücreti Tahakkuku', yon:'Borç', aciklama:'Aylık muhasebe ücreti satış kaydı'},
+    {belge:'Defter Tasdik / DEFTER2026', yon:'Borç', aciklama:'Yıl açılışında satış/tahakkuk kaydı'},
+    {belge:'Tahsilat Makbuzu', yon:'Alacak', aciklama:'Cari alacağını kapatır'},
+    {belge:'Müşteriden Tahsilat', yon:'Alacak', aciklama:'Banka/kasa girişine bağlı müşteri tahsilatı'},
+    {belge:'Ödeme Makbuzu', yon:'Borç', aciklama:'Tedarikçi / karşı taraf ödemesi'},
+    {belge:'Gider Tahakkuku / Alış Faturası', yon:'Alacak', aciklama:'Bizim borcumuzu doğurur'}
+  ];
+}
+async function loadYearTransitionData(force=false){
+  if(state.year2026.fee_rows.length && !force){ renderYearTransitionPanel(); return; }
+  const feeCards = (state.cariCards||[]).filter(c=>Boolean(c?.is_active) && Boolean(c?.monthly_fee_enabled) && num(c?.monthly_fee_amount||0)>0);
+  let feeRows = [];
+  try{
+    const {data,error}=await supabaseClient.from('v_cari_hareket_dokumu').select('cari_id,cari_name,line_date,movement_type,description,debit,credit').gte('line_date','2026-01-01').lt('line_date','2027-01-01').limit(20000);
+    if(error) throw error;
+    feeRows = data || [];
+  }catch(_){ feeRows = []; }
+  const monthDetected = Math.max(4, ...feeRows.map(r=>feeMonthFromRow(r)).filter(x=>x>0));
+  const rowsByCari = {};
+  feeRows.forEach(r=>{
+    const key=String(r.cari_id||'');
+    if(!rowsByCari[key]) rowsByCari[key]=[];
+    rowsByCari[key].push(r);
+  });
+  const missingRows=[];
+  const marchMissing=[];
+  const aprilMissing=[];
+  for(const c of feeCards){
+    const key=String(c.cari_id||c.id||'');
+    const rows=(rowsByCari[key]||[]).filter(isFeeMovement2026);
+    const monthMap={};
+    rows.forEach(r=>{ const m=feeMonthFromRow(r); if(m>=1 && m<=12){ monthMap[m]=(monthMap[m]||0)+1; } });
+    for(let month=1; month<=monthDetected; month++){
+      if(!monthMap[month]){
+        const rec={cari_id:key,cari_name:c.cari_name||c.name||'-',month_no:month,month_label:monthLabelTR(month),month_token:monthTokenTR(month),expected_fee:num(c.monthly_fee_amount||0),status:'eksik'};
+        missingRows.push(rec);
+        if(month===3) marchMissing.push(rec);
+        if(month===4) aprilMissing.push(rec);
+      }
+    }
+  }
+  state.year2026={opening_date:'2025-12-31',moka_opening:0,fee_cards:feeCards,fee_rows:feeRows,missing_rows:missingRows,march_missing:marchMissing,april_missing:aprilMissing,last_month:monthDetected,doc_rules:defaultDocRules2026()};
+  renderYearTransitionPanel();
+}
+function renderYearTransitionPanel(){
+  const y=state.year2026||{};
+  const feeCards=y.fee_cards||[];
+  const missingRows=y.missing_rows||[];
+  const marchMissing=y.march_missing||[];
+  const aprilMissing=y.april_missing||[];
+  const fmtList=(rows)=> rows.length ? `<table><thead><tr><th>Cari</th><th>Ay</th><th class="text-right">Beklenen Ücret</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${escapeHtml(r.month_label)}</td><td class="text-right">${money(r.expected_fee||0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Eksik kayıt yok.</div>`;
+  const grouped = {};
+  missingRows.forEach(r=>{ const k=r.cari_name||'-'; if(!grouped[k]) grouped[k]=[]; grouped[k].push(r.month_token); });
+  document.getElementById('y26MokaOpen').textContent = money(y.moka_opening||0);
+  document.getElementById('y26FeeCariCount').textContent = feeCards.length;
+  document.getElementById('y26MissingCount').textContent = missingRows.length;
+  document.getElementById('y26RuleWrap').innerHTML = `<div style="padding:12px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;font-weight:800;line-height:1.7;">
+    Açılış kesiti <strong>31.12.2025</strong> alınır. <strong>Moka açılışı 0</strong> kabul edilir. 2026 yılı için muhasebe ücreti, aktif ve ücretli cari kartlarından okunur. Ocak 2026'dan itibaren ilgili ay için satış/tahakkuk yoksa kayıt <strong>eksik ay</strong> olarak listelenir ve kör otomasyon yapılmaz.
+  </div>`;
+  document.getElementById('y26DocRuleWrap').innerHTML = y.doc_rules?.length ? `<table><thead><tr><th>Belge Türü</th><th>Yön</th><th>Açıklama</th></tr></thead><tbody>${y.doc_rules.map(r=>`<tr><td>${escapeHtml(r.belge)}</td><td><span class="tag ${(r.yon||'').toLowerCase()==='borç'?'blue':'green'}">${escapeHtml(r.yon)}</span></td><td>${escapeHtml(r.aciklama)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Kural yok.</div>`;
+  document.getElementById('y26MarchMissingWrap').innerHTML = fmtList(marchMissing);
+  document.getElementById('y26AprilMissingWrap').innerHTML = fmtList(aprilMissing);
+  document.getElementById('y26MissingMonthsWrap').innerHTML = Object.keys(grouped).length ? `<table><thead><tr><th>Cari</th><th>Eksik Aylar</th></tr></thead><tbody>${Object.entries(grouped).sort((a,b)=>a[0].localeCompare(b[0],'tr')).map(([name,months])=>`<tr><td>${escapeHtml(name)}</td><td>${escapeHtml(months.join(', '))}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Eksik muhasebe ücreti ayı yok.</div>`;
+}
+function exportYearTransitionJson(){
+  const y=state.year2026||{};
+  const payload={
+    opening_date:y.opening_date||'2025-12-31',
+    moka_opening:y.moka_opening||0,
+    fee_card_count:(y.fee_cards||[]).length,
+    missing_count:(y.missing_rows||[]).length,
+    march_missing:y.march_missing||[],
+    april_missing:y.april_missing||[],
+    missing_rows:y.missing_rows||[],
+    doc_rules:y.doc_rules||[]
+  };
+  downloadJson(payload, `alkam_2026_gecis_kontrol_${new Date().toISOString().slice(0,10)}.json`);
+}
+
 async function loadApprovals(){
   const [p,pr,r]=await Promise.all([
     supabaseClient.from("v_approval_pending").select("*").limit(100),
@@ -3392,6 +3538,7 @@ async function saveCandidateBridge(){
   closeCandidateBridgeModal();
   renderDocuments();
   renderExpenses();
+  renderYearTransitionPanel();
   renderApprovals();
   renderBackup();
   notify('Aday kayıt onay akışına eklendi.');
@@ -3490,7 +3637,7 @@ async function savePaymentPromise(){
 }
 
 async function refreshAll(){
-  await Promise.all([loadDashboard(),loadCariler(),loadAccounts(),loadApprovals(),loadFeeData(),loadDocuments()]);
+  await Promise.all([loadDashboard(),loadCariler(),loadAccounts(),loadApprovals(),loadFeeData(),loadDocuments(),loadYearTransitionData(true)]);
   refreshImportedMovementAnalysis(true);
   normalizeStateIds();
   renderDashboard();
