@@ -354,7 +354,7 @@
     <div class="nav">
       <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
       <button class="nav-btn" data-tab="cariler">Cariler</button>
-      <button class="nav-btn" data-tab="gecis2026">2026 Geçiş</button>
+      <button class="nav-btn" data-tab="gecis2026">Banka & Çek AI</button>
       <button class="nav-btn" data-tab="hesaplar">Hesaplar</button>
       <button class="nav-btn" data-tab="giderler">Gider Tahakkuk</button>
       <button class="nav-btn" data-tab="raporlar">Raporlar</button>
@@ -424,66 +424,36 @@
 
     <section id="tab-gecis2026" class="tab-page">
       <div class="section">
-        <h2 class="section-title">2026 Temiz Başlangıç Merkezi</h2>
-        <div class="grid-4" style="margin-bottom:14px;">
-          <div class="metric-mini"><div class="k">Açılış Tarihi</div><div class="v">31.12.2025</div></div>
-          <div class="metric-mini"><div class="k">Moka Açılışı</div><div class="v" id="y26MokaOpen">0,00 TL</div></div>
-          <div class="metric-mini"><div class="k">Ücretli Cari</div><div class="v" id="y26FeeCariCount">0</div></div>
-          <div class="metric-mini"><div class="k">Eksik Ay Kaydı</div><div class="v" id="y26MissingCount">0</div></div>
-        </div>
-        <div class="btn-row" style="margin-bottom:14px;">
-          <button class="btn btn-blue" onclick="loadYearTransitionData(true)">2026 Kontrolünü Yenile</button>
-          <button class="btn btn-soft" onclick="buildOpeningEntries2026()">Açılış Önerilerini Üret</button>
-          <button class="btn btn-soft" onclick="applyOpeningEntries2026()">Açılışları Yaz</button>
-          <button class="btn btn-soft" onclick="buildAccrualSuggestions2026()">Tahakkuk Öneri Listesi Üret</button>
-          <button class="btn btn-soft" onclick="pushAccrualSuggestionsToApprovals()">Önerileri Onaya At</button>
-          <button class="btn btn-soft" onclick="exportYearTransitionJson()">2026 Kontrol JSON</button>
-        </div>
-        <div class="grid-2">
-          <div class="section" style="margin-bottom:0;">
-            <h2 class="section-title" style="font-size:18px;">Kural</h2>
-            <div id="y26RuleWrap" class="empty">Yükleniyor...</div>
+        <h2 class="section-title">Banka & Çek AI Okuma Merkezi</h2>
+        <div class="grid-2" style="margin-bottom:16px;">
+          <div class="card">
+            <div class="card-label">Kural</div>
+            <div class="card-value" style="font-size:18px;line-height:1.45;">
+              Sana gönderilen bütün carilerin bütün dönemleri görünür. Bu merkez sadece banka ekstresi, çek ve senet metinlerini okuyup öneri üretir; cari kararını son kullanıcı verir.
+            </div>
           </div>
-          <div class="section" style="margin-bottom:0;">
-            <h2 class="section-title" style="font-size:18px;">Belge Türü → Yön</h2>
-            <div id="y26DocRuleWrap" class="empty">Yükleniyor...</div>
+          <div class="card">
+            <div class="card-label">Hızlı Akış</div>
+            <div class="card-value" style="font-size:18px;line-height:1.45;">
+              1) Metni yapıştır veya dosya yükle<br>
+              2) AI okuma ile satırları ayrıştır<br>
+              3) Muhtemel çift / çek / banka / Moka ayrımını gör<br>
+              4) Cariyi sen kontrol et, onaya at
+            </div>
           </div>
         </div>
-      </div>
-      <div class="grid-2">
-        <div class="section">
-          <h2 class="section-title">Mart 2026 Satış / Tahakkuk Olmayanlar</h2>
-          <div id="y26MarchMissingWrap" class="empty">Yükleniyor...</div>
-        </div>
-        <div class="section">
-          <h2 class="section-title">Nisan 2026 Satış / Tahakkuk Olmayanlar</h2>
-          <div id="y26AprilMissingWrap" class="empty">Yükleniyor...</div>
-        </div>
-      </div>
-      <div class="section">
-        <h2 class="section-title">Ocak 2026'dan İtibaren Eksik Muhasebe Ücreti Ayları</h2>
-        <div id="y26MissingMonthsWrap" class="empty">Yükleniyor...</div>
-      </div>
-      <div class="grid-2">
-        <div class="section">
-          <h2 class="section-title">31.12.2025 Açılış Öneri Listesi</h2>
-          <div id="y26OpeningWrap" class="empty">Yükleniyor...</div>
-        </div>
-        <div class="section">
-          <h2 class="section-title">2026 Tahakkuk Öneri Listesi</h2>
-          <div id="y26AccrualSuggestionWrap" class="empty">Yükleniyor...</div>
-        </div>
+        <div id="bankAiCenterWrap" class="empty">Yükleniyor...</div>
       </div>
     </section>
 
-    <section id="tab-hesaplar" class="tab-page">
+    <section id="tab-hesaplar" class="tab-page"><section id="tab-hesaplar" class="tab-page">
       <div class="grid-2">
         <div class="section"><h2 class="section-title">Hesap Özeti</h2><div id="accountSummaryWrap" class="empty">Yükleniyor...</div></div>
         <div class="section"><h2 class="section-title">Banka Montaj Paneli</h2><div id="bankPanelWrap" class="empty">Yükleniyor...</div></div>
       </div>
       <div class="section"><h2 class="section-title">Moka Transfer Paneli</h2><div id="mokaPanelWrap" class="empty">Yükleniyor...</div></div>
       <div class="section"><h2 class="section-title">Banka / Moka Montaj Geçmişi</h2><div id="bankMatchWrap" class="empty">Yükleniyor...</div></div>
-      <div class="section"><h2 class="section-title">Hesap Hareketi Test Merkezi</h2><div id="movementTestWrap" class="empty">Yükleniyor...</div></div>
+      <div class="section"><h2 class="section-title">Banka / Çek Yapıştırma ve AI Okuma Merkezi</h2><div id="movementTestWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
     <section id="tab-giderler" class="tab-page">
@@ -754,7 +724,7 @@ function togglePassword(){const i=document.getElementById("loginPassword"); i.ty
 function submitLogin(e){e.preventDefault(); const v=(document.getElementById("loginPassword").value||"").trim(); const err=document.getElementById("loginError"); err.textContent=""; if(v!==LOCAL_PASSWORD){err.textContent="Şifre hatalı."; return false} localStorage.setItem(SESSION_KEY,"ok"); openApp(); refreshAll(); return false}
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
 function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
-function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],gecis2026:["2026 Geçiş","31.12.2025 açılışı, Moka 0, eksik muhasebe ücreti ay kontrolü"],hesaplar:["Hesaplar","Kasa, banka, batak, çek, senet, Moka"],giderler:["Gider Tahakkuk","Sabit ve değişken gider tahakkuk kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
+function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],gecis2026:["Banka & Çek AI","Banka ekstresi yapıştırma, çek/senet girişi ve yapay zeka okuma paneli"],hesaplar:["Hesaplar","Kasa, banka, çek, senet, Moka ve AI okuma"],giderler:["Gider Tahakkuk","Sabit ve değişken gider tahakkuk kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
 async function loadDashboard(){
@@ -1060,8 +1030,9 @@ function normalizeImportDate(v){
   return Number.isNaN(d.getTime()) ? new Date().toISOString().slice(0,10) : d.toISOString().slice(0,10);
 }
 function movementImportClassifier(desc=''){
-  const s=String(desc||'').toLowerCase();
-  if(/moka|united|sanal pos|pos /.test(s)) return 'moka';
+  const s=normalizeMatchText(desc);
+  if(/moka|pos|mail order|sanal pos/.test(s)) return 'moka';
+  if(/cek|çek|senet|portfoy|portföy|çek tahsil|çek odeme|çek ödeme|senet tahsil|senet ödeme/.test(s)) return 'cek_senet';
   return 'bank';
 }
 
@@ -1126,6 +1097,76 @@ function findCariMatchForDescription(desc=''){
   return best;
 }
 function classifyImportedMovementReview(row={}){
+  const desc=String(row.description||'').trim();
+  const s=normalizeMatchText(desc);
+  const amount=num(row.net_amount||0);
+  const cariMatch=findCariMatchForDescription(desc);
+  let suggestedType=row.suggested_movement_type || (amount>=0 ? 'tahsilat' : 'mahsup');
+  let targetType=row.import_bucket==='moka' ? 'moka_united' : '';
+  let targetName=row.import_bucket==='moka' ? 'Moka United' : '';
+  let confidence=0;
+  let reason='';
+
+  if(row.import_bucket==='cek_senet'){
+    targetType='cek_senet';
+    targetName=/senet/.test(s) ? 'Senet İşlemi' : 'Çek İşlemi';
+    suggestedType=amount>=0 ? 'tahsilat' : 'odeme';
+    confidence=92;
+    reason='Metin çek / senet paterni içeriyor';
+  }
+
+  if(/komisyon|masraf|ucret|ücret|vergi|sgk|stopaj|kira|elektrik|su |internet|telefon/.test(s) && row.import_bucket!=='moka' && row.import_bucket!=='cek_senet'){
+    targetType='gider';
+    targetName=guessExpenseNameFromText(desc);
+    suggestedType='gider';
+    confidence=94;
+    reason='Metin gider anahtar kelimeleri içeriyor';
+  }
+
+  if(cariMatch && cariMatch.score>=82 && !['moka_united','cek_senet','gider'].includes(targetType)){
+    targetType='cari';
+    targetName=cariMatch.cari_name;
+    if(amount<0 && suggestedType==='tahsilat') suggestedType='mahsup';
+    confidence=Math.max(confidence, Math.min(96, cariMatch.score));
+    reason=reason ? `${reason} · ${cariMatch.reason}` : cariMatch.reason;
+  }
+
+  if(row.import_bucket==='moka'){
+    const mokaText=`${row.description||''} ${row.match_reason||''}`.toLowerCase();
+    if(/aktar|virman|transfer|banka/.test(mokaText)){
+      suggestedType='mahsup';
+      targetType='hesap';
+      targetName='Moka United -> Banka';
+      confidence=Math.max(confidence,92);
+      reason=reason ? `${reason} · Moka aktarım paterni` : 'Moka aktarım paterni';
+    }else{
+      suggestedType='tahsilat';
+      targetType='moka_united';
+      targetName='Moka United';
+      confidence=Math.max(confidence,96);
+      reason=reason ? `${reason} · Moka tahsilat paterni` : 'Moka tahsilat paterni';
+    }
+  }
+
+  if(!targetType){
+    targetType='cari';
+    targetName=cariMatch?.cari_name || '';
+    confidence=Math.max(confidence, cariMatch?.score || 60);
+    reason=reason || (cariMatch ? `${cariMatch.reason} · son karar kullanıcıda` : 'Cari eşleşmesi zayıf, son karar kullanıcıda');
+  }
+
+  return {
+    suggested_cari_id: cariMatch?.cari_id || row.suggested_cari_id || null,
+    suggested_cari_name: targetType==='cari' ? (cariMatch?.cari_name || row.suggested_cari_name || '') : (row.suggested_cari_name || ''),
+    suggested_expense_name: targetType==='gider' ? targetName : (row.suggested_expense_name || ''),
+    suggested_financial_account_type: targetType,
+    suggested_financial_account_name: ['hesap','moka_united','cek_senet'].includes(targetType) ? targetName : (row.suggested_financial_account_name || ''),
+    suggested_movement_type: suggestedType,
+    suggested_confidence: confidence,
+    match_confidence: confidence,
+    match_reason: reason,
+  };
+}){
   const desc=String(row.description||'').trim();
   const s=normalizeMatchText(desc);
   const amount=num(row.net_amount||0);
@@ -1243,12 +1284,14 @@ function queueImportedMovementsForApproval(mode='locked'){
   addAuditEvent('movement_import_queue',{source_module:'movement_test', note:`${added} import satırı onay kuyruğuna alındı`, summary:`Import inceleme kuyruğu · ${added} satır`});
   notify(`${added} import satırı onay kuyruğuna alındı.`);
   renderAccounts(); renderApprovals(); renderMovementTestCenter();
+  renderBankAiCenter();
 }
 function rerunImportedMovementMatching(){
   refreshImportedMovementAnalysis(true);
   addAuditEvent('movement_import_match_refresh',{source_module:'movement_test', summary:`Import eşleşme analizi yenilendi · ${(state.movementTests||[]).length} satır`});
   notify('Import eşleşme analizi yenilendi.');
   renderAccounts(); renderApprovals(); renderMovementTestCenter();
+  renderBankAiCenter();
 }
 function parseMovementImportRows(rawText='', sourceLabel='manuel_yapistir'){
   const sessionRef = decisionRef('IMP');
@@ -1259,54 +1302,68 @@ function parseMovementImportRows(rawText='', sourceLabel='manuel_yapistir'){
 
     let dateVal='', descVal='', amountVal='', externalRef='';
 
-    const bankStmtMatch = line.match(/^(\d{2}[.\/-]\d{2}[.\/-]\d{4})(?:\s+\d{2}:\d{2}(?::\d{2})?)?\s+([A-Z0-9\-]{8,})\s+(-?[\d.]+,\d{2})\s+[\d.]+,\d{2}\s+(.+)$/i);
+    const bankStmtMatch = line.match(/^(\d{2}[.\/-]\d{2}[.\/-]\d{4})(?:\s+(\d{2}:\d{2}(?::\d{2})?))?\s+([A-Z0-9\-]{8,})\s+(-?[\d.]+,\d{2})\s+[\d.]+,\d{2}\s+(.+)$/i);
+    const cekStmtMatch = line.match(/^(\d{2}[.\/-]\d{2}[.\/-]\d{4})(?:[;\t, ]+)(.+?(?:cek|çek|senet).+?)(?:[;\t, ]+)(-?[\d.]+,\d{2})$/i);
+
     if(bankStmtMatch){
       dateVal = bankStmtMatch[1];
-      externalRef = bankStmtMatch[2];
-      amountVal = bankStmtMatch[3];
-      descVal = bankStmtMatch[4];
-    } else {
+      externalRef = bankStmtMatch[3];
+      amountVal = bankStmtMatch[4];
+      descVal = bankStmtMatch[5];
+    }else if(cekStmtMatch){
+      dateVal = cekStmtMatch[1];
+      descVal = cekStmtMatch[2];
+      amountVal = cekStmtMatch[3];
+      const refMatch = descVal.match(/(?:cek|çek|senet)\s*(?:no)?[:#]?\s*([A-Z0-9\-]{3,})/i);
+      externalRef = refMatch ? refMatch[1] : '';
+    }else{
       const delim = line.includes('\t') ? '\t' : (line.includes(';') ? ';' : ',');
       const cols = line.split(delim).map(x=>x.trim()).filter(x=>x!=='');
       if(cols.length < 2) continue;
-      const numericCols = cols.filter(c=>/[\d]/.test(c) && /[\d,.]/.test(c));
-      if(cols.length >= 3){
+
+      if(cols.length >= 3 && /\d{2}[.\/-]\d{2}[.\/-]\d{4}/.test(cols[0])){
         dateVal = cols[0];
-        const amountIndex = cols.findIndex((c,i)=>i>0 && /[\d]/.test(c) && /[\d,.]/.test(c));
-        if(amountIndex > 0){
-          amountVal = cols[amountIndex];
-          descVal = cols.filter((_,i)=>i!==0 && i!==amountIndex).join(' ');
+        const amountCandidates = cols.map((c,i)=>({i,c})).filter(x=>x.i>0 && /^-?[\d.]+,\d{2}$/.test(x.c));
+        if(amountCandidates.length){
+          const amountCell = amountCandidates[amountCandidates.length-1];
+          amountVal = amountCell.c;
+          descVal = cols.filter((_,i)=>i!==0 && i!==amountCell.i).join(' ');
         }else{
-          descVal = cols[1];
-          amountVal = cols[2];
+          descVal = cols.slice(1).join(' ');
         }
       }else{
-        dateVal = cols[0];
-        const secondIsNum = /[\d]/.test(cols[1]) && /[\d,.]/.test(cols[1]);
-        amountVal = secondIsNum ? cols[1] : (numericCols[0] || '0');
-        descVal = secondIsNum ? '' : cols[1];
+        const numbers = cols.filter(c=>/^-?[\d.]+,\d{2}$/.test(c));
+        const dateCell = cols.find(c=>/\d{2}[.\/-]\d{2}[.\/-]\d{4}/.test(c)) || '';
+        dateVal = dateCell || '';
+        amountVal = numbers.length ? numbers[numbers.length-1] : '';
+        descVal = cols.filter(c=>c!==dateCell && c!==amountVal).join(' ');
       }
+
+      const refCell = cols.find(c=>/[A-Z0-9\-]{8,}/.test(c) && !/^\d{2}[.\/-]\d{2}[.\/-]\d{4}$/.test(c));
+      if(refCell) externalRef = refCell;
     }
 
     const amount = parseTrNumber(amountVal);
-    if(!amount && !descVal) continue;
     const normalizedDate = normalizeImportDate(dateVal);
-    const import_bucket = movementImportClassifier(descVal);
+    const bucket = movementImportClassifier(descVal);
+    const cleanDesc = (descVal || `${sourceLabel} hareketi`).replace(/\s+/g,' ').trim();
+    if(!cleanDesc && !amount) continue;
+
     rows.push({
       id: uid('movimp'),
       import_session_ref: sessionRef,
       import_source: sourceLabel,
-      import_bucket,
+      import_bucket: bucket,
       movement_date: normalizedDate,
-      description: descVal || `${sourceLabel} hareketi`,
+      description: cleanDesc,
       net_amount: amount,
       external_ref: externalRef || null,
-      suggested_financial_account_type: import_bucket === 'moka' ? 'moka_united' : 'banka',
+      suggested_financial_account_type: bucket === 'moka' ? 'moka_united' : (bucket === 'cek_senet' ? 'cek_senet' : 'banka'),
       source_type: 'movement_import',
       source_origin: sourceLabel,
       imported_at: new Date().toISOString(),
       is_test_import: true,
-      txn_id: txnId({ id: uid('seed'), movement_date: normalizedDate, description: descVal, amount, external_ref: externalRef }, 'IMP')
+      txn_id: txnId({ id: uid('seed'), movement_date: normalizedDate, description: cleanDesc, amount, external_ref: externalRef }, 'IMP')
     });
   }
   return rows;
@@ -2539,10 +2596,9 @@ function renderSelectedCariDetail(){
     ${meta.isConsistent?'<span class="tag green">BAKİYE UYUMLU</span>':'<span class="tag red">BAKİYE KONTROL</span>'}
   </div>
   <div class="filter-chips" id="detailLedgerViewChips">
-    <button class="chip ${state.selectedLedgerView==='live2026'?'active':''}" data-ledger-view="live2026">Canlı Ekstre (Açılış + 2026)</button>
-    <button class="chip ${state.selectedLedgerView==='allhistory'?'active':''}" data-ledger-view="allhistory">Tüm Geçmiş (Read-Only)</button>
+    <button class="chip active" data-ledger-view="allhistory">Tüm Dönemler (Read-Only)</button>
   </div>
-  <div style="margin:-4px 0 12px 0;font-size:13px;color:#475569;font-weight:800;">${state.selectedLedgerView==='allhistory' ? 'Geçmiş kayıtlar görünür ama read-only arşivdir; bakiye motoruna müdahale etmez.' : 'Canlı görünüm açılış bakiyesi + 2026 hareketleri ile çalışır.'}</div>
+  <div style="margin:-4px 0 12px 0;font-size:13px;color:#475569;font-weight:800;">Sana gönderilen bütün cari dönemleri görünür. Geçmiş kayıtlar read-only arşivdir; canlı banka ve çek işleme ayrı yönetilir.</div>
   <div class="filter-chips" id="detailDateChips">
     <button class="chip ${state.selectedRange==='3m'?'active':''}" data-range="3m">3 Ay</button>
     <button class="chip ${state.selectedRange==='1m'?'active':''}" data-range="1m">1 Ay</button>
@@ -3009,6 +3065,7 @@ function renderAccounts(){
   document.querySelectorAll('[data-bank-key]').forEach(el=>el.addEventListener('click',()=>openBankActionModal(el.dataset.bankBucket, el.dataset.bankKey)));
   renderBankMatchHistory();
   renderMovementTestCenter();
+  renderBankAiCenter();
 }
 function renderBankMatchHistory(){
   const rows = [...(state.operationalLedger || [])].filter(x=>['bank_panel','moka_panel','approval_center'].includes(x.source_module || '')).slice(0,20);
@@ -3067,15 +3124,12 @@ function renderMovementTestCenter(){
       <div class="field"><label>Dosya Oku</label><input id="movementImportFile" type="file" accept=".txt,.csv,.tsv,.log,.xlsx,.xls,text/plain"></div>
     </div>
     <div class="field" style="margin-bottom:14px;">
-      <label>Hesap Hareketi Yapıştır</label>
-      <textarea id="movementImportText" rows="8" class="select-input" placeholder="Örnek:
-18.04.2026;FAST GELEN HAVALE ABC LTD;12.500,00
-18.04.2026;MOKA UNITED AKTARIM;8.245,50
-23.03.2026 16:40 2026003110812404 11.000,00 188.621,07 Gelen FAST Anlık Ödeme"></textarea>
+      <label>Banka Ekstresi / Çek / Senet Metni Yapıştır</label>
+      <textarea id="movementImportText" rows="8" class="select-input" placeholder="Örnek:\n18.04.2026;FAST GELEN HAVALE ABC LTD;12.500,00\n18.04.2026;MOKA UNITED AKTARIM;8.245,50\n23.03.2026 16:40 2026003110812404 11.000,00 188.621,07 Gelen FAST Anlık Ödeme\n15.04.2026;ÇEK TAHSİLATI ABC ÇEK NO 10245;35.000,00\n16.04.2026;ÇEK ÖDEMESİ TEDARİKÇİ XYZ ÇEK 7721;-18.500,00"></textarea>
     </div>
     <div class="grid-4" style="margin-bottom:14px;">
       <div class="metric-mini"><div class="k">Test Satırı</div><div class="v">${summary.total}</div></div>
-      <div class="metric-mini"><div class="k">Banka / Moka</div><div class="v">${summary.bank} / ${summary.moka}</div></div>
+      <div class="metric-mini"><div class="k">Banka / Çek / Moka</div><div class="v">${summary.bank} / ${rows.filter(x=>x.import_bucket==='cek_senet').length} / ${summary.moka}</div></div>
       <div class="metric-mini"><div class="k">Eşleşen Cari</div><div class="v">${summary.matched}</div></div>
       <div class="metric-mini"><div class="k">Toplam</div><div class="v">${money(summary.total_amount)}</div></div>
     </div>
@@ -3092,6 +3146,47 @@ function renderMovementTestCenter(){
     fileEl.addEventListener('change', handleMovementFileImport);
     fileEl.dataset.bound='1';
   }
+}
+
+function renderBankAiCenter(){
+  const target = document.getElementById('bankAiCenterWrap');
+  if(!target) return;
+  const rows = state.movementTests || [];
+  const summary = {
+    total: rows.length,
+    banka: rows.filter(x=>!['moka','cek_senet'].includes(x.import_bucket)).length,
+    cek: rows.filter(x=>x.import_bucket==='cek_senet').length,
+    moka: rows.filter(x=>x.import_bucket==='moka').length,
+    approval: rows.filter(x=>x.approval_required).length,
+    duplicate: rows.filter(x=>x.is_duplicate_candidate).length
+  };
+  target.innerHTML = `
+    <div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn btn-blue" onclick="analyzeMovementImport()">Ekstre / Çek Metnini İçeri Al</button>
+      <button class="btn btn-soft" onclick="rerunImportedMovementMatching()">AI Okumayı Yenile</button>
+      <button class="btn btn-soft" onclick="queueImportedMovementsForApproval('all')">Hepsini Onay Kuyruğuna At</button>
+      <button class="btn btn-soft" onclick="exportMovementImportJson()">AI JSON İndir</button>
+    </div>
+    <div class="field" style="margin-bottom:14px;">
+      <label>Desteklenen Formatlar</label>
+      <div style="padding:12px;border:1px solid var(--line);border-radius:12px;background:#fbfdff;font-weight:800;color:#334155;line-height:1.6;">
+        Banka ekstresi satırı, FAST/EFT açıklamaları, çek tahsil/ödeme satırları, senet satırları, toplu metin yapıştırma ve xlsx/csv içeri aktarma.
+      </div>
+    </div>
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Toplam Satır</div><div class="v">${summary.total}</div></div>
+      <div class="metric-mini"><div class="k">Banka</div><div class="v">${summary.banka}</div></div>
+      <div class="metric-mini"><div class="k">Çek / Senet</div><div class="v">${summary.cek}</div></div>
+      <div class="metric-mini"><div class="k">Moka</div><div class="v">${summary.moka}</div></div>
+    </div>
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="metric-mini"><div class="k">Onaya Düşmeli</div><div class="v">${summary.approval}</div></div>
+      <div class="metric-mini"><div class="k">Muhtemel Çift</div><div class="v">${summary.duplicate}</div></div>
+      <div class="metric-mini"><div class="k">Cari Kararı</div><div class="v">Manuel</div></div>
+      <div class="metric-mini"><div class="k">Görünüm</div><div class="v">Tüm Dönemler</div></div>
+    </div>
+    <div class="empty">Detaylı satır işleme ve dosya yükleme Hesaplar sekmesindeki “Banka / Çek Yapıştırma ve AI Okuma Merkezi” içinde devam eder.</div>
+  `;
 }
 
 function renderReports(){
