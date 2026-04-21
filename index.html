@@ -354,7 +354,6 @@
     <div class="nav">
       <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
       <button class="nav-btn" data-tab="cariler">Cariler</button>
-      <button class="nav-btn" data-tab="gecis2026">Banka & Çek AI</button>
       <button class="nav-btn" data-tab="hesaplar">Hesaplar</button>
       <button class="nav-btn" data-tab="giderler">Gider Tahakkuk</button>
       <button class="nav-btn" data-tab="raporlar">Raporlar</button>
@@ -422,29 +421,6 @@
       </div>
     </section>
 
-    <section id="tab-gecis2026" class="tab-page">
-      <div class="section">
-        <h2 class="section-title">Banka & Çek AI Okuma Merkezi</h2>
-        <div class="grid-2" style="margin-bottom:16px;">
-          <div class="card">
-            <div class="card-label">Kural</div>
-            <div class="card-value" style="font-size:18px;line-height:1.45;">
-              Sana gönderilen bütün carilerin bütün dönemleri görünür. Bu merkez sadece banka ekstresi, çek ve senet metinlerini okuyup öneri üretir; cari kararını son kullanıcı verir.
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-label">Hızlı Akış</div>
-            <div class="card-value" style="font-size:18px;line-height:1.45;">
-              1) Metni yapıştır veya dosya yükle<br>
-              2) AI okuma ile satırları ayrıştır<br>
-              3) Muhtemel çift / çek / banka / Moka ayrımını gör<br>
-              4) Cariyi sen kontrol et, onaya at
-            </div>
-          </div>
-        </div>
-        <div id="bankAiCenterWrap" class="empty">Yükleniyor...</div>
-      </div>
-    </section>
 
     <section id="tab-hesaplar" class="tab-page"><section id="tab-hesaplar" class="tab-page">
       <div class="grid-2">
@@ -453,7 +429,7 @@
       </div>
       <div class="section"><h2 class="section-title">Moka Transfer Paneli</h2><div id="mokaPanelWrap" class="empty">Yükleniyor...</div></div>
       <div class="section"><h2 class="section-title">Banka / Moka Montaj Geçmişi</h2><div id="bankMatchWrap" class="empty">Yükleniyor...</div></div>
-      <div class="section"><h2 class="section-title">Banka / Çek Yapıştırma ve AI Okuma Merkezi</h2><div id="movementTestWrap" class="empty">Yükleniyor...</div></div>
+      <div class="section"><h2 class="section-title">Banka / Çek Yapıştırma Merkezi</h2><div id="movementTestWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
     <section id="tab-giderler" class="tab-page">
@@ -724,7 +700,7 @@ function togglePassword(){const i=document.getElementById("loginPassword"); i.ty
 function submitLogin(e){e.preventDefault(); const v=(document.getElementById("loginPassword").value||"").trim(); const err=document.getElementById("loginError"); err.textContent=""; if(v!==LOCAL_PASSWORD){err.textContent="Şifre hatalı."; return false} localStorage.setItem(SESSION_KEY,"ok"); openApp(); refreshAll(); return false}
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
 function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
-function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],gecis2026:["Banka & Çek AI","Banka ekstresi yapıştırma, çek/senet girişi ve yapay zeka okuma paneli"],hesaplar:["Hesaplar","Kasa, banka, çek, senet, Moka ve AI okuma"],giderler:["Gider Tahakkuk","Sabit ve değişken gider tahakkuk kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
+function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, çek, senet ve Moka"],giderler:["Gider Tahakkuk","Sabit ve değişken gider tahakkuk kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; const target=document.getElementById("tab-"+tab) || document.getElementById("tab-dashboard"); const m=meta[tab] || meta.dashboard; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); target.classList.add("active"); document.getElementById("pageTitle").textContent=m[0]; document.getElementById("pageDesc").textContent=m[1]}
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
 async function loadDashboard(){
@@ -742,8 +718,8 @@ async function loadDashboard(){
 
 async function loadAllMoves(){
   try{
-    const rows = await fetchAll('v_cari_hareket_dokumu','line_date',true,1000, q=>q.lte('line_date','2026-12-31'));
-    state.allMoves=(rows||[]).map(x=>({...x,cari_id:x.cari_id||x.id, txn_id:txnId(x,'HRK')}));
+    const rows = await fetchAll('v_cari_hareket_dokumu','line_date',true,1000);
+    state.allMoves=(rows||[]).map(x=>prepareMoveRow(x));
   }catch(_){
     state.allMoves=[];
   }
@@ -781,12 +757,16 @@ async function loadCariler(){
 async function loadSelectedCariHareketler(){
   if(!state.selectedCariId){state.hareketler=[];return}
   try{
-    const {data,error}=await supabaseClient.from("v_cari_hareket_dokumu").select("*").eq("cari_id",state.selectedCariId).order("line_date",{ascending:false}).limit(500);
+    const {data,error}=await supabaseClient.from("v_cari_hareket_dokumu").select("*").eq("cari_id",state.selectedCariId).order("line_date",{ascending:false}).limit(5000);
     if(error) throw error;
-    state.hareketler=(data||[]).map(x=>({...x, txn_id:txnId(x,'HRK')}));
+    const rows=(data||[]).map(x=>prepareMoveRow(x));
+    if(rows.length){
+      state.hareketler=rows;
+      return;
+    }
+    throw new Error('empty_selected_moves');
   }catch(_){
-    const key=String(state.selectedCariId);
-    state.hareketler=[...(state.allMoves||[])].filter(x=>String(x.cari_id||x.cari_name||'')===key).sort((a,b)=>new Date(b.line_date||b.movement_date||0)-new Date(a.line_date||a.movement_date||0)).map(x=>({...x, txn_id:txnId(x,'HRK')}));
+    state.hareketler=[...(state.allMoves||[])].filter(moveMatchesSelectedCari).sort((a,b)=>new Date(b.line_date||b.movement_date||0)-new Date(a.line_date||a.movement_date||0)).map(x=>prepareMoveRow(x));
   }
 }
 async function loadAccounts(){
@@ -910,7 +890,7 @@ function renderYearTransitionPanel(){
   document.getElementById('y26FeeCariCount').textContent = feeCards.length;
   document.getElementById('y26MissingCount').textContent = missingRows.length;
   document.getElementById('y26RuleWrap').innerHTML = `<div style="padding:12px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;font-weight:800;line-height:1.7;">
-    Açılış kesiti <strong>31.12.2025</strong> alınır. <strong>Moka açılışı 0</strong> kabul edilir. 2026 yılı için muhasebe ücreti, aktif ve ücretli cari kartlarından okunur. Ocak 2026'dan itibaren ilgili ay için satış/tahakkuk yoksa kayıt <strong>eksik ay</strong> olarak listelenir. Geçmiş hareketler görünür ama <strong>read-only arşiv</strong> olarak kalır; canlı motor <strong>açılış + 2026</strong> ile yürür.
+    Açılış kesiti <strong>31.12.2025</strong> alınır. <strong>Moka açılışı 0</strong> kabul edilir. 2026 yılı için muhasebe ücreti, aktif ve ücretli cari kartlarından okunur. Ocak 2026'dan itibaren ilgili ay için satış/tahakkuk yoksa kayıt <strong>eksik ay</strong> olarak listelenir. Geçmiş hareketler görünür ve read-only arşiv olarak kalır; cari ekranında bütün dönemler izlenebilir.
   </div>`;
   document.getElementById('y26DocRuleWrap').innerHTML = y.doc_rules?.length ? `<table><thead><tr><th>Belge Türü</th><th>Yön</th><th>Açıklama</th></tr></thead><tbody>${y.doc_rules.map(r=>`<tr><td>${escapeHtml(r.belge)}</td><td><span class="tag ${(r.yon||'').toLowerCase()==='borç'?'blue':'green'}">${escapeHtml(r.yon)}</span></td><td>${escapeHtml(r.aciklama)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Kural yok.</div>`;
   document.getElementById('y26MarchMissingWrap').innerHTML = fmtList(marchMissing);
@@ -1046,6 +1026,41 @@ function normalizeMatchText(v=''){
     .replace(/\s+/g,' ')
     .trim();
 }
+function normalizeCariKey(v=''){
+  return normalizeMatchText(v).replace(/\s+/g,'');
+}
+function prepareMoveRow(row={}){
+  const cariName = row.cari_name || row.customer_name || row.card_name || row.name || '';
+  const cariCode = row.cari_code || row.customer_code || row.code || '';
+  return {
+    ...row,
+    cari_id: row.cari_id || row.cari_card_id || row.card_id || row.customer_id || null,
+    cari_name: cariName,
+    cari_code: cariCode,
+    cari_key: normalizeCariKey(cariName),
+    txn_id: row.txn_id || txnId(row,'HRK')
+  };
+}
+function getSelectedCariContext(){
+  const key = String(state.selectedCariId || '');
+  const cari = state.cariler.find(x=>String(x.cari_id || x.id || '')===key)
+    || state.cariCards.find(x=>String(x.cari_id || x.id || '')===key)
+    || null;
+  const ids = new Set([key, String(cari?.cari_id || ''), String(cari?.id || '')].filter(Boolean));
+  const names = new Set([normalizeCariKey(cari?.cari_name || ''), normalizeCariKey(cari?.name || '')].filter(Boolean));
+  const codes = new Set([normalizeCariKey(cari?.cari_code || ''), normalizeCariKey(cari?.code || '')].filter(Boolean));
+  return { cari, ids, names, codes };
+}
+function moveMatchesSelectedCari(row){
+  const ctx = getSelectedCariContext();
+  const rowIds = [row?.cari_id, row?.cari_card_id, row?.card_id, row?.customer_id].map(v=>String(v || '')).filter(Boolean);
+  if(rowIds.some(v=>ctx.ids.has(v))) return true;
+  const rowNames = [row?.cari_name, row?.customer_name, row?.card_name, row?.name].map(v=>normalizeCariKey(v || '')).filter(Boolean);
+  if(rowNames.some(v=>ctx.names.has(v))) return true;
+  const rowCodes = [row?.cari_code, row?.customer_code, row?.code].map(v=>normalizeCariKey(v || '')).filter(Boolean);
+  if(rowCodes.some(v=>ctx.codes.has(v))) return true;
+  return false;
+}
 function matchTokens(v=''){
   const stop=new Set(['ve','ile','icin','için','ltd','ltdsti','sti','şti','as','aş','anonim','sirket','şirket','hukuk','burosu','bürosu','tic','san','hesap','hesabi','hesabı','gelen','gonderen','gönderen','havale','eft','fast','odeme','ödeme','musteriden','müşteriden','tahsilat','virman','banka','sube','şube','vadesiz','hesaplari']);
   return normalizeMatchText(v).split(' ').filter(x=>x && x.length>1 && !stop.has(x));
@@ -1166,64 +1181,8 @@ function classifyImportedMovementReview(row={}){
     match_confidence: confidence,
     match_reason: reason,
   };
-}){
-  const desc=String(row.description||'').trim();
-  const s=normalizeMatchText(desc);
-  const amount=num(row.net_amount||0);
-  const cariMatch=findCariMatchForDescription(desc);
-  let suggestedType=row.suggested_movement_type || (amount>=0 ? 'tahsilat' : 'mahsup');
-  let targetType=row.import_bucket==='moka' ? 'moka_united' : '';
-  let targetName=row.import_bucket==='moka' ? 'Moka United' : '';
-  let confidence=0;
-  let reason='';
-  if(/komisyon|masraf|ucret|ücret|vergi|sgk|stopaj|kira|elektrik|su |internet|telefon/.test(s) && row.import_bucket!=='moka'){
-    targetType='gider';
-    targetName=guessExpenseNameFromText(desc);
-    suggestedType='gider';
-    confidence=94;
-    reason='Metin gider anahtar kelimeleri içeriyor';
-  }
-  if(cariMatch && cariMatch.score>=75){
-    targetType='cari';
-    targetName=cariMatch.cari_name;
-    if(amount<0 && suggestedType==='tahsilat') suggestedType='mahsup';
-    confidence=Math.max(confidence, cariMatch.score);
-    reason=reason ? `${reason} · ${cariMatch.reason}` : cariMatch.reason;
-  }
-  if(row.import_bucket==='moka'){
-    const mokaText=`${row.description||''} ${row.match_reason||''}`.toLowerCase();
-    if(/aktar|virman|transfer|banka/.test(mokaText)){
-      suggestedType='mahsup';
-      targetType='hesap';
-      targetName='Moka United -> Banka';
-      confidence=Math.max(confidence,92);
-      reason=reason ? `${reason} · Moka aktarım paterni` : 'Moka aktarım paterni';
-    }else{
-      suggestedType='tahsilat';
-      targetType='moka_united';
-      targetName='Moka United';
-      confidence=Math.max(confidence,96);
-      reason=reason ? `${reason} · Moka tahsilat paterni` : 'Moka tahsilat paterni';
-    }
-  }
-  if(!targetType){
-    targetType='cari';
-    targetName=cariMatch?.cari_name || '';
-    confidence=Math.max(confidence, cariMatch?.score || 68);
-    reason=reason || (cariMatch ? cariMatch.reason : 'Cari eşleşmesi zayıf, operatör kontrolü gerekli');
-  }
-  return {
-    suggested_cari_id: cariMatch?.cari_id || row.suggested_cari_id || null,
-    suggested_cari_name: targetType==='cari' ? (cariMatch?.cari_name || row.suggested_cari_name || '') : (row.suggested_cari_name || ''),
-    suggested_expense_name: targetType==='gider' ? targetName : (row.suggested_expense_name || ''),
-    suggested_financial_account_type: targetType,
-    suggested_financial_account_name: ['hesap','moka_united'].includes(targetType) ? targetName : (row.suggested_financial_account_name || ''),
-    suggested_movement_type: suggestedType,
-    suggested_confidence: confidence,
-    match_confidence: confidence,
-    match_reason: reason,
-  };
 }
+
 function refreshImportedMovementAnalysis(persist=true){
   const rows=[...(state.movementTests||[])];
   if(!rows.length) return;
@@ -2179,7 +2138,7 @@ function renderCariList(){
     <div><div class="list-title">${escapeHtml(c.cari_name)} ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''} ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}</div>
     <div class="list-meta">Tür: ${escapeHtml(c.taxpayer_type||"-")} · Defter Ücreti: ${money(c.defter_ucreti||0)} · Skor: ${Number(c.score_total||0).toFixed(0)}<br>Son tahakkuk: ${shortDate(c.son_tahakkuk_tarihi)} · ${money(c.son_tahakkuk_tutari||0)}<br>Son tahsilat: ${shortDate(c.son_tahsilat_tarihi)} · ${money(c.son_tahsilat_tutari||0)}</div></div>
     <div class="tag ${Number(c.bakiye||0)>0?'red':'green'}">${money(c.bakiye||0)}</div></div>`).join(""):`<div class="empty">Cari bulunamadı.</div>`;
-  list.querySelectorAll("[data-cari-id]").forEach(el=>el.addEventListener("click",async()=>{state.selectedCariId=el.dataset.cariId; await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail();}));
+  list.querySelectorAll("[data-cari-id]").forEach(el=>el.addEventListener("click",async()=>{state.selectedCariId=el.dataset.cariId; state.selectedLedgerView='allhistory'; state.selectedRange='all'; await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail();}));
 }
 function getRangeStartDate(){
   const now=new Date(); let start=null;
@@ -2270,7 +2229,7 @@ function getStatementBaseRows(){
   const key = String(state.selectedCariId || '');
   if(!key) return [];
   const all = [...(state.allMoves||[])]
-    .filter(r=>String(r.cari_id || r.cari_name || '')===key)
+    .filter(r=>moveMatchesSelectedCari(r))
     .map(r=>{
       const mv = normalizeMovementAmounts(r);
       return {
@@ -2294,7 +2253,7 @@ function getStatementBaseRows(){
       rows2026.push(r);
     }
   });
-  const currentCari = state.cariler.find(x=>String(x.cari_id)===key);
+  const currentCari = getSelectedCariContext().cari || state.cariler.find(x=>String(x.cari_id||x.id||'')===key);
   const syntheticOpening = openingBalance!==0 ? [{
     id:'OPEN-'+key,
     cari_id:key,
@@ -3163,7 +3122,7 @@ function renderBankAiCenter(){
   target.innerHTML = `
     <div class="btn-row" style="margin-bottom:14px;">
       <button class="btn btn-blue" onclick="analyzeMovementImport()">Ekstre / Çek Metnini İçeri Al</button>
-      <button class="btn btn-soft" onclick="rerunImportedMovementMatching()">AI Okumayı Yenile</button>
+      <button class="btn btn-soft" onclick="rerunImportedMovementMatching()">Analizi Yenile</button>
       <button class="btn btn-soft" onclick="queueImportedMovementsForApproval('all')">Hepsini Onay Kuyruğuna At</button>
       <button class="btn btn-soft" onclick="exportMovementImportJson()">AI JSON İndir</button>
     </div>
@@ -3185,7 +3144,7 @@ function renderBankAiCenter(){
       <div class="metric-mini"><div class="k">Cari Kararı</div><div class="v">Manuel</div></div>
       <div class="metric-mini"><div class="k">Görünüm</div><div class="v">Tüm Dönemler</div></div>
     </div>
-    <div class="empty">Detaylı satır işleme ve dosya yükleme Hesaplar sekmesindeki “Banka / Çek Yapıştırma ve AI Okuma Merkezi” içinde devam eder.</div>
+    <div class="empty">Detaylı satır işleme ve dosya yükleme Hesaplar sekmesindeki “Banka / Çek Yapıştırma Merkezi” içinde devam eder.</div>
   `;
 }
 
@@ -4019,9 +3978,15 @@ async function refreshAll(){
   };
 
   safeRender(()=>renderDashboard());
-  safeRender(()=>renderAccounts(),'accountSummaryWrap','Hesap özeti yüklenemedi. View eksikse yine de banka import kullanabilirsin.');
-  safeRender(()=>renderReports(),'reportWrap','Raporlar yüklenemedi. Cari özeti yedek modda kalabilir.');
-  safeRender(()=>renderDocuments(),'documentsWrap','Belgeler yüklenemedi.');
+  safeRender(()=>{
+    renderAccounts();
+    renderMovementTestCenter();
+  });
+  safeRender(()=>renderReports());
+  const ensureText=(id,msg)=>{ const el=document.getElementById(id); if(el && /Yükleniyor/i.test(el.textContent||'')) el.innerHTML=`<div class="empty">${msg}</div>`; };
+  ['accountSummaryWrap','bankPanelWrap','mokaPanelWrap','bankMatchWrap','movementTestWrap'].forEach(id=>ensureText(id,'Bu alan şu an veri vermedi. Yine de yerel import ile devam edebilirsin.'));
+  ['reportWrap'].forEach(id=>ensureText(id,'Rapor verisi şu an gelmedi. Cari listesi ve cari detay yedek modda çalışabilir.'));
+  safeRender(()=>renderDocuments(),'documentWrap','Belgeler yüklenemedi.');
   safeRender(()=>renderExpenses(),'expenseWrap','Gider tahakkuk ekranı yüklenemedi.');
   safeRender(()=>renderApprovals(),'pendingWrap','Onay merkezi yüklenemedi.');
   safeRender(()=>renderBackup(),'backupWrap','Yedekleme ekranı yüklenemedi.');
