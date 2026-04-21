@@ -848,20 +848,42 @@ async function loadCariler(){
   try{ renderSelectedCariDetail(); }catch(_){}
 }
 
+function mergeMoveSets(primaryRows, secondaryRows){
+  const out=[];
+  const seen=new Set();
+  const pushRow=(r)=>{
+    if(!r) return;
+    const row=prepareMoveRow(r);
+    const mv=normalizeMovementAmounts(row);
+    const key=[
+      row.txn_id || '',
+      row.id || '',
+      String(row.cari_id || ''),
+      String(getRowDateValue(row) || ''),
+      String(row.movement_type || ''),
+      String(row.description || ''),
+      mv.debit.toFixed(2),
+      mv.credit.toFixed(2)
+    ].join('|');
+    if(seen.has(key)) return;
+    seen.add(key);
+    out.push(row);
+  };
+  (primaryRows||[]).forEach(pushRow);
+  (secondaryRows||[]).forEach(pushRow);
+  return out.sort((a,b)=>new Date(b.line_date||b.movement_date||0)-new Date(a.line_date||a.movement_date||0));
+}
 async function loadSelectedCariHareketler(){
   if(!state.selectedCariId){state.hareketler=[];return}
+  let dbRows=[];
   try{
-    const {data,error}=await supabaseClient.from("v_cari_hareket_dokumu").select("*").eq("cari_id",state.selectedCariId).order("line_date",{ascending:false}).limit(5000);
-    if(error) throw error;
-    const rows=(data||[]).map(x=>prepareMoveRow(x));
-    if(rows.length){
-      state.hareketler=rows;
-      return;
-    }
-    throw new Error('empty_selected_moves');
+    const fetched = await fetchAll('v_cari_hareket_dokumu','line_date',true,1000,(q)=>q.eq('cari_id',state.selectedCariId));
+    dbRows=(fetched||[]).map(x=>prepareMoveRow(x));
   }catch(_){
-    state.hareketler=[...(state.allMoves||[])].filter(moveMatchesSelectedCari).sort((a,b)=>new Date(b.line_date||b.movement_date||0)-new Date(a.line_date||a.movement_date||0)).map(x=>prepareMoveRow(x));
+    dbRows=[];
   }
+  const fallbackRows=[...(state.allMoves||[])].filter(moveMatchesSelectedCari).map(x=>prepareMoveRow(x));
+  state.hareketler=mergeMoveSets(dbRows, fallbackRows);
 }
 async function loadAccounts(){
   const importedMovements = readLocalJson(LOCAL_MOVEMENT_TEST_KEY).map(x=>({...x, txn_id:txnId(x,'IMP')}));
@@ -2236,12 +2258,15 @@ function getCariUiState(c){
   const late=!!c.is_tahsilat_3_ay_gecikmis;
   const promise=!!c.aktif_odeme_sozu_var;
   const fee=num(c.defter_ucreti||c.monthly_fee_amount||c.inferred_fee||0);
+  const historyCount=getCariHistoryCount(c.cari_id);
   const lastTahsilat = c.son_tahsilat_tarihi ? new Date(c.son_tahsilat_tarihi) : null;
   const monthsSinceTahsilat = lastTahsilat && !Number.isNaN(lastTahsilat.getTime()) ? ((new Date().getFullYear()-lastTahsilat.getFullYear())*12 + (new Date().getMonth()-lastTahsilat.getMonth())) : 99;
+  if(historyCount===0) return { cls:'danger', label:'Geçmiş Yok', tag:'<span class="mini-badge red">Geçmiş Yok</span>' };
   if(late) return { cls:'danger', label:'Tahsilat Riski', tag:'<span class="mini-badge red">Risk</span>' };
   if(promise) return { cls:'warn', label:'Ödeme Sözü', tag:'<span class="mini-badge amber">Söz Var</span>' };
   if(fee<=0) return { cls:'warn', label:'Ücret Yok', tag:'<span class="mini-badge amber">Ücret Eksik</span>' };
   if(monthsSinceTahsilat<=1) return { cls:'good', label:'Güncel Tahsilat', tag:'<span class="mini-badge green">Güncel</span>' };
+  if(monthsSinceTahsilat<=3) return { cls:'good', label:'Tahsilat Var', tag:'<span class="mini-badge green">Tahsilat Var</span>' };
   return { cls:'neutral', label:'Normal', tag:'<span class="mini-badge gray">Normal</span>' };
 }
 function cariBalanceBadge(c){
@@ -2257,9 +2282,10 @@ function renderCariList(){
     const ui=getCariUiState(c);
     const historyCount=getCariHistoryCount(c.cari_id);
     const feeSource = c.fee_source==='card' ? 'Cari Kart' : (c.fee_source==='view' ? 'View' : (c.fee_source==='ledger' ? 'Extre' : 'Belirsiz'));
+    const historyTag = historyCount>0 ? `<span class="mini-badge green">${historyCount} Satır</span>` : `<span class="mini-badge red">0 Satır</span>`;
     return `<div class="list-item ${state.selectedCariId===c.cari_id?'active':''} ${c.is_tahsilat_3_ay_gecikmis?'risk':''} ${ui.cls}" data-cari-id="${c.cari_id}">
       <div>
-        <div class="list-title">${escapeHtml(c.cari_name)} ${ui.tag} ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''} ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}</div>
+        <div class="list-title">${escapeHtml(c.cari_name)} ${ui.tag} ${historyTag} ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''} ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}</div>
         <div class="list-meta">Tür: ${escapeHtml(c.taxpayer_type||"-")} · Defter Ücreti: ${money(c.defter_ucreti||0)} · Kaynak: ${feeSource}<br>Son tahakkuk: ${shortDate(c.son_tahakkuk_tarihi)} · ${money(c.son_tahakkuk_tutari||0)}<br>Son tahsilat: ${shortDate(c.son_tahsilat_tarihi)} · ${money(c.son_tahsilat_tutari||0)} · Geçmiş Satır: ${historyCount}</div>
       </div>
       <div>${cariBalanceBadge(c)}</div>
@@ -3079,7 +3105,15 @@ function feeAmountFromMove(row){
 function getCariRowsByIdOrName(cariId){
   const card=getCariCard(cariId) || state.cariler.find(x=>String(x.cari_id||x.id||'')===String(cariId)) || null;
   const nameKey=normalizeCariKey(card?.cari_name || card?.name || '');
-  return [...(state.allMoves||[])].map(prepareMoveRow).filter(r=>String(r.cari_id||'')===String(cariId) || (nameKey && normalizeCariKey(r.cari_name||'')===nameKey));
+  const codeKey=normalizeCariKey(card?.cari_code || '');
+  const ctxRows = [
+    ...(state.allMoves||[]),
+    ...(state.hareketler||[])
+  ].map(prepareMoveRow).filter(r=>{
+    const rowCode=normalizeCariKey(r.cari_code || r.customer_code || r.code || '');
+    return String(r.cari_id||'')===String(cariId) || (nameKey && normalizeCariKey(r.cari_name||'')===nameKey) || (codeKey && rowCode===codeKey);
+  });
+  return mergeMoveSets(ctxRows, []);
 }
 function inferFeeForCari(cariId){
   const rows=getCariRowsByIdOrName(cariId).filter(isFeeMovement2026);
@@ -3133,13 +3167,26 @@ async function syncLedgerFeesToCariCards(){
       }
       if(res.error) throw res.error;
       ok++;
+      const card = state.cariCards.find(x=>String(x.id||x.cari_id||'')===String(row.card_id) || String(x.cari_id||'')===String(row.cari_id));
+      if(card){
+        card.monthly_fee_amount=row.inferred_fee;
+        card.monthly_fee_enabled=true;
+      }
+      const cari = state.cariler.find(x=>String(x.cari_id||x.id||'')===String(row.cari_id));
+      if(cari){
+        cari.defter_ucreti=row.inferred_fee;
+        cari.inferred_fee=row.inferred_fee;
+        cari.fee_source='card';
+      }
       addAuditEvent('fee_sync_from_ledger',{ target_name:row.cari_name, target_type:'cari', amount:row.inferred_fee, note:`Extreden bulundu. Eski ${money(row.current_fee)} → Yeni ${money(row.inferred_fee)}` });
     }catch(e){
       fail++;
       addAuditEvent('fee_sync_error',{ target_name:row.cari_name, target_type:'cari', amount:row.inferred_fee, note:e?.message || 'Ücret cari karta yazılamadı.' });
     }
   }
-  notify(`${ok} cari karta muhasebe ücreti işlendi${fail?`, ${fail} hata var`:''}.`);
+  mergeCariCardsIntoCariSummaries();
+  const remaining=computeFeeVerificationRows().filter(x=>x.still_zero).length;
+  notify(`${ok} cari karta muhasebe ücreti işlendi${fail?`, ${fail} hata var`:''}. Kalan sıfır: ${remaining}.`);
   await loadCariler();
   try{ await loadFeeData(); }catch(_){}
   renderCariList();
