@@ -346,6 +346,17 @@
   </div>
 </div>
 
+
+<div id="accountDetailModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:1100px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Hesap Detayı</h2>
+      <button class="btn btn-red" onclick="closeAccountDetailModal()">Kapat</button>
+    </div>
+    <div id="accountDetailContent"></div>
+  </div>
+</div>
+
 <div class="layout">
   <aside class="sidebar">
     <div style="text-align:center;margin-bottom:16px;"><img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" style="width:120px;display:block;margin:0 auto 10px;"></div>
@@ -413,6 +424,11 @@
               <option value="tahsilat_desc">Son Tahsilat ↓</option>
             </select>
           </div>
+          <div class="btn-row" style="margin-bottom:12px;">
+            <button class="btn btn-blue" onclick="syncLedgerFeesToCariCards()">2026 Ücretlerini Extreden Bul ve Cari Kartlara İşle</button>
+            <button class="btn btn-soft" onclick="renderFeeSyncQuick(true)">Ücret Taramasını Yenile</button>
+          </div>
+          <div id="feeSyncQuickWrap" class="empty" style="margin-bottom:12px;">Ücret taraması bekleniyor...</div>
           <div id="cariList" class="list"></div>
         </div>
         <div class="section detail-sticky">
@@ -2588,12 +2604,13 @@ function renderSelectedCariDetail(){
   <div class="grid-3" style="margin-bottom:14px">
     <div class="card"><div class="card-label">Tahsilat İstihbaratı</div><div class="card-value" style="font-size:18px">${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':'<span class="tag green">Normal</span>'}${c.aktif_odeme_sozu_var?`<div style="margin-top:8px;font-size:14px">Söz: ${shortDate(c.aktif_odeme_sozu_tarihi)} · ${money(c.aktif_odeme_sozu_tutari||0)} · ${escapeHtml(c.aktif_odeme_sozu_durum||"-")}</div>`:''}</div></div>
     <div class="card"><div class="card-label">Standart Kontrol</div><div class="card-value" style="font-size:18px">${meta.isConsistent?'<span class="tag green">UYUMLU</span>':'<span class="tag red">EXTRE / BAKİYE FARKI</span>'}<div style="margin-top:8px;font-size:14px;color:#475569">Fark: ${money(meta.diff)}</div></div></div>
-    <div class="card"><div class="card-label">Ücret Yönetimi</div><div class="card-value" style="font-size:18px">${getFeeTimeline(state.selectedCariId).length} dönem<br><span style="font-size:14px;color:#475569">${getFeeControl(state.selectedCariId).length} kontrol kaydı</span></div></div>
+    <div class="card"><div class="card-label">Ücret Yönetimi</div><div class="card-value" style="font-size:18px">${money(inferFeeForCari(state.selectedCariId).inferred_fee || card?.monthly_fee_amount || c.defter_ucreti || 0)}<br><span style="font-size:14px;color:#475569">Extreden bulunan aylık ücret · ${inferFeeForCari(state.selectedCariId).months.map(monthLabelTR).join(', ') || 'ayıklanamadı'}</span></div></div>
   </div>
   <div class="btn-row" style="margin-bottom:14px">
     <button class="btn btn-blue" onclick="openCariEditModal()">Cariyi Düzenle</button>
     <button class="btn btn-soft" onclick="openPromiseModal()">Ödeme Sözü Gir</button>
     <button class="btn btn-soft" onclick="openFeeModal()">Ücret Geçmişi</button>
+    <button class="btn btn-soft" onclick="syncLedgerFeesToCariCards()">Extreden Ücretleri Cari Kartlara İşle</button>
     <button class="btn btn-soft" onclick="openStatementPrecheck()">Extre Al</button>
     <button class="btn btn-soft" onclick="openDocumentModal(state.selectedCariId)">Belge Bağla</button>
   </div>
@@ -2945,6 +2962,115 @@ function ignoreSelectedBankRow(){
   renderApprovals();
   notify('Satır işlenmeyen olarak işaretlendi.');
 }
+function feeAmountFromMove(row){
+  return Math.max(num(row?.debit||0), num(row?.credit||0), num(row?.amount||0), num(row?.net_amount||0));
+}
+function getCariRowsByIdOrName(cariId){
+  const card=getCariCard(cariId) || state.cariler.find(x=>String(x.cari_id||x.id||'')===String(cariId)) || null;
+  const nameKey=normalizeCariKey(card?.cari_name || card?.name || '');
+  return [...(state.allMoves||[])].map(prepareMoveRow).filter(r=>String(r.cari_id||'')===String(cariId) || (nameKey && normalizeCariKey(r.cari_name||'')===nameKey));
+}
+function inferFeeForCari(cariId){
+  const rows=getCariRowsByIdOrName(cariId).filter(isFeeMovement2026);
+  const monthlyRows=rows.filter(r=>{ const m=feeMonthFromRow(r); return m>=1 && m<=12; });
+  const counts={};
+  monthlyRows.forEach(r=>{ const amt=feeAmountFromMove(r); if(amt>0){ const key=amt.toFixed(2); counts[key]=(counts[key]||0)+1; }});
+  const winner=Object.entries(counts).sort((a,b)=> b[1]-a[1] || Number(b[0])-Number(a[0]))[0];
+  const inferred = winner ? Number(winner[0]) : 0;
+  const months=[...new Set(monthlyRows.map(feeMonthFromRow).filter(x=>x>=1 && x<=12))].sort((a,b)=>a-b);
+  return { rows, monthlyRows, inferred_fee: inferred, months, count: winner ? winner[1] : 0 };
+}
+function getFeeSyncSuggestions(force=false){
+  const cards=(state.cariCards||[]).filter(c=>String(c?.cari_id||c?.id||'').trim());
+  const suggestions=[];
+  cards.forEach(card=>{
+    const cariId=String(card.cari_id||card.id||'');
+    const inf=inferFeeForCari(cariId);
+    if(!inf.inferred_fee) return;
+    const current=num(card.monthly_fee_amount||0);
+    if(!force && Math.abs(current - inf.inferred_fee) < 0.01 && card.monthly_fee_enabled) return;
+    suggestions.push({
+      card_id: card.id || card.cari_id,
+      cari_id: cariId,
+      cari_name: card.cari_name || '-',
+      current_fee: current,
+      inferred_fee: inf.inferred_fee,
+      month_count: inf.months.length,
+      months: inf.months.map(monthLabelTR).join(', ')
+    });
+  });
+  return suggestions.sort((a,b)=> a.cari_name.localeCompare(b.cari_name,'tr'));
+}
+function renderFeeSyncQuick(force=false){
+  const target=document.getElementById('feeSyncQuickWrap');
+  if(!target) return;
+  const rows=getFeeSyncSuggestions(force);
+  target.innerHTML = rows.length ? `<div class="rule-box" style="margin-bottom:10px;"><strong>Extreden bulunan 2026 muhasebe ücretleri</strong><br>${rows.length} cari kartta ücret güncellemesi hazır. Tek tuşla cari kartlara işleyebilirsin.</div><table><thead><tr><th>Cari</th><th class="text-right">Cari Kart Ücreti</th><th class="text-right">Extreden Bulunan</th><th>Bulunan Aylar</th></tr></thead><tbody>${rows.slice(0,12).map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td class="text-right">${money(r.current_fee)}</td><td class="text-right">${money(r.inferred_fee)}</td><td>${escapeHtml(r.months||'-')}</td></tr>`).join('')}</tbody></table>${rows.length>12?`<div class="muted-note" style="margin-top:8px;">İlk 12 kayıt gösteriliyor. Toplam ${rows.length} cari kart güncellenecek.</div>`:''}` : `<div class="empty">Extreden cari karta yazılacak yeni muhasebe ücreti bulunamadı.</div>`;
+}
+async function syncLedgerFeesToCariCards(){
+  if(!state.allMoves.length) await loadAllMoves();
+  if(!state.cariCards.length) await loadCariler();
+  const rows=getFeeSyncSuggestions(true);
+  if(!rows.length){ notify('Extrede cari karta işlenecek muhasebe ücreti bulunamadı.'); renderFeeSyncQuick(true); return; }
+  let ok=0, fail=0;
+  for(const row of rows){
+    try{
+      const payload={ monthly_fee_amount: row.inferred_fee, monthly_fee_enabled: true, updated_at: new Date().toISOString() };
+      let res=await supabaseClient.from('cari_cards').update(payload).eq('id', row.card_id);
+      if(res.error){
+        res=await supabaseClient.from('cari_cards').update(payload).eq('cari_id', row.cari_id);
+      }
+      if(res.error) throw res.error;
+      ok++;
+      addAuditEvent('fee_sync_from_ledger',{ target_name:row.cari_name, target_type:'cari', amount:row.inferred_fee, note:`Extreden bulundu. Eski ${money(row.current_fee)} → Yeni ${money(row.inferred_fee)}` });
+    }catch(e){
+      fail++;
+      addAuditEvent('fee_sync_error',{ target_name:row.cari_name, target_type:'cari', amount:row.inferred_fee, note:e?.message || 'Ücret cari karta yazılamadı.' });
+    }
+  }
+  notify(`${ok} cari karta muhasebe ücreti işlendi${fail?`, ${fail} hata var`:''}.`);
+  await loadCariler();
+  try{ await loadFeeData(); }catch(_){}
+  renderCariList();
+  if(state.selectedCariId) renderSelectedCariDetail();
+  renderReports();
+  renderFeeSyncQuick(true);
+}
+function rowDateForAccount(r){ return r.movement_date || r.line_date || r.created_at || r.date || ''; }
+function accountRowsForType(accountType){
+  const type=String(accountType||'').toLowerCase();
+  const pack=(rows,bucket)=> rows.map(r=>({ ...r, __bucket: bucket, __suggested_cari: r.suggested_cari_name || r.final_cari_name || findCariMatchForDescription(r.description || r.content_summary || '')?.cari_name || '' }));
+  if(type==='banka') return pack(state.bankPanel||[],'bank');
+  if(type==='moka_united') return pack(state.mokaPanel||[],'moka');
+  const all=[...pack(state.bankPanel||[],'bank'), ...pack(state.mokaPanel||[],'moka')];
+  if(type==='cek') return all.filter(r=>/cek|çek/.test(normalizeMatchText(r.description||'')));
+  if(type==='senet') return all.filter(r=>/senet/.test(normalizeMatchText(r.description||'')));
+  if(type==='kasa') return all.filter(r=>/kasa|nakit/.test(normalizeMatchText(r.description||'')));
+  if(type==='batak') return all.filter(r=>/supheli|şüpheli|batak/.test(normalizeMatchText(r.description||'')));
+  return all.filter(r=>String(r.suggested_financial_account_type||'').toLowerCase()===type || String(r.account_type||'').toLowerCase()===type);
+}
+async function jumpToCariByName(name){
+  const candidate=(state.cariler||[]).find(c=>normalizeCariKey(c.cari_name||'')===normalizeCariKey(name||''));
+  if(!candidate){ notify('Bu satırda cari önerisi bulunamadı.'); return; }
+  state.selectedCariId = candidate.cari_id;
+  state.selectedLedgerView='allhistory';
+  state.selectedRange='all';
+  await loadSelectedCariHareketler();
+  switchTab('cariler');
+  renderCariList();
+  renderSelectedCariDetail();
+  closeAccountDetailModal();
+}
+function openAccountDetailModal(accountType, accountName){
+  const rows=accountRowsForType(accountType).sort((a,b)=>new Date(rowDateForAccount(b)||0)-new Date(rowDateForAccount(a)||0)).slice(0,200);
+  const amount=rows.reduce((a,b)=>a+num(b.net_amount||b.amount||0),0);
+  const html=`<div class="grid-4" style="margin-bottom:14px;"><div class="metric-mini"><div class="k">Hesap</div><div class="v">${escapeHtml(accountName||accountType||'-')}</div></div><div class="metric-mini"><div class="k">Tür</div><div class="v">${escapeHtml(accountType||'-')}</div></div><div class="metric-mini"><div class="k">Bağlı Satır</div><div class="v">${rows.length}</div></div><div class="metric-mini"><div class="k">Toplam Tutar</div><div class="v">${money(amount)}</div></div></div><div class="rule-box" style="margin-bottom:14px;">Bu hesapta görünen banka / Moka satırlarında önerilen cari varsa tek tıkla ilgili cariye gidebilirsin.</div>` + (rows.length ? `<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Cari</th><th>Durum</th><th class="text-right">Tutar</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(displayTxnNo(r, r.__bucket==='moka'?'MOK':'BNK'))}</td><td>${shortDate(rowDateForAccount(r))}</td><td>${escapeHtml(r.description||r.content_summary||'-')}</td><td>${escapeHtml(r.__suggested_cari || '-')}</td><td>${r.__bucket==='moka' ? bankStatusBadge(r,'moka') : bankStatusBadge(r,'bank')}</td><td class="text-right">${money(r.net_amount||r.amount||0)}</td><td>${r.__suggested_cari ? `<button class="btn btn-soft" data-go-cari="${escapeHtml(r.__suggested_cari)}">Cariye Git</button>` : ''}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Bu hesap için gösterilecek bağlı satır bulunamadı.</div>`);
+  document.getElementById('accountDetailContent').innerHTML=html;
+  document.querySelectorAll('#accountDetailContent [data-go-cari]').forEach(el=>el.addEventListener('click',()=>jumpToCariByName(el.dataset.goCari)));
+  document.getElementById('accountDetailModal').style.display='flex';
+}
+function closeAccountDetailModal(){ const el=document.getElementById('accountDetailModal'); if(el) el.style.display='none'; }
+
 function renderAccounts(){
   state.bankPanel = state.bankPanel || [];
   state.mokaPanel = state.mokaPanel || [];
@@ -2974,8 +3100,8 @@ function renderAccounts(){
     <div class="metric-mini"><div class="k">Net Toplam</div><div class="v">${money(state.accounts.reduce((a,b)=>a+num(b.net_bakiye),0))}</div></div>
   </div>
   <div class="rule-box" style="margin-bottom:14px;">
-    Standart sıra: <strong>banka satırı incele</strong> → hedefi doğrula → <strong>emin değilsen Onay Merkezi</strong> → Moka kaynaklıysa <strong>önce Moka United</strong> → bankaya aktarım geldiğinde <strong>mahsup</strong>.
-  </div>` + (state.accounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${state.accounts.map(a=>`<tr><td>${escapeHtml(a.account_name)}</td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`);
+    Standart sıra: <strong>banka satırı incele</strong> → hedefi doğrula → <strong>emin değilsen Onay Merkezi</strong> → Moka kaynaklıysa <strong>önce Moka United</strong> → bankaya aktarım geldiğinde <strong>mahsup</strong>. Hesaba tıkla, iç hareketleri ve önerilen carileri aç.
+  </div>` + (state.accounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${state.accounts.map(a=>`<tr class="click-row" data-account-type="${escapeHtml(a.account_type||'')}" data-account-name="${escapeHtml(a.account_name||'')}"><td>${escapeHtml(a.account_name)}<div class="muted-note">İçine gir ve cari önerilerine bak</div></td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`);
 
   document.getElementById("bankPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
       <div class="metric-mini"><div class="k">Toplam Satır</div><div class="v">${bankStats.total}</div></div>
@@ -3022,6 +3148,7 @@ function renderAccounts(){
   document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
   document.querySelectorAll('#mokaFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.mokaFilter = btn.dataset.mfilter; renderAccounts(); }));
   document.querySelectorAll('[data-bank-key]').forEach(el=>el.addEventListener('click',()=>openBankActionModal(el.dataset.bankBucket, el.dataset.bankKey)));
+  document.querySelectorAll('[data-account-type]').forEach(el=>el.addEventListener('click',()=>openAccountDetailModal(el.dataset.accountType, el.dataset.accountName)));
   renderBankMatchHistory();
   renderMovementTestCenter();
   renderBankAiCenter();
@@ -3995,6 +4122,7 @@ async function refreshAll(){
   safeRender(()=>renderGlobalAuditLog(),'globalAuditWrap','İşlem izi yüklenemedi.');
   safeRender(()=>renderDeleteArchive(),'deleteArchiveWrap','Silme arşivi yüklenemedi.');
   safeRender(()=>renderCariList(),'cariList','Cari listesi yüklenemedi.');
+  safeRender(()=>renderFeeSyncQuick(),'feeSyncQuickWrap','Ücret taraması yüklenemedi.');
   if(state.selectedCariId) safeRender(()=>renderSelectedCariDetail(),'selectedCariDetail','Cari geçmişi yüklenemedi. Yedek mod deneniyor.');
 
   if(failedCount>0){
