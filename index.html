@@ -546,6 +546,7 @@ const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
 const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_MANUAL_FINANCE_KEY="alkam_local_manual_finance_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
 const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],allMoves:[],selectedCariId:null,selectedRange:"all",selectedLedgerView:"allhistory",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],manualFinanceEntries:[],selectedAuditId:null,year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
+const manualFinanceContext={source:'generic', mirrorCariTahsilat:false, instrumentType:null};
 
 function money(v){
   const n=Number(v||0);
@@ -2381,7 +2382,22 @@ function computeRunningRows(allRows, startDate=null){
 function getStatementBaseRows(){
   const key = String(state.selectedCariId || '');
   if(!key) return [];
-  const all = [...(state.allMoves||[])]
+  const localCariTahsilatlar = (state.operationalLedger||[])
+    .filter(r=>String(r.source_module||'')==='cari_collection' && moveMatchesSelectedCari(r))
+    .map(r=>{
+      const amt=num(r.amount || r.signed_amount || 0);
+      return prepareMoveRow({
+        ...r,
+        line_date:r.line_date || r.entry_date || r.created_at,
+        movement_type:r.movement_type || 'tahsilat',
+        description:r.description || ((r.instrument_type==='senet'?'Senet':'Çek') + ' Tahsilatı'),
+        debit:0,
+        credit:amt,
+        amount:amt,
+        txn_id:r.txn_id || txnId(r,'HRK')
+      });
+    });
+  const all = [...(state.allMoves||[]), ...localCariTahsilatlar]
     .filter(r=>moveMatchesSelectedCari(r))
     .map(r=>{
       const mv = normalizeMovementAmounts(r);
@@ -2746,6 +2762,8 @@ function renderSelectedCariDetail(){
   <div class="btn-row" style="margin-bottom:14px">
     <button class="btn btn-blue" onclick="openCariEditModal()">Cariyi Düzenle</button>
     <button class="btn btn-soft" onclick="openPromiseModal()">Ödeme Sözü Gir</button>
+    <button class="btn btn-soft" onclick="openCariInstrumentCollection('cek')">Çek Tahsilatı</button>
+    <button class="btn btn-soft" onclick="openCariInstrumentCollection('senet')">Senet Tahsilatı</button>
     <button class="btn btn-soft" onclick="openFeeModal()">Ücret Geçmişi</button>
     <button class="btn btn-soft" onclick="syncLedgerFeesToCariCards()">Satışlardan Ücretleri Cari Kartlara İşle</button>
     <button class="btn btn-soft" onclick="openStatementPrecheck()">Extre Al</button>
@@ -4201,6 +4219,9 @@ function applyManualFinancePreset(kind){
   document.getElementById('mfDescription').value=p.desc;
 }
 function openManualFinanceModal(){
+  manualFinanceContext.source='generic';
+  manualFinanceContext.mirrorCariTahsilat=false;
+  manualFinanceContext.instrumentType=null;
   fillCariOptions('mfCariId', true, 'Cari seçiniz');
   document.getElementById('mfAccountType').value='banka';
   document.getElementById('mfDirection').value='giris';
@@ -4212,6 +4233,20 @@ function openManualFinanceModal(){
   document.getElementById('mfNote').value='';
   document.getElementById('mfCariId').value='';
   document.getElementById('manualFinanceModal').style.display='flex';
+}
+function openCariInstrumentCollection(kind){
+  const currentCari=(state.cariler||[]).find(x=>String(x.cari_id||'')===String(state.selectedCariId||'')) || null;
+  openManualFinanceModal();
+  manualFinanceContext.source='cari_detail';
+  manualFinanceContext.mirrorCariTahsilat=true;
+  manualFinanceContext.instrumentType=kind;
+  document.getElementById('mfAccountType').value=kind==='senet' ? 'senet' : 'cek';
+  document.getElementById('mfDirection').value='giris';
+  document.getElementById('mfDescription').value=(kind==='senet' ? 'Senet Tahsilatı' : 'Çek Tahsilatı');
+  document.getElementById('mfNote').value='Cari detaydan açıldı; finans hesabı ve cari tahsilatı birlikte işlensin.';
+  if(currentCari){
+    document.getElementById('mfCariId').value=String(currentCari.cari_id||'');
+  }
 }
 function closeManualFinanceModal(){ const el=document.getElementById('manualFinanceModal'); if(el) el.style.display='none'; }
 function renderManualFinanceCenter(){
@@ -4261,10 +4296,46 @@ async function saveManualFinanceEntry(){
   stampRecordIds(payload,'MFN');
   state.manualFinanceEntries.unshift(payload);
   writeLocalJson(LOCAL_MANUAL_FINANCE_KEY, state.manualFinanceEntries);
+
+  if(manualFinanceContext.mirrorCariTahsilat && payload.cari_id && payload.flow_direction==='giris' && ['cek','senet'].includes(payload.account_type)){
+    const ledgerRow = stampRecordIds({
+      id: uid('cari_collection'),
+      source_module:'cari_collection',
+      ledger_ref: decisionRef('LGR'),
+      created_at:new Date().toISOString(),
+      line_date: payload.entry_date,
+      entry_date: payload.entry_date,
+      movement_type:'tahsilat',
+      instrument_type: payload.account_type,
+      description: `${payload.account_type==='senet' ? 'Senet' : 'Çek'} Tahsilatı${payload.ref_no ? ' · ' + payload.ref_no : ''}`,
+      note: payload.note,
+      amount: amount,
+      debit:0,
+      credit:amount,
+      cari_id: payload.cari_id,
+      cari_name: payload.cari_name,
+      cari_code: (cari?.cari_code || ''),
+      txn_id: txnId(payload,'HRK')
+    }, 'LGR');
+    state.operationalLedger.unshift(ledgerRow);
+    persistLedger();
+    if(String(state.selectedCariId||'')===String(payload.cari_id||'')){
+      state.hareketler = mergeMoveSets(state.hareketler||[], [prepareMoveRow(ledgerRow)]);
+    }
+    addAuditEvent('cari_collection_saved',{
+      source_module:'cari_detail',
+      target_name: payload.cari_name || payload.account_type,
+      amount: amount,
+      note: payload.account_type==='senet' ? 'Senet tahsilatı' : 'Çek tahsilatı',
+      summary:`Cari tahsilatı işlendi · ${payload.description}`
+    });
+  }
+
   addAuditEvent('manual_finance_saved',{source_module:'manual_finance', target_name: payload.cari_name || payload.account_type, amount: payload.signed_amount, note: `${payload.account_type} · ${payload.flow_direction}`, summary:`Manuel finans girişi · ${payload.description}`});
   closeManualFinanceModal();
   renderAccounts();
-  notify('Manuel finans girişi kaydedildi.');
+  if(state.selectedCariId) renderSelectedCariDetail();
+  notify(manualFinanceContext.mirrorCariTahsilat ? 'Çek/Senet tahsilatı cari ve finans hesabına işlendi.' : 'Manuel finans girişi kaydedildi.');
 }
 
 function openCariEditModal(){
