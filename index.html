@@ -23,7 +23,7 @@
     .tag.blue{background:#eaf1ff;color:#2457d6}.tag.green{background:#e7faf3;color:#047857}.tag.red{background:#fdecec;color:#b91c1c}.tag.gray{background:#f1f5f9;color:#475569}.tag.amber{background:#fff7ed;color:#c2410c}
     .btn{border:none;border-radius:12px;min-height:42px;padding:10px 16px;font-size:14px;font-weight:900;cursor:pointer}.btn-blue{background:var(--blue);color:#fff}.btn-soft{background:#e8eef9;color:#0f172a}.btn-red{background:var(--red);color:#fff}
     .btn-row{display:flex;gap:10px;flex-wrap:wrap}
-    .list{display:grid;gap:10px}.list-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;cursor:pointer}.list-item.active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,103,232,.12);background:#f6f9ff}.list-item.risk{border-color:#fecaca;background:#fff7f7}
+    .list{display:grid;gap:10px}.list-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;cursor:pointer}.list-item.active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,103,232,.12);background:#f6f9ff}.list-item.risk{border-color:#fecaca;background:#fff7f7}.list-item.good{border-left:6px solid #059669}.list-item.warn{border-left:6px solid #d97706}.list-item.danger{border-left:6px solid #dc2626}.list-item.neutral{border-left:6px solid #94a3b8}.mini-badge{display:inline-flex;align-items:center;justify-content:center;min-height:24px;padding:0 8px;border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap}.mini-badge.green{background:#e7faf3;color:#047857}.mini-badge.red{background:#fdecec;color:#b91c1c}.mini-badge.amber{background:#fff7ed;color:#c2410c}.mini-badge.gray{background:#f1f5f9;color:#475569}.mini-badge.blue{background:#eaf1ff;color:#2457d6}
     .list-title{font-weight:900;font-size:15px;margin-bottom:6px}.list-meta{color:var(--muted);font-size:13px;font-weight:700;line-height:1.55}.empty{padding:22px;border:1px dashed #cbd5e1;border-radius:16px;text-align:center;color:var(--muted);font-weight:800;background:#fbfdff}
     .search-input,.select-input,.field input,.field select,.field textarea{width:100%;border:1px solid #cfd8e6;border-radius:12px;min-height:44px;padding:10px 12px;font-size:14px;font-weight:700;outline:none;background:#fff}
     .toolbar{display:grid;grid-template-columns:1.3fr .8fr .8fr;gap:12px;margin-bottom:14px}.detail-sticky{position:sticky;top:22px}
@@ -363,6 +363,16 @@
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
       <h2 style="margin:0;font-size:24px;font-weight:900;">Kasa / Banka / Çek / Senet Girişi</h2>
       <button class="btn btn-red" onclick="closeManualFinanceModal()">Kapat</button>
+    </div>
+    <div class="rule-box" style="margin-bottom:12px;">
+      <strong>Hızlı Giriş Şablonları</strong><br>
+      <div class="btn-row" style="margin-top:10px;">
+        <button type="button" class="btn btn-soft" onclick="applyManualFinancePreset('kasa_giris')">Kasa Giriş</button>
+        <button type="button" class="btn btn-soft" onclick="applyManualFinancePreset('banka_giris')">Banka Giriş</button>
+        <button type="button" class="btn btn-soft" onclick="applyManualFinancePreset('cek_portfoy')">Çek Portföyü</button>
+        <button type="button" class="btn btn-soft" onclick="applyManualFinancePreset('senet_portfoy')">Senet Portföyü</button>
+        <button type="button" class="btn btn-soft" onclick="applyManualFinancePreset('odeme_cikis')">Ödeme Çıkış</button>
+      </div>
     </div>
     <div class="form-grid-3">
       <div class="field"><label>Hesap Türü</label>
@@ -785,7 +795,8 @@ function mergeCariCardsIntoCariSummaries(){
     };
   });
 }
-
+
+async function loadDashboard(){
   try{
     const [d,r]=await Promise.allSettled([
       supabaseClient.from("v_dashboard_ozet").select("*").limit(1).maybeSingle(),
@@ -2206,7 +2217,8 @@ function renderDashboard(){
   document.getElementById("promiseCount").textContent=state.cariler.filter(x=>x.aktif_odeme_sozu_var).length;
   document.getElementById("promiseLateCount").textContent=state.cariler.filter(x=>x.aktif_odeme_sozu_durum==="gecikmis").length;
   const latest=[...state.hareketler].slice(0,10);
-  document.getElementById("lastMovementsWrap").innerHTML=latest.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${latest.map(h=>`<tr><td>${escapeHtml(displayTxnNo(h,'HRK'))}</td><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hareket yok.</div>`;
+  const guardNote = `<div class="rule-box" style="margin-top:14px;">Korunan çekirdek özellikler: <strong>Logo</strong>, <strong>Yazdır/PDF</strong>, <strong>Excel</strong>, <strong>Dinamik Cari</strong>, <strong>Onay Merkezi</strong>, <strong>Hesaplar</strong>. İzin almadan silinmez.</div>`;
+  document.getElementById("lastMovementsWrap").innerHTML=(latest.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${latest.map(h=>`<tr><td>${escapeHtml(displayTxnNo(h,'HRK'))}</td><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hareket yok.</div>`) + guardNote;
 }
 function filteredCariler(){
   const q=(document.getElementById("cariSearch").value||"").trim().toLowerCase();
@@ -2216,12 +2228,43 @@ function filteredCariler(){
   const sorters={name:(a,b)=>(a.cari_name||"").localeCompare(b.cari_name||"","tr"),fee_desc:(a,b)=>Number(b.defter_ucreti||0)-Number(a.defter_ucreti||0),score_desc:(a,b)=>Number(b.score_total||0)-Number(a.score_total||0),bakiye_desc:(a,b)=>Number(b.bakiye||0)-Number(a.bakiye||0),tahsilat_desc:(a,b)=>byDate(b.son_tahsilat_tarihi)-byDate(a.son_tahsilat_tarihi)};
   rows.sort(sorters[sort]||sorters.name); return rows;
 }
+
+function getCariHistoryCount(cariId){
+  return getCariRowsByIdOrName(cariId).length;
+}
+function getCariUiState(c){
+  const late=!!c.is_tahsilat_3_ay_gecikmis;
+  const promise=!!c.aktif_odeme_sozu_var;
+  const fee=num(c.defter_ucreti||c.monthly_fee_amount||c.inferred_fee||0);
+  const lastTahsilat = c.son_tahsilat_tarihi ? new Date(c.son_tahsilat_tarihi) : null;
+  const monthsSinceTahsilat = lastTahsilat && !Number.isNaN(lastTahsilat.getTime()) ? ((new Date().getFullYear()-lastTahsilat.getFullYear())*12 + (new Date().getMonth()-lastTahsilat.getMonth())) : 99;
+  if(late) return { cls:'danger', label:'Tahsilat Riski', tag:'<span class="mini-badge red">Risk</span>' };
+  if(promise) return { cls:'warn', label:'Ödeme Sözü', tag:'<span class="mini-badge amber">Söz Var</span>' };
+  if(fee<=0) return { cls:'warn', label:'Ücret Yok', tag:'<span class="mini-badge amber">Ücret Eksik</span>' };
+  if(monthsSinceTahsilat<=1) return { cls:'good', label:'Güncel Tahsilat', tag:'<span class="mini-badge green">Güncel</span>' };
+  return { cls:'neutral', label:'Normal', tag:'<span class="mini-badge gray">Normal</span>' };
+}
+function cariBalanceBadge(c){
+  const b=num(c.bakiye||0);
+  if(b>0) return `<span class="tag red">${money(b)} B</span>`;
+  if(b<0) return `<span class="tag green">${money(Math.abs(b))} A</span>`;
+  return `<span class="tag gray">${money(0)}</span>`;
+}
+
 function renderCariList(){
   const list=document.getElementById("cariList"); const rows=filteredCariler();
-  list.innerHTML=rows.length?rows.map(c=>`<div class="list-item ${state.selectedCariId===c.cari_id?'active':''} ${c.is_tahsilat_3_ay_gecikmis?'risk':''}" data-cari-id="${c.cari_id}">
-    <div><div class="list-title">${escapeHtml(c.cari_name)} ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''} ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}</div>
-    <div class="list-meta">Tür: ${escapeHtml(c.taxpayer_type||"-")} · Defter Ücreti: ${money(c.defter_ucreti||0)} · Skor: ${Number(c.score_total||0).toFixed(0)}<br>Son tahakkuk: ${shortDate(c.son_tahakkuk_tarihi)} · ${money(c.son_tahakkuk_tutari||0)}<br>Son tahsilat: ${shortDate(c.son_tahsilat_tarihi)} · ${money(c.son_tahsilat_tutari||0)}</div></div>
-    <div class="tag ${Number(c.bakiye||0)>0?'red':'green'}">${money(c.bakiye||0)}</div></div>`).join(""):`<div class="empty">Cari bulunamadı.</div>`;
+  list.innerHTML=rows.length?rows.map(c=>{
+    const ui=getCariUiState(c);
+    const historyCount=getCariHistoryCount(c.cari_id);
+    const feeSource = c.fee_source==='card' ? 'Cari Kart' : (c.fee_source==='view' ? 'View' : (c.fee_source==='ledger' ? 'Extre' : 'Belirsiz'));
+    return `<div class="list-item ${state.selectedCariId===c.cari_id?'active':''} ${c.is_tahsilat_3_ay_gecikmis?'risk':''} ${ui.cls}" data-cari-id="${c.cari_id}">
+      <div>
+        <div class="list-title">${escapeHtml(c.cari_name)} ${ui.tag} ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''} ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}</div>
+        <div class="list-meta">Tür: ${escapeHtml(c.taxpayer_type||"-")} · Defter Ücreti: ${money(c.defter_ucreti||0)} · Kaynak: ${feeSource}<br>Son tahakkuk: ${shortDate(c.son_tahakkuk_tarihi)} · ${money(c.son_tahakkuk_tutari||0)}<br>Son tahsilat: ${shortDate(c.son_tahsilat_tarihi)} · ${money(c.son_tahsilat_tutari||0)} · Geçmiş Satır: ${historyCount}</div>
+      </div>
+      <div>${cariBalanceBadge(c)}</div>
+    </div>`;
+  }).join(""):`<div class="empty">Cari bulunamadı.</div>`;
   list.querySelectorAll("[data-cari-id]").forEach(el=>el.addEventListener("click",async()=>{state.selectedCariId=el.dataset.cariId; state.selectedLedgerView='allhistory'; state.selectedRange='all'; await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail();}));
 }
 function getRangeStartDate(){
@@ -2654,8 +2697,8 @@ function renderSelectedCariDetail(){
   <div class="grid-4" style="margin-bottom:14px">
     <div class="metric-mini"><div class="k">Cari Kodu</div><div class="v">${escapeHtml(c.cari_code||"-")}</div></div>
     <div class="metric-mini"><div class="k">Mükellef Tipi</div><div class="v">${escapeHtml(c.taxpayer_type||card?.taxpayer_type||"-")}</div></div>
-    <div class="metric-mini"><div class="k">Aktif Ücret</div><div class="v">${money(card?.monthly_fee_amount||c.defter_ucreti||0)}</div></div>
-    <div class="metric-mini"><div class="k">Skor</div><div class="v">${Number(c.score_total||0).toFixed(0)} / 100</div></div>
+    <div class="metric-mini"><div class="k">Aktif Ücret</div><div class="v">${money(card?.monthly_fee_amount||c.defter_ucreti||0)}<br><span style="font-size:12px;color:#64748b;">${c.fee_source==='card'?'Cari Kart':(c.fee_source==='view'?'View':(c.fee_source==='ledger'?'Extre':'Belirsiz'))}</span></div></div>
+    <div class="metric-mini"><div class="k">Geçmiş Satır</div><div class="v">${getCariHistoryCount(state.selectedCariId)}</div></div>
   </div>
   <div class="grid-4" style="margin-bottom:14px">
     <div class="metric-mini"><div class="k">Son Tahakkuk</div><div class="v">${shortDate(c.son_tahakkuk_tarihi)}<br>${money(c.son_tahakkuk_tutari||0)}</div></div>
@@ -3357,14 +3400,40 @@ function renderBankAiCenter(){
   `;
 }
 
+
+function computeFeeVerificationRows(){
+  return (state.cariler||[]).map(c=>{
+    const card=getCariCard(c.cari_id);
+    const inferred=num(inferFeeForCari(c.cari_id).inferred_fee||0);
+    const cardFee=num(card?.monthly_fee_amount||0);
+    const effective=num(c.defter_ucreti||0);
+    return {
+      cari_id:c.cari_id,
+      cari_name:c.cari_name||'-',
+      card_fee:cardFee,
+      inferred_fee:inferred,
+      effective_fee:effective,
+      needs_write: inferred>0 && Math.abs(cardFee-inferred)>0.01,
+      still_zero: effective<=0,
+      source:c.fee_source||'none'
+    };
+  });
+}
 function renderReports(){
   const riskRows=state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).sort((a,b)=>Number(b.bakiye||0)-Number(a.bakiye||0)).slice(0,15);
   const topFee=[...state.cariler].filter(x=>num(x.defter_ucreti||x.inferred_fee||0)>0).sort((a,b)=>num(b.defter_ucreti||b.inferred_fee||0)-num(a.defter_ucreti||a.inferred_fee||0)).slice(0,10);
-  const feeWarnings=getFeeSyncSuggestions(true).length;
-  document.getElementById("reportWrap").innerHTML=`<div class="grid-2" style="margin-bottom:16px"><div class="card"><div class="card-label">Toplam Son Tahsilat</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Number(b.son_tahsilat_tutari||0),0))}</div></div><div class="card"><div class="card-label">Pozitif Bakiye Toplamı</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Math.max(Number(b.bakiye||0),0),0))}</div></div><div class="card"><div class="card-label">Ücret Kontrol Uyarısı</div><div class="card-value">${feeWarnings}</div></div></div>
-  <div class="btn-row" style="margin-bottom:14px"><button class="btn btn-blue" onclick="syncLedgerFeesToCariCards()">Extreden Bulunan Ücretleri Cari Kartlara İşle</button></div>
+  const feeRows=computeFeeVerificationRows();
+  const feeWarnings=feeRows.filter(x=>x.needs_write).length;
+  const feeZeros=feeRows.filter(x=>x.still_zero).length;
+  const feeOk=feeRows.filter(x=>x.effective_fee>0).length;
+  document.getElementById("reportWrap").innerHTML=`<div class="grid-3" style="margin-bottom:16px"><div class="card"><div class="card-label">Toplam Son Tahsilat</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Number(b.son_tahsilat_tutari||0),0))}</div></div><div class="card"><div class="card-label">Pozitif Bakiye Toplamı</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Math.max(Number(b.bakiye||0),0),0))}</div></div><div class="card"><div class="card-label">Ücret Kontrol</div><div class="card-value">${feeOk} kartta hazır · ${feeWarnings} yazılacak · ${feeZeros} sıfır</div></div></div>
+  <div class="btn-row" style="margin-bottom:14px">
+    <button class="btn btn-blue" onclick="syncLedgerFeesToCariCards()">Extreden Bulunan Ücretleri Cari Kartlara İşle</button>
+    <button class="btn btn-soft" onclick="renderReports()">Ücret Sonucunu Yenile</button>
+  </div>
   <div class="grid-2"><div class="section"><h2 class="section-title">Tahsilat Riski Olanlar</h2>${riskRows.length?`<table><thead><tr><th>Cari</th><th>Son Tahsilat</th><th class="text-right">Bakiye</th></tr></thead><tbody>${riskRows.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${shortDate(r.son_tahsilat_tarihi)} · ${money(r.son_tahsilat_tutari||0)}</td><td class="text-right">${balanceLabel(r.bakiye||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Riskli cari yok.</div>`}</div>
-  <div class="section"><h2 class="section-title">En Yüksek Defter Ücretliler</h2>${topFee.length?`<table><thead><tr><th>Cari</th><th>Tür</th><th>Kaynak</th><th class="text-right">Defter Ücreti</th></tr></thead><tbody>${topFee.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${escapeHtml(r.taxpayer_type||"-")}</td><td>${r.fee_source==='card'?'Cari Kart':(r.fee_source==='view'?'View':'Extre')}</td><td class="text-right">${money(r.defter_ucreti||r.inferred_fee||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Defter ücreti bulunamadı.</div>`}</div></div>`;
+  <div class="section"><h2 class="section-title">En Yüksek Defter Ücretliler</h2>${topFee.length?`<table><thead><tr><th>Cari</th><th>Tür</th><th>Kaynak</th><th class="text-right">Defter Ücreti</th></tr></thead><tbody>${topFee.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${escapeHtml(r.taxpayer_type||"-")}</td><td>${r.fee_source==='card'?'Cari Kart':(r.fee_source==='view'?'View':'Extre')}</td><td class="text-right">${money(r.defter_ucreti||r.inferred_fee||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Defter ücreti bulunamadı.</div>`}</div></div>
+  <div class="section" style="margin-top:16px;"><h2 class="section-title">Ücret Yazım Doğrulama</h2>${feeRows.length?`<table><thead><tr><th>Cari</th><th class="text-right">Kart</th><th class="text-right">Extre</th><th>Durum</th></tr></thead><tbody>${feeRows.slice(0,20).map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td class="text-right">${money(r.card_fee)}</td><td class="text-right">${money(r.inferred_fee)}</td><td>${r.needs_write?'<span class="tag amber">Yazılacak</span>':(r.effective_fee>0?'<span class="tag green">Hazır</span>':'<span class="tag red">Ücret Yok</span>')}</td></tr>`).join("")}</tbody></table>${feeRows.length>20?`<div class="muted-note" style="margin-top:8px;">İlk 20 kayıt gösteriliyor.</div>`:''}`:`<div class="empty">Ücret doğrulama verisi yok.</div>`}</div>`;
 }
 function approvalSourceText(r){
   const s = String(r.source_type || r.channel || r.raw_source || '-').toLowerCase();
@@ -3799,16 +3868,16 @@ async function saveDocumentRecord(){
 }
 function normalizeText(v){ return String(v||'').toLocaleLowerCase('tr-TR'); }
 function parseMoneyFromText(text){
-  const matches = String(text||'').match(/\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})|\d+(?:[.,]\d{2})/g) || [];
+  const matches = String(text||'').match(/\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})|\d+(?:[.,]\d{2})/g) || [];
   if(!matches.length) return 0;
   const cleaned = matches.map(m=>Number(String(m).replace(/\./g,'').replace(',', '.'))).filter(Number.isFinite);
   return cleaned.sort((a,b)=>b-a)[0] || 0;
 }
 function parseDateFromText(text){
   const s=String(text||'');
-  let m=s.match(/(\d{2})[./-](\d{2})[./-](\d{4})/);
+  let m=s.match(/(\d{2})[./-](\d{2})[./-](\d{4})/);
   if(m) return `${m[3]}-${m[2]}-${m[1]}`;
-  m=s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  m=s.match(/(\d{4})-(\d{2})-(\d{2})/);
   if(m) return `${m[1]}-${m[2]}-${m[3]}`;
   return '';
 }
@@ -4068,6 +4137,20 @@ async function saveCandidateBridge(){
 }
 
 
+
+function applyManualFinancePreset(kind){
+  const map={
+    kasa_giris:{account:'kasa',dir:'giris',desc:'Kasa tahsilat girişi'},
+    banka_giris:{account:'banka',dir:'giris',desc:'Banka tahsilat girişi'},
+    cek_portfoy:{account:'cek',dir:'giris',desc:'Çek portföye giriş'},
+    senet_portfoy:{account:'senet',dir:'giris',desc:'Senet portföye giriş'},
+    odeme_cikis:{account:'banka',dir:'cikis',desc:'Ödeme / havale çıkışı'}
+  };
+  const p=map[kind]; if(!p) return;
+  document.getElementById('mfAccountType').value=p.account;
+  document.getElementById('mfDirection').value=p.dir;
+  document.getElementById('mfDescription').value=p.desc;
+}
 function openManualFinanceModal(){
   fillCariOptions('mfCariId', true, 'Cari seçiniz');
   document.getElementById('mfAccountType').value='banka';
@@ -4097,7 +4180,7 @@ function renderManualFinanceCenter(){
     <div class="metric-mini"><div class="k">Kasa</div><div class="v">${stats.kasa}</div></div>
     <div class="metric-mini"><div class="k">Çek / Senet</div><div class="v">${stats.cek}</div></div>
   </div>
-  <div class="rule-box" style="margin-bottom:14px;">Uluslararası iyi uygulamadaki gibi kasa, banka, çek ve senet ayrı alt hesapta izlenir; cari hareketi ile finans hesabı ayrı tutulur, ilişki belge ve onay üzerinden kurulur.</div>` + (rows.length ? `<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Açıklama</th><th>İlgili Cari</th><th class="text-right">Tutar</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(displayTxnNo(r,'MFN'))}</td><td>${shortDate(r.entry_date)}</td><td>${renderTag(r.account_type)}</td><td>${r.flow_direction==='giris' ? '<span class="tag green">Giriş</span>' : '<span class="tag red">Çıkış</span>'}</td><td>${escapeHtml(r.description||'-')}<div class="muted-note">${escapeHtml(r.ref_no || '-')} ${r.due_date ? '· Vade: '+shortDate(r.due_date) : ''}</div></td><td>${escapeHtml(r.cari_name || '-')}</td><td class="text-right">${money(r.signed_amount||0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz manuel finans girişi yok.</div>`);
+  <div class="rule-box" style="margin-bottom:14px;">Kasa, banka, çek ve senet ayrı alt hesapta izlenir; cari hareketi ile finans hesabı ayrı tutulur. Önce finans hesabı kaydı açılır, gerekiyorsa ilgili cariye bağlanır. Hızlı şablonlarla giriş yapıp sonra hesap detayından cariye inebilirsin.</div>` + (rows.length ? `<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Açıklama</th><th>İlgili Cari</th><th class="text-right">Tutar</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(displayTxnNo(r,'MFN'))}</td><td>${shortDate(r.entry_date)}</td><td>${renderTag(r.account_type)}</td><td>${r.flow_direction==='giris' ? '<span class="tag green">Giriş</span>' : '<span class="tag red">Çıkış</span>'}</td><td>${escapeHtml(r.description||'-')}<div class="muted-note">${escapeHtml(r.ref_no || '-')} ${r.due_date ? '· Vade: '+shortDate(r.due_date) : ''}</div></td><td>${escapeHtml(r.cari_name || '-')}</td><td class="text-right">${money(r.signed_amount||0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz manuel finans girişi yok.</div>`);
 }
 async function saveManualFinanceEntry(){
   const accountType=(document.getElementById('mfAccountType').value||'banka').trim();
