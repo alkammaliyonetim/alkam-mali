@@ -762,7 +762,30 @@ function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
 function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, çek, senet ve Moka"],giderler:["Gider Tahakkuk","Sabit ve değişken gider tahakkuk kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; const target=document.getElementById("tab-"+tab) || document.getElementById("tab-dashboard"); const m=meta[tab] || meta.dashboard; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); target.classList.add("active"); document.getElementById("pageTitle").textContent=m[0]; document.getElementById("pageDesc").textContent=m[1]}
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
-async function loadDashboard(){
+
+function mergeCariCardsIntoCariSummaries(){
+  const cards=state.cariCards||[];
+  const byId=new Map(cards.map(c=>[String(c.cari_id||c.id||''),c]));
+  const byName=new Map(cards.map(c=>[normalizeCariKey(c.cari_name||c.name||''),c]));
+  state.cariler=(state.cariler||[]).map(c=>{
+    const card=byId.get(String(c.cari_id||c.id||'')) || byName.get(normalizeCariKey(c.cari_name||'')) || null;
+    const inf=inferFeeForCari(String(c.cari_id||c.id||''));
+    const cardFee=num(card?.monthly_fee_amount||0);
+    const viewFee=num(c.defter_ucreti||0);
+    const inferredFee=num(inf?.inferred_fee||0);
+    const effectiveFee=cardFee>0 ? cardFee : (viewFee>0 ? viewFee : inferredFee);
+    return {
+      ...c,
+      taxpayer_type: c.taxpayer_type || card?.taxpayer_type || '',
+      defter_ucreti: effectiveFee,
+      monthly_fee_amount: cardFee,
+      inferred_fee: inferredFee,
+      fee_month_count: (inf?.months||[]).length,
+      fee_source: cardFee>0 ? 'card' : (viewFee>0 ? 'view' : (inferredFee>0 ? 'ledger' : 'none'))
+    };
+  });
+}
+
   try{
     const [d,r]=await Promise.allSettled([
       supabaseClient.from("v_dashboard_ozet").select("*").limit(1).maybeSingle(),
@@ -808,6 +831,7 @@ async function loadCariler(){
       state.cariler=fallbackCariSummaryFromMoves(state.cariCards||[], state.allMoves||[]);
     }
   }
+  try{ mergeCariCardsIntoCariSummaries(); }catch(_){ }
   await loadSelectedCariHareketler();
   try{ renderCariList(); }catch(_){}
   try{ renderSelectedCariDetail(); }catch(_){}
@@ -3334,17 +3358,13 @@ function renderBankAiCenter(){
 }
 
 function renderReports(){
-  if((!state.cariler || !state.cariler.length) && state.cariCards?.length){ state.cariler=fallbackCariSummaryFromMoves(state.cariCards||[], state.allMoves||[]); }
-  const riskRows=state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).sort((a,b)=>num(b.bakiye)-num(a.bakiye)).slice(0,15);
-  const topFee=[...state.cariler].sort((a,b)=>num(b.defter_ucreti)-num(a.defter_ucreti)).slice(0,10);
-  const feeIssueCount = state.feeControl.filter(x=>String(x.control_status || x.issue_type || '').toLowerCase() !== 'tamam').length;
-  document.getElementById("reportWrap").innerHTML=`<div class="grid-3" style="margin-bottom:16px">
-    <div class="card"><div class="card-label">Toplam Son Tahsilat</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+num(b.son_tahsilat_tutari),0))}</div></div>
-    <div class="card"><div class="card-label">Pozitif Bakiye Toplamı</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Math.max(num(b.bakiye),0),0))}</div></div>
-    <div class="card"><div class="card-label">Ücret Kontrol Uyarısı</div><div class="card-value">${feeIssueCount}</div></div>
-  </div>
+  const riskRows=state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).sort((a,b)=>Number(b.bakiye||0)-Number(a.bakiye||0)).slice(0,15);
+  const topFee=[...state.cariler].filter(x=>num(x.defter_ucreti||x.inferred_fee||0)>0).sort((a,b)=>num(b.defter_ucreti||b.inferred_fee||0)-num(a.defter_ucreti||a.inferred_fee||0)).slice(0,10);
+  const feeWarnings=getFeeSyncSuggestions(true).length;
+  document.getElementById("reportWrap").innerHTML=`<div class="grid-2" style="margin-bottom:16px"><div class="card"><div class="card-label">Toplam Son Tahsilat</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Number(b.son_tahsilat_tutari||0),0))}</div></div><div class="card"><div class="card-label">Pozitif Bakiye Toplamı</div><div class="card-value">${money(state.cariler.reduce((a,b)=>a+Math.max(Number(b.bakiye||0),0),0))}</div></div><div class="card"><div class="card-label">Ücret Kontrol Uyarısı</div><div class="card-value">${feeWarnings}</div></div></div>
+  <div class="btn-row" style="margin-bottom:14px"><button class="btn btn-blue" onclick="syncLedgerFeesToCariCards()">Extreden Bulunan Ücretleri Cari Kartlara İşle</button></div>
   <div class="grid-2"><div class="section"><h2 class="section-title">Tahsilat Riski Olanlar</h2>${riskRows.length?`<table><thead><tr><th>Cari</th><th>Son Tahsilat</th><th class="text-right">Bakiye</th></tr></thead><tbody>${riskRows.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${shortDate(r.son_tahsilat_tarihi)} · ${money(r.son_tahsilat_tutari||0)}</td><td class="text-right">${balanceLabel(r.bakiye||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Riskli cari yok.</div>`}</div>
-  <div class="section"><h2 class="section-title">En Yüksek Defter Ücretliler</h2><table><thead><tr><th>Cari</th><th>Tür</th><th class="text-right">Defter Ücreti</th></tr></thead><tbody>${topFee.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${escapeHtml(r.taxpayer_type||"-")}</td><td class="text-right">${money(r.defter_ucreti||0)}</td></tr>`).join("")}</tbody></table></div></div>`;
+  <div class="section"><h2 class="section-title">En Yüksek Defter Ücretliler</h2>${topFee.length?`<table><thead><tr><th>Cari</th><th>Tür</th><th>Kaynak</th><th class="text-right">Defter Ücreti</th></tr></thead><tbody>${topFee.map(r=>`<tr><td>${escapeHtml(r.cari_name)}</td><td>${escapeHtml(r.taxpayer_type||"-")}</td><td>${r.fee_source==='card'?'Cari Kart':(r.fee_source==='view'?'View':'Extre')}</td><td class="text-right">${money(r.defter_ucreti||r.inferred_fee||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Defter ücreti bulunamadı.</div>`}</div></div>`;
 }
 function approvalSourceText(r){
   const s = String(r.source_type || r.channel || r.raw_source || '-').toLowerCase();
