@@ -530,7 +530,7 @@ const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
 const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],allMoves:[],selectedCariId:null,selectedRange:"all",selectedLedgerView:"allhistory",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
 
 function money(v){
   const n=Number(v||0);
@@ -541,6 +541,130 @@ function money(v){
 function displayTxnNo(obj,prefix='TRX'){ return String(obj?.operation_no || txnId(obj,prefix)); }
 function shortDate(v){if(!v) return "-"; const d=new Date(v); if(Number.isNaN(d.getTime())) return v; return new Intl.DateTimeFormat("tr-TR").format(d)}
 function escapeHtml(s){return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;")}
+
+async function fetchAll(viewName, orderField='id', ascending=true, pageSize=1000, filtersFn=null){
+  let from=0; let out=[];
+  while(true){
+    let q=supabaseClient.from(viewName).select("*").order(orderField,{ascending}).range(from, from+pageSize-1);
+    if(filtersFn) q=filtersFn(q);
+    const {data,error}=await q;
+    if(error) throw error;
+    const rows=data||[];
+    out=out.concat(rows);
+    if(rows.length<pageSize) break;
+    from += pageSize;
+    if(from>50000) break;
+  }
+  return out;
+}
+function dateOnly(v){
+  const d=new Date(v||'');
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
+}
+function fallbackCariSummaryFromMoves(cards,moves){
+  const byKey={};
+  const now=new Date();
+  const currentMonth = now.getMonth()+1;
+  const currentYear = now.getFullYear();
+  const threeMonthsAgo = new Date(now);
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth()-3);
+
+  (cards||[]).forEach(c=>{
+    const key=String(c.cari_id||c.id||c.cari_name||'');
+    if(!key) return;
+    byKey[key]={
+      cari_id:c.cari_id||c.id||key,
+      cari_name:c.cari_name||'-',
+      cari_code:c.cari_code||'-',
+      taxpayer_type:c.taxpayer_type||'',
+      bakiye:0,
+      score_total:0,
+      son_tahakkuk_tarihi:null,
+      son_tahakkuk_tutari:0,
+      son_tahsilat_tarihi:null,
+      son_tahsilat_tutari:0,
+      bu_ay_tahakkuk:0,
+      bu_ay_tahsilat:0,
+      is_tahsilat_3_ay_gecikmis:false,
+      aktif_odeme_sozu_var:false,
+      aktif_odeme_sozu_durum:null,
+      aktif_odeme_sozu_tarihi:null,
+      aktif_odeme_sozu_tutari:0,
+      defter_ucreti:num(c.monthly_fee_amount||0),
+      is_active:c.is_active!==false
+    };
+  });
+
+  (moves||[]).forEach(r=>{
+    const key=String(r.cari_id||r.cari_name||'');
+    if(!key) return;
+    if(!byKey[key]){
+      byKey[key]={
+        cari_id:r.cari_id||key,
+        cari_name:r.cari_name||'-',
+        cari_code:'-',
+        taxpayer_type:'',
+        bakiye:0,
+        score_total:0,
+        son_tahakkuk_tarihi:null,
+        son_tahakkuk_tutari:0,
+        son_tahsilat_tarihi:null,
+        son_tahsilat_tutari:0,
+        bu_ay_tahakkuk:0,
+        bu_ay_tahsilat:0,
+        is_tahsilat_3_ay_gecikmis:false,
+        aktif_odeme_sozu_var:false,
+        aktif_odeme_sozu_durum:null,
+        aktif_odeme_sozu_tarihi:null,
+        aktif_odeme_sozu_tutari:0,
+        defter_ucreti:0,
+        is_active:true
+      };
+    }
+    const row=byKey[key];
+    const debit=num(r.debit||0);
+    const credit=num(r.credit||0);
+    row.bakiye += debit-credit;
+
+    const dt=new Date(r.line_date||r.movement_date||r.date||'');
+    const movement=normalizeMatchText(r.movement_type||'');
+    const desc=normalizeMatchText(r.description||'');
+    const isTahsilat = movement.includes('tahsilat') || desc.includes('tahsilat');
+    const isTahakkuk = movement.includes('tahakkuk') || desc.includes('satis faturasi') || desc.includes('satış faturası') || desc.includes('muhasebe ucreti') || desc.includes('muhasebe ücreti') || desc.includes('defter2026');
+
+    if(isTahsilat){
+      const dkey=dateOnly(dt);
+      const prev=dateOnly(row.son_tahsilat_tarihi);
+      if(!prev || dkey>=prev){
+        row.son_tahsilat_tarihi=dkey||row.son_tahsilat_tarihi;
+        row.son_tahsilat_tutari=Math.abs(credit||debit||0);
+      }
+      if(dt.getFullYear()===currentYear && dt.getMonth()+1===currentMonth){
+        row.bu_ay_tahsilat += Math.abs(credit||debit||0);
+      }
+    }
+    if(isTahakkuk){
+      const dkey=dateOnly(dt);
+      const prev=dateOnly(row.son_tahakkuk_tarihi);
+      if(!prev || dkey>=prev){
+        row.son_tahakkuk_tarihi=dkey||row.son_tahakkuk_tarihi;
+        row.son_tahakkuk_tutari=Math.abs(debit||credit||0);
+      }
+      if(dt.getFullYear()===currentYear && dt.getMonth()+1===currentMonth){
+        row.bu_ay_tahakkuk += Math.abs(debit||credit||0);
+      }
+    }
+  });
+
+  return Object.values(byKey).map(r=>{
+    const lastTahsilatDate = r.son_tahsilat_tarihi ? new Date(r.son_tahsilat_tarihi) : null;
+    const isLate = !lastTahsilatDate || lastTahsilatDate < threeMonthsAgo;
+    return {
+      ...r,
+      is_tahsilat_3_ay_gecikmis:isLate && num(r.bakiye)>0
+    };
+  }).sort((a,b)=>String(a.cari_name||'').localeCompare(String(b.cari_name||''),'tr'));
+}
 function readLocalJson(key){ try{ const raw=localStorage.getItem(key); return raw ? JSON.parse(raw) : []; }catch(_){ return []; } }
 function readLocalObject(key,fallback){ try{ const raw=localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }catch(_){ return fallback; } }
 function writeLocalJson(key,val){ localStorage.setItem(key, JSON.stringify(val)); }
@@ -634,46 +758,102 @@ function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı �
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
 async function loadDashboard(){
-  const [d,r]=await Promise.all([
-    supabaseClient.from("v_dashboard_ozet").select("*").limit(1).maybeSingle(),
-    supabaseClient.from("v_dashboard_risk_ozet").select("*").limit(1).maybeSingle()
-  ]);
-  state.dashboard=d.data||null; state.riskSummary=r.data||null;
+  try{
+    const [d,r]=await Promise.allSettled([
+      supabaseClient.from("v_dashboard_ozet").select("*").limit(1).maybeSingle(),
+      supabaseClient.from("v_dashboard_risk_ozet").select("*").limit(1).maybeSingle()
+    ]);
+    state.dashboard=(d.status==='fulfilled' && !d.value.error) ? (d.value.data||null) : null;
+    state.riskSummary=(r.status==='fulfilled' && !r.value.error) ? (r.value.data||null) : null;
+  }catch(_){
+    state.dashboard=null; state.riskSummary=null;
+  }
+}
+
+async function loadAllMoves(){
+  try{
+    const rows = await fetchAll('v_cari_hareket_dokumu','line_date',true,1000, q=>q.lte('line_date','2026-12-31'));
+    state.allMoves=(rows||[]).map(x=>({...x,cari_id:x.cari_id||x.id, txn_id:txnId(x,'HRK')}));
+  }catch(_){
+    state.allMoves=[];
+  }
 }
 async function loadCariler(){
-  const {data,error}=await supabaseClient.from("v_cari_liste_gelismis").select("*").order("cari_name",{ascending:true});
-  if(error) throw error; state.cariler=data||[]; if(state.cariler.length&&!state.selectedCariId) state.selectedCariId=state.cariler[0].cari_id;
-  const c=await supabaseClient.from("v_cari_card_management").select("*").order("cari_name",{ascending:true});
-  state.cariCards=c.data||[];
-  await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail();
+  if(!state.allMoves.length) await loadAllMoves();
+  try{
+    const {data,error}=await supabaseClient.from("v_cari_liste_gelismis").select("*").order("cari_name",{ascending:true});
+    if(error) throw error;
+    state.cariler=(data||[]).map(x=>({...x, txn_id:txnId(x,'CAR')}));
+  }catch(_){
+    state.cariler=fallbackCariSummaryFromMoves(state.cariCards||[], state.allMoves||[]);
+  }
+  if(!state.cariler.length && state.cariCards?.length){
+    state.cariler=fallbackCariSummaryFromMoves(state.cariCards||[], state.allMoves||[]);
+  }
+  if(state.cariler.length&&!state.selectedCariId) state.selectedCariId=state.cariler[0].cari_id;
+  try{
+    const c=await supabaseClient.from("v_cari_card_management").select("*").order("cari_name",{ascending:true});
+    state.cariCards=(c.data||[]).map(x=>({...x,cari_id:x.cari_id||x.id}));
+    if(!state.cariler.length){
+      state.cariler=fallbackCariSummaryFromMoves(state.cariCards||[], state.allMoves||[]);
+    }
+  }catch(_){
+    state.cariCards=state.cariCards||[];
+    if(!state.cariler.length){
+      state.cariler=fallbackCariSummaryFromMoves(state.cariCards||[], state.allMoves||[]);
+    }
+  }
+  await loadSelectedCariHareketler();
+  try{ renderCariList(); }catch(_){}
+  try{ renderSelectedCariDetail(); }catch(_){}
 }
+
 async function loadSelectedCariHareketler(){
   if(!state.selectedCariId){state.hareketler=[];return}
-  const {data}=await supabaseClient.from("v_cari_hareket_dokumu").select("*").eq("cari_id",state.selectedCariId).order("line_date",{ascending:false}).limit(500);
-  state.hareketler=(data||[]).map(x=>({...x, txn_id:txnId(x,'HRK')}));
+  try{
+    const {data,error}=await supabaseClient.from("v_cari_hareket_dokumu").select("*").eq("cari_id",state.selectedCariId).order("line_date",{ascending:false}).limit(500);
+    if(error) throw error;
+    state.hareketler=(data||[]).map(x=>({...x, txn_id:txnId(x,'HRK')}));
+  }catch(_){
+    const key=String(state.selectedCariId);
+    state.hareketler=[...(state.allMoves||[])].filter(x=>String(x.cari_id||x.cari_name||'')===key).sort((a,b)=>new Date(b.line_date||b.movement_date||0)-new Date(a.line_date||a.movement_date||0)).map(x=>({...x, txn_id:txnId(x,'HRK')}));
+  }
 }
 async function loadAccounts(){
-  const [a,b,m]=await Promise.all([
-    supabaseClient.from("v_financial_account_summary").select("*").order("account_type",{ascending:true}),
-    supabaseClient.from("v_banka_montaj_paneli").select("*").limit(50),
-    supabaseClient.from("v_moka_transfer_paneli").select("*").limit(50)
-  ]);
   const importedMovements = readLocalJson(LOCAL_MOVEMENT_TEST_KEY).map(x=>({...x, txn_id:txnId(x,'IMP')}));
   state.movementTests = importedMovements;
   const importedBank = importedMovements.filter(x=>x.import_bucket!=='moka').map(x=>({...x, is_imported_test:true}));
   const importedMoka = importedMovements.filter(x=>x.import_bucket==='moka').map(x=>({...x, is_imported_test:true}));
-  state.accounts=(a.data||[]).map(x=>({...x, txn_id:txnId(x,'ACC')}));
-  state.bankPanel=[...(b.data||[]).map(x=>({...x, txn_id:txnId(x,'BNK')})), ...importedBank];
-  state.mokaPanel=[...(m.data||[]).map(x=>({...x, txn_id:txnId(x,'MOK')})), ...importedMoka];
+  try{
+    const [a,b,m]=await Promise.allSettled([
+      supabaseClient.from("v_financial_account_summary").select("*").order("account_type",{ascending:true}),
+      supabaseClient.from("v_banka_montaj_paneli").select("*").limit(50),
+      supabaseClient.from("v_moka_transfer_paneli").select("*").limit(50)
+    ]);
+    const accData=(a.status==='fulfilled' && !a.value.error) ? (a.value.data||[]) : [];
+    const bankData=(b.status==='fulfilled' && !b.value.error) ? (b.value.data||[]) : [];
+    const mokaData=(m.status==='fulfilled' && !m.value.error) ? (m.value.data||[]) : [];
+    state.accounts=accData.map(x=>({...x, txn_id:txnId(x,'ACC')}));
+    state.bankPanel=[...bankData.map(x=>({...x, txn_id:txnId(x,'BNK')})), ...importedBank];
+    state.mokaPanel=[...mokaData.map(x=>({...x, txn_id:txnId(x,'MOK')})), ...importedMoka];
+  }catch(_){
+    state.accounts=[];
+    state.bankPanel=[...importedBank];
+    state.mokaPanel=[...importedMoka];
+  }
 }
 
 async function loadFeeData(){
-  const [t, c] = await Promise.all([
-    supabaseClient.from("v_cari_fee_timeline").select("*").order("valid_from",{ascending:false}),
-    supabaseClient.from("v_monthly_fee_accrual_control").select("*").order("period_start",{ascending:false})
-  ]);
-  state.feeTimeline = t.data || [];
-  state.feeControl = c.data || [];
+  try{
+    const [t, c] = await Promise.allSettled([
+      supabaseClient.from("v_cari_fee_timeline").select("*").order("valid_from",{ascending:false}),
+      supabaseClient.from("v_monthly_fee_accrual_control").select("*").order("period_start",{ascending:false})
+    ]);
+    state.feeTimeline = (t.status==='fulfilled' && !t.value.error) ? (t.value.data || []) : [];
+    state.feeControl = (c.status==='fulfilled' && !c.value.error) ? (c.value.data || []) : [];
+  }catch(_){
+    state.feeTimeline=[]; state.feeControl=[];
+  }
 }
 function monthTokenTR(monthNo){
   return ['','OCAK26','ŞUBAT26','MART26','NİSAN26','MAYIS26','HAZİRAN26','TEMMUZ26','AĞUSTOS26','EYLÜL26','EKİM26','KASIM26','ARALIK26'][monthNo] || '';
@@ -790,12 +970,18 @@ function exportYearTransitionJson(){
 }
 
 async function loadApprovals(){
-  const [p,pr,r]=await Promise.all([
-    supabaseClient.from("v_approval_pending").select("*").limit(100),
-    supabaseClient.from("v_approval_processed").select("*").limit(100),
-    supabaseClient.from("v_approval_rejected").select("*").limit(100)
-  ]);
-  state.pending=(p.data||[]).map(x=>({...x, txn_id:txnId(x,'APR')})); state.processed=(pr.data||[]).map(x=>({...x, txn_id:txnId(x,'APR')})); state.rejected=(r.data||[]).map(x=>({...x, txn_id:txnId(x,'APR')}));
+  try{
+    const [p,pr,r]=await Promise.allSettled([
+      supabaseClient.from("v_approval_pending").select("*").limit(100),
+      supabaseClient.from("v_approval_processed").select("*").limit(100),
+      supabaseClient.from("v_approval_rejected").select("*").limit(100)
+    ]);
+    state.pending=((p.status==='fulfilled' && !p.value.error)?(p.value.data||[]):[]).map(x=>({...x, txn_id:txnId(x,'APR')}));
+    state.processed=((pr.status==='fulfilled' && !pr.value.error)?(pr.value.data||[]):[]).map(x=>({...x, txn_id:txnId(x,'APR')}));
+    state.rejected=((r.status==='fulfilled' && !r.value.error)?(r.value.data||[]):[]).map(x=>({...x, txn_id:txnId(x,'APR')}));
+  }catch(_){
+    state.pending=[]; state.processed=[]; state.rejected=[];
+  }
 }
 async function loadDocuments(){
   state.documents = readLocalJson(LOCAL_DOCS_KEY).map(x=>({...x, txn_id:txnId(x,'DOC')}));
@@ -2022,6 +2208,50 @@ function computeRunningRows(allRows, startDate=null){
   }
   return visible;
 }
+
+function getStatementBaseRows(){
+  const key = String(state.selectedCariId || '');
+  if(!key) return [];
+  const all = [...(state.allMoves||[])]
+    .filter(r=>String(r.cari_id || r.cari_name || '')===key)
+    .map(r=>{
+      const mv = normalizeMovementAmounts(r);
+      return {
+        ...r,
+        line_date:getRowDateValue(r),
+        debit:mv.debit,
+        credit:mv.credit,
+        amount:mv.amount,
+        txn_id:r.txn_id || txnId(r,'HRK')
+      };
+    });
+  if(state.selectedLedgerView==='allhistory') return all;
+  const openingCutoff = new Date('2026-01-01');
+  let openingBalance = 0;
+  const rows2026 = [];
+  all.forEach(r=>{
+    const dt = new Date(r.line_date || 0);
+    if(dt < openingCutoff){
+      openingBalance += num(r.debit) - num(r.credit);
+    }else{
+      rows2026.push(r);
+    }
+  });
+  const currentCari = state.cariler.find(x=>String(x.cari_id)===key);
+  const syntheticOpening = openingBalance!==0 ? [{
+    id:'OPEN-'+key,
+    cari_id:key,
+    cari_name:currentCari?.cari_name || all[0]?.cari_name || '-',
+    line_date:(state.year2026?.opening_date || '2025-12-31'),
+    movement_type:'acilis',
+    description:'DEVREDEN AÇILIŞ BAKİYESİ',
+    debit:openingBalance>0 ? openingBalance : 0,
+    credit:openingBalance<0 ? Math.abs(openingBalance) : 0,
+    txn_id:'HRK-OPEN-'+key
+  }] : [];
+  return [...syntheticOpening, ...rows2026];
+}
+
 function getStatementOpeningBalance(startDate){
   if(!startDate) return 0;
   const ordered = sortStatementRows(getStatementBaseRows()).map(r=>{
@@ -2071,7 +2301,7 @@ function getCurrentStatementMeta(){
   };
 }
 function buildStandardStatementTable(rowsDesc){
-  if(!rowsDesc.length) return `<div class="empty">Seçili aralıkta hareket yok.</div>`;
+  if(!rowsDesc.length) return `<div class="empty">Cari geçmişi bulunamadı. Bu caride seçili görünümde hareket yok.</div>`;
   return `<table>
     <thead>
       <tr>
@@ -2361,7 +2591,7 @@ function renderSelectedCariDetail(){
     ${docs.length ? `<table><thead><tr><th>Tarih</th><th>Belge</th><th>Kaynak</th><th class="text-right">Tutar</th></tr></thead><tbody>${docs.map(d=>`<tr class="click-row" data-cari-doc-id="${escapeHtml(d.id)}"><td>${shortDate(d.document_date || d.created_at)}</td><td>${documentTypeTag(d.document_type)} ${escapeHtml(d.document_title || d.document_no || '-')}<div class="muted-note">${escapeHtml(d.note || '-')}</div></td><td>${escapeHtml(d.source_type || '-')}</td><td class="text-right">${money(d.amount || 0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Bu cariye bağlı belge yok.</div>`}
   </div>`;
   target.querySelectorAll("#detailDateChips .chip").forEach(btn=>btn.addEventListener("click",()=>{state.selectedRange=btn.dataset.range; renderSelectedCariDetail();}));
-  target.querySelectorAll("#detailLedgerViewChips .chip").forEach(btn=>btn.addEventListener("click",()=>{state.selectedLedgerView=btn.dataset.ledgerView; renderSelectedCariDetail();}));
+  target.querySelectorAll("#detailLedgerViewChips .chip").forEach(btn=>btn.addEventListener("click",()=>{state.selectedLedgerView=btn.dataset.ledgerView; if(state.selectedLedgerView==='allhistory') state.selectedRange='all'; renderSelectedCariDetail();}));
   target.querySelectorAll('[data-cari-doc-id]').forEach(el=>el.addEventListener('click',()=>openDocumentDetailModal(el.dataset.cariDocId)));
 }
 function getOpenFeePeriod(id){
@@ -2701,6 +2931,9 @@ function ignoreSelectedBankRow(){
   notify('Satır işlenmeyen olarak işaretlendi.');
 }
 function renderAccounts(){
+  state.bankPanel = state.bankPanel || [];
+  state.mokaPanel = state.mokaPanel || [];
+  state.accounts = state.accounts || [];
   const bankRows = state.bankPanel.filter(r=>rowMatchesBankFilter(r,'bank'));
   const mokaRows = state.mokaPanel.filter(r=>rowMatchesBankFilter(r,'moka'));
   const bankStats = {
@@ -2862,6 +3095,7 @@ function renderMovementTestCenter(){
 }
 
 function renderReports(){
+  if((!state.cariler || !state.cariler.length) && state.cariCards?.length){ state.cariler=fallbackCariSummaryFromMoves(state.cariCards||[], state.allMoves||[]); }
   const riskRows=state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).sort((a,b)=>num(b.bakiye)-num(a.bakiye)).slice(0,15);
   const topFee=[...state.cariler].sort((a,b)=>num(b.defter_ucreti)-num(a.defter_ucreti)).slice(0,10);
   const feeIssueCount = state.feeControl.filter(x=>String(x.control_status || x.issue_type || '').toLowerCase() !== 'tamam').length;
@@ -3666,22 +3900,48 @@ async function savePaymentPromise(){
   renderReports();
 }
 
+
 async function refreshAll(){
-  await Promise.all([loadDashboard(),loadCariler(),loadAccounts(),loadApprovals(),loadFeeData(),loadDocuments(),loadYearTransitionData(true)]);
-  refreshImportedMovementAnalysis(true);
-  normalizeStateIds();
-  renderDashboard();
-  renderAccounts();
-  renderReports();
-  renderDocuments();
-  renderExpenses();
-  renderApprovals();
-  renderBackup();
-  renderOpsHealthPanel();
-  renderProdHardeningPanel();
-  renderGlobalAuditLog();
-  renderDeleteArchive();
-  if(state.selectedCariId) renderSelectedCariDetail();
+  let failedCount = 0;
+  try{
+    const results = await Promise.allSettled([loadDashboard(),loadAllMoves(),loadCariler(),loadAccounts(),loadApprovals(),loadFeeData(),loadDocuments(),loadYearTransitionData(true)]);
+    failedCount = results.filter(x=>x.status==='rejected').length;
+  }catch(_){
+    failedCount += 1;
+  }
+  try{ refreshImportedMovementAnalysis(true); }catch(_){ failedCount += 1; }
+  try{ normalizeStateIds(); }catch(_){ failedCount += 1; }
+
+  const safeRender = (fn, fallbackId=null, fallbackText='Veri yüklenemedi.') => {
+    try{ fn(); }
+    catch(e){
+      failedCount += 1;
+      if(fallbackId){
+        const el=document.getElementById(fallbackId);
+        if(el) el.innerHTML=`<div class="empty">${fallbackText}</div>`;
+      }
+    }
+  };
+
+  safeRender(()=>renderDashboard());
+  safeRender(()=>renderAccounts(),'accountSummaryWrap','Hesap özeti yüklenemedi. View eksikse yine de banka import kullanabilirsin.');
+  safeRender(()=>renderReports(),'reportWrap','Raporlar yüklenemedi. Cari özeti yedek modda kalabilir.');
+  safeRender(()=>renderDocuments(),'documentsWrap','Belgeler yüklenemedi.');
+  safeRender(()=>renderExpenses(),'expenseWrap','Gider tahakkuk ekranı yüklenemedi.');
+  safeRender(()=>renderApprovals(),'pendingWrap','Onay merkezi yüklenemedi.');
+  safeRender(()=>renderBackup(),'backupWrap','Yedekleme ekranı yüklenemedi.');
+  safeRender(()=>renderOpsHealthPanel());
+  safeRender(()=>renderProdHardeningPanel());
+  safeRender(()=>renderGlobalAuditLog(),'globalAuditWrap','İşlem izi yüklenemedi.');
+  safeRender(()=>renderDeleteArchive(),'deleteArchiveWrap','Silme arşivi yüklenemedi.');
+  safeRender(()=>renderCariList(),'cariList','Cari listesi yüklenemedi.');
+  if(state.selectedCariId) safeRender(()=>renderSelectedCariDetail(),'selectedCariDetail','Cari geçmişi yüklenemedi. Yedek mod deneniyor.');
+
+  if(failedCount>0){
+    setConnState(`Canlı bağlantı aktif · ${failedCount} modül yedek modda`);
+  }else{
+    setConnState("Canlı bağlantı aktif");
+  }
 }
 document.getElementById("cariSearch").addEventListener("input",renderCariList);
 document.getElementById("taxpayerFilter").addEventListener("change",renderCariList);
