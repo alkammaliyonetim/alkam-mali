@@ -49,10 +49,10 @@
     <div style="text-align:center;margin-bottom:12px;"><img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" style="width:110px;display:block;margin:0 auto 10px;"></div>
     <div class="login-brand">ALKAM MALİ MÜŞAVİRLİK</div>
     <h2 class="login-title">Programa Giriş</h2>
-    <form onsubmit="return submitLogin(event)">
+    <form id="loginForm" onsubmit="return submitLogin(event)">
       <div class="pass-wrap">
-        <input id="loginPassword" type="password" placeholder="Şifrenizi girin" required />
-        <button type="button" class="toggle-password" onclick="togglePassword()">👁</button>
+        <input id="loginPassword" type="password" placeholder="Şifrenizi girin" required autocomplete="current-password" />
+        <button id="togglePasswordBtn" type="button" class="toggle-password" aria-label="Şifreyi göster/gizle" onclick="togglePassword(event)">👁</button>
       </div>
       <button class="login-btn" type="submit">Giriş Yap</button>
       <div id="loginError" class="login-error"></div>
@@ -4729,6 +4729,19 @@ document.getElementById("cariSearch").addEventListener("input",renderCariList);
 document.getElementById("taxpayerFilter").addEventListener("change",renderCariList);
 document.getElementById("sortBy").addEventListener("change",renderCariList);
 document.getElementById("versionBadge").textContent=buildVersion();
+const __loginInput=document.getElementById('loginPassword');
+if(__loginInput){
+  __loginInput.addEventListener('keydown', function(e){
+    if(e.key==='Enter'){
+      e.preventDefault();
+      submitLogin(e);
+    }
+  });
+}
+const __loginForm=document.getElementById('loginForm');
+if(__loginForm){
+  __loginForm.addEventListener('submit', submitLogin);
+}
 if(localStorage.getItem(SESSION_KEY)==="ok"){openApp(); refreshAll()}else{setConnState("Giriş bekleniyor")}
 </script>
 </body>
