@@ -26,7 +26,7 @@
     .list{display:grid;gap:10px}.list-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;cursor:pointer}.list-item.active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,103,232,.12);background:#f6f9ff}.list-item.risk{border-color:#fecaca;background:#fff7f7}
     .list-title{font-weight:900;font-size:15px;margin-bottom:6px}.list-meta{color:var(--muted);font-size:13px;font-weight:700;line-height:1.55}.empty{padding:22px;border:1px dashed #cbd5e1;border-radius:16px;text-align:center;color:var(--muted);font-weight:800;background:#fbfdff}
     .search-input,.select-input,.field input,.field select,.field textarea{width:100%;border:1px solid #cfd8e6;border-radius:12px;min-height:44px;padding:10px 12px;font-size:14px;font-weight:700;outline:none;background:#fff}
-    .toolbar{display:grid;grid-template-columns:1.3fr .8fr .8fr;gap:12px;margin-bottom:14px}.detail-sticky{position:sticky;top:22px}.grid-2-cari{display:grid;grid-template-columns:.84fr 1.16fr;gap:16px;align-items:start}.split-scroll{height:calc(100vh - 190px);overflow:auto;min-height:520px}.split-scroll .section{margin-bottom:0}.split-scroll::-webkit-scrollbar{width:10px}.split-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}.split-scroll::-webkit-scrollbar-track{background:#f8fafc}.account-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.subsection-title{margin:0 0 12px;font-size:16px;font-weight:900;color:#0f172a}.grid-2-cari-legacy{display:grid;grid-template-columns:1.02fr .98fr;gap:16px;align-items:start}.cari-list-scroll{max-height:calc(100vh - 300px);overflow:auto;padding-right:4px}.cari-detail-scroll{max-height:calc(100vh - 210px);overflow:auto;padding-right:4px}.cari-list-scroll::-webkit-scrollbar,.cari-detail-scroll::-webkit-scrollbar{width:10px}.cari-list-scroll::-webkit-scrollbar-thumb,.cari-detail-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}.cari-list-scroll::-webkit-scrollbar-track,.cari-detail-scroll::-webkit-scrollbar-track{background:#f8fafc}
+    .toolbar{display:grid;grid-template-columns:1.3fr .8fr .8fr;gap:12px;margin-bottom:14px}.detail-sticky{position:sticky;top:22px}.cari-list-scroll{max-height:calc(100vh - 300px);overflow:auto;padding-right:4px}.cari-detail-scroll{max-height:calc(100vh - 210px);overflow:auto;padding-right:4px}.cari-list-scroll::-webkit-scrollbar,.cari-detail-scroll::-webkit-scrollbar{width:10px}.cari-list-scroll::-webkit-scrollbar-thumb,.cari-detail-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}.cari-list-scroll::-webkit-scrollbar-track,.cari-detail-scroll::-webkit-scrollbar-track{background:#f8fafc}.account-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.subsection-title{margin:0 0 12px;font-size:16px;font-weight:900;color:#0f172a}
     .metric-mini{background:#fbfdff;border:1px solid var(--line);border-radius:14px;padding:12px}.metric-mini .k{font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}.metric-mini .v{font-size:18px;font-weight:900;color:var(--text)}
     .filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.chip{border:none;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;background:#e8eef9;color:#0f172a;cursor:pointer}.chip.active{background:var(--blue);color:#fff}
     .hero-name{font-size:28px;font-weight:900;line-height:1.1;margin:0 0 8px}.hero-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:13px;font-weight:800;margin-bottom:16px}
@@ -38,7 +38,7 @@
     .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.form-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
     .toast{position:fixed;right:16px;bottom:16px;z-index:999999;background:#0f172a;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);font-size:13px;font-weight:800;display:none;max-width:340px}.click-row{cursor:pointer}.click-row:hover td{background:#f8fbff}.rule-box{padding:12px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;font-size:13px;font-weight:700;color:#334155;line-height:1.6}.muted-note{font-size:12px;color:#64748b;font-weight:700}
     .btn[disabled]{opacity:.55;cursor:not-allowed}
-    @media (max-width:1200px){.cards,.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-2,.grid-2-cari,.grid-2-cari-legacy,.grid-3,.toolbar,.form-grid,.form-grid-3{grid-template-columns:1fr}.detail-sticky{position:static}.split-scroll{height:auto;max-height:none;min-height:auto}.cari-list-scroll,.cari-detail-scroll{max-height:none}}
+    @media (max-width:1200px){.cards,.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-2,.grid-3,.toolbar,.form-grid,.form-grid-3{grid-template-columns:1fr}.detail-sticky{position:static}.cari-list-scroll,.cari-detail-scroll{max-height:none}}
     @media (max-width:860px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.main{padding:16px}.page-head h1{font-size:32px}}
     @media (max-width:640px){.cards,.grid-4{grid-template-columns:1fr}}
   </style>
@@ -136,7 +136,7 @@
     <input id="manualFinanceMode" type="hidden" />
     <div id="manualFinanceInfo" class="rule-box" style="margin-bottom:14px;">Hesap tanımı, hesap işlemi ve hesaplar arası transfer burada tutulur.</div>
     <div id="manualFinanceCreateFields" class="form-grid" style="display:none;">
-      <div class="field"><label>Yeni Hesap Adı</label><input id="manualFinanceCreateName" placeholder="Örn. Kasa TL / Vakıf Bank / Moka United" /></div>
+      <div class="field"><label>Yeni Hesap Adı</label><input id="manualFinanceCreateName" placeholder="Örn. Kasa TL / Banka / Moka United" /></div>
       <div class="field"><label>Hesap Türü</label><select id="manualFinanceCreateType"><option value="kasa">Kasa</option><option value="banka">Banka</option><option value="moka_united">Moka United</option><option value="cek">Çek</option><option value="senet">Senet</option><option value="diger">Diğer</option></select></div>
     </div>
     <div id="manualFinanceEntryFields">
@@ -409,7 +409,7 @@
     <div class="nav">
       <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
       <button class="nav-btn" data-tab="cariler">Cariler</button>
-            <button class="nav-btn" data-tab="hesaplar">Hesaplar</button>
+      <button class="nav-btn" data-tab="hesaplar">Hesaplar</button>
       <button class="nav-btn" data-tab="giderler">Gider Tahakkuk</button>
       <button class="nav-btn" data-tab="raporlar">Raporlar</button>
       <button class="nav-btn" data-tab="belgeler">Belgeler</button>
@@ -449,7 +449,7 @@
     </section>
 
     <section id="tab-cariler" class="tab-page">
-      <div class="grid-2-cari-legacy">
+      <div class="grid-2">
         <div class="section">
           <h2 class="section-title">Dinamik Cari Listesi</h2>
           <div class="toolbar">
@@ -468,14 +468,10 @@
               <option value="tahsilat_desc">Son Tahsilat ↓</option>
             </select>
           </div>
-          <div class="cari-list-scroll">
-            <div id="cariList" class="list"></div>
-          </div>
+          <div class="cari-list-scroll"><div id="cariList" class="list"></div></div>
         </div>
         <div class="section detail-sticky">
-          <div class="cari-detail-scroll">
-            <div id="selectedCariDetail" class="empty">Bir cari seç.</div>
-          </div>
+          <div class="cari-detail-scroll"><div id="selectedCariDetail" class="empty">Bir cari seç.</div></div>
         </div>
       </div>
     </section>
@@ -672,76 +668,21 @@ function getLocalAccountOps(){ const norm=normalizeNumberedList(readLocalJson(LO
 function setLocalAccountOps(rows){ writeLocalJson(LOCAL_ACCOUNT_OPS_KEY, rows); }
 function getLocalCariCollections(){ const norm=normalizeNumberedList(readLocalJson(LOCAL_CARI_COLLECTIONS_KEY),'LCT'); if(norm.changed) writeLocalJson(LOCAL_CARI_COLLECTIONS_KEY, norm.rows); return norm.rows; }
 function setLocalCariCollections(rows){ writeLocalJson(LOCAL_CARI_COLLECTIONS_KEY, rows); }
-function buildAccountSeed(row){ const account_key=normalizeAccountKey(row.account_key || row.account_id || row.account_code || row.account_name); return { account_key, account_name: row.account_name || row.account_code || 'Hesap', account_type: row.account_type || 'hesap', net_bakiye: num(row.net_bakiye||0), son_hareket_tarihi: row.son_hareket_tarihi || row.updated_at || row.created_at || null }; }
+function fillAccountSelect(selectId, includeBlank=true){ const el=document.getElementById(selectId); if(!el) return; const selected=el.value; const rows=getCombinedAccounts(); el.innerHTML=`${includeBlank?'<option value="">Hesap seçiniz</option>':''}${rows.map(r=>`<option value="${escapeHtml(r.account_key)}">${escapeHtml(r.account_name)} (${escapeHtml(r.account_type||'-')})</option>`).join('')}`; if(selected && [...el.options].some(o=>o.value===selected)) el.value=selected; }
 function getCombinedAccounts(){
   const map=new Map();
-  (state.accounts||[]).forEach(r=>{ const seed=buildAccountSeed(r); if(seed.account_key) map.set(seed.account_key,{...seed}); });
+  (state.accounts||[]).forEach(r=>{ const key=normalizeAccountKey(r.account_key || r.account_id || r.account_code || r.account_name); if(!key) return; map.set(key,{ account_key:key, account_name:r.account_name||r.account_code||'Hesap', account_type:r.account_type||'diger', net_bakiye:num(r.net_bakiye||0), son_hareket_tarihi:r.son_hareket_tarihi||null }); });
   getLocalAccountOps().forEach(op=>{
-    if(op.type==='account_create'){
-      const key=normalizeAccountKey(op.account_key || op.account_name);
-      if(!key) return;
-      if(!map.has(key)) map.set(key,{account_key:key,account_name:op.account_name||'Yeni Hesap',account_type:op.account_type||'diger',net_bakiye:0,son_hareket_tarihi:op.entry_date||op.created_at||null});
-    }
-  });
-  getLocalAccountOps().forEach(op=>{
-    if(op.type==='account_create'){
-      const key=normalizeAccountKey(op.account_key || op.account_name);
-      const acc=map.get(key); if(!acc) return;
-      acc.net_bakiye=num(acc.net_bakiye)+num(op.opening_balance||0);
-      acc.son_hareket_tarihi=latestIso(acc.son_hareket_tarihi, op.entry_date||op.created_at);
-      return;
-    }
-    if(op.type==='account_entry' || op.type==='cari_collection'){
-      const key=normalizeAccountKey(op.account_key || op.account_name);
-      if(!key) return;
-      if(!map.has(key)) map.set(key,{account_key:key,account_name:op.account_name||'Manuel Hesap',account_type:op.account_type||'diger',net_bakiye:0,son_hareket_tarihi:op.entry_date||op.created_at||null});
-      const acc=map.get(key);
-      acc.net_bakiye=num(acc.net_bakiye)+(String(op.direction||'giris')==='cikis' ? -num(op.amount) : num(op.amount));
-      acc.son_hareket_tarihi=latestIso(acc.son_hareket_tarihi, op.entry_date||op.created_at);
-      return;
-    }
-    if(op.type==='account_transfer'){
-      const sourceKey=normalizeAccountKey(op.source_account_key || op.account_key || op.source_account_name);
-      const targetKey=normalizeAccountKey(op.target_account_key || op.target_account_name);
-      if(sourceKey){
-        if(!map.has(sourceKey)) map.set(sourceKey,{account_key:sourceKey,account_name:op.source_account_name||'Kaynak Hesap',account_type:'diger',net_bakiye:0,son_hareket_tarihi:op.entry_date||op.created_at||null});
-        const s=map.get(sourceKey); s.net_bakiye=num(s.net_bakiye)-num(op.amount); s.son_hareket_tarihi=latestIso(s.son_hareket_tarihi, op.entry_date||op.created_at);
-      }
-      if(targetKey){
-        if(!map.has(targetKey)) map.set(targetKey,{account_key:targetKey,account_name:op.target_account_name||'Hedef Hesap',account_type:'diger',net_bakiye:0,son_hareket_tarihi:op.entry_date||op.created_at||null});
-        const t=map.get(targetKey); t.net_bakiye=num(t.net_bakiye)+num(op.amount); t.son_hareket_tarihi=latestIso(t.son_hareket_tarihi, op.entry_date||op.created_at);
-      }
-    }
+    if(op.type==='account_create'){ const key=normalizeAccountKey(op.account_key || op.account_name); if(!key) return; if(!map.has(key)) map.set(key,{account_key:key, account_name:op.account_name||'Yeni Hesap', account_type:op.account_type||'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const acc=map.get(key); acc.net_bakiye=num(acc.net_bakiye)+num(op.opening_balance||0); acc.son_hareket_tarihi=latestIso(acc.son_hareket_tarihi, op.entry_date||op.created_at); }
+    if(op.type==='account_entry' || op.type==='cari_collection'){ const key=normalizeAccountKey(op.account_key || op.account_name); if(!key) return; if(!map.has(key)) map.set(key,{account_key:key, account_name:op.account_name||'Manuel Hesap', account_type:op.account_type||'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const acc=map.get(key); acc.net_bakiye=num(acc.net_bakiye)+(String(op.direction||'giris')==='cikis' ? -num(op.amount) : num(op.amount)); acc.son_hareket_tarihi=latestIso(acc.son_hareket_tarihi, op.entry_date||op.created_at); }
+    if(op.type==='account_transfer'){ const sk=normalizeAccountKey(op.source_account_key || op.source_account_name); const tk=normalizeAccountKey(op.target_account_key || op.target_account_name); if(sk){ if(!map.has(sk)) map.set(sk,{account_key:sk, account_name:op.source_account_name||'Kaynak Hesap', account_type:'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const s=map.get(sk); s.net_bakiye=num(s.net_bakiye)-num(op.amount); s.son_hareket_tarihi=latestIso(s.son_hareket_tarihi, op.entry_date||op.created_at); } if(tk){ if(!map.has(tk)) map.set(tk,{account_key:tk, account_name:op.target_account_name||'Hedef Hesap', account_type:'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const t=map.get(tk); t.net_bakiye=num(t.net_bakiye)+num(op.amount); t.son_hareket_tarihi=latestIso(t.son_hareket_tarihi, op.entry_date||op.created_at); } }
   });
   return [...map.values()].sort((a,b)=>String(a.account_name||'').localeCompare(String(b.account_name||''),'tr'));
 }
 function getAccountByKey(key){ return getCombinedAccounts().find(x=>x.account_key===normalizeAccountKey(key)) || null; }
-function fillAccountSelect(selectId, includeBlank=true){
-  const el=document.getElementById(selectId); if(!el) return;
-  const rows=getCombinedAccounts();
-  el.innerHTML=`${includeBlank?'<option value="">Hesap seçiniz</option>':''}${rows.map(r=>`<option value="${escapeHtml(r.account_key)}">${escapeHtml(r.account_name)} (${escapeHtml(r.account_type||'-')})</option>`).join('')}`;
-}
-function manualOpsForView(){ return [...getLocalAccountOps()].sort((a,b)=>new Date(b.entry_date||b.created_at||0)-new Date(a.entry_date||a.created_at||0)); }
 function localCollectionsForCari(cariId){ return getLocalCariCollections().filter(x=>String(x.cari_id)===String(cariId)); }
-function applyLocalCollectionsToCariRow(row){
-  const locals=localCollectionsForCari(row.cari_id); if(!locals.length) return {...row};
-  const monthlyToken=new Date().toISOString().slice(0,7);
-  const sum=locals.reduce((a,b)=>a+num(b.amount),0);
-  const monthlySum=locals.filter(x=>String(x.line_date||x.created_at||'').slice(0,7)===monthlyToken).reduce((a,b)=>a+num(b.amount),0);
-  const latest=[...locals].sort((a,b)=>new Date(b.line_date||b.created_at||0)-new Date(a.line_date||a.created_at||0))[0];
-  const next={...row, bakiye:num(row.bakiye)-sum, bu_ay_tahsilat:num(row.bu_ay_tahsilat)+monthlySum};
-  const baseTime=new Date(row.son_tahsilat_tarihi||0).getTime();
-  const localTime=new Date(latest?.line_date||latest?.created_at||0).getTime();
-  if(latest && localTime>=baseTime){ next.son_tahsilat_tarihi=latest.line_date||latest.created_at; next.son_tahsilat_tutari=num(latest.amount); }
-  const lastTime=new Date(next.son_tahsilat_tarihi||0).getTime();
-  if(lastTime>0){ next.is_tahsilat_3_ay_gecikmis=((Date.now()-lastTime)/86400000)>90; }
-  return next;
-}
-function buildLocalCariMovementRows(cariId){
-  return localCollectionsForCari(cariId).map(x=>({
-    id:x.id, txn_id:x.txn_id, operation_no:x.operation_no, cari_id:x.cari_id, line_date:x.line_date||x.created_at, movement_type:'Tahsilat', description:x.description || `Müşteriden Tahsilat | ${x.channel || 'Yerel kayıt'}`, amount:num(x.amount), debit:0, credit:num(x.amount), source_module:'local_cari_collection', account_name:x.account_name || '-', document_no:x.document_no || null
-  }));
-}
+function applyLocalCollectionsToCariRow(row){ const locals=localCollectionsForCari(row.cari_id); if(!locals.length) return {...row}; const monthlyToken=new Date().toISOString().slice(0,7); const sum=locals.reduce((a,b)=>a+num(b.amount),0); const monthlySum=locals.filter(x=>String(x.line_date||x.created_at||'').slice(0,7)===monthlyToken).reduce((a,b)=>a+num(b.amount),0); const latest=[...locals].sort((a,b)=>new Date(b.line_date||b.created_at||0)-new Date(a.line_date||a.created_at||0))[0]; const next={...row, bakiye:num(row.bakiye)-sum, bu_ay_tahsilat:num(row.bu_ay_tahsilat)+monthlySum}; const baseTime=new Date(row.son_tahsilat_tarihi||0).getTime(); const localTime=new Date(latest?.line_date||latest?.created_at||0).getTime(); if(latest && localTime>=baseTime){ next.son_tahsilat_tarihi=latest.line_date||latest.created_at; next.son_tahsilat_tutari=num(latest.amount); } const lastTime=new Date(next.son_tahsilat_tarihi||0).getTime(); if(lastTime>0) next.is_tahsilat_3_ay_gecikmis=((Date.now()-lastTime)/86400000)>90; return next; }
+function buildLocalCariMovementRows(cariId){ return localCollectionsForCari(cariId).map(x=>({ id:x.id, txn_id:x.txn_id, operation_no:x.operation_no, cari_id:x.cari_id, line_date:x.line_date||x.created_at, movement_type:'Tahsilat', description:x.description || `Müşteriden Tahsilat | ${x.channel || 'Yerel kayıt'}`, amount:num(x.amount), debit:0, credit:num(x.amount), source_module:'local_cari_collection', document_no:x.document_no||null })); }
 function persistLedger(){ writeLocalJson(LOCAL_LEDGER_KEY, state.operationalLedger); }
 function persistAudit(){ writeLocalJson(LOCAL_AUDIT_KEY, state.auditTrail); }
 function decisionRef(prefix='OP'){ const d=new Date(); const p=n=>String(n).padStart(2,'0'); return `${prefix}-${String(d.getFullYear()).slice(-2)}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
@@ -777,7 +718,6 @@ function renderTag(t){
 function buildVersion(){const d=new Date(document.lastModified); const p=n=>String(n).padStart(2,"0"); return `V${p(d.getHours())}${p(d.getMinutes())}${p(d.getDate())}${p(d.getMonth()+1)}${String(d.getFullYear()).slice(-2)}-${p(d.getHours())}${p(d.getMinutes())}`}
 function setConnState(t){document.getElementById("connState").textContent=t}
 function notify(msg){const t=document.getElementById("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>t.style.display="none",2600)}
-function safeRun(fn,fallbackLabel=""){ try{ return fn(); } catch(err){ console.error(err); if(fallbackLabel) notify(`${fallbackLabel} hatası`); } }
 function togglePassword(){const i=document.getElementById("loginPassword"); i.type=i.type==="password"?"text":"password"}
 function submitLogin(e){e.preventDefault(); const v=(document.getElementById("loginPassword").value||"").trim(); const err=document.getElementById("loginError"); err.textContent=""; if(v!==LOCAL_PASSWORD){err.textContent="Şifre hatalı."; return false} localStorage.setItem(SESSION_KEY,"ok"); openApp(); refreshAll(); return false}
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
@@ -799,7 +739,7 @@ async function loadCariler(){
   if(state.cariler.length&&!state.selectedCariId) state.selectedCariId=state.cariler[0].cari_id;
   const c=await supabaseClient.from("v_cari_card_management").select("*").order("cari_name",{ascending:true});
   state.cariCards=c.data||[];
-  await loadSelectedCariHareketler(); safeRun(()=>renderCariList()); safeRun(()=>renderSelectedCariDetail(),"Cari detay");
+  await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail();
 }
 async function loadSelectedCariHareketler(){
   if(!state.selectedCariId){state.hareketler=[];return}
@@ -2152,16 +2092,12 @@ function renderBridgeSessions(){
     <div class="rule-box" style="margin-bottom:14px;">Köprü standardı: mesaj → analiz → aday kayıt → onay → belge/banka/moka ilişkisi. Otomatik muhasebe kaydı yok, kör işlem yok.</div>` + (state.bridgeBatches.length ? `<table><thead><tr><th>İşlem No</th><th>Başlık</th><th>Kaynak</th><th>Satır</th><th>Kontrol</th><th>Tarih</th></tr></thead><tbody>${state.bridgeBatches.map(b=>`<tr><td>${escapeHtml(displayTxnNo(b,'BTH'))}</td><td>${escapeHtml(b.title||'-')}</td><td>${escapeHtml(b.source_type||'-')}</td><td>${b.total_rows||0}</td><td>${b.duplicate_rows||0} çift · ${b.linked_rows||0} cari eşleşti</td><td>${shortDate(b.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz köprü oturumu yok.</div>`);
 }
 function renderDashboard(){
-  const toplamCari=state.cariler.length || Number(state.dashboard?.toplam_cari||0);
-  const aktifCari=state.cariler.filter(x=>x.is_active!==false).length || Number(state.dashboard?.aktif_cari||0);
-  const buAyTahsilat=state.cariler.reduce((a,b)=>a+num(b.bu_ay_tahsilat||0),0);
-  const toplamBakiye=state.cariler.reduce((a,b)=>a+num(b.bakiye||0),0);
-  document.getElementById("kpiToplamCari").textContent=toplamCari;
-  document.getElementById("kpiAktifCari").textContent=aktifCari;
-  document.getElementById("kpiBuAyTahsilat").textContent=money(buAyTahsilat);
-  document.getElementById("kpiToplamBakiye").textContent=money(toplamBakiye);
-  document.getElementById("riskCount").textContent=Number(state.riskSummary?.gecikmis_cari_sayisi||state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).length||0);
-  document.getElementById("riskAmount").textContent=money(state.riskSummary?.gecikmis_bakiye_toplami||state.cariler.filter(x=>x.is_tahsilat_3_ay_gecikmis).reduce((a,b)=>a+num(b.bakiye||0),0));
+  document.getElementById("kpiToplamCari").textContent=Number(state.dashboard?.toplam_cari||state.cariler.length||0);
+  document.getElementById("kpiAktifCari").textContent=Number(state.dashboard?.aktif_cari||state.cariler.filter(x=>x.is_active).length||0);
+  document.getElementById("kpiBuAyTahsilat").textContent=money(state.dashboard?.bu_ay_tahsilat||0);
+  document.getElementById("kpiToplamBakiye").textContent=money(state.dashboard?.toplam_bakiye||state.cariler.reduce((a,b)=>a+Number(b.bakiye||0),0));
+  document.getElementById("riskCount").textContent=Number(state.riskSummary?.gecikmis_cari_sayisi||0);
+  document.getElementById("riskAmount").textContent=money(state.riskSummary?.gecikmis_bakiye_toplami||0);
   document.getElementById("promiseCount").textContent=state.cariler.filter(x=>x.aktif_odeme_sozu_var).length;
   document.getElementById("promiseLateCount").textContent=state.cariler.filter(x=>x.aktif_odeme_sozu_durum==="gecikmis").length;
   const latest=[...state.hareketler].slice(0,10);
@@ -2181,7 +2117,7 @@ function renderCariList(){
     <div><div class="list-title">${escapeHtml(c.cari_name)} ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''} ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}</div>
     <div class="list-meta">Tür: ${escapeHtml(c.taxpayer_type||"-")} · Defter Ücreti: ${money(c.defter_ucreti||0)} · Skor: ${Number(c.score_total||0).toFixed(0)}<br>Son tahakkuk: ${shortDate(c.son_tahakkuk_tarihi)} · ${money(c.son_tahakkuk_tutari||0)}<br>Son tahsilat: ${shortDate(c.son_tahsilat_tarihi)} · ${money(c.son_tahsilat_tutari||0)}</div></div>
     <div class="tag ${Number(c.bakiye||0)>0?'red':'green'}">${money(c.bakiye||0)}</div></div>`).join(""):`<div class="empty">Cari bulunamadı.</div>`;
-  list.querySelectorAll("[data-cari-id]").forEach(el=>el.addEventListener("click",async()=>{state.selectedCariId=el.dataset.cariId; await loadSelectedCariHareketler(); safeRun(()=>renderCariList()); safeRun(()=>renderSelectedCariDetail(),"Cari detay");}));
+  list.querySelectorAll("[data-cari-id]").forEach(el=>el.addEventListener("click",async()=>{state.selectedCariId=el.dataset.cariId; await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail();}));
 }
 function getRangeStartDate(){
   const now=new Date(); let start=null;
@@ -2948,7 +2884,7 @@ function ignoreSelectedBankRow(){
 }
 function renderAccounts(){
   const combinedAccounts=getCombinedAccounts();
-  const manualOps=manualOpsForView();
+  const manualRows=[...getLocalAccountOps()].sort((a,b)=>new Date(b.entry_date||b.created_at||0)-new Date(a.entry_date||a.created_at||0));
   const bankRows = state.bankPanel.filter(r=>rowMatchesBankFilter(r,'bank'));
   const mokaRows = state.mokaPanel.filter(r=>rowMatchesBankFilter(r,'moka'));
   const bankStats = {
@@ -2967,15 +2903,9 @@ function renderAccounts(){
     processed: state.mokaPanel.filter(r=>bankStatusCode(r,'moka')==='processed').length,
     ignored: state.mokaPanel.filter(r=>['ignored','rejected'].includes(bankStatusCode(r,'moka'))).length,
   };
-  const opsTable = manualOps.length ? `<table><thead><tr><th>No</th><th>Tarih</th><th>İşlem</th><th>Hedef</th><th class="text-right">Tutar</th></tr></thead><tbody>${manualOps.slice(0,12).map(op=>{
-    const label = op.type==='account_transfer' ? 'Transfer' : (op.type==='account_create' ? 'Hesap Tanımı' : (op.type==='cari_collection' ? 'Cari Tahsilat' : 'Hesap İşlemi'));
-    const target = op.type==='account_transfer' ? `${escapeHtml(op.source_account_name || '-')} → ${escapeHtml(op.target_account_name || '-')}` : escapeHtml(op.account_name || '-');
-    const signed = op.type==='account_transfer' ? money(op.amount||0) : money((String(op.direction||'giris')==='cikis' ? -num(op.amount) : num(op.amount)));
-    return `<tr><td>${escapeHtml(displayTxnNo(op,'LAC'))}</td><td>${shortDate(op.entry_date || op.created_at)}</td><td>${label}</td><td>${target}<div class="muted-note">${escapeHtml(op.description || op.note || '-')}</div></td><td class="text-right">${signed}</td></tr>`;
-  }).join('')}</tbody></table>` : `<div class="empty">Henüz manuel hesap işlemi yok.</div>`;
   document.getElementById("accountSummaryWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
     <div class="metric-mini"><div class="k">Toplam Hesap</div><div class="v">${combinedAccounts.length}</div></div>
-    <div class="metric-mini"><div class="k">Yerel İşlem</div><div class="v">${manualOps.length}</div></div>
+    <div class="metric-mini"><div class="k">Yerel Hesap İşlemi</div><div class="v">${manualRows.length}</div></div>
     <div class="metric-mini"><div class="k">Banka Onay Kuyruğu</div><div class="v">${bankStats.queued}</div></div>
     <div class="metric-mini"><div class="k">Net Toplam</div><div class="v">${money(combinedAccounts.reduce((a,b)=>a+num(b.net_bakiye),0))}</div></div>
   </div>
@@ -2984,15 +2914,17 @@ function renderAccounts(){
     <button class="btn btn-soft" onclick="openManualFinanceModal('entry')">Hesaba İşlem Gir</button>
     <button class="btn btn-soft" onclick="openManualFinanceModal('transfer')">Hesaplar Arası Transfer</button>
   </div>
-  <div class="rule-box" style="margin-bottom:14px;">Buradaki işlem merkezi artık üç işi net yapar: <strong>hesap tanımı</strong>, <strong>hesap hareketi</strong> ve <strong>hesaplar arası transfer</strong>. Cariye tahsilat ise cari ekranından girilir ve seçilen hesaba otomatik işlenir.</div>
+  <div class="rule-box" style="margin-bottom:14px;">
+    Standart sıra: <strong>banka satırı incele</strong> → hedefi doğrula → <strong>emin değilsen Onay Merkezi</strong> → Moka kaynaklıysa <strong>önce Moka United</strong> → bankaya aktarım geldiğinde <strong>mahsup</strong>.
+  </div>
   <div class="grid-2" style="align-items:start;">
     <div>
       <h3 class="subsection-title">Hesap Kartları</h3>
-      ${combinedAccounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${combinedAccounts.map(a=>`<tr><td>${escapeHtml(a.account_name)}</td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`}
+      ${combinedAccounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${combinedAccounts.map(a=>`<tr><td>${escapeHtml(a.account_name)}</td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`}
     </div>
     <div>
       <h3 class="subsection-title">Son Manuel İşlemler</h3>
-      ${opsTable}
+      ${manualRows.length?`<table><thead><tr><th>No</th><th>Tarih</th><th>İşlem</th><th>Hedef</th><th class="text-right">Tutar</th></tr></thead><tbody>${manualRows.slice(0,12).map(op=>{ const label = op.type==='account_transfer' ? 'Transfer' : (op.type==='account_create' ? 'Hesap Tanımı' : (op.type==='cari_collection' ? 'Cari Tahsilat' : 'Hesap İşlemi')); const target = op.type==='account_transfer' ? `${escapeHtml(op.source_account_name || '-') } → ${escapeHtml(op.target_account_name || '-')}` : escapeHtml(op.account_name || '-'); const signed = op.type==='account_transfer' ? money(op.amount||0) : money((String(op.direction||'giris')==='cikis' ? -num(op.amount) : num(op.amount))); return `<tr><td>${escapeHtml(displayTxnNo(op,'LAC'))}</td><td>${shortDate(op.entry_date || op.created_at)}</td><td>${label}</td><td>${target}<div class="muted-note">${escapeHtml(op.description || op.note || '-')}</div></td><td class="text-right">${signed}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Henüz manuel hesap işlemi yok.</div>`}
     </div>
   </div>`;
 
@@ -3010,11 +2942,7 @@ function renderAccounts(){
       <button class="chip ${state.bankFilter==='processed'?'active':''}" data-bfilter="processed">İşlenen</button>
       <button class="chip ${state.bankFilter==='ignored'?'active':''}" data-bfilter="ignored">İşlenmeyen</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez.</div>` + (bankRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{
-    const suggestion = bankSuggestedTarget(r);
-    const conf = bankRowConfidence(r);
-    return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(displayTxnNo(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
-  }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez.</div>` + (bankRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{ const suggestion = bankSuggestedTarget(r); const conf = bankRowConfidence(r); return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(displayTxnNo(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
 
   document.getElementById("mokaPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
       <div class="metric-mini"><div class="k">Toplam Moka Satırı</div><div class="v">${mokaStats.total}</div></div>
@@ -3030,11 +2958,9 @@ function renderAccounts(){
       <button class="chip ${state.mokaFilter==='processed'?'active':''}" data-mfilter="processed">İşlenen</button>
       <button class="chip ${state.mokaFilter==='ignored'?'active':''}" data-mfilter="ignored">İşlenmeyen</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Moka kredi kartı tahsilatı <strong>doğrudan bankaya gelir yazılmaz</strong>. İlk kayıt <strong>Moka United</strong> içinde tutulur. Vadesi gelince bankaya aktarılan tutar ayrıca işlenir ve <strong>Moka United → Banka</strong> mahsup mantığıyla kapatılır.</div>` + (mokaRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{
-      const cls = mokaRowClass(r);
-      const tag = cls==='moka_tahsilat' ? '<span class="tag blue">Moka Tahsilat</span>' : (cls==='banka_aktarim' ? '<span class="tag green">Banka Aktarım</span>' : '<span class="tag amber">Belirsiz</span>');
-      return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${escapeHtml(displayTxnNo(r,'MOK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`;
-    }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede Moka satırı yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">
+      Moka kredi kartı tahsilatı <strong>doğrudan bankaya gelir yazılmaz</strong>. İlk kayıt <strong>Moka United</strong> içinde tutulur. Vadesi gelince bankaya aktarılan tutar ayrıca işlenir ve <strong>Moka United → Banka</strong> mahsup mantığıyla kapatılır.
+    </div>` + (mokaRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{ const cls = mokaRowClass(r); const tag = cls==='moka_tahsilat' ? '<span class="tag blue">Moka Tahsilat</span>' : (cls==='banka_aktarim' ? '<span class="tag green">Banka Aktarım</span>' : '<span class="tag amber">Belirsiz</span>'); return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${escapeHtml(displayTxnNo(r,'MOK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede Moka satırı yok.</div>`);
 
   document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
   document.querySelectorAll('#mokaFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.mokaFilter = btn.dataset.mfilter; renderAccounts(); }));
@@ -4036,23 +3962,32 @@ async function saveCariCollection(){
 }
 
 async function refreshAll(){
-  await Promise.all([loadDashboard(),loadCariler(),loadAccounts(),loadApprovals(),loadFeeData(),loadDocuments()]);
+  const loaders = [
+    ['Dashboard', loadDashboard()],
+    ['Cariler', loadCariler()],
+    ['Hesaplar', loadAccounts()],
+    ['Onay', loadApprovals()],
+    ['Ücret', loadFeeData()],
+    ['Belgeler', loadDocuments()]
+  ];
+  const results = await Promise.allSettled(loaders.map(x=>x[1]));
+  results.forEach((r,i)=>{ if(r.status==='rejected'){ console.error(r.reason); logSystemError('refresh_all', `${loaders[i][0]} yüklenemedi`, { note: String(r.reason?.message || r.reason || '') }); } });
   sanitizeAllImportedMovementDates();
   refreshImportedMovementAnalysis(true);
   sanitizeAllImportedMovementDates();
   normalizeStateIds();
-  safeRun(()=>renderDashboard());
-  safeRun(()=>renderAccounts());
-  safeRun(()=>renderReports());
-  safeRun(()=>renderDocuments());
-  safeRun(()=>renderExpenses());
-  safeRun(()=>renderApprovals());
-  safeRun(()=>renderBackup());
-  safeRun(()=>renderOpsHealthPanel());
-  safeRun(()=>renderProdHardeningPanel());
-  safeRun(()=>renderGlobalAuditLog());
-  safeRun(()=>renderDeleteArchive());
-  if(state.selectedCariId) safeRun(()=>renderSelectedCariDetail(), 'Cari detay');
+  renderDashboard();
+  renderAccounts();
+  renderReports();
+  renderDocuments();
+  renderExpenses();
+  renderApprovals();
+  renderBackup();
+  renderOpsHealthPanel();
+  renderProdHardeningPanel();
+  renderGlobalAuditLog();
+  renderDeleteArchive();
+  if(state.selectedCariId) renderSelectedCariDetail();
 }
 document.getElementById("cariSearch").addEventListener("input",renderCariList);
 document.getElementById("taxpayerFilter").addEventListener("change",renderCariList);
