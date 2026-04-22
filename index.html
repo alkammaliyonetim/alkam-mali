@@ -216,7 +216,7 @@
       </div>
       <div>
         <div class="section" style="box-shadow:none;margin-bottom:12px;">
-          <h3 class="section-title" style="font-size:20px;">Yeni Dönem / Güncelleme</h3><div class="rule-box" style="margin-bottom:12px;">Sistem mantığı: Açılış tarihiyle girilen ilk ücret sadece o yılın sonuna kadar geçerlidir. Sonraki yıllar için yeni ücret dönemi açılır. Zam geç kesinleşirse yeni dönem başlangıcı ilgili yılın <strong>01.01</strong> tarihi verilerek geriye dönük eksik aylar otomatik tamamlanır; mükerrer ay oluşmaz.</div>
+          <h3 class="section-title" style="font-size:20px;">Yeni Dönem / Güncelleme</h3><div class="rule-box" style="margin-bottom:12px;">Sistem mantığı: Açılış tarihiyle girilen ilk ücret sadece o yılın sonuna kadar geçerlidir. Sonraki yıllar için yeni ücret dönemi açılır. Bir yılı kaydettiğinde sistem o yılın bugüne kadar gelmiş bütün aylarını tarar; eksik tahakkukları otomatik tamamlar, var olanı tekrar üretmez, mükerrer ay oluşturmaz.</div>
           <div class="form-grid-3">
             <div class="field"><label>Yıl</label><select id="feeYearSelect" class="select-input"></select></div>
             <div class="field"><label>Geçerlilik Başlangıcı</label><input id="feeValidFrom" type="date" /></div>
@@ -1110,7 +1110,8 @@ async function loadSelectedCariHareketler(){
   if(!state.selectedCariId){state.hareketler=[];return}
   const {data}=await supabaseClient.from("v_cari_hareket_dokumu").select("*").eq("cari_id",state.selectedCariId).order("line_date",{ascending:false}).limit(500);
   const localRows=buildLocalCariMovementRows(state.selectedCariId);
-  state.hareketler=[...(data||[]), ...localRows].map(x=>({...x, txn_id:txnId(x,'HRK')}));
+  const localFeeRows=feeAccrualRowsForCari(state.selectedCariId);
+  state.hareketler=[...(data||[]), ...localRows, ...localFeeRows].map(x=>({...x, txn_id:txnId(x,'HRK')}));
 }
 async function loadAccounts(){
   await hydrateLiveSyncCaches();
@@ -2663,12 +2664,32 @@ function yearlyFeeSuggestionsFromExtre(cariId){
   const rows = [...(state.hareketler||[])].filter(r=>String(r.cari_id||state.selectedCariId)===String(cariId));
   const relevant = rows.filter(r=>{
     const txt = String(r.description||'').toLocaleUpperCase('tr-TR');
-    return txt.includes('MUHASEBE ÜCRETİ') || txt.includes('DEFTER');
+    return txt.includes('MUHASEBE ÜCRETİ')
+      || txt.includes('MUHASEBE UCRETI')
+      || txt.includes('MALI MÜŞ')
+      || txt.includes('MALI MUS')
+      || txt.includes('MÜH.ÜCR')
+      || txt.includes('MUH.ÜCR')
+      || txt.includes('DEFTER')
+      || txt.includes('ARALIK')
+      || txt.includes('OCAK')
+      || txt.includes('ŞUBAT')
+      || txt.includes('MART')
+      || txt.includes('NİSAN')
+      || txt.includes('MAYIS')
+      || txt.includes('HAZİRAN')
+      || txt.includes('TEMMUZ')
+      || txt.includes('AĞUSTOS')
+      || txt.includes('EYLÜL')
+      || txt.includes('EKİM')
+      || txt.includes('KASIM');
   });
   const byYear = {};
   relevant.forEach(r=>{
-    const dt = String(r.line_date||r.entry_date||'').slice(0,10);
-    const year = dt.slice(0,4);
+    const desc = String(r.description||'').toLocaleUpperCase('tr-TR');
+    let year = String(r.line_date||r.entry_date||'').slice(0,4);
+    const yearInDesc = desc.match(/20\d{2}/);
+    if(yearInDesc) year = yearInDesc[0];
     if(!year) return;
     const amt = num(r.amount||r.debit||r.net_amount||0);
     if(amt<=0) return;
@@ -2687,7 +2708,7 @@ function renderFeeYearSuggestWrap(){
   if(!target) return;
   const rows=yearlyFeeSuggestionsFromExtre(state.selectedCariId);
   if(!rows.length){
-    target.innerHTML = `<div class="empty">Yüklü cari ekstresinde geçmiş yıllara ait net ücret önerisi bulunamadı. Yine de yıl seçip manuel kaydedebilirsin.</div>`;
+    target.innerHTML = `<div class="empty">Yüklü cari ekstresinde geçmiş yıllara ait net ücret önerisi bulunamadı. Bu cari için geçmiş extre satırlarında ücret kalıbı yoksa manuel girebilirsin; varsa cari extreden tekrar yükleyince burada otomatik öneri oluşur.</div>`;
     return;
   }
   target.innerHTML = `<table><thead><tr><th>Yıl</th><th class="text-right">Önerilen Aylık Ücret</th><th>Kanıt Adedi</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.year)}</td><td class="text-right">${money(r.suggested_amount||0)}</td><td>${r.count}</td><td><button class="btn btn-soft" onclick="applySuggestedAnnualFee('${escapeHtml(r.year)}', ${num(r.suggested_amount)})">Bu Yılı Doldur</button></td></tr>`).join("")}</tbody></table>`;
@@ -2729,12 +2750,97 @@ async function saveAnnualFeePeriod(){
     if(ins.error){ notify("Yıllık ücret kaydedilemedi: " + ins.error.message); return; }
   }
   await loadFeeData();
+  ensureFeeAccrualsForCariYear(state.selectedCariId, year);
   ensureFeeAccrualsForAllCariler();
+  await loadSelectedCariHareketler();
   renderSelectedCariDetail();
   renderReports();
   renderFeeModal();
-  notify("Yıllık ücret dönemi kaydedildi.");
+  notify(`${year} yılı için bugüne kadarki eksik ay tahakkukları kontrol edilip tamamlandı.`);
 }
+
+function buildExpectedFeeRowsForYear(cariId, year){
+  const periods = feePeriodsForCari(cariId).filter(p=>{
+    const vf = String(p.valid_from||'').slice(0,4);
+    const vt = String(p.valid_to||'').slice(0,4);
+    return vf===String(year) || vt===String(year) || (!p.valid_to && Number(vf)<=Number(year));
+  });
+  const today = new Date();
+  const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const rows = [];
+  periods.forEach(period=>{
+    const start = new Date(period.valid_from);
+    if(Number.isNaN(start.getTime())) return;
+    const naturalEnd = period.valid_to ? new Date(period.valid_to) : endOfToday;
+    const yearEnd = new Date(Number(year), 11, 31);
+    const end = naturalEnd < yearEnd ? naturalEnd : yearEnd;
+    if(end < start) return;
+
+    const firstDate = String(period.valid_from).slice(0,10);
+    if(firstDate.slice(0,4)===String(year) && new Date(firstDate) <= endOfToday){
+      rows.push({
+        cari_id:cariId,
+        period_id:period.id,
+        line_date:firstDate,
+        period_key:String(firstDate).slice(0,7),
+        amount:period.amount,
+        description:feeDescriptionFromDate(firstDate)
+      });
+    }
+
+    let cursor = new Date(Number(year), 0, 1);
+    if(cursor < start) cursor = new Date(start.getFullYear(), start.getMonth()+1, 1);
+    while(cursor <= end && cursor <= endOfToday){
+      const dt = cursor.toISOString().slice(0,10);
+      rows.push({
+        cari_id:cariId,
+        period_id:period.id,
+        line_date:dt,
+        period_key:String(dt).slice(0,7),
+        amount:period.amount,
+        description:feeDescriptionFromDate(dt)
+      });
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
+    }
+  });
+
+  const uniq = new Map()
+  rows.forEach(r=>{
+    const k = `${r.cari_id}|${r.period_key}|${Number(r.amount||0).toFixed(2)}|${r.description}`;
+    if(!uniq.has(k)) uniq.set(k, r);
+  });
+  return [...uniq.values()].sort((a,b)=>String(a.line_date).localeCompare(String(b.line_date)));
+}
+
+function ensureFeeAccrualsForCariYear(cariId, year){
+  const cari = (state.cariler||[]).find(x=>String(x.cari_id)===String(cariId));
+  const existing=new Set((state.operationalLedger||[]).filter(x=>String(x.source_module||'')==='fee_auto').map(x=>`${x.cari_id}|${String(x.period_key||'')}|${num(x.amount).toFixed(2)}|${String(x.description||'')}`));
+  const rows = buildExpectedFeeRowsForYear(cariId, year);
+  rows.forEach(plan=>{
+    const key=`${cariId}|${plan.period_key}|${num(plan.amount).toFixed(2)}|${plan.description}`;
+    if(existing.has(key)) return;
+    if(hasSimilarTahakkuk(cariId, plan.line_date, plan.amount, plan.description)) return;
+    const row=stampRecordIds({
+      cari_id:cariId,
+      cari_name:cari?.cari_name||getCariCard(cariId)?.cari_name||'-',
+      source_module:'fee_auto',
+      movement_type:'Tahakkuk',
+      line_date:plan.line_date,
+      entry_date:plan.line_date,
+      period_key:plan.period_key,
+      description:plan.description,
+      amount:num(plan.amount),
+      debit:num(plan.amount),
+      credit:0,
+      target_type:'cari',
+      fee_period_id:plan.period_id
+    }, 'LGR');
+    existing.add(key);
+    state.operationalLedger.unshift(row);
+  });
+  persistLedger();
+}
+
 function ensureFeeAccrualsForAllCariler(){
   const allCaris = [...new Set([...(state.cariler||[]).map(x=>x.cari_id), ...(state.cariFeeSetups||[]).map(x=>x.cari_id), ...(state.feeTimeline||[]).map(x=>x.cari_id)].filter(Boolean))];
   if(!allCaris.length) return;
