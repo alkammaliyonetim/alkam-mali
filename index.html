@@ -617,6 +617,69 @@ const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const D
 const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
 const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
 
+const LIVE_SYNC_TABLES={
+  account_ops:'alkam_manual_account_ops',
+  cari_collections:'alkam_cari_collections',
+  expenses:'alkam_expense_cards',
+  expense_accruals:'alkam_expense_accruals',
+  expense_payments:'alkam_expense_payments'
+};
+window.__liveCaches = window.__liveCaches || { account_ops:[], cari_collections:[], expenses:[], expense_accruals:[], expense_payments:[], table_status:{} };
+function mergeRowsById(primaryRows=[], secondaryRows=[], prefix='TRX'){
+  const map=new Map();
+  [...secondaryRows, ...primaryRows].forEach(r=>{ if(!r) return; const row=stampRecordIds({...r},prefix); map.set(String(row.id||row.txn_id||uid(prefix.toLowerCase())), row); });
+  return [...map.values()];
+}
+async function liveTableAvailable(key){
+  if(window.__liveCaches.table_status[key] !== undefined) return window.__liveCaches.table_status[key];
+  try{
+    const { error } = await supabaseClient.from(LIVE_SYNC_TABLES[key]).select('id').limit(1);
+    window.__liveCaches.table_status[key] = !error;
+  }catch(_){ window.__liveCaches.table_status[key]=false; }
+  return window.__liveCaches.table_status[key];
+}
+async function fetchLiveRows(key,prefix='TRX'){
+  if(!(await liveTableAvailable(key))) return [];
+  try{
+    const { data, error } = await supabaseClient.from(LIVE_SYNC_TABLES[key]).select('id,payload,updated_at').order('updated_at',{ascending:false}).limit(5000);
+    if(error) return [];
+    return (data||[]).map(r=>stampRecordIds({ id:r.id, ...(r.payload||{}), updated_at:r.updated_at || r.payload?.updated_at || r.payload?.created_at || new Date().toISOString() }, prefix));
+  }catch(_){ return []; }
+}
+async function upsertLiveRow(key,row){
+  if(!(await liveTableAvailable(key))) return false;
+  try{
+    const payload={...row, updated_at:new Date().toISOString()};
+    const { error } = await supabaseClient.from(LIVE_SYNC_TABLES[key]).upsert([{ id:String(row.id), payload, updated_at:payload.updated_at }], { onConflict:'id' });
+    return !error;
+  }catch(_){ return false; }
+}
+async function deleteLiveRow(key,id){
+  if(!(await liveTableAvailable(key))) return false;
+  try{
+    const { error } = await supabaseClient.from(LIVE_SYNC_TABLES[key]).delete().eq('id', String(id));
+    return !error;
+  }catch(_){ return false; }
+}
+async function hydrateLiveSyncCaches(){
+  const [accountOps, collections, expenses, accruals, payments] = await Promise.all([
+    fetchLiveRows('account_ops','LAC'),
+    fetchLiveRows('cari_collections','LCT'),
+    fetchLiveRows('expenses','EXP'),
+    fetchLiveRows('expense_accruals','EAC'),
+    fetchLiveRows('expense_payments','EPA')
+  ]);
+  window.__liveCaches.account_ops = accountOps;
+  window.__liveCaches.cari_collections = collections;
+  window.__liveCaches.expenses = expenses;
+  window.__liveCaches.expense_accruals = accruals;
+  window.__liveCaches.expense_payments = payments;
+}
+
+
+
+
+
 function money(v){
   const n=Number(v||0);
   const abs=Math.abs(n);
@@ -836,6 +899,7 @@ async function loadDashboard(){
   state.dashboard=d.data||null; state.riskSummary=r.data||null;
 }
 async function loadCariler(){
+  await hydrateLiveSyncCaches();
   const {data,error}=await supabaseClient.from("v_cari_liste_gelismis").select("*").order("cari_name",{ascending:true});
   if(error) throw error;
   state.cariler=(data||[]).map(applyLocalCollectionsToCariRow);
@@ -845,12 +909,14 @@ async function loadCariler(){
   await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail();
 }
 async function loadSelectedCariHareketler(){
+  await hydrateLiveSyncCaches();
   if(!state.selectedCariId){state.hareketler=[];return}
   const {data}=await supabaseClient.from("v_cari_hareket_dokumu").select("*").eq("cari_id",state.selectedCariId).order("line_date",{ascending:false}).limit(500);
   const localRows=buildLocalCariMovementRows(state.selectedCariId);
   state.hareketler=[...(data||[]), ...localRows].map(x=>({...x, txn_id:txnId(x,'HRK')}));
 }
 async function loadAccounts(){
+  await hydrateLiveSyncCaches();
   const [a,b,m]=await Promise.all([
     supabaseClient.from("v_financial_account_summary").select("*").order("account_type",{ascending:true}),
     supabaseClient.from("v_banka_montaj_paneli").select("*").limit(50),
@@ -996,13 +1062,14 @@ async function loadApprovals(){
   state.pending=(p.data||[]).map(x=>({...x, txn_id:txnId(x,'APR')})); state.processed=(pr.data||[]).map(x=>({...x, txn_id:txnId(x,'APR')})); state.rejected=(r.data||[]).map(x=>({...x, txn_id:txnId(x,'APR')}));
 }
 async function loadDocuments(){
+  await hydrateLiveSyncCaches();
   state.documents = readLocalJson(LOCAL_DOCS_KEY).map(x=>({...x, txn_id:txnId(x,'DOC')}));
   state.bridgeCandidates = readLocalJson(LOCAL_BRIDGE_KEY).map(x=>({...x, txn_id:txnId(x,'BRG')}));
   state.approvalOps = readLocalObject(LOCAL_APPROVAL_OPS_KEY, {processed:[], rejected:[], handled_pending_ids:[]});
   state.bankOps = readLocalObject(LOCAL_BANK_OPS_KEY, {pending:[], row_status:{}, history:[]});
-  state.expenses = readLocalJson(LOCAL_EXPENSES_KEY).map(x=>({...x, txn_id:txnId(x,'EXP')}));
-  state.expenseAccruals = readLocalJson(LOCAL_EXPENSE_ACCRUALS_KEY).map(x=>({...x, txn_id:txnId(x,'EAC')}));
-  state.expensePayments = readLocalJson(LOCAL_EXPENSE_PAYMENTS_KEY).map(x=>({...x, txn_id:txnId(x,'EPA')}));
+  state.expenses = mergeRowsById(window.__liveCaches.expenses||[], readLocalJson(LOCAL_EXPENSES_KEY).map(x=>({...x, txn_id:txnId(x,'EXP')})), 'EXP');
+  state.expenseAccruals = mergeRowsById(window.__liveCaches.expense_accruals||[], readLocalJson(LOCAL_EXPENSE_ACCRUALS_KEY).map(x=>({...x, txn_id:txnId(x,'EAC')})), 'EAC');
+  state.expensePayments = mergeRowsById(window.__liveCaches.expense_payments||[], readLocalJson(LOCAL_EXPENSE_PAYMENTS_KEY).map(x=>({...x, txn_id:txnId(x,'EPA')})), 'EPA');
   state.operationalLedger = readLocalJson(LOCAL_LEDGER_KEY).map(x=>({...x, txn_id:txnId(x,'LGR')}));
   state.auditTrail = readLocalJson(LOCAL_AUDIT_KEY).map(x=>({...x, txn_id:txnId(x,'LOG')}));
   state.bridgeBatches = readLocalJson(LOCAL_BRIDGE_BATCHES_KEY).map(x=>({...x, txn_id:txnId(x,'BTH')}));
@@ -3794,7 +3861,7 @@ function openExpensePaymentModal(expenseId, accrualId=''){
   document.getElementById('expensePaymentModal').style.display='flex';
 }
 function closeExpensePaymentModal(){ document.getElementById('expensePaymentModal').style.display='none'; }
-function saveExpensePayment(){
+async function saveExpensePayment(){
   const exp=state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId));
   if(!exp){ notify('Gider kartı bulunamadı.'); return; }
   const accountKey=document.getElementById('expensePaymentAccount').value;
@@ -3806,15 +3873,14 @@ function saveExpensePayment(){
   const note=(document.getElementById('expensePaymentNote').value||'').trim();
   if(!account){ notify('Ödeme hesabı seç.'); return; }
   if(!amount){ notify('Ödeme tutarı zorunlu.'); return; }
-  const rows=[...(state.expensePayments||[])];
   const payment=stampRecordIds({ expense_id:exp.id, expense_title:exp.title, accrual_id:state.selectedExpenseAccrualId || null, account_key:account.account_key, account_name:account.account_name, amount, payment_date:paymentDate, document_no:docNo || null, description, note, created_at:new Date().toISOString() }, 'EPA');
-  rows.unshift(payment); state.expensePayments=rows; writeLocalJson(LOCAL_EXPENSE_PAYMENTS_KEY, state.expensePayments);
-  const ops=getLocalAccountOps();
-  const editingId = window.__editingManualOpId || '';
-  const existing = editingId ? ops.find(x=>String(x.id)===String(editingId)) : null; ops.unshift(stampRecordIds({ type:'expense_payment', expense_id:exp.id, account_key:account.account_key, account_name:account.account_name, account_type:account.account_type, direction:'cikis', amount, entry_date:paymentDate, description, note:note || docNo || exp.title, created_at:new Date().toISOString() }, 'LAC')); setLocalAccountOps(ops);
+  state.expensePayments=[payment, ...(state.expensePayments||[]).filter(x=>String(x.id)!==String(payment.id))]; writeLocalJson(LOCAL_EXPENSE_PAYMENTS_KEY, state.expensePayments);
+  await upsertLiveRow('expense_payments', payment);
+  const op=stampRecordIds({ type:'expense_payment', expense_id:exp.id, account_key:account.account_key, account_name:account.account_name, account_type:account.account_type, direction:'cikis', amount, entry_date:paymentDate, description, note:note || docNo || exp.title, created_at:new Date().toISOString() }, 'LAC');
+  const ops=getLocalAccountOps().filter(x=>String(x.id)!==String(op.id)); ops.unshift(op); setLocalAccountOps(ops); await upsertLiveRow('account_ops', op);
   addAuditEvent('expense_payment_saved',{source_module:'expenses', target_name:exp.title, amount, note:note || description, summary:`Gider ödemesi işlendi · ${money(amount)}`});
   closeExpensePaymentModal();
-  loadAccounts().then(()=>{ renderAccounts(); renderExpenses(); notify('Gider ödemesi kaydedildi.'); });
+  await loadAccounts(); renderAccounts(); renderExpenses(); notify('Gider ödemesi kaydedildi ve canlı yazım denendi.');
 }
 function expenseStatusInfo(exp){
   const now=new Date();
@@ -3858,15 +3924,16 @@ function openExpenseModal(expenseId=''){
   document.getElementById('expenseModal').style.display='flex';
 }
 function closeExpenseModal(){ document.getElementById('expenseModal').style.display='none'; }
-function requestDeleteSelectedExpense(){ const exp = state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId)); if(!exp){ notify('Silinecek gider kartı bulunamadı.'); return; } openDeleteAuthModal(`Gider kartı silme · ${exp.title}`, (reason)=>{ archiveDeletion('expenses', exp, reason); state.expenses = state.expenses.filter(x=>String(x.id)!==String(exp.id)); state.expenseAccruals = state.expenseAccruals.filter(x=>String(x.expense_id)!==String(exp.id)); state.expensePayments = state.expensePayments.filter(x=>String(x.expense_id)!==String(exp.id)); writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses); writeLocalJson(LOCAL_EXPENSE_ACCRUALS_KEY, state.expenseAccruals); writeLocalJson(LOCAL_EXPENSE_PAYMENTS_KEY, state.expensePayments); addAuditEvent('expense_deleted',{source_module:'expenses', target_name:exp.title, amount:exp.amount, note:reason, summary:`Gider kartı silindi · ${exp.title}`}); closeExpenseModal(); renderExpenses(); renderDeleteArchive(); renderGlobalAuditLog(); notify('Gider kartı silindi.'); }); }
-function saveExpenseAccrual(){
+function requestDeleteSelectedExpense(){ const exp = state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId)); if(!exp){ notify('Silinecek gider kartı bulunamadı.'); return; } openDeleteAuthModal(`Gider kartı silme · ${exp.title}`, async (reason)=>{ archiveDeletion('expenses', exp, reason); state.expenses = state.expenses.filter(x=>String(x.id)!==String(exp.id)); state.expenseAccruals = state.expenseAccruals.filter(x=>String(x.expense_id)!==String(exp.id)); state.expensePayments = state.expensePayments.filter(x=>String(x.expense_id)!==String(exp.id)); writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses); writeLocalJson(LOCAL_EXPENSE_ACCRUALS_KEY, state.expenseAccruals); writeLocalJson(LOCAL_EXPENSE_PAYMENTS_KEY, state.expensePayments); await deleteLiveRow('expenses', exp.id); for(const a of (state.expenseAccruals||[]).filter(x=>String(x.expense_id)===String(exp.id))){ await deleteLiveRow('expense_accruals', a.id); } for(const p of (state.expensePayments||[]).filter(x=>String(x.expense_id)===String(exp.id))){ await deleteLiveRow('expense_payments', p.id); } addAuditEvent('expense_deleted',{source_module:'expenses', target_name:exp.title, amount:exp.amount, note:reason, summary:`Gider kartı silindi · ${exp.title}`}); closeExpenseModal(); renderExpenses(); renderDeleteArchive(); renderGlobalAuditLog(); notify('Gider kartı silindi.'); }); }
+async function saveExpenseAccrual(){
   const title=(document.getElementById('expenseTitle').value||'').trim();
   if(!title){ notify('Gider adı zorunlu.'); return; }
   const expenseId = state.selectedExpenseId || uid('expense');
   const existing = state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId));
   const payload={
     id: expenseId,
-    txn_id: expenseId,
+    txn_id: existing?.txn_id || expenseId,
+    operation_no: existing?.operation_no || undefined,
     title,
     category:(document.getElementById('expenseCategory').value||'').trim() || null,
     vendor_name:(document.getElementById('expenseVendor').value||'').trim() || null,
@@ -3883,14 +3950,18 @@ function saveExpenseAccrual(){
     last_candidate_period: existing?.last_candidate_period || null,
     last_candidate_at: existing?.last_candidate_at || null,
   };
+  stampRecordIds(payload,'EXP');
   const idx = state.expenses.findIndex(x=>String(x.id)===String(payload.id));
   if(idx>=0) state.expenses[idx]=payload; else state.expenses.unshift(payload);
   writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses);
+  await upsertLiveRow('expenses', payload);
   ensureExpenseAccruals();
+  const relatedAccruals=(state.expenseAccruals||[]).filter(x=>String(x.expense_id)===String(payload.id));
+  for(const accr of relatedAccruals){ await upsertLiveRow('expense_accruals', accr); }
   addAuditEvent('expense_saved',{source_module:'expenses', target_name:payload.title, amount:payload.amount, note:`${payload.expense_type==='fixed' ? 'Sabit' : 'Değişken'} gider · ${payload.start_date}${payload.end_date ? ' → ' + payload.end_date : ' → Açık'}`, summary:`Gider kartı kaydedildi · ${payload.title}`});
   closeExpenseModal();
   renderExpenses();
-  notify('Gider kartı kaydedildi ve otomatik tahakkuk planı oluşturuldu.');
+  notify('Gider kartı kaydedildi ve canlı yazım denendi.');
 }
 function queueExpenseCandidate(expenseId){
   const exp = state.expenses.find(x=>String(x.id)===String(expenseId));
@@ -4154,19 +4225,21 @@ async function saveManualFinanceAction(){
   const amount=num(document.getElementById('manualFinanceAmount').value||0);
   const description=(document.getElementById('manualFinanceDescription').value||'').trim();
   const note=(document.getElementById('manualFinanceNote').value||'').trim();
+  const editingId = window.__editingManualOpId || '';
+  const existing = editingId ? ops.find(x=>String(x.id)===String(editingId)) : null;
   let payload=null;
   if(mode==='create'){
     const accountName=(document.getElementById('manualFinanceCreateName').value||'').trim();
     const accountType=document.getElementById('manualFinanceCreateType').value || 'diger';
     if(!accountName){ notify('Hesap adı zorunlu.'); return; }
-    payload=stampRecordIds({ id: existing?.id || undefined, txn_id: existing?.txn_id || undefined, operation_no: existing?.operation_no || undefined, type:'account_create', account_key:normalizeAccountKey(accountName), account_name:accountName, account_type:accountType, opening_balance:amount, entry_date:entryDate, description:description || 'Yeni hesap tanımı', note, created_at:new Date().toISOString() }, 'LAC');
+    payload=stampRecordIds({ id: existing?.id || undefined, txn_id: existing?.txn_id || undefined, operation_no: existing?.operation_no || undefined, type:'account_create', account_key:normalizeAccountKey(accountName), account_name:accountName, account_type:accountType, opening_balance:amount, entry_date:entryDate, description:description || 'Yeni hesap tanımı', note, created_at:existing?.created_at || new Date().toISOString(), updated_at:new Date().toISOString() }, 'LAC');
   } else if(mode==='entry'){
     const accountKey=document.getElementById('manualFinanceAccount').value;
     const acc=getAccountByKey(accountKey);
     const direction=document.getElementById('manualFinanceDirection').value || 'giris';
     if(!accountKey || !acc){ notify('Hesap seç.'); return; }
     if(!amount){ notify('Tutar zorunlu.'); return; }
-    payload=stampRecordIds({ id: existing?.id || undefined, txn_id: existing?.txn_id || undefined, operation_no: existing?.operation_no || undefined, type:'account_entry', account_key:acc.account_key, account_name:acc.account_name, account_type:acc.account_type, direction, amount, entry_date:entryDate, description:description || (direction==='cikis' ? 'Hesaptan çıkış' : 'Hesaba giriş'), note, created_at:new Date().toISOString() }, 'LAC');
+    payload=stampRecordIds({ id: existing?.id || undefined, txn_id: existing?.txn_id || undefined, operation_no: existing?.operation_no || undefined, type:'account_entry', account_key:acc.account_key, account_name:acc.account_name, account_type:acc.account_type, direction, amount, entry_date:entryDate, description:description || (direction==='cikis' ? 'Hesaptan çıkış' : 'Hesaba giriş'), note, created_at:existing?.created_at || new Date().toISOString(), updated_at:new Date().toISOString() }, 'LAC');
   } else {
     const sourceKey=document.getElementById('manualFinanceAccount').value;
     const targetKey=document.getElementById('manualFinanceTarget').value;
@@ -4175,15 +4248,16 @@ async function saveManualFinanceAction(){
     if(!sourceKey || !targetKey || !source || !target){ notify('Kaynak ve hedef hesap zorunlu.'); return; }
     if(sourceKey===targetKey){ notify('Aynı hesaba transfer olmaz.'); return; }
     if(!amount){ notify('Transfer tutarı zorunlu.'); return; }
-    payload=stampRecordIds({ id: existing?.id || undefined, txn_id: existing?.txn_id || undefined, operation_no: existing?.operation_no || undefined, type:'account_transfer', source_account_key:source.account_key, source_account_name:source.account_name, target_account_key:target.account_key, target_account_name:target.account_name, amount, entry_date:entryDate, description:description || 'Hesaplar arası transfer', note, created_at:new Date().toISOString() }, 'LAC');
+    payload=stampRecordIds({ id: existing?.id || undefined, txn_id: existing?.txn_id || undefined, operation_no: existing?.operation_no || undefined, type:'account_transfer', source_account_key:source.account_key, source_account_name:source.account_name, target_account_key:target.account_key, target_account_name:target.account_name, amount, entry_date:entryDate, description:description || 'Hesaplar arası transfer', note, created_at:existing?.created_at || new Date().toISOString(), updated_at:new Date().toISOString() }, 'LAC');
   }
-  if(existing){ const idx=ops.findIndex(x=>String(x.id)===String(existing.id)); if(idx>=0) ops[idx]=payload; else ops.unshift(payload); } else { ops.unshift(payload); }
-  setLocalAccountOps(ops);
+  const nextOps=ops.filter(x=>String(x.id)!==String(payload.id)); nextOps.unshift(payload);
+  setLocalAccountOps(nextOps);
+  await upsertLiveRow('account_ops', payload);
   addAuditEvent('manual_finance_saved',{source_module:'manual_finance', target_name:payload.account_name || `${payload.source_account_name || '-'} → ${payload.target_account_name || '-'}`, amount:amount, note:payload.note || payload.description, summary:`Manuel hesap işlemi ${existing ? 'güncellendi' : 'kaydedildi'} · ${payload.type}`});
   closeManualFinanceModal();
   await loadAccounts();
   renderAccounts();
-  notify('Hesap işlemi kaydedildi.');
+  notify('Hesap işlemi kaydedildi ve canlı yazım denendi.');
 }
 function openCariCollectionModal(){
   if(!state.selectedCariId){ notify('Cari seçili değil.'); return; }
@@ -4212,26 +4286,27 @@ async function saveCariCollection(){
   const note=(document.getElementById('cariCollectionNote').value||'').trim();
   if(!account || !accountKey){ notify('Tahsilat hesabı seç.'); return; }
   if(!amount){ notify('Tahsilat tutarı zorunlu.'); return; }
-  const collection=stampRecordIds({ cari_id:state.selectedCariId, cari_name:cari?.cari_name || '-', account_key:account.account_key, account_name:account.account_name, account_type:account.account_type, amount, line_date:lineDate, channel, description, note, document_no:documentNo, created_at:new Date().toISOString() }, 'LCT');
-  const collections=getLocalCariCollections(); collections.unshift(collection); setLocalCariCollections(collections);
-  const ops=getLocalAccountOps(); ops.unshift(stampRecordIds({ type:'cari_collection', account_key:account.account_key, account_name:account.account_name, account_type:account.account_type, direction:'giris', amount, entry_date:lineDate, description:`Cari tahsilat · ${cari?.cari_name || '-'}`, note:note || documentNo || channel || null, created_at:new Date().toISOString() }, 'LAC')); setLocalAccountOps(ops);
+  const collection=stampRecordIds({ cari_id:state.selectedCariId, cari_name:cari?.cari_name || '-', account_key:account.account_key, account_name:account.account_name, account_type:account.account_type, amount, line_date:lineDate, channel, description, note, document_no:documentNo, created_at:new Date().toISOString(), updated_at:new Date().toISOString() }, 'LCT');
+  const collections=getLocalCariCollections().filter(x=>String(x.id)!==String(collection.id)); collections.unshift(collection); setLocalCariCollections(collections); await upsertLiveRow('cari_collections', collection);
+  const op=stampRecordIds({ type:'cari_collection', expense_id:null, account_key:account.account_key, account_name:account.account_name, account_type:account.account_type, direction:'giris', amount, entry_date:lineDate, description:`Cari tahsilat · ${cari?.cari_name || '-'}`, note:note || documentNo || channel || null, created_at:new Date().toISOString(), updated_at:new Date().toISOString() }, 'LAC');
+  const ops=getLocalAccountOps().filter(x=>String(x.id)!==String(op.id)); ops.unshift(op); setLocalAccountOps(ops); await upsertLiveRow('account_ops', op);
   const docs=readLocalJson(LOCAL_DOCS_KEY); docs.unshift(stampRecordIds({ cari_id:state.selectedCariId, document_type: channel && /nakit/i.test(channel) ? 'makbuz' : 'dekont', document_title: documentNo || `Tahsilat ${shortDate(lineDate)}`, document_no: documentNo || null, document_date: lineDate, amount, note: note || description, source_type:'local_collection', created_at:new Date().toISOString() }, 'DOC')); writeLocalJson(LOCAL_DOCS_KEY, docs);
-  addAuditEvent('cari_collection_saved',{source_module:'local_cari_collection', target_name:cari?.cari_name || '-', amount, note:note || description, summary:`Cari tahsilat işlendi · ${money(amount)}`});
+  addAuditEvent('cari_collection_saved',{source_module:'live_cari_collection', target_name:cari?.cari_name || '-', amount, note:note || description, summary:`Cari tahsilat işlendi · ${money(amount)}`});
   closeCariCollectionModal();
   await Promise.all([loadDocuments(), loadAccounts(), loadCariler()]);
   await loadSelectedCariHareketler();
   renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderDocuments(); renderReports();
-  notify('Cari tahsilatı kaydedildi.');
+  notify('Cari tahsilatı kaydedildi ve canlı yazım denendi.');
 }
 
 async function refreshAll(){
+  await loadDocuments();
   const loaders = [
     ['Dashboard', loadDashboard()],
     ['Cariler', loadCariler()],
     ['Hesaplar', loadAccounts()],
     ['Onay', loadApprovals()],
-    ['Ücret', loadFeeData()],
-    ['Belgeler', loadDocuments()]
+    ['Ücret', loadFeeData()]
   ];
   const results = await Promise.allSettled(loaders.map(x=>x[1]));
   results.forEach((r,i)=>{ if(r.status==='rejected'){ console.error(r.reason); logSystemError('refresh_all', `${loaders[i][0]} yüklenemedi`, { note: String(r.reason?.message || r.reason || '') }); } });
