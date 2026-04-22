@@ -71,7 +71,7 @@
       <div class="field"><label>Cari Kodu</label><input id="editCariCode" /></div>
     </div>
     <div class="form-grid-3" style="margin-top:12px;">
-      <div class="field"><label>Mükellef Türü</label><select id="editTaxpayerType"><option value="">Seçiniz</option><option value="isletme_defteri">İşletme Defteri</option><option value="bilanco">Bilanço</option><option value="limited_sirket">Limited Şirket</option></select></div>
+      <div class="field"><label>Mükellef Türü</label><select id="editTaxpayerType"><option value="">Seçiniz</option><option value="isletme_defteri">İşletme Defteri</option><option value="bilanco">Bilanço</option><option value="limited_sirket">Limited Şirket</option><option value="anonim_sirket">Anonim Şirket</option></select></div>
       <div class="field"><label>Aylık Muhasebe Ücreti</label><input id="editMonthlyFeeAmount" type="number" min="0" step="0.01" /></div>
       <div class="field"><label>Aylık Ücret Aktif</label><select id="editMonthlyFeeEnabled"><option value="true">Evet</option><option value="false">Hayır</option></select></div>
     </div>
@@ -216,7 +216,7 @@
       </div>
       <div>
         <div class="section" style="box-shadow:none;margin-bottom:12px;">
-          <h3 class="section-title" style="font-size:20px;">Yeni Dönem / Güncelleme</h3>
+          <h3 class="section-title" style="font-size:20px;">Yeni Dönem / Güncelleme</h3><div class="rule-box" style="margin-bottom:12px;">Sistem mantığı: Açılış tarihiyle girilen ilk ücret sadece o yılın sonuna kadar geçerlidir. Sonraki yıllar için yeni ücret dönemi açılır. Zam geç kesinleşirse yeni dönem başlangıcı ilgili yılın <strong>01.01</strong> tarihi verilerek geriye dönük eksik aylar otomatik tamamlanır; mükerrer ay oluşmaz.</div>
           <div class="form-grid">
             <div class="field"><label>Geçerlilik Başlangıcı</label><input id="feeValidFrom" type="date" /></div>
             <div class="field"><label>Aylık Ücret</label><input id="feeAmountInput" type="number" min="0" step="0.01" /></div>
@@ -528,6 +528,7 @@
               <option value="isletme_defteri">İşletme Defteri</option>
               <option value="bilanco">Bilanço</option>
               <option value="limited_sirket">Limited Şirket</option>
+              <option value="anonim_sirket">Anonim Şirket</option>
             </select>
             <select id="sortBy" class="select-input">
               <option value="name">Ada Göre</option>
@@ -2546,7 +2547,7 @@ function rangeFilteredHareketler(){
   return state.hareketler.filter(h=>new Date(h.line_date)>=start);
 }
 function getCariCard(id){ return state.cariCards.find(x=>x.cari_id===id) || null; }
-function getFeeTimeline(id){ return state.feeTimeline.filter(x=>x.cari_id===id); }
+function getFeeTimeline(id){ return state.feeTimeline.filter(x=>String(x.cari_id)===String(id)).sort((a,b)=>String(a.valid_from||'').localeCompare(String(b.valid_from||''))); }
 function getFeeControl(id){ return state.feeControl.filter(x=>x.cari_id===id); }
 function getFeeSetup(id){ return (state.cariFeeSetups||[]).find(x=>String(x.cari_id)===String(id)) || null; }
 function monthTokenFromIso(v){ const d=new Date(v); if(Number.isNaN(d.getTime())) return ''; const months=['OCAK','ŞUBAT','MART','NİSAN','MAYIS','HAZİRAN','TEMMUZ','AĞUSTOS','EYLÜL','EKİM','KASIM','ARALIK']; return `${months[d.getMonth()]}${d.getFullYear()}`; }
@@ -2554,24 +2555,78 @@ function feeDescriptionFromDate(v){ return `${monthTokenFromIso(v)} AYI MUHASEBE
 function feeAccrualRowsForCari(id){ return (state.operationalLedger||[]).filter(x=>String(x.cari_id)===String(id) && String(x.source_module||'')==='fee_auto' && String(x.movement_type||'').toLowerCase()==='tahakkuk'); }
 function tahsilatRowsForCari(id){ const local=(state.operationalLedger||[]).filter(x=>String(x.cari_id)===String(id) && String(x.source_module||'')==='local_cari_collection'); return local; }
 function hasSimilarTahsilat(id,date,amount){ return tahsilatRowsForCari(id).some(r=>String((r.line_date||r.entry_date||r.created_at||'')).slice(0,10)===String(date).slice(0,10) && Math.abs(num(r.amount||r.net_amount)-num(amount))<0.01); }
-function ensureFeeAccrualsForAllCariler(){
-  const setups=(state.cariFeeSetups||[]).filter(x=>x.monthly_fee_enabled && num(x.monthly_fee_amount)>0 && x.opening_date);
-  if(!setups.length) return;
-  const existing=new Set((state.operationalLedger||[]).filter(x=>String(x.source_module||'')==='fee_auto').map(x=>`${x.cari_id}|${String(x.period_key||'')}|${num(x.amount).toFixed(2)}`));
-  const today=new Date();
-  setups.forEach(setup=>{
-    const open=new Date(setup.opening_date); if(Number.isNaN(open.getTime())) return;
-    const dates=[String(setup.opening_date).slice(0,10)];
-    let cursor=new Date(open.getFullYear(), open.getMonth()+1, 1);
-    while(cursor<=today){
+function hasSimilarTahakkuk(id, date, amount, desc){ return feeAccrualRowsForCari(id).some(r=>String((r.line_date||r.entry_date||'')).slice(0,10)===String(date).slice(0,10) && Math.abs(num(r.amount)-num(amount))<0.01 && String(r.description||'').trim()===String(desc||'').trim()); }
+function yearEndFromDate(v){ const d=new Date(v); if(Number.isNaN(d.getTime())) return ''; return `${d.getFullYear()}-12-31`; }
+function feePeriodsForCari(id){
+  const periods = getFeeTimeline(id).map(r=>({
+    id:r.id || txnId(r,'CFH'),
+    cari_id:r.cari_id,
+    valid_from:String(r.valid_from||'').slice(0,10),
+    valid_to:r.valid_to ? String(r.valid_to).slice(0,10) : null,
+    amount:num(r.fee_amount || r.current_fee || r.amount || 0),
+    note:r.note || r.change_reason || null
+  })).filter(r=>r.valid_from && r.amount>0);
+  const fallback = getFeeSetup(id);
+  if(!periods.length && fallback?.opening_date && fallback?.monthly_fee_enabled && num(fallback.monthly_fee_amount)>0){
+    periods.push({ id:`setup_${id}`, cari_id:id, valid_from:String(fallback.opening_date).slice(0,10), valid_to:yearEndFromDate(fallback.opening_date), amount:num(fallback.monthly_fee_amount), note:'İlk ücret dönemi' });
+  }
+  return periods.sort((a,b)=>String(a.valid_from).localeCompare(String(b.valid_from)));
+}
+function feeAccrualSummaryForCari(id){
+  const rows=feeAccrualRowsForCari(id);
+  const y=String(new Date().getFullYear());
+  const yearRows=rows.filter(r=>String(r.line_date||r.entry_date||'').slice(0,4)===y);
+  return {
+    yearCount: yearRows.length,
+    yearTotal: yearRows.reduce((a,b)=>a+num(b.amount),0),
+    allCount: rows.length
+  };
+}
+function feeExpectedScheduleRows(id){
+  const periods = feePeriodsForCari(id);
+  const today = new Date();
+  const rows = [];
+  periods.forEach(period=>{
+    const start = new Date(period.valid_from);
+    if(Number.isNaN(start.getTime())) return;
+    const end = period.valid_to ? new Date(period.valid_to) : today;
+    if(Number.isNaN(end.getTime())) return;
+    const dates=[String(period.valid_from).slice(0,10)];
+    let cursor=new Date(start.getFullYear(), start.getMonth()+1, 1);
+    while(cursor<=today && cursor<=end){
       dates.push(cursor.toISOString().slice(0,10));
       cursor=new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
     }
     dates.forEach(dt=>{
-      const periodKey=String(dt).slice(0,7);
-      const key=`${setup.cari_id}|${periodKey}|${num(setup.monthly_fee_amount).toFixed(2)}`;
+      if(new Date(dt)>end || new Date(dt)>today) return;
+      rows.push({cari_id:id, period_id:period.id, line_date:dt, period_key:String(dt).slice(0,7), amount:period.amount, description:feeDescriptionFromDate(dt)});
+    });
+  });
+  return rows;
+}
+function feeControlIssuesForCari(id){
+  const expected = feeExpectedScheduleRows(id);
+  const actual = feeAccrualRowsForCari(id);
+  const actualKeys = new Map();
+  actual.forEach(r=>{
+    const key = `${id}|${String(r.period_key||String(r.line_date||'').slice(0,7))}|${num(r.amount).toFixed(2)}`;
+    actualKeys.set(key, (actualKeys.get(key)||0)+1);
+  });
+  const missing = expected.filter(e=>!actualKeys.has(`${id}|${e.period_key}|${num(e.amount).toFixed(2)}`));
+  const duplicate = [...actualKeys.entries()].filter(([_,count])=>count>1).length;
+  return { missingCount: missing.length, duplicateCount: duplicate, expectedCount: expected.length, actualCount: actual.length };
+}
+function ensureFeeAccrualsForAllCariler(){
+  const allCaris = [...new Set([...(state.cariler||[]).map(x=>x.cari_id), ...(state.cariFeeSetups||[]).map(x=>x.cari_id), ...(state.feeTimeline||[]).map(x=>x.cari_id)].filter(Boolean))];
+  if(!allCaris.length) return;
+  const existing=new Set((state.operationalLedger||[]).filter(x=>String(x.source_module||'')==='fee_auto').map(x=>`${x.cari_id}|${String(x.period_key||'')}|${num(x.amount).toFixed(2)}|${String(x.description||'')}`));
+  allCaris.forEach(cariId=>{
+    const cari = (state.cariler||[]).find(x=>String(x.cari_id)===String(cariId));
+    feeExpectedScheduleRows(cariId).forEach(plan=>{
+      const key=`${cariId}|${plan.period_key}|${num(plan.amount).toFixed(2)}|${plan.description}`;
       if(existing.has(key)) return;
-      const row=stampRecordIds({cari_id:setup.cari_id, cari_name:setup.cari_name||'-', source_module:'fee_auto', movement_type:'Tahakkuk', line_date:dt, entry_date:dt, period_key:periodKey, description:feeDescriptionFromDate(dt), amount:num(setup.monthly_fee_amount), debit:num(setup.monthly_fee_amount), credit:0, target_type:'cari'}, 'LGR');
+      if(hasSimilarTahakkuk(cariId, plan.line_date, plan.amount, plan.description)) return;
+      const row=stampRecordIds({cari_id:cariId, cari_name:cari?.cari_name||getCariCard(cariId)?.cari_name||'-', source_module:'fee_auto', movement_type:'Tahakkuk', line_date:plan.line_date, entry_date:plan.line_date, period_key:plan.period_key, description:plan.description, amount:num(plan.amount), debit:num(plan.amount), credit:0, target_type:'cari', fee_period_id:plan.period_id}, 'LGR');
       existing.add(key);
       state.operationalLedger.unshift(row);
     });
@@ -2581,7 +2636,7 @@ function ensureFeeAccrualsForAllCariler(){
 function getGlobalOpsSummary(){
   const now=new Date(), ym=now.toISOString().slice(0,7), y=String(now.getFullYear());
   const taxpayer={isletme_defteri:0,bilanco:0,limited_sirket:0,anonim_sirket:0};
-  (state.cariler||[]).forEach(c=>{ const t=String(c.taxpayer_type||getCariCard(c.cari_id)?.taxpayer_type||''); if(taxpayer[t]!==undefined) taxpayer[t]++; if(/anonim|aş|a\.ş/i.test(t)) taxpayer.anonim_sirket++; });
+  (state.cariler||[]).forEach(c=>{ const t=String(c.taxpayer_type||getCariCard(c.cari_id)?.taxpayer_type||''); if(taxpayer[t]!==undefined) taxpayer[t]++; });
   const tahakkukRows=(state.operationalLedger||[]).filter(x=>String(x.movement_type||'').toLowerCase()==='tahakkuk');
   const tahsilatRows=(state.operationalLedger||[]).filter(x=>String(x.source_module||'')==='local_cari_collection');
   const expenseAcc=(state.expenseAccruals||[]), expensePay=(state.expensePayments||[]);
@@ -3030,7 +3085,9 @@ function renderFeeModal(){
 function openFeeModal(){
   if(!state.selectedCariId){ notify("Cari seçili değil."); return; }
   const openPeriod = getOpenFeePeriod(state.selectedCariId);
-  document.getElementById("feeValidFrom").value = isoDate(new Date()) || "";
+  const setup = getFeeSetup(state.selectedCariId);
+  const openPeriod = getOpenFeePeriod(state.selectedCariId);
+  document.getElementById("feeValidFrom").value = openPeriod?.valid_from || setup?.opening_date || isoDate(new Date()) || "";
   document.getElementById("feeAmountInput").value = openPeriod ? num(openPeriod.fee_amount || openPeriod.current_fee || openPeriod.amount) : "";
   document.getElementById("feeNoteInput").value = "";
   document.getElementById("feeAutoClosePrev").value = "true";
@@ -3042,7 +3099,7 @@ async function saveFeePeriod(){
   if(!state.selectedCariId){ notify("Cari seçili değil."); return; }
   const validFrom = document.getElementById("feeValidFrom").value;
   const feeAmount = num(document.getElementById("feeAmountInput").value);
-  const note = document.getElementById("feeNoteInput").value.trim() || null;
+  const note = document.getElementById("feeNoteInput").value.trim() || 'Yıllık ücret dönemi';
   const autoClosePrev = document.getElementById("feeAutoClosePrev").value === "true";
   if(!validFrom || feeAmount <= 0){ notify("Başlangıç tarihi ve ücret zorunlu."); return; }
   const openPeriod = getOpenFeePeriod(state.selectedCariId);
@@ -4437,7 +4494,18 @@ async function saveCariCard(){
   const opening_date=document.getElementById("editOpeningDate").value || null;
   const setupRows=(state.cariFeeSetups||[]).filter(x=>String(x.cari_id)!==String(state.selectedCariId));
   setupRows.unshift(stampRecordIds({cari_id:state.selectedCariId,cari_name:payload.cari_name, opening_date, monthly_fee_amount:num(payload.monthly_fee_amount), monthly_fee_enabled:payload.monthly_fee_enabled, taxpayer_type:payload.taxpayer_type||null, created_at:new Date().toISOString()}, "CFS"));
-  state.cariFeeSetups=setupRows; writeLocalJson(LOCAL_CARI_FEE_SETUP_KEY, state.cariFeeSetups); ensureFeeAccrualsForAllCariler();
+  state.cariFeeSetups=setupRows; writeLocalJson(LOCAL_CARI_FEE_SETUP_KEY, state.cariFeeSetups);
+  if(opening_date && payload.monthly_fee_enabled && num(payload.monthly_fee_amount)>0){
+    const yearEnd = yearEndFromDate(opening_date);
+    const sameYearFirst = getFeeTimeline(state.selectedCariId).find(x=>String(x.valid_from||'').slice(0,10)===String(opening_date).slice(0,10));
+    if(!sameYearFirst){
+      const insertPayload = { cari_id: state.selectedCariId, fee_amount: num(payload.monthly_fee_amount), valid_from: String(opening_date).slice(0,10), valid_to: yearEnd, note: 'İlk ücret dönemi', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const ins = await supabaseClient.from("cari_fee_history").insert([insertPayload]);
+      if(ins.error){ logSystemError('cari_fee_history', ins.error.message, {target_name:payload.cari_name || state.selectedCariId, amount:num(payload.monthly_fee_amount)}); }
+      else { await loadFeeData(); }
+    }
+  }
+  ensureFeeAccrualsForAllCariler();
   addAuditEvent('cari_card_updated',{source_module:'cari_cards', target_name:payload.cari_name || state.selectedCariId, note:'Cari kartı güncellendi.', summary:`Cari kartı güncellendi · ${payload.cari_name || state.selectedCariId}`});
   notify("Cari kartı güncellendi.");
   closeCariEditModal();
