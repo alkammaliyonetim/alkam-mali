@@ -853,16 +853,22 @@ function stripAmountFromDescription(desc, amount){
   return s || '-';
 }
 function ensureImportedRowDescription(row){
-  const rawDesc = firstNonEmptyText(
-    row?.description,
-    row?.aciklama,
+  const maybeDesc = String(row?.description ?? '').trim();
+  const maybeSource = firstNonEmptyText(
+    row?.source_description,
     row?.raw_content,
     row?.content_summary,
     row?.description_text,
-    row?.source_description,
     row?.source_text,
     row?.dekont_aciklama,
-    row?.aciklama_metni
+    row?.aciklama_metni,
+    row?.aciklama
+  );
+  const numericLikeDesc = maybeDesc && /^[-+]?\d+(?:[\.,]\d+)?$/.test(maybeDesc);
+  const rawDesc = firstNonEmptyText(
+    (numericLikeDesc ? '' : maybeDesc),
+    maybeSource,
+    maybeDesc
   );
   const parsedAmount = parseImportedAmountValue(row?.net_amount ?? row?.amount ?? row?.raw_amount ?? row?.final_amount);
   const amountFromDesc = extractAmountFromDescription(rawDesc);
@@ -872,9 +878,9 @@ function ensureImportedRowDescription(row){
     ...row,
     description: cleanDesc || '-',
     net_amount: finalAmount !== null ? finalAmount : Number(row?.net_amount ?? row?.amount ?? row?.raw_amount ?? row?.final_amount ?? 0),
-    raw_content: row?.raw_content || rawDesc || cleanDesc || '',
-    content_summary: row?.content_summary || cleanDesc || rawDesc || '',
-    source_description: row?.source_description || cleanDesc || rawDesc || ''
+    raw_content: row?.raw_content || rawDesc || '',
+    content_summary: cleanDesc || row?.content_summary || rawDesc || '',
+    source_description: row?.source_description || rawDesc || ''
   };
 }
 function applyBankRuleSuggestion(row){
@@ -1509,7 +1515,7 @@ function classifyImportedMovementReview(row={}){
   };
 }
 function refreshImportedMovementAnalysis(persist=true){
-  const rows=[...(state.movementTests||[])];
+  const rows=[...(state.movementTests||[])].map(r=>ensureImportedRowDescription(r));
   if(!rows.length) return;
   const similarMap={};
   for(const r of rows){
@@ -1642,7 +1648,8 @@ function importMovementRows(parsed=[], sourceLabel='manuel_yapistir'){
   const existingKeys = new Set(existing.map(x=>`${x.movement_date}|${x.description}|${num(x.net_amount).toFixed(2)}|${x.import_bucket}|${x.external_ref||''}`));
   const newRows = [];
   let duplicateCount = 0;
-  for(const row of parsed){
+  for(const row0 of parsed){
+    const row = ensureImportedRowDescription(row0);
     const key = `${row.movement_date}|${row.description}|${num(row.net_amount).toFixed(2)}|${row.import_bucket}|${row.external_ref||''}`;
     if(existingKeys.has(key)){ duplicateCount++; continue; }
     existingKeys.add(key);
@@ -1695,6 +1702,8 @@ function parseImportReadyWorksheetRows(records=[], sourceLabel='import_hazir'){
       import_bucket,
       movement_date: normalizedDate,
       description: description || `${sourceLabel} hareketi`,
+      source_description: description || `${sourceLabel} hareketi`,
+      raw_content: description || `${sourceLabel} hareketi`,
       net_amount: amount,
       external_ref: refRaw || null,
       suggested_financial_account_type: import_bucket === 'moka' ? 'moka_united' : 'banka',
@@ -1740,6 +1749,8 @@ function parseWorksheetMatrixRows(matrixRows, sourceLabel='xlsx_import'){
       import_bucket,
       movement_date: normalizedDate,
       description,
+      source_description: description,
+      raw_content: description,
       net_amount: amount,
       external_ref: null,
       suggested_financial_account_type: import_bucket === 'moka' ? 'moka_united' : 'banka',
