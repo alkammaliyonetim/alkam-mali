@@ -26,7 +26,7 @@
     .list{display:grid;gap:10px}.list-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;cursor:pointer}.list-item.active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,103,232,.12);background:#f6f9ff}.list-item.risk{border-color:#fecaca;background:#fff7f7}
     .list-title{font-weight:900;font-size:15px;margin-bottom:6px}.list-meta{color:var(--muted);font-size:13px;font-weight:700;line-height:1.55}.empty{padding:22px;border:1px dashed #cbd5e1;border-radius:16px;text-align:center;color:var(--muted);font-weight:800;background:#fbfdff}
     .search-input,.select-input,.field input,.field select,.field textarea{width:100%;border:1px solid #cfd8e6;border-radius:12px;min-height:44px;padding:10px 12px;font-size:14px;font-weight:700;outline:none;background:#fff}
-    .toolbar{display:grid;grid-template-columns:1.3fr .8fr .8fr;gap:12px;margin-bottom:14px}.detail-sticky{position:sticky;top:22px}.cari-list-scroll{max-height:calc(100vh - 300px);overflow:auto;padding-right:4px}.cari-detail-scroll{max-height:calc(100vh - 210px);overflow:auto;padding-right:4px}.cari-list-scroll::-webkit-scrollbar,.cari-detail-scroll::-webkit-scrollbar{width:10px}.cari-list-scroll::-webkit-scrollbar-thumb,.cari-detail-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}.cari-list-scroll::-webkit-scrollbar-track,.cari-detail-scroll::-webkit-scrollbar-track{background:#f8fafc}.account-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.subsection-title{margin:0 0 12px;font-size:16px;font-weight:900;color:#0f172a}
+    .toolbar{display:grid;grid-template-columns:1.3fr .8fr .8fr;gap:12px;margin-bottom:14px}.detail-sticky{position:sticky;top:22px}.cari-list-scroll{max-height:calc(100vh - 300px);overflow:auto;padding-right:4px}.cari-detail-scroll{max-height:calc(100vh - 210px);overflow:auto;padding-right:4px}.cari-list-scroll::-webkit-scrollbar,.cari-detail-scroll::-webkit-scrollbar{width:10px}.cari-list-scroll::-webkit-scrollbar-thumb,.cari-detail-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}.cari-list-scroll::-webkit-scrollbar-track,.cari-detail-scroll::-webkit-scrollbar-track{background:#f8fafc}.account-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.subsection-title{margin:0 0 12px;font-size:16px;font-weight:900;color:#0f172a}.row-clickable{cursor:pointer}.row-clickable:hover td{background:#f8fbff}.expense-mini-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}.expense-mini-grid .metric-mini{height:100%}
     .metric-mini{background:#fbfdff;border:1px solid var(--line);border-radius:14px;padding:12px}.metric-mini .k{font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}.metric-mini .v{font-size:18px;font-weight:900;color:var(--text)}
     .filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.chip{border:none;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;background:#e8eef9;color:#0f172a;cursor:pointer}.chip.active{background:var(--blue);color:#fff}
     .hero-name{font-size:28px;font-weight:900;line-height:1.1;margin:0 0 8px}.hero-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:13px;font-weight:800;margin-bottom:16px}
@@ -40,7 +40,7 @@
     .btn[disabled]{opacity:.55;cursor:not-allowed}
     @media (max-width:1200px){.cards,.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-2,.grid-3,.toolbar,.form-grid,.form-grid-3{grid-template-columns:1fr}.detail-sticky{position:static}.cari-list-scroll,.cari-detail-scroll{max-height:none}}
     @media (max-width:860px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.main{padding:16px}.page-head h1{font-size:32px}}
-    @media (max-width:640px){.cards,.grid-4{grid-template-columns:1fr}}
+    @media (max-width:640px){.cards,.grid-4,.expense-mini-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -391,6 +391,37 @@
   </div>
 </div>
 
+<div id="accountDetailModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:1120px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Hesap Detayı</h2>
+      <button class="btn btn-red" onclick="closeAccountDetailModal()">Kapat</button>
+    </div>
+    <div id="accountDetailContent"></div>
+  </div>
+</div>
+
+<div id="expensePaymentModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:760px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Gider Ödeme Kaydı</h2>
+      <button class="btn btn-red" onclick="closeExpensePaymentModal()">Kapat</button>
+    </div>
+    <div id="expensePaymentInfo" class="rule-box" style="margin-bottom:14px;">Ödeme bilgisi</div>
+    <div class="form-grid">
+      <div class="field"><label>Ödeme Tarihi</label><input id="expensePaymentDate" type="date" /></div>
+      <div class="field"><label>Ödeme Hesabı</label><select id="expensePaymentAccount" class="select-input"></select></div>
+    </div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="field"><label>Tutar</label><input id="expensePaymentAmount" type="number" min="0" step="0.01" /></div>
+      <div class="field"><label>Belge / Dekont No</label><input id="expensePaymentDocNo" /></div>
+    </div>
+    <div class="field" style="margin-top:12px;"><label>Açıklama</label><input id="expensePaymentDescription" placeholder="Gider ödemesi" /></div>
+    <div class="field" style="margin-top:12px;"><label>Not</label><textarea id="expensePaymentNote" rows="4" class="select-input"></textarea></div>
+    <div class="btn-row" style="margin-top:16px;"><button class="btn btn-blue" onclick="saveExpensePayment()">Ödemeyi Kaydet</button></div>
+  </div>
+</div>
+
 <div id="bankActionModal" class="modal-overlay" style="display:none;">
   <div class="modal-card" style="max-width:980px;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
@@ -410,7 +441,7 @@
       <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
       <button class="nav-btn" data-tab="cariler">Cariler</button>
       <button class="nav-btn" data-tab="hesaplar">Hesaplar</button>
-      <button class="nav-btn" data-tab="giderler">Gider Tahakkuk</button>
+      <button class="nav-btn" data-tab="giderler">Giderler</button>
       <button class="nav-btn" data-tab="raporlar">Raporlar</button>
       <button class="nav-btn" data-tab="belgeler">Belgeler</button>
       <button class="nav-btn" data-tab="onay">Onay Merkezi</button>
@@ -541,7 +572,7 @@
     </section>
 
     <section id="tab-giderler" class="tab-page">
-      <div class="section"><h2 class="section-title">Gider Tahakkuk Kontrol Paneli</h2><div id="expenseWrap" class="empty">Yükleniyor...</div></div>
+      <div class="section"><h2 class="section-title">Giderler Dinamik Kontrol Paneli</h2><div id="expenseWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
     <section id="tab-raporlar" class="tab-page">
@@ -583,8 +614,8 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
 
 function money(v){
   const n=Number(v||0);
@@ -680,6 +711,78 @@ function getCombinedAccounts(){
   return [...map.values()].sort((a,b)=>String(a.account_name||'').localeCompare(String(b.account_name||''),'tr'));
 }
 function getAccountByKey(key){ return getCombinedAccounts().find(x=>x.account_key===normalizeAccountKey(key)) || null; }
+function getLocalOpsByAccount(accountKey){
+  const key=normalizeAccountKey(accountKey);
+  return getLocalAccountOps().filter(op=>normalizeAccountKey(op.account_key || op.account_name || op.source_account_key || op.target_account_key)===key || normalizeAccountKey(op.source_account_key || '')===key || normalizeAccountKey(op.target_account_key || '')===key).sort((a,b)=>new Date(b.entry_date||b.created_at||0)-new Date(a.entry_date||a.created_at||0));
+}
+function getAccountTxnSignedAmount(op, accountKey){
+  const key=normalizeAccountKey(accountKey);
+  if(op.type==='account_transfer'){
+    if(normalizeAccountKey(op.source_account_key||'')===key) return -num(op.amount);
+    if(normalizeAccountKey(op.target_account_key||'')===key) return num(op.amount);
+    return 0;
+  }
+  return String(op.direction||'giris')==='cikis' ? -num(op.amount) : num(op.amount);
+}
+function openAccountDetailModal(accountKey){
+  const acc=getAccountByKey(accountKey);
+  if(!acc){ notify('Hesap bulunamadı.'); return; }
+  state.selectedAccountKey=acc.account_key;
+  const ops=getLocalOpsByAccount(acc.account_key);
+  const totalIn=ops.reduce((a,b)=>a + Math.max(getAccountTxnSignedAmount(b,acc.account_key),0),0);
+  const totalOut=Math.abs(ops.reduce((a,b)=>a + Math.min(getAccountTxnSignedAmount(b,acc.account_key),0),0));
+  document.getElementById('accountDetailContent').innerHTML = `<div class="grid-4" style="margin-bottom:14px;">
+    <div class="metric-mini"><div class="k">Hesap</div><div class="v">${escapeHtml(acc.account_name||'-')}</div></div>
+    <div class="metric-mini"><div class="k">Tür</div><div class="v">${escapeHtml(acc.account_type||'-')}</div></div>
+    <div class="metric-mini"><div class="k">Net Bakiye</div><div class="v">${money(acc.net_bakiye||0)}</div></div>
+    <div class="metric-mini"><div class="k">Son Hareket</div><div class="v">${shortDate(acc.son_hareket_tarihi)}</div></div>
+  </div>
+  <div class="grid-3" style="margin-bottom:14px;">
+    <div class="metric-mini"><div class="k">Yerel İşlem</div><div class="v">${ops.length}</div></div>
+    <div class="metric-mini"><div class="k">Toplam Giriş</div><div class="v">${money(totalIn)}</div></div>
+    <div class="metric-mini"><div class="k">Toplam Çıkış</div><div class="v">${money(totalOut)}</div></div>
+  </div>
+  <div class="btn-row" style="margin-bottom:14px;">
+    <button class="btn btn-blue" onclick="openManualFinanceModal('entry', null, '${acc.account_key}')">Bu Hesaba İşlem Gir</button>
+    <button class="btn btn-soft" onclick="openManualFinanceModal('transfer', null, '${acc.account_key}')">Bu Hesaptan Transfer</button>
+  </div>
+  ${ops.length?`<table><thead><tr><th>No</th><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${ops.map(op=>{ const label = op.type==='account_transfer' ? 'Transfer' : (op.type==='account_create' ? 'Hesap Tanımı' : (op.type==='cari_collection' ? 'Cari Tahsilat' : 'Hesap İşlemi')); const signed=getAccountTxnSignedAmount(op, acc.account_key); return `<tr><td>${escapeHtml(displayTxnNo(op,'LAC'))}</td><td>${shortDate(op.entry_date||op.line_date||op.created_at)}</td><td>${label}</td><td>${escapeHtml(op.description || op.note || '-')}</td><td class="text-right">${money(signed)}</td><td><div class="btn-row"><button class="btn btn-soft" onclick="editManualOperation('${op.id}')">Düzenle</button><button class="btn btn-red" onclick="deleteManualOperation('${op.id}')">Sil</button></div></td></tr>`; }).join('')}</tbody></table>`:`<div class="empty">Bu hesapta düzenlenebilir yerel işlem yok.</div>`}`;
+  document.getElementById('accountDetailModal').style.display='flex';
+}
+function closeAccountDetailModal(){ document.getElementById('accountDetailModal').style.display='none'; }
+function editManualOperation(opId){
+  const op=getLocalAccountOps().find(x=>String(x.id)===String(opId));
+  if(!op){ notify('İşlem bulunamadı.'); return; }
+  if(op.type==='cari_collection'){
+    notify('Cari tahsilat düzenleme sonraki turda ayrılacak. Şimdilik silip yeniden gir.');
+    return;
+  }
+  openManualFinanceModal(op.type==='account_transfer' ? 'transfer' : (op.type==='account_create' ? 'create' : 'entry'), op.id, state.selectedAccountKey || op.account_key || op.source_account_key);
+}
+function deleteManualOperation(opId){
+  const op=getLocalAccountOps().find(x=>String(x.id)===String(opId));
+  if(!op){ notify('Silinecek işlem bulunamadı.'); return; }
+  openDeleteAuthModal(`Hesap işlemi silme · ${op.operation_no || op.id}`, (reason)=>{
+    const rows=getLocalAccountOps().filter(x=>String(x.id)!==String(opId));
+    setLocalAccountOps(rows);
+    addAuditEvent('manual_account_op_deleted',{source_module:'manual_finance', target_name:op.account_name || op.source_account_name || '-', amount:op.amount, note:reason, summary:`Hesap işlemi silindi · ${op.operation_no || op.id}`});
+    closeAccountDetailModal();
+    loadAccounts().then(()=>{ renderAccounts(); renderGlobalAuditLog(); renderDeleteArchive(); notify('Hesap işlemi silindi.'); });
+  });
+}
+function periodMonthsBetween(startDate, endDate){
+  const out=[];
+  const start=new Date(startDate);
+  const end=new Date(endDate);
+  if(Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return out;
+  const cur=new Date(start.getFullYear(), start.getMonth(), 1);
+  const last=new Date(end.getFullYear(), end.getMonth(), 1);
+  while(cur <= last){
+    out.push({period_key:`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`, year:cur.getFullYear(), month:cur.getMonth()+1});
+    cur.setMonth(cur.getMonth()+1);
+  }
+  return out
+}
 function localCollectionsForCari(cariId){ return getLocalCariCollections().filter(x=>String(x.cari_id)===String(cariId)); }
 function applyLocalCollectionsToCariRow(row){ const locals=localCollectionsForCari(row.cari_id); if(!locals.length) return {...row}; const monthlyToken=new Date().toISOString().slice(0,7); const sum=locals.reduce((a,b)=>a+num(b.amount),0); const monthlySum=locals.filter(x=>String(x.line_date||x.created_at||'').slice(0,7)===monthlyToken).reduce((a,b)=>a+num(b.amount),0); const latest=[...locals].sort((a,b)=>new Date(b.line_date||b.created_at||0)-new Date(a.line_date||a.created_at||0))[0]; const next={...row, bakiye:num(row.bakiye)-sum, bu_ay_tahsilat:num(row.bu_ay_tahsilat)+monthlySum}; const baseTime=new Date(row.son_tahsilat_tarihi||0).getTime(); const localTime=new Date(latest?.line_date||latest?.created_at||0).getTime(); if(latest && localTime>=baseTime){ next.son_tahsilat_tarihi=latest.line_date||latest.created_at; next.son_tahsilat_tutari=num(latest.amount); } const lastTime=new Date(next.son_tahsilat_tarihi||0).getTime(); if(lastTime>0) next.is_tahsilat_3_ay_gecikmis=((Date.now()-lastTime)/86400000)>90; return next; }
 function buildLocalCariMovementRows(cariId){ return localCollectionsForCari(cariId).map(x=>({ id:x.id, txn_id:x.txn_id, operation_no:x.operation_no, cari_id:x.cari_id, line_date:x.line_date||x.created_at, movement_type:'Tahsilat', description:x.description || `Müşteriden Tahsilat | ${x.channel || 'Yerel kayıt'}`, amount:num(x.amount), debit:0, credit:num(x.amount), source_module:'local_cari_collection', document_no:x.document_no||null })); }
@@ -722,7 +825,7 @@ function togglePassword(){const i=document.getElementById("loginPassword"); i.ty
 function submitLogin(e){e.preventDefault(); const v=(document.getElementById("loginPassword").value||"").trim(); const err=document.getElementById("loginError"); err.textContent=""; if(v!==LOCAL_PASSWORD){err.textContent="Şifre hatalı."; return false} localStorage.setItem(SESSION_KEY,"ok"); openApp(); refreshAll(); return false}
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
 function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
-function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, çek, senet, Moka ve transfer yönetimi"],giderler:["Gider Tahakkuk","Sabit ve değişken gider tahakkuk kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
+function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, çek, senet, Moka ve transfer yönetimi"],giderler:["Giderler","Sabit ve değişken gider, tahakkuk ve ödeme kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
 async function loadDashboard(){
@@ -898,6 +1001,8 @@ async function loadDocuments(){
   state.approvalOps = readLocalObject(LOCAL_APPROVAL_OPS_KEY, {processed:[], rejected:[], handled_pending_ids:[]});
   state.bankOps = readLocalObject(LOCAL_BANK_OPS_KEY, {pending:[], row_status:{}, history:[]});
   state.expenses = readLocalJson(LOCAL_EXPENSES_KEY).map(x=>({...x, txn_id:txnId(x,'EXP')}));
+  state.expenseAccruals = readLocalJson(LOCAL_EXPENSE_ACCRUALS_KEY).map(x=>({...x, txn_id:txnId(x,'EAC')}));
+  state.expensePayments = readLocalJson(LOCAL_EXPENSE_PAYMENTS_KEY).map(x=>({...x, txn_id:txnId(x,'EPA')}));
   state.operationalLedger = readLocalJson(LOCAL_LEDGER_KEY).map(x=>({...x, txn_id:txnId(x,'LGR')}));
   state.auditTrail = readLocalJson(LOCAL_AUDIT_KEY).map(x=>({...x, txn_id:txnId(x,'LOG')}));
   state.bridgeBatches = readLocalJson(LOCAL_BRIDGE_BATCHES_KEY).map(x=>({...x, txn_id:txnId(x,'BTH')}));
@@ -914,6 +1019,8 @@ function normalizeStateIds(){
   const docs = normalizeNumberedList(state.documents,'DOC'); state.documents = docs.rows; if(docs.changed) writeLocalJson(LOCAL_DOCS_KEY, state.documents);
   const bridge = normalizeNumberedList(state.bridgeCandidates,'BRG'); state.bridgeCandidates = bridge.rows; if(bridge.changed) writeLocalJson(LOCAL_BRIDGE_KEY, state.bridgeCandidates);
   const exps = normalizeNumberedList(state.expenses,'EXP'); state.expenses = exps.rows; if(exps.changed) writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses);
+  const accr = normalizeNumberedList(state.expenseAccruals,'EAC'); state.expenseAccruals = accr.rows; if(accr.changed) writeLocalJson(LOCAL_EXPENSE_ACCRUALS_KEY, state.expenseAccruals);
+  const pays = normalizeNumberedList(state.expensePayments,'EPA'); state.expensePayments = pays.rows; if(pays.changed) writeLocalJson(LOCAL_EXPENSE_PAYMENTS_KEY, state.expensePayments);
   const audit = normalizeNumberedList(state.auditTrail,'LOG'); state.auditTrail = audit.rows; if(audit.changed) persistAudit();
   const led = normalizeNumberedList(state.operationalLedger,'LGR'); state.operationalLedger = led.rows; if(led.changed) persistLedger();
   const mov = normalizeNumberedList(state.movementTests,'IMP'); state.movementTests = mov.rows; if(mov.changed) persistMovementTests();
@@ -2925,11 +3032,11 @@ function renderAccounts(){
   <div class="grid-2" style="align-items:start;">
     <div>
       <h3 class="subsection-title">Hesap Kartları</h3>
-      ${combinedAccounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${combinedAccounts.map(a=>`<tr><td>${escapeHtml(a.account_name)}</td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`}
+      ${combinedAccounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${combinedAccounts.map(a=>`<tr class="click-row row-clickable" data-account-key="${escapeHtml(a.account_key)}"><td>${escapeHtml(a.account_name)}</td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`}
     </div>
     <div>
       <h3 class="subsection-title">Son Manuel İşlemler</h3>
-      ${manualRows.length?`<table><thead><tr><th>No</th><th>Tarih</th><th>İşlem</th><th>Hedef</th><th class="text-right">Tutar</th></tr></thead><tbody>${manualRows.slice(0,12).map(op=>{ const label = op.type==='account_transfer' ? 'Transfer' : (op.type==='account_create' ? 'Hesap Tanımı' : (op.type==='cari_collection' ? 'Cari Tahsilat' : 'Hesap İşlemi')); const target = op.type==='account_transfer' ? `${escapeHtml(op.source_account_name || '-') } → ${escapeHtml(op.target_account_name || '-')}` : escapeHtml(op.account_name || '-'); const signed = op.type==='account_transfer' ? money(op.amount||0) : money((String(op.direction||'giris')==='cikis' ? -num(op.amount) : num(op.amount))); return `<tr><td>${escapeHtml(displayTxnNo(op,'LAC'))}</td><td>${shortDate(op.entry_date || op.created_at)}</td><td>${label}</td><td>${target}<div class="muted-note">${escapeHtml(op.description || op.note || '-')}</div></td><td class="text-right">${signed}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Henüz manuel hesap işlemi yok.</div>`}
+      ${manualRows.length?`<table><thead><tr><th>No</th><th>Tarih</th><th>İşlem</th><th>Hedef</th><th class="text-right">Tutar</th></tr></thead><tbody>${manualRows.slice(0,12).map(op=>{ const label = op.type==='account_transfer' ? 'Transfer' : (op.type==='account_create' ? 'Hesap Tanımı' : (op.type==='cari_collection' ? 'Cari Tahsilat' : 'Hesap İşlemi')); const target = op.type==='account_transfer' ? `${escapeHtml(op.source_account_name || '-') } → ${escapeHtml(op.target_account_name || '-')}` : escapeHtml(op.account_name || '-'); const signed = op.type==='account_transfer' ? money(op.amount||0) : money((String(op.direction||'giris')==='cikis' ? -num(op.amount) : num(op.amount))); return `<tr class="click-row row-clickable" data-manual-op-id="${escapeHtml(op.id)}"><td>${escapeHtml(displayTxnNo(op,'LAC'))}</td><td>${shortDate(op.entry_date || op.created_at)}</td><td>${label}</td><td>${target}<div class="muted-note">${escapeHtml(op.description || op.note || '-')}</div></td><td class="text-right">${signed}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Henüz manuel hesap işlemi yok.</div>`}
     </div>
   </div>`;
 
@@ -2970,6 +3077,8 @@ function renderAccounts(){
   document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
   document.querySelectorAll('#mokaFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.mokaFilter = btn.dataset.mfilter; renderAccounts(); }));
   document.querySelectorAll('[data-bank-key]').forEach(el=>el.addEventListener('click',()=>openBankActionModal(el.dataset.bankBucket, el.dataset.bankKey)));
+  document.querySelectorAll('[data-account-key]').forEach(el=>el.addEventListener('click',()=>openAccountDetailModal(el.dataset.accountKey)));
+  document.querySelectorAll('[data-manual-op-id]').forEach(el=>el.addEventListener('click',()=>editManualOperation(el.dataset.manualOpId)));
   renderBankMatchHistory();
   renderMovementTestCenter();
 }
@@ -3579,6 +3688,134 @@ function quickFillCandidate(kind){
   }
 }
 function getCurrentPeriodKey(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function getExpenseAccruals(expenseId){ return (state.expenseAccruals||[]).filter(x=>String(x.expense_id)===String(expenseId)); }
+function getExpensePayments(expenseId){ return (state.expensePayments||[]).filter(x=>String(x.expense_id)===String(expenseId)); }
+function buildExpenseDueDate(periodKey, dueDay){
+  const [y,m]=String(periodKey||'').split('-').map(Number);
+  if(!y || !m) return new Date().toISOString().slice(0,10);
+  const lastDay = new Date(y, m, 0).getDate();
+  const d = Math.max(1, Math.min(lastDay, Number(dueDay||1)));
+  return `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+function monthKeyFromDate(v){ const d=new Date(v||''); return Number.isNaN(d.getTime()) ? '' : `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function getExpensePeriodMonths(exp){
+  const start = exp?.start_date || new Date().toISOString().slice(0,10);
+  const endBase = exp?.end_date || new Date().toISOString().slice(0,10);
+  const startDate = new Date(start);
+  const endDate = new Date(endBase);
+  if(Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return [];
+  const cur = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+  const last = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+  const out=[];
+  while(cur <= last){ out.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`); cur.setMonth(cur.getMonth()+1); }
+  return out;
+}
+function ensureExpenseAccruals(){
+  const rows=[...(state.expenseAccruals||[])];
+  const now=new Date();
+  const currentMonthKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  let changed=false
+}
+
+function ensureExpenseAccruals(){
+  const rows=[...(state.expenseAccruals||[])];
+  const now=new Date();
+  const currentMonthKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  let changed=false;
+  (state.expenses||[]).forEach(exp=>{
+    if(exp.is_active===false) return;
+    const months=getExpensePeriodMonths({...exp, end_date: exp.end_date || buildExpenseDueDate(currentMonthKey, 1)});
+    months.forEach(periodKey=>{
+      if(periodKey>currentMonthKey) return;
+      const exists=rows.find(x=>String(x.expense_id)===String(exp.id) && String(x.period_key)===String(periodKey));
+      if(exists) return;
+      const accr=stampRecordIds({
+        expense_id:exp.id,
+        expense_title:exp.title,
+        expense_type:exp.expense_type || 'fixed',
+        period_key:periodKey,
+        due_date:buildExpenseDueDate(periodKey, exp.due_day||1),
+        amount:num(exp.amount||0),
+        status:'accrued',
+        auto_generated:true,
+        created_at:new Date().toISOString()
+      }, 'EAC');
+      rows.push(accr); changed=true;
+    });
+  });
+  rows.sort((a,b)=>String(b.period_key||'').localeCompare(String(a.period_key||'')) || new Date(b.created_at||0)-new Date(a.created_at||0));
+  state.expenseAccruals=rows;
+  if(changed) writeLocalJson(LOCAL_EXPENSE_ACCRUALS_KEY, state.expenseAccruals);
+}
+function getExpenseTotals(exp){
+  const accruals=getExpenseAccruals(exp.id);
+  const payments=getExpensePayments(exp.id);
+  const now=new Date();
+  const thisMonthKey=getCurrentPeriodKey();
+  const thisYear=String(now.getFullYear());
+  const monthlyAccrued=accruals.filter(x=>x.period_key===thisMonthKey).reduce((a,b)=>a+num(b.amount),0);
+  const yearlyAccrued=accruals.filter(x=>String(x.period_key||'').startsWith(thisYear+'-')).reduce((a,b)=>a+num(b.amount),0);
+  const paidTotal=payments.reduce((a,b)=>a+num(b.amount),0);
+  const thisYearPaid=payments.filter(x=>String(x.payment_date||'').startsWith(thisYear+'-')).reduce((a,b)=>a+num(b.amount),0);
+  const remaining=Math.max(0, accruals.reduce((a,b)=>a+num(b.amount),0)-paidTotal);
+  return {accruals,payments,monthlyAccrued,yearlyAccrued,paidTotal,thisYearPaid,remaining};
+}
+function getAllExpenseMetrics(){
+  ensureExpenseAccruals();
+  const monthKey=getCurrentPeriodKey();
+  const year=monthKey.slice(0,4);
+  const allAcc=state.expenseAccruals||[];
+  const allPay=state.expensePayments||[];
+  return {
+    monthAccrued: allAcc.filter(x=>x.period_key===monthKey).reduce((a,b)=>a+num(b.amount),0),
+    yearAccrued: allAcc.filter(x=>String(x.period_key||'').startsWith(year+'-')).reduce((a,b)=>a+num(b.amount),0),
+    yearPaid: allPay.filter(x=>String(x.payment_date||'').startsWith(year+'-')).reduce((a,b)=>a+num(b.amount),0),
+    remaining: Math.max(0, allAcc.reduce((a,b)=>a+num(b.amount),0)-allPay.reduce((a,b)=>a+num(b.amount),0)),
+  };
+}
+function expenseShareRatio(exp){
+  const total=state.expenseAccruals.reduce((a,b)=>a+num(b.amount),0);
+  if(!total) return 0;
+  return (getExpenseAccruals(exp.id).reduce((a,b)=>a+num(b.amount),0) / total) * 100;
+}
+function openExpensePaymentModal(expenseId, accrualId=''){
+  const exp=state.expenses.find(x=>String(x.id)===String(expenseId || state.selectedExpenseId));
+  if(!exp){ notify('Gider kartı bulunamadı.'); return; }
+  state.selectedExpenseId=exp.id;
+  state.selectedExpenseAccrualId=accrualId || null;
+  fillAccountSelect('expensePaymentAccount');
+  document.getElementById('expensePaymentDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('expensePaymentAmount').value='';
+  document.getElementById('expensePaymentDocNo').value='';
+  document.getElementById('expensePaymentDescription').value=`${exp.title} gider ödemesi`;
+  document.getElementById('expensePaymentNote').value='';
+  const totals=getExpenseTotals(exp);
+  document.getElementById('expensePaymentInfo').innerHTML=`<strong>${escapeHtml(exp.title)}</strong><br>Bu yıl tahakkuk: ${money(totals.yearlyAccrued)} · Bu yıl ödenen: ${money(totals.thisYearPaid)} · Kalan: ${money(totals.remaining)}`;
+  document.getElementById('expensePaymentModal').style.display='flex';
+}
+function closeExpensePaymentModal(){ document.getElementById('expensePaymentModal').style.display='none'; }
+function saveExpensePayment(){
+  const exp=state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId));
+  if(!exp){ notify('Gider kartı bulunamadı.'); return; }
+  const accountKey=document.getElementById('expensePaymentAccount').value;
+  const account=getAccountByKey(accountKey);
+  const amount=num(document.getElementById('expensePaymentAmount').value||0);
+  const paymentDate=document.getElementById('expensePaymentDate').value || new Date().toISOString().slice(0,10);
+  const docNo=(document.getElementById('expensePaymentDocNo').value||'').trim();
+  const description=(document.getElementById('expensePaymentDescription').value||'').trim() || `${exp.title} gider ödemesi`;
+  const note=(document.getElementById('expensePaymentNote').value||'').trim();
+  if(!account){ notify('Ödeme hesabı seç.'); return; }
+  if(!amount){ notify('Ödeme tutarı zorunlu.'); return; }
+  const rows=[...(state.expensePayments||[])];
+  const payment=stampRecordIds({ expense_id:exp.id, expense_title:exp.title, accrual_id:state.selectedExpenseAccrualId || null, account_key:account.account_key, account_name:account.account_name, amount, payment_date:paymentDate, document_no:docNo || null, description, note, created_at:new Date().toISOString() }, 'EPA');
+  rows.unshift(payment); state.expensePayments=rows; writeLocalJson(LOCAL_EXPENSE_PAYMENTS_KEY, state.expensePayments);
+  const ops=getLocalAccountOps();
+  const editingId = window.__editingManualOpId || '';
+  const existing = editingId ? ops.find(x=>String(x.id)===String(editingId)) : null; ops.unshift(stampRecordIds({ type:'expense_payment', expense_id:exp.id, account_key:account.account_key, account_name:account.account_name, account_type:account.account_type, direction:'cikis', amount, entry_date:paymentDate, description, note:note || docNo || exp.title, created_at:new Date().toISOString() }, 'LAC')); setLocalAccountOps(ops);
+  addAuditEvent('expense_payment_saved',{source_module:'expenses', target_name:exp.title, amount, note:note || description, summary:`Gider ödemesi işlendi · ${money(amount)}`});
+  closeExpensePaymentModal();
+  loadAccounts().then(()=>{ renderAccounts(); renderExpenses(); notify('Gider ödemesi kaydedildi.'); });
+}
 function expenseStatusInfo(exp){
   const now=new Date();
   const periodKey=getCurrentPeriodKey();
@@ -3604,6 +3841,8 @@ function filteredExpenses(){
 function openExpenseModal(expenseId=''){
   const exp = state.expenses.find(x=>String(x.id)===String(expenseId));
   state.selectedExpenseId = exp?.id || null;
+  ensureExpenseAccruals();
+  const totals = exp ? getExpenseTotals(exp) : null;
   document.getElementById('expenseTitle').value = exp?.title || '';
   document.getElementById('expenseCategory').value = exp?.category || '';
   document.getElementById('expenseVendor').value = exp?.vendor_name || '';
@@ -3615,15 +3854,16 @@ function openExpenseModal(expenseId=''){
   document.getElementById('expenseDueDay').value = exp?.due_day || 1;
   document.getElementById('expenseIsActive').value = String(exp?.is_active !== false);
   document.getElementById('expenseNote').value = exp?.note || '';
-  document.getElementById('expenseModalInfo').innerHTML = exp ? `<strong>Durum</strong><br>${expenseStatusTag(exp)}<br>Son aday dönem: ${escapeHtml(exp.last_candidate_period || '-')}<br>Son aday tarihi: ${shortDate(exp.last_candidate_at)}` : 'Yeni gider tanımı oluşturuluyor. Kural: gider tahakkuku doğrudan fiş üretmez; bu ay için aday kayıt oluşturur.';
+  document.getElementById('expenseModalInfo').innerHTML = exp ? `<strong>Durum</strong><br>${expenseStatusTag(exp)}<br>Sözleşme: ${shortDate(exp.start_date)}${exp.end_date ? ` → ${shortDate(exp.end_date)}` : ' → Açık'}<br>Otomatik tahakkuk ayı: ${totals.accruals.length}<br>Ödenen: ${money(totals.paidTotal)} · Kalan: ${money(totals.remaining)}` : 'Yeni gider tanımı oluşturuluyor. Sabit/değişken seçiminden sonra sözleşme başlangıç ve bitiş tarihine göre aylık otomatik tahakkuk planı oluşur.';
   document.getElementById('expenseModal').style.display='flex';
 }
 function closeExpenseModal(){ document.getElementById('expenseModal').style.display='none'; }
-function requestDeleteSelectedExpense(){ const exp = state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId)); if(!exp){ notify('Silinecek gider kartı bulunamadı.'); return; } openDeleteAuthModal(`Gider kartı silme · ${exp.title}`, (reason)=>{ archiveDeletion('expenses', exp, reason); state.expenses = state.expenses.filter(x=>String(x.id)!==String(exp.id)); writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses); addAuditEvent('expense_deleted',{source_module:'expenses', target_name:exp.title, amount:exp.amount, note:reason, summary:`Gider kartı silindi · ${exp.title}`}); closeExpenseModal(); renderExpenses(); renderDeleteArchive(); renderGlobalAuditLog(); notify('Gider kartı silindi.'); }); }
+function requestDeleteSelectedExpense(){ const exp = state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId)); if(!exp){ notify('Silinecek gider kartı bulunamadı.'); return; } openDeleteAuthModal(`Gider kartı silme · ${exp.title}`, (reason)=>{ archiveDeletion('expenses', exp, reason); state.expenses = state.expenses.filter(x=>String(x.id)!==String(exp.id)); state.expenseAccruals = state.expenseAccruals.filter(x=>String(x.expense_id)!==String(exp.id)); state.expensePayments = state.expensePayments.filter(x=>String(x.expense_id)!==String(exp.id)); writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses); writeLocalJson(LOCAL_EXPENSE_ACCRUALS_KEY, state.expenseAccruals); writeLocalJson(LOCAL_EXPENSE_PAYMENTS_KEY, state.expensePayments); addAuditEvent('expense_deleted',{source_module:'expenses', target_name:exp.title, amount:exp.amount, note:reason, summary:`Gider kartı silindi · ${exp.title}`}); closeExpenseModal(); renderExpenses(); renderDeleteArchive(); renderGlobalAuditLog(); notify('Gider kartı silindi.'); }); }
 function saveExpenseAccrual(){
   const title=(document.getElementById('expenseTitle').value||'').trim();
   if(!title){ notify('Gider adı zorunlu.'); return; }
   const expenseId = state.selectedExpenseId || uid('expense');
+  const existing = state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId));
   const payload={
     id: expenseId,
     txn_id: expenseId,
@@ -3639,38 +3879,42 @@ function saveExpenseAccrual(){
     is_active:document.getElementById('expenseIsActive').value === 'true',
     note:(document.getElementById('expenseNote').value||'').trim() || null,
     updated_at:new Date().toISOString(),
-    created_at: state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId))?.created_at || new Date().toISOString(),
-    last_candidate_period: state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId))?.last_candidate_period || null,
-    last_candidate_at: state.expenses.find(x=>String(x.id)===String(state.selectedExpenseId))?.last_candidate_at || null,
+    created_at: existing?.created_at || new Date().toISOString(),
+    last_candidate_period: existing?.last_candidate_period || null,
+    last_candidate_at: existing?.last_candidate_at || null,
   };
   const idx = state.expenses.findIndex(x=>String(x.id)===String(payload.id));
   if(idx>=0) state.expenses[idx]=payload; else state.expenses.unshift(payload);
   writeLocalJson(LOCAL_EXPENSES_KEY, state.expenses);
-  addAuditEvent('expense_saved',{source_module:'expenses', target_name:payload.title, amount:payload.amount, note:payload.approval_policy==='ready' ? 'Hazır politika' : 'Onay politikası', summary:`Gider kartı kaydedildi · ${payload.title}`});
+  ensureExpenseAccruals();
+  addAuditEvent('expense_saved',{source_module:'expenses', target_name:payload.title, amount:payload.amount, note:`${payload.expense_type==='fixed' ? 'Sabit' : 'Değişken'} gider · ${payload.start_date}${payload.end_date ? ' → ' + payload.end_date : ' → Açık'}`, summary:`Gider kartı kaydedildi · ${payload.title}`});
   closeExpenseModal();
   renderExpenses();
-  notify('Gider tahakkuk kartı kaydedildi.');
+  notify('Gider kartı kaydedildi ve otomatik tahakkuk planı oluşturuldu.');
 }
 function queueExpenseCandidate(expenseId){
   const exp = state.expenses.find(x=>String(x.id)===String(expenseId));
   if(!exp){ notify('Gider kartı bulunamadı.'); return; }
+  ensureExpenseAccruals();
   const periodKey=getCurrentPeriodKey();
   if(String(exp.last_candidate_period||'')===periodKey){ addAuditEvent('duplicate_blocked',{source_module:'expenses', target_name:exp.title, note:'Bu gider için bu ay ikinci aday engellendi.', summary:`Çift kayıt engeli · gider adayı · ${exp.title}`}); notify('Bu gider için bu ay zaten aday oluşturulmuş.'); return; }
+  const accr = getExpenseAccruals(exp.id).find(x=>String(x.period_key)===String(periodKey));
   const bridgeId = uid('bridge');
   const payload={
     id: bridgeId,
     txn_id: bridgeId,
     expense_id: exp.id,
     expense_title: exp.title,
+    expense_accrual_id: accr?.id || null,
     cari_id: null,
     cari_name: exp.vendor_name || exp.title,
     source_type: 'gider_tahakkuk',
     suggested_movement_type: 'gider',
     candidate_date: new Date().toISOString().slice(0,10),
-    suggested_amount: num(exp.amount || 0),
+    suggested_amount: num(accr?.amount || exp.amount || 0),
     content_summary: `${exp.title} gider tahakkuk adayı`,
-    raw_content: `${periodKey} dönemi için gider tahakkuk adayı oluşturuldu. Kategori: ${exp.category || '-'} · Hedef: ${exp.vendor_name || '-'} · Tutar: ${exp.amount || 0}`,
-    note: exp.note || 'Gider tahakkuk ekranından üretildi',
+    raw_content: `${periodKey} dönemi için gider tahakkuk adayı oluşturuldu. Kategori: ${exp.category || '-'} · Hedef: ${exp.vendor_name || '-'} · Tutar: ${accr?.amount || exp.amount || 0}`,
+    note: exp.note || 'Gider ekranından üretildi',
     confidence_score: exp.approval_policy === 'ready' ? 92 : 78,
     status: 'onay_bekliyor',
     created_at: new Date().toISOString()
@@ -3692,12 +3936,14 @@ function queueExpenseForCurrentMonth(){
   queueExpenseCandidate(state.selectedExpenseId);
 }
 function renderExpenses(){
+  ensureExpenseAccruals();
   const rows=filteredExpenses();
   const total=state.expenses.length;
   const fixed=state.expenses.filter(x=>x.expense_type==='fixed').length;
   const variable=state.expenses.filter(x=>x.expense_type==='variable').length;
   const approval=state.expenses.filter(x=>expenseStatusInfo(x).code==='approval').length;
   const queued=state.expenses.filter(x=>expenseStatusInfo(x).code==='queued').length;
+  const totals=getAllExpenseMetrics();
   const wrap=document.getElementById('expenseWrap'); if(!wrap) return;
   wrap.innerHTML = `<div class="btn-row" style="margin-bottom:14px;">
       <button class="btn btn-blue" onclick="state.selectedExpenseId=null; openExpenseModal()">Yeni Gider Tanımı</button>
@@ -3709,6 +3955,13 @@ function renderExpenses(){
       <div class="metric-mini"><div class="k">Değişken</div><div class="v">${variable}</div></div>
       <div class="metric-mini"><div class="k">Bu Ay Onaya Düşecek</div><div class="v">${approval}</div></div>
     </div>
+    <div class="expense-mini-grid">
+      <div class="metric-mini"><div class="k">Bu Ay Tahakkuk</div><div class="v">${money(totals.monthAccrued)}</div></div>
+      <div class="metric-mini"><div class="k">Bu Yıl Tahakkuk</div><div class="v">${money(totals.yearAccrued)}</div></div>
+      <div class="metric-mini"><div class="k">Bu Yıl Ödenen</div><div class="v">${money(totals.yearPaid)}</div></div>
+      <div class="metric-mini"><div class="k">Toplam Kalan</div><div class="v">${money(totals.remaining)}</div></div>
+      <div class="metric-mini"><div class="k">Bu Ay Aday</div><div class="v">${queued}</div></div>
+    </div>
     <div class="grid-4" style="margin-bottom:14px;">
       <button class="chip ${state.expenseFilter==='all'?'active':''}" onclick="state.expenseFilter='all'; renderExpenses()">Tümü</button>
       <button class="chip ${state.expenseFilter==='fixed'?'active':''}" onclick="state.expenseFilter='fixed'; renderExpenses()">Sabit</button>
@@ -3717,8 +3970,9 @@ function renderExpenses(){
       <button class="chip ${state.expenseFilter==='queued'?'active':''}" onclick="state.expenseFilter='queued'; renderExpenses()">Bu Ay Aday Oluştu</button>
       <button class="chip ${state.expenseFilter==='passive'?'active':''}" onclick="state.expenseFilter='passive'; renderExpenses()">Pasif</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Standart: gider kartı tek kaynak olur. Sabit ve değişken gider tanımlanır. Bu ekranda doğrudan muhasebe kaydı oluşmaz; aday kayıt üretimi ve onay akışı tetiklenir. Bu ay aday oluşmuş gider sayısı: <strong>${queued}</strong></div>` +
-    (rows.length ? `<table><thead><tr><th>No</th><th>Gider</th><th>Tür</th><th>Politika</th><th>Dönem</th><th>Durum</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>`<tr class="click-row" data-expense-id="${escapeHtml(r.id)}"><td>${escapeHtml(r.operation_no || txnId(r,'EXP'))}</td><td>${escapeHtml(r.title)}<div class="muted-note">${escapeHtml(r.category || '-')} · ${escapeHtml(r.vendor_name || '-')}</div></td><td>${r.expense_type==='fixed' ? '<span class="tag blue">Sabit</span>' : '<span class="tag amber">Değişken</span>'}</td><td>${r.approval_policy==='ready' ? '<span class="tag green">Hazır</span>' : '<span class="tag red">Onay</span>'}</td><td>${shortDate(r.start_date)}${r.end_date ? ` → ${shortDate(r.end_date)}` : ' → Açık'}</td><td>${expenseStatusTag(r)}<div class="muted-note">Son aday: ${escapeHtml(r.last_candidate_period || '-')}</div></td><td class="text-right">${money(r.amount || 0)}</td><td><button class="btn btn-soft" onclick="event.stopPropagation(); queueExpenseCandidate('${escapeHtml(r.id)}')">Bu Ay Aday Oluştur</button></td></tr>`).join('')}</tbody></table>` : `<div class="empty">Bu filtrede gider kartı yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">Gider kartı kaydedildiğinde sözleşme başlangıç/bitiş tarihine göre aylık tahakkuk planı otomatik oluşur. Ödemeler ayrıca işlenir ve kalan tutar dinamik hesaplanır.</div>` +
+    (rows.length ? `<table><thead><tr><th>No</th><th>Gider</th><th>Tür</th><th>Sözleşme</th><th class="text-right">Bu Ay</th><th class="text-right">Bu Yıl</th><th class="text-right">Ödenen</th><th class="text-right">Kalan</th><th>Pay</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>{ const t=getExpenseTotals(r); return `<tr class="click-row row-clickable" data-expense-id="${escapeHtml(r.id)}"><td>${escapeHtml(r.operation_no || txnId(r,'EXP'))}</td><td>${escapeHtml(r.title)}<div class="muted-note">${escapeHtml(r.category || '-')} · ${escapeHtml(r.vendor_name || '-')}</div></td><td>${r.expense_type==='fixed' ? '<span class="tag blue">Sabit</span>' : '<span class="tag amber">Değişken</span>'}<div class="muted-note">${expenseStatusTag(r)}</div></td><td>${shortDate(r.start_date)}${r.end_date ? ` → ${shortDate(r.end_date)}` : ' → Açık'}<div class="muted-note">Vade günü: ${escapeHtml(String(r.due_day||1))}</div></td><td class="text-right">${money(t.monthlyAccrued)}</td><td class="text-right">${money(t.yearlyAccrued)}</td><td class="text-right">${money(t.thisYearPaid)}</td><td class="text-right">${money(t.remaining)}</td><td>%${expenseShareRatio(r).toFixed(1)}</td><td><div class="btn-row"><button class="btn btn-soft" onclick="event.stopPropagation(); queueExpenseCandidate('${escapeHtml(r.id)}')">Bu Ay Tahakkuk</button><button class="btn btn-soft" onclick="event.stopPropagation(); openExpensePaymentModal('${escapeHtml(r.id)}')">Ödeme</button></div></td></tr>`; }).join('')}</tbody></table>` : `<div class="empty">Bu filtrede gider kartı yok.</div>`)+
+    ((state.expenseAccruals||[]).length ? `<div class="section" style="box-shadow:none;margin-top:14px;margin-bottom:0;padding:0;"><h3 class="subsection-title" style="padding:0 0 12px 0;">Son Gider Tahakkukları</h3><table><thead><tr><th>Dönem</th><th>Gider</th><th>Vade</th><th class="text-right">Tahakkuk</th><th class="text-right">Ödenen</th><th class="text-right">Kalan</th></tr></thead><tbody>${[...state.expenseAccruals].sort((a,b)=>String(b.period_key||'').localeCompare(String(a.period_key||''))).slice(0,18).map(a=>{ const paid=(state.expensePayments||[]).filter(p=>String(p.accrual_id||'')===String(a.id)).reduce((x,y)=>x+num(y.amount),0); return `<tr><td>${escapeHtml(a.period_key||'-')}</td><td>${escapeHtml(a.expense_title||'-')}</td><td>${shortDate(a.due_date)}</td><td class="text-right">${money(a.amount||0)}</td><td class="text-right">${money(paid)}</td><td class="text-right">${money(Math.max(0,num(a.amount)-paid))}</td></tr>`; }).join('')}</tbody></table></div>` : '');
   wrap.querySelectorAll('[data-expense-id]').forEach(el=>el.addEventListener('click',()=>openExpenseModal(el.dataset.expenseId)));
 }
 
@@ -3862,14 +4116,17 @@ async function savePaymentPromise(){
   renderReports();
 }
 
-function openManualFinanceModal(mode='entry'){
+function openManualFinanceModal(mode='entry', opId='', presetAccountKey=''){
+  window.__editingManualOpId = opId || '';
+  const existing = opId ? getLocalAccountOps().find(x=>String(x.id)===String(opId)) : null;
+
   document.getElementById('manualFinanceMode').value=mode;
-  document.getElementById('manualFinanceDate').value=new Date().toISOString().slice(0,10);
-  document.getElementById('manualFinanceAmount').value='';
-  document.getElementById('manualFinanceDescription').value='';
-  document.getElementById('manualFinanceNote').value='';
-  document.getElementById('manualFinanceCreateName').value='';
-  document.getElementById('manualFinanceCreateType').value='kasa';
+  document.getElementById('manualFinanceDate').value=existing?.entry_date || new Date().toISOString().slice(0,10);
+  document.getElementById('manualFinanceAmount').value=existing?.amount || existing?.opening_balance || '';
+  document.getElementById('manualFinanceDescription').value=existing?.description || '';
+  document.getElementById('manualFinanceNote').value=existing?.note || '';
+  document.getElementById('manualFinanceCreateName').value=existing?.account_name || '';
+  document.getElementById('manualFinanceCreateType').value=existing?.account_type || 'kasa';
   fillAccountSelect('manualFinanceAccount');
   fillAccountSelect('manualFinanceTarget');
   const createWrap=document.getElementById('manualFinanceCreateFields');
@@ -3883,12 +4140,13 @@ function openManualFinanceModal(mode='entry'){
   entryWrap.style.display = mode==='create' ? 'none' : 'block';
   targetWrap.style.display = mode==='transfer' ? 'block' : 'none';
   directionWrap.style.display = mode==='entry' ? 'block' : 'none';
-  if(mode==='create'){ title.textContent='Yeni Hesap Tanımı'; amountLabel.textContent='Açılış Bakiye'; info.innerHTML='Yeni hesap kartı oluştur. İstersen açılış bakiyesini de burada ver.'; }
-  if(mode==='entry'){ title.textContent='Hesaba Manuel İşlem'; amountLabel.textContent='Tutar'; info.innerHTML='Seçtiğin hesaba giriş veya çıkış hareketi işle. Bu kayıt yerel hareket defterine yazılır.'; }
-  if(mode==='transfer'){ title.textContent='Hesaplar Arası Transfer'; amountLabel.textContent='Transfer Tutarı'; info.innerHTML='Kaynak hesaptan düş, hedef hesaba ekle. Tek kayıtla iki hesap birlikte güncellenir.'; }
+  if(existing){ if(document.getElementById('manualFinanceAccount').querySelector(`option[value="${existing.account_key || existing.source_account_key || presetAccountKey}"]`)) document.getElementById('manualFinanceAccount').value = existing.account_key || existing.source_account_key || presetAccountKey; if(document.getElementById('manualFinanceTarget').querySelector(`option[value="${existing.target_account_key || ''}"]`)) document.getElementById('manualFinanceTarget').value = existing.target_account_key || ''; if(existing.direction) document.getElementById('manualFinanceDirection').value = existing.direction; } else if(presetAccountKey){ if(document.getElementById('manualFinanceAccount').querySelector(`option[value="${presetAccountKey}"]`)) document.getElementById('manualFinanceAccount').value = presetAccountKey; }
+  if(mode==='create'){ title.textContent=existing ? 'Hesap Tanımını Düzenle' : 'Yeni Hesap Tanımı'; amountLabel.textContent='Açılış Bakiye'; info.innerHTML='Yeni hesap kartı oluştur. İstersen açılış bakiyesini de burada ver.'; }
+  if(mode==='entry'){ title.textContent=existing ? 'Hesap İşlemini Düzenle' : 'Hesaba Manuel İşlem'; amountLabel.textContent='Tutar'; info.innerHTML='Seçtiğin hesaba giriş veya çıkış hareketi işle. Bu kayıt yerel hareket defterine yazılır.'; }
+  if(mode==='transfer'){ title.textContent=existing ? 'Transferi Düzenle' : 'Hesaplar Arası Transfer'; amountLabel.textContent='Transfer Tutarı'; info.innerHTML='Kaynak hesaptan düş, hedef hesaba ekle. Tek kayıtla iki hesap birlikte güncellenir.'; }
   document.getElementById('manualFinanceModal').style.display='flex';
 }
-function closeManualFinanceModal(){ document.getElementById('manualFinanceModal').style.display='none'; }
+function closeManualFinanceModal(){ document.getElementById('manualFinanceModal').style.display='none'; window.__editingManualOpId=''; }
 async function saveManualFinanceAction(){
   const mode=document.getElementById('manualFinanceMode').value || 'entry';
   const ops=getLocalAccountOps();
@@ -3901,14 +4159,14 @@ async function saveManualFinanceAction(){
     const accountName=(document.getElementById('manualFinanceCreateName').value||'').trim();
     const accountType=document.getElementById('manualFinanceCreateType').value || 'diger';
     if(!accountName){ notify('Hesap adı zorunlu.'); return; }
-    payload=stampRecordIds({ type:'account_create', account_key:normalizeAccountKey(accountName), account_name:accountName, account_type:accountType, opening_balance:amount, entry_date:entryDate, description:description || 'Yeni hesap tanımı', note, created_at:new Date().toISOString() }, 'LAC');
+    payload=stampRecordIds({ id: existing?.id || undefined, txn_id: existing?.txn_id || undefined, operation_no: existing?.operation_no || undefined, type:'account_create', account_key:normalizeAccountKey(accountName), account_name:accountName, account_type:accountType, opening_balance:amount, entry_date:entryDate, description:description || 'Yeni hesap tanımı', note, created_at:new Date().toISOString() }, 'LAC');
   } else if(mode==='entry'){
     const accountKey=document.getElementById('manualFinanceAccount').value;
     const acc=getAccountByKey(accountKey);
     const direction=document.getElementById('manualFinanceDirection').value || 'giris';
     if(!accountKey || !acc){ notify('Hesap seç.'); return; }
     if(!amount){ notify('Tutar zorunlu.'); return; }
-    payload=stampRecordIds({ type:'account_entry', account_key:acc.account_key, account_name:acc.account_name, account_type:acc.account_type, direction, amount, entry_date:entryDate, description:description || (direction==='cikis' ? 'Hesaptan çıkış' : 'Hesaba giriş'), note, created_at:new Date().toISOString() }, 'LAC');
+    payload=stampRecordIds({ id: existing?.id || undefined, txn_id: existing?.txn_id || undefined, operation_no: existing?.operation_no || undefined, type:'account_entry', account_key:acc.account_key, account_name:acc.account_name, account_type:acc.account_type, direction, amount, entry_date:entryDate, description:description || (direction==='cikis' ? 'Hesaptan çıkış' : 'Hesaba giriş'), note, created_at:new Date().toISOString() }, 'LAC');
   } else {
     const sourceKey=document.getElementById('manualFinanceAccount').value;
     const targetKey=document.getElementById('manualFinanceTarget').value;
@@ -3917,11 +4175,11 @@ async function saveManualFinanceAction(){
     if(!sourceKey || !targetKey || !source || !target){ notify('Kaynak ve hedef hesap zorunlu.'); return; }
     if(sourceKey===targetKey){ notify('Aynı hesaba transfer olmaz.'); return; }
     if(!amount){ notify('Transfer tutarı zorunlu.'); return; }
-    payload=stampRecordIds({ type:'account_transfer', source_account_key:source.account_key, source_account_name:source.account_name, target_account_key:target.account_key, target_account_name:target.account_name, amount, entry_date:entryDate, description:description || 'Hesaplar arası transfer', note, created_at:new Date().toISOString() }, 'LAC');
+    payload=stampRecordIds({ id: existing?.id || undefined, txn_id: existing?.txn_id || undefined, operation_no: existing?.operation_no || undefined, type:'account_transfer', source_account_key:source.account_key, source_account_name:source.account_name, target_account_key:target.account_key, target_account_name:target.account_name, amount, entry_date:entryDate, description:description || 'Hesaplar arası transfer', note, created_at:new Date().toISOString() }, 'LAC');
   }
-  ops.unshift(payload);
+  if(existing){ const idx=ops.findIndex(x=>String(x.id)===String(existing.id)); if(idx>=0) ops[idx]=payload; else ops.unshift(payload); } else { ops.unshift(payload); }
   setLocalAccountOps(ops);
-  addAuditEvent('manual_finance_saved',{source_module:'manual_finance', target_name:payload.account_name || `${payload.source_account_name || '-'} → ${payload.target_account_name || '-'}`, amount:amount, note:payload.note || payload.description, summary:`Manuel hesap işlemi kaydedildi · ${payload.type}`});
+  addAuditEvent('manual_finance_saved',{source_module:'manual_finance', target_name:payload.account_name || `${payload.source_account_name || '-'} → ${payload.target_account_name || '-'}`, amount:amount, note:payload.note || payload.description, summary:`Manuel hesap işlemi ${existing ? 'güncellendi' : 'kaydedildi'} · ${payload.type}`});
   closeManualFinanceModal();
   await loadAccounts();
   renderAccounts();
