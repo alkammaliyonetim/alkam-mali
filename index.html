@@ -49,10 +49,10 @@
     <div style="text-align:center;margin-bottom:12px;"><img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" style="width:110px;display:block;margin:0 auto 10px;"></div>
     <div class="login-brand">ALKAM MALİ MÜŞAVİRLİK</div>
     <h2 class="login-title">Programa Giriş</h2>
-    <form id="loginForm" onsubmit="return submitLogin(event)">
+    <form onsubmit="return submitLogin(event)">
       <div class="pass-wrap">
-        <input id="loginPassword" type="password" placeholder="Şifrenizi girin" required autocomplete="current-password" />
-        <button id="togglePasswordBtn" type="button" class="toggle-password" aria-label="Şifreyi göster/gizle" onclick="togglePassword(event)">👁</button>
+        <input id="loginPassword" type="password" placeholder="Şifrenizi girin" required />
+        <button type="button" class="toggle-password" onclick="togglePassword()">👁</button>
       </div>
       <button class="login-btn" type="submit">Giriş Yap</button>
       <div id="loginError" class="login-error"></div>
@@ -217,19 +217,25 @@
       <div>
         <div class="section" style="box-shadow:none;margin-bottom:12px;">
           <h3 class="section-title" style="font-size:20px;">Yeni Dönem / Güncelleme</h3><div class="rule-box" style="margin-bottom:12px;">Sistem mantığı: Açılış tarihiyle girilen ilk ücret sadece o yılın sonuna kadar geçerlidir. Sonraki yıllar için yeni ücret dönemi açılır. Zam geç kesinleşirse yeni dönem başlangıcı ilgili yılın <strong>01.01</strong> tarihi verilerek geriye dönük eksik aylar otomatik tamamlanır; mükerrer ay oluşmaz.</div>
-          <div class="form-grid">
+          <div class="form-grid-3">
+            <div class="field"><label>Yıl</label><select id="feeYearSelect" class="select-input"></select></div>
             <div class="field"><label>Geçerlilik Başlangıcı</label><input id="feeValidFrom" type="date" /></div>
             <div class="field"><label>Aylık Ücret</label><input id="feeAmountInput" type="number" min="0" step="0.01" /></div>
           </div>
           <div class="form-grid" style="margin-top:12px;">
             <div class="field"><label>Önceki Açık Dönemi Kapat</label><select id="feeAutoClosePrev"><option value="true">Evet</option><option value="false">Hayır</option></select></div>
-            <div class="field"><label>Açıklama</label><input id="feeNoteInput" placeholder="Zam / indirim / özel not" /></div>
+            <div class="field"><label>Açıklama</label><input id="feeNoteInput" placeholder="Örn: 2026 yıllık ücret / zam farkı / revize" /></div>
           </div>
           <div class="btn-row" style="margin-top:16px;">
-            <button class="btn btn-blue" onclick="saveFeePeriod()">Yeni Ücret Dönemi Ekle</button>
+            <button class="btn btn-blue" onclick="saveAnnualFeePeriod()">Seçili Yılı Kaydet</button>
+            <button class="btn btn-soft" onclick="saveFeePeriod()">Manuel Dönem Ekle</button>
             <button class="btn btn-soft" onclick="closeActiveFeePeriodToday()">Açık Dönemi Bugün Kapat</button>
             <button class="btn btn-soft" onclick="runControlledAccrualForSelectedCari()">Kontrollü Tahakkuk Tara</button>
           </div>
+        </div>
+        <div class="section" style="box-shadow:none;margin-bottom:12px;">
+          <h3 class="section-title" style="font-size:20px;">Geçmiş Ekstreden Yıllık Ücret Önerileri</h3>
+          <div id="feeYearSuggestWrap" class="empty">Yükleniyor...</div>
         </div>
         <div class="section" style="box-shadow:none;margin-bottom:0;">
           <h3 class="section-title" style="font-size:20px;">Kontrol Sonuçları</h3>
@@ -1045,8 +1051,38 @@ function renderTag(t){
 function buildVersion(){const d=new Date(document.lastModified); const p=n=>String(n).padStart(2,"0"); return `V${p(d.getHours())}${p(d.getMinutes())}${p(d.getDate())}${p(d.getMonth()+1)}${String(d.getFullYear()).slice(-2)}-${p(d.getHours())}${p(d.getMinutes())}`}
 function setConnState(t){document.getElementById("connState").textContent=t}
 function notify(msg){const t=document.getElementById("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>t.style.display="none",2600)}
-function togglePassword(){const i=document.getElementById("loginPassword"); i.type=i.type==="password"?"text":"password"}
-function submitLogin(e){e.preventDefault(); const v=(document.getElementById("loginPassword").value||"").trim(); const err=document.getElementById("loginError"); err.textContent=""; if(v!==LOCAL_PASSWORD){err.textContent="Şifre hatalı."; return false} localStorage.setItem(SESSION_KEY,"ok"); openApp(); refreshAll(); return false}
+function togglePassword(event){
+  if(event) event.preventDefault();
+  const i=document.getElementById("loginPassword");
+  if(!i) return false;
+  const hidden=i.type==="password";
+  i.type=hidden?"text":"password";
+  const btn=document.querySelector(".toggle-password");
+  if(btn) btn.textContent=hidden?"🙈":"👁";
+  i.focus();
+  return false;
+}
+function submitLogin(e){
+  if(e) e.preventDefault();
+  const input=document.getElementById("loginPassword");
+  const err=document.getElementById("loginError");
+  const v=(input?.value||"").trim();
+  if(err) err.textContent="";
+  if(!v){
+    if(err) err.textContent="Şifre gir.";
+    if(input) input.focus();
+    return false;
+  }
+  if(v!==LOCAL_PASSWORD){
+    if(err) err.textContent="Şifre hatalı.";
+    if(input){ input.focus(); input.select(); }
+    return false;
+  }
+  localStorage.setItem(SESSION_KEY,"ok");
+  openApp();
+  refreshAll();
+  return false;
+}
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
 function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
 function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, çek, senet, Moka ve transfer yönetimi"],giderler:["Giderler","Sabit ve değişken gider, tahakkuk ve ödeme kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
@@ -2616,6 +2652,89 @@ function feeControlIssuesForCari(id){
   const duplicate = [...actualKeys.entries()].filter(([_,count])=>count>1).length;
   return { missingCount: missing.length, duplicateCount: duplicate, expectedCount: expected.length, actualCount: actual.length };
 }
+function feeYearStart(cariId, year){
+  const setup=getFeeSetup(cariId);
+  const open=String(setup?.opening_date||'').slice(0,10);
+  if(open && open.slice(0,4)===String(year)) return open;
+  return `${year}-01-01`;
+}
+function feeYearEnd(year){ return `${year}-12-31`; }
+function yearlyFeeSuggestionsFromExtre(cariId){
+  const rows = [...(state.hareketler||[])].filter(r=>String(r.cari_id||state.selectedCariId)===String(cariId));
+  const relevant = rows.filter(r=>{
+    const txt = String(r.description||'').toLocaleUpperCase('tr-TR');
+    return txt.includes('MUHASEBE ÜCRETİ') || txt.includes('DEFTER');
+  });
+  const byYear = {};
+  relevant.forEach(r=>{
+    const dt = String(r.line_date||r.entry_date||'').slice(0,10);
+    const year = dt.slice(0,4);
+    if(!year) return;
+    const amt = num(r.amount||r.debit||r.net_amount||0);
+    if(amt<=0) return;
+    if(!byYear[year]) byYear[year] = [];
+    byYear[year].push(amt);
+  });
+  return Object.entries(byYear).map(([year, amounts])=>{
+    const counts={};
+    amounts.forEach(a=>{ const k=a.toFixed(2); counts[k]=(counts[k]||0)+1; });
+    const best = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+    return { year, suggested_amount: Number(best?.[0]||0), count: amounts.length };
+  }).sort((a,b)=>Number(b.year)-Number(a.year));
+}
+function renderFeeYearSuggestWrap(){
+  const target=document.getElementById("feeYearSuggestWrap");
+  if(!target) return;
+  const rows=yearlyFeeSuggestionsFromExtre(state.selectedCariId);
+  if(!rows.length){
+    target.innerHTML = `<div class="empty">Yüklü cari ekstresinde geçmiş yıllara ait net ücret önerisi bulunamadı. Yine de yıl seçip manuel kaydedebilirsin.</div>`;
+    return;
+  }
+  target.innerHTML = `<table><thead><tr><th>Yıl</th><th class="text-right">Önerilen Aylık Ücret</th><th>Kanıt Adedi</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.year)}</td><td class="text-right">${money(r.suggested_amount||0)}</td><td>${r.count}</td><td><button class="btn btn-soft" onclick="applySuggestedAnnualFee('${escapeHtml(r.year)}', ${num(r.suggested_amount)})">Bu Yılı Doldur</button></td></tr>`).join("")}</tbody></table>`;
+}
+function fillFeeYearSelect(){
+  const el=document.getElementById("feeYearSelect");
+  if(!el) return;
+  const current=new Date().getFullYear();
+  const years=[];
+  for(let y=current-8; y<=current+3; y++) years.push(y);
+  el.innerHTML = years.map(y=>`<option value="${y}">${y}</option>`).join("");
+}
+function syncFeeDateFromYear(){
+  const el=document.getElementById("feeYearSelect");
+  if(!el || !state.selectedCariId) return;
+  document.getElementById("feeValidFrom").value = feeYearStart(state.selectedCariId, el.value);
+}
+function applySuggestedAnnualFee(year, amount){
+  const y=document.getElementById("feeYearSelect");
+  if(y) y.value=String(year);
+  document.getElementById("feeAmountInput").value = String(amount||'');
+  syncFeeDateFromYear();
+  document.getElementById("feeNoteInput").value = `${year} yıllık ücret dönemi`;
+}
+async function saveAnnualFeePeriod(){
+  if(!state.selectedCariId){ notify("Cari seçili değil."); return; }
+  const year = document.getElementById("feeYearSelect").value;
+  const feeAmount = num(document.getElementById("feeAmountInput").value);
+  const note = document.getElementById("feeNoteInput").value.trim() || `${year} yıllık ücret dönemi`;
+  if(!year || feeAmount<=0){ notify("Yıl ve ücret zorunlu."); return; }
+  const validFrom = feeYearStart(state.selectedCariId, year);
+  const validTo = feeYearEnd(year);
+  const existing = getFeeTimeline(state.selectedCariId).find(r=>String(r.valid_from||'').slice(0,10)===validFrom);
+  if(existing){
+    const upd = await supabaseClient.from("cari_fee_history").update({ fee_amount:feeAmount, valid_to:validTo, note, updated_at:new Date().toISOString() }).eq("id", existing.id);
+    if(upd.error){ notify("Yıllık ücret güncellenemedi: " + upd.error.message); return; }
+  }else{
+    const ins = await supabaseClient.from("cari_fee_history").insert([{ cari_id:state.selectedCariId, fee_amount:feeAmount, valid_from:validFrom, valid_to:validTo, note, created_at:new Date().toISOString(), updated_at:new Date().toISOString() }]);
+    if(ins.error){ notify("Yıllık ücret kaydedilemedi: " + ins.error.message); return; }
+  }
+  await loadFeeData();
+  ensureFeeAccrualsForAllCariler();
+  renderSelectedCariDetail();
+  renderReports();
+  renderFeeModal();
+  notify("Yıllık ücret dönemi kaydedildi.");
+}
 function ensureFeeAccrualsForAllCariler(){
   const allCaris = [...new Set([...(state.cariler||[]).map(x=>x.cari_id), ...(state.cariFeeSetups||[]).map(x=>x.cari_id), ...(state.feeTimeline||[]).map(x=>x.cari_id)].filter(Boolean))];
   if(!allCaris.length) return;
@@ -3080,17 +3199,21 @@ function renderFeeModal(){
   const periods = [...getFeeTimeline(state.selectedCariId)].sort((a,b)=>String(b.valid_from||"").localeCompare(String(a.valid_from||"")));
   const controls = [...getFeeControl(state.selectedCariId)].sort((a,b)=>String(b.period_start||"").localeCompare(String(a.period_start||"")));
   document.getElementById("feeTimelineWrap").innerHTML = periods.length ? `<table><thead><tr><th>Başlangıç</th><th>Bitiş</th><th class="text-right">Ücret</th><th>Durum</th><th>Not</th></tr></thead><tbody>${periods.map(r=>`<tr><td>${shortDate(r.valid_from)}</td><td>${r.valid_to ? shortDate(r.valid_to) : '<span class="tag green">Açık</span>'}</td><td class="text-right">${money(r.fee_amount || r.current_fee || r.amount || 0)}</td><td>${!r.valid_to ? '<span class="tag blue">Aktif Dönem</span>' : '<span class="tag gray">Kapalı</span>'}</td><td>${escapeHtml(r.note || r.change_reason || '-')}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Bu caride ücret geçmişi yok.</div>`;
-  document.getElementById("feeControlWrap").innerHTML = controls.length ? `<table><thead><tr><th>Dönem</th><th>Durum</th><th class="text-right">Beklenen</th><th class="text-right">Bulunan</th><th>Açıklama</th></tr></thead><tbody>${controls.map(r=>`<tr><td>${shortDate(r.period_start)}${r.period_end ? ' - ' + shortDate(r.period_end) : ''}</td><td>${renderTag(r.control_status || r.issue_type || (num(r.diff_amount) !== 0 ? 'farkli_tutar' : 'tamam'))}</td><td class="text-right">${money(r.expected_amount || r.expected_fee_amount || r.current_fee || 0)}</td><td class="text-right">${money(r.existing_amount || r.actual_amount || r.posted_amount || 0)}</td><td>${escapeHtml(r.note || r.issue_reason || r.status_note || '-')}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Bu cari için kontrol sorunu görünmüyor.</div>`;
+  document.getElementById("feeControlWrap").innerHTML = controls.length ? `<table><thead><tr><th>Dönem</th><th>Durum</th><th class="text-right">Beklenen</th><th class="text-right">Bulunan</th><th>Açıklama</th></tr></thead><tbody>${controls.map(r=>`<tr><td>${shortDate(r.period_start)}${r.period_end ? ' - ' + shortDate(r.period_end) : ''}</td><td>${renderTag(r.control_status || r.issue_type || (num(r.diff_amount) !== 0 ? 'farkli_tutar' : 'tamam'))}</td><td class="text-right">${money(r.expected_amount || r.expected_fee_amount || r.current_fee || 0)}</td><td class="text-right">${money(r.existing_amount || r.actual_amount || r.posted_amount || 0)}</td><td>${escapeHtml(r.note || r.issue_reason || r.status_note || '-')}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Bu cari için kontrol sorunu görünmüyor.</div>`; renderFeeYearSuggestWrap();
 }
 function openFeeModal(){
   if(!state.selectedCariId){ notify("Cari seçili değil."); return; }
   const openPeriod = getOpenFeePeriod(state.selectedCariId);
   const setup = getFeeSetup(state.selectedCariId);
-  const openPeriod = getOpenFeePeriod(state.selectedCariId);
-  document.getElementById("feeValidFrom").value = openPeriod?.valid_from || setup?.opening_date || isoDate(new Date()) || "";
+  fillFeeYearSelect();
+  const startValue = openPeriod?.valid_from || setup?.opening_date || isoDate(new Date()) || "";
+  document.getElementById("feeValidFrom").value = startValue;
+  const y = String(startValue||"").slice(0,4) || String(new Date().getFullYear());
+  document.getElementById("feeYearSelect").value = y;
   document.getElementById("feeAmountInput").value = openPeriod ? num(openPeriod.fee_amount || openPeriod.current_fee || openPeriod.amount) : "";
   document.getElementById("feeNoteInput").value = "";
   document.getElementById("feeAutoClosePrev").value = "true";
+  const yearEl=document.getElementById("feeYearSelect"); if(yearEl){ yearEl.onchange=syncFeeDateFromYear; }
   renderFeeModal();
   document.getElementById("feeModal").style.display = "flex";
 }
@@ -4729,18 +4852,14 @@ document.getElementById("cariSearch").addEventListener("input",renderCariList);
 document.getElementById("taxpayerFilter").addEventListener("change",renderCariList);
 document.getElementById("sortBy").addEventListener("change",renderCariList);
 document.getElementById("versionBadge").textContent=buildVersion();
-const __loginInput=document.getElementById('loginPassword');
+const __loginInput=document.getElementById("loginPassword");
 if(__loginInput){
-  __loginInput.addEventListener('keydown', function(e){
-    if(e.key==='Enter'){
+  __loginInput.addEventListener("keydown", function(e){
+    if(e.key==="Enter"){
       e.preventDefault();
       submitLogin(e);
     }
   });
-}
-const __loginForm=document.getElementById('loginForm');
-if(__loginForm){
-  __loginForm.addEventListener('submit', submitLogin);
 }
 if(localStorage.getItem(SESSION_KEY)==="ok"){openApp(); refreshAll()}else{setConnState("Giriş bekleniyor")}
 </script>
