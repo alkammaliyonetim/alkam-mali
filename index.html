@@ -784,7 +784,7 @@ function stampRecordIds(obj,prefix='TRX'){ if(!obj) return obj; if(!obj.id) obj.
 function normalizeNumberedList(list,prefix='TRX'){ let changed=false; const rows=(list||[]).map(x=>{ const before=JSON.stringify([x?.id,x?.txn_id,x?.operation_no]); const row=stampRecordIds({...x},prefix); const after=JSON.stringify([row?.id,row?.txn_id,row?.operation_no]); if(before!==after) changed=true; return row; }); return {rows, changed}; }
 function persistDeleteArchive(){ writeLocalJson(LOCAL_DELETE_ARCHIVE_KEY, state.deleteArchive||[]); }
 function archiveDeletion(module_name, payload, reason='Silindi'){ state.deleteArchive = state.deleteArchive || []; const archived=stampRecordIds({ archive_id: uid('delarc'), source_module: module_name, reason, snapshot: payload, created_at:new Date().toISOString(), event_ref: decisionRef('DEL') }, 'DEL'); state.deleteArchive.unshift(archived); persistDeleteArchive(); addAuditEvent('delete_archive',{event_ref:archived.event_ref, source_module:module_name, target_name: payload?.document_title || payload?.title || payload?.cari_name || payload?.description || '-', note: reason, summary:`Silme arşivi · ${module_name} · ${reason}`}); }
-function openDeleteAuthModal(label='Silme işlemi', callback=null){ window.__deleteAuthCallback = callback; document.getElementById('deleteAuthInfo').innerHTML = `<strong>${escapeHtml(label)}</strong><br>Bu işlem silme parolasına bağlıdır. Parola: giriş şifresinin tersi.`; document.getElementById('deleteAuthPassword').value=''; document.getElementById('deleteAuthReason').value=''; document.getElementById('deleteAuthModal').style.display='flex'; }
+function openDeleteAuthModal(label='Silme işlemi', callback=null){ window.__deleteAuthCallback = callback; document.getElementById('deleteAuthInfo').innerHTML = `<strong>${escapeHtml(label)}</strong><br>Bu işlem silme parolasına bağlıdır.`; document.getElementById('deleteAuthPassword').value=''; document.getElementById('deleteAuthReason').value=''; document.getElementById('deleteAuthModal').style.display='flex'; }
 function closeDeleteAuthModal(){ document.getElementById('deleteAuthModal').style.display='none'; window.__deleteAuthCallback = null; }
 function confirmDeleteAuth(){ const pwd=(document.getElementById('deleteAuthPassword').value||'').trim(); const reason=(document.getElementById('deleteAuthReason').value||'').trim() || 'Operatör silme işlemi'; if(pwd!==DELETE_PASSWORD){ notify('Silme parolası hatalı.'); return; } const cb=window.__deleteAuthCallback; closeDeleteAuthModal(); if(typeof cb==='function') cb(reason); }
 function logSystemError(module_name,msg,extra={}){ addAuditEvent('system_error',{source_module:module_name, note:msg, summary:`Hata · ${module_name} · ${msg}`,...extra}); }
@@ -801,8 +801,59 @@ function firstNonEmptyText(){
   }
   return '';
 }
+function parseImportedAmountValue(value){
+  if(value === null || value === undefined) return null;
+  if(typeof value === 'number' && Number.isFinite(value)) return value;
+  let s = String(value).trim();
+  if(!s) return null;
+  s = s.replace(/\s+/g,'');
+  if(/^-?\d{1,3}(\.\d{3})*,\d+$/.test(s)) s = s.replace(/\./g,'').replace(',', '.');
+  else if(/^-?\d{1,3}(,\d{3})*\.\d+$/.test(s)) s = s.replace(/,/g,'');
+  else if(/^-?\d+,\d+$/.test(s)) s = s.replace(',', '.');
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+function extractAmountFromDescription(desc){
+  const s = String(desc || '');
+  const patterns = [
+    /([-+]?\d{1,3}(?:\.\d{3})*,\d{2})/,
+    /([-+]?\d{1,3}(?:,\d{3})*\.\d{2})/,
+    /([-+]?\d+[,\.]\d{2})/,
+    /([-+]?\d+)/
+  ];
+  for(const p of patterns){
+    const m = s.match(p);
+    if(m){
+      const v = parseImportedAmountValue(m[1]);
+      if(v !== null) return v;
+    }
+  }
+  return null;
+}
+function stripAmountFromDescription(desc, amount){
+  let s = String(desc || '').trim();
+  if(!s) return '-';
+  const amountTexts = [];
+  if(Number.isFinite(amount)){
+    const abs = Math.abs(amount);
+    amountTexts.push(String(amount));
+    amountTexts.push(abs.toFixed(2));
+    amountTexts.push(abs.toFixed(2).replace('.', ','));
+    try{
+      amountTexts.push(new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(abs));
+    }catch(_){}
+  }
+  amountTexts.forEach(t=>{
+    if(!t) return;
+    const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    s = s.replace(new RegExp(`(^|\\s)${escaped}(?=\\s|$)`, 'g'), ' ');
+  });
+  s = s.replace(/^[-+]?\d+[.,]?\d*\s+/, ' ');
+  s = s.replace(/\s+/g,' ').trim();
+  return s || '-';
+}
 function ensureImportedRowDescription(row){
-  const desc = firstNonEmptyText(
+  const rawDesc = firstNonEmptyText(
     row?.description,
     row?.aciklama,
     row?.raw_content,
@@ -813,12 +864,17 @@ function ensureImportedRowDescription(row){
     row?.dekont_aciklama,
     row?.aciklama_metni
   );
+  const parsedAmount = parseImportedAmountValue(row?.net_amount ?? row?.amount ?? row?.raw_amount ?? row?.final_amount);
+  const amountFromDesc = extractAmountFromDescription(rawDesc);
+  const finalAmount = parsedAmount !== null ? parsedAmount : amountFromDesc;
+  const cleanDesc = stripAmountFromDescription(rawDesc, finalAmount);
   return {
     ...row,
-    description: desc || '-',
-    raw_content: row?.raw_content || desc || '',
-    content_summary: row?.content_summary || desc || '',
-    source_description: row?.source_description || desc || ''
+    description: cleanDesc || '-',
+    net_amount: finalAmount !== null ? finalAmount : Number(row?.net_amount ?? row?.amount ?? row?.raw_amount ?? row?.final_amount ?? 0),
+    raw_content: row?.raw_content || rawDesc || cleanDesc || '',
+    content_summary: row?.content_summary || cleanDesc || rawDesc || '',
+    source_description: row?.source_description || cleanDesc || rawDesc || ''
   };
 }
 function applyBankRuleSuggestion(row){
@@ -3224,7 +3280,7 @@ function renderAccounts(){
     <div class="btn-row" style="margin-bottom:12px;">
       <button class="btn btn-soft" onclick="openBankRuleModal()">Kural Tanımla</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez. Kural tanımlarsan açıklamaya göre otomatik hedef önerir.</div>` + (bankRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{ const suggestion = bankSuggestedTarget(r); const conf = bankRowConfidence(r); return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(displayTxnNo(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(bankDescriptionText(r)||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez. Kural tanımlarsan açıklamaya göre otomatik hedef önerir.</div>` + (bankRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{ const suggestion = bankSuggestedTarget(r); const conf = bankRowConfidence(r); return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(displayTxnNo(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(bankDescriptionText(r)||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(num(r.net_amount ?? r.amount ?? r.raw_amount ?? r.final_amount ?? 0))}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
 
   document.getElementById("mokaPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
       <div class="metric-mini"><div class="k">Toplam Moka Satırı</div><div class="v">${mokaStats.total}</div></div>
@@ -3242,7 +3298,7 @@ function renderAccounts(){
     </div>
     <div class="rule-box" style="margin-bottom:14px;">
       Moka kredi kartı tahsilatı <strong>doğrudan bankaya gelir yazılmaz</strong>. İlk kayıt <strong>Moka United</strong> içinde tutulur. Vadesi gelince bankaya aktarılan tutar ayrıca işlenir ve <strong>Moka United → Banka</strong> mahsup mantığıyla kapatılır.
-    </div>` + (mokaRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{ const cls = mokaRowClass(r); const tag = cls==='moka_tahsilat' ? '<span class="tag blue">Moka Tahsilat</span>' : (cls==='banka_aktarim' ? '<span class="tag green">Banka Aktarım</span>' : '<span class="tag amber">Belirsiz</span>'); return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${escapeHtml(displayTxnNo(r,'MOK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(bankDescriptionText(r)||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede Moka satırı yok.</div>`);
+    </div>` + (mokaRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{ const cls = mokaRowClass(r); const tag = cls==='moka_tahsilat' ? '<span class="tag blue">Moka Tahsilat</span>' : (cls==='banka_aktarim' ? '<span class="tag green">Banka Aktarım</span>' : '<span class="tag amber">Belirsiz</span>'); return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${escapeHtml(displayTxnNo(r,'MOK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(bankDescriptionText(r)||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(num(r.net_amount ?? r.amount ?? r.raw_amount ?? r.final_amount ?? 0))}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede Moka satırı yok.</div>`);
 
   document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
   document.querySelectorAll('#mokaFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.mokaFilter = btn.dataset.mfilter; renderAccounts(); }));
@@ -3328,7 +3384,7 @@ function renderMovementTestCenter(){
       <div class="metric-mini"><div class="k">Onay Kuyruğuna Alınan</div><div class="v">${(state.bankOps?.pending||[]).filter(x=>x.queue_source==='movement_import_review').length}</div></div>
     </div>
     <div class="rule-box" style="margin-bottom:14px;">Bu merkez artık sadece import etmiyor; <strong>eşleşme analizi</strong> de yapıyor. Güçlü cari eşleşmeleri bankada işlenebilir olarak görünür. Zayıf eşleşme, muhtemel çift ve belirsiz satırlar <strong>onay kuyruğuna</strong> atılır.</div>`
-    + (rows.length ? `<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Öneri</th><th>Güven</th><th>Sonuç</th><th class="text-right">Tutar</th></tr></thead><tbody>${rows.slice(0,120).map(r=>`<tr><td>${escapeHtml(displayTxnNo(r,'IMP'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||'-')}<div class="muted-note">${escapeHtml(r.match_reason||'-')}</div></td><td>${escapeHtml(bankSuggestedTarget(r))} ${renderTag(r.suggested_financial_account_type||'-')}</td><td>${num(r.match_confidence||r.suggested_confidence) ? Number(r.match_confidence||r.suggested_confidence).toFixed(0) : '-'}</td><td>${r.approval_required ? '<span class="tag red">Onaya Düşmeli</span>' : '<span class="tag green">İşlenebilir</span>'}${r.is_duplicate_candidate ? ' <span class="tag amber">Muhtemel Çift</span>' : ''}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz test hareketi yok. Dosya oku ya da metin yapıştır.</div>`);
+    + (rows.length ? `<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Öneri</th><th>Güven</th><th>Sonuç</th><th class="text-right">Tutar</th></tr></thead><tbody>${rows.slice(0,120).map(r=>`<tr><td>${escapeHtml(displayTxnNo(r,'IMP'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||'-')}<div class="muted-note">${escapeHtml(r.match_reason||'-')}</div></td><td>${escapeHtml(bankSuggestedTarget(r))} ${renderTag(r.suggested_financial_account_type||'-')}</td><td>${num(r.match_confidence||r.suggested_confidence) ? Number(r.match_confidence||r.suggested_confidence).toFixed(0) : '-'}</td><td>${r.approval_required ? '<span class="tag red">Onaya Düşmeli</span>' : '<span class="tag green">İşlenebilir</span>'}${r.is_duplicate_candidate ? ' <span class="tag amber">Muhtemel Çift</span>' : ''}</td><td class="text-right">${money(num(r.net_amount ?? r.amount ?? r.raw_amount ?? r.final_amount ?? 0))}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz test hareketi yok. Dosya oku ya da metin yapıştır.</div>`);
   const fileEl = document.getElementById('movementImportFile');
   if(fileEl && !fileEl.dataset.bound){
     fileEl.addEventListener('change', handleMovementFileImport);
