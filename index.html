@@ -26,7 +26,7 @@
     .list{display:grid;gap:10px}.list-item{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;cursor:pointer}.list-item.active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(47,103,232,.12);background:#f6f9ff}.list-item.risk{border-color:#fecaca;background:#fff7f7}
     .list-title{font-weight:900;font-size:15px;margin-bottom:6px}.list-meta{color:var(--muted);font-size:13px;font-weight:700;line-height:1.55}.empty{padding:22px;border:1px dashed #cbd5e1;border-radius:16px;text-align:center;color:var(--muted);font-weight:800;background:#fbfdff}
     .search-input,.select-input,.field input,.field select,.field textarea{width:100%;border:1px solid #cfd8e6;border-radius:12px;min-height:44px;padding:10px 12px;font-size:14px;font-weight:700;outline:none;background:#fff}
-    .toolbar{display:grid;grid-template-columns:1.3fr .8fr .8fr;gap:12px;margin-bottom:14px}.detail-sticky{position:sticky;top:22px}.grid-2-cari{display:grid;grid-template-columns:.84fr 1.16fr;gap:16px;align-items:start}.split-scroll{height:calc(100vh - 190px);overflow:auto;min-height:520px}.split-scroll .section{margin-bottom:0}.split-scroll::-webkit-scrollbar{width:10px}.split-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}.split-scroll::-webkit-scrollbar-track{background:#f8fafc}.account-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.subsection-title{margin:0 0 12px;font-size:16px;font-weight:900;color:#0f172a}
+    .toolbar{display:grid;grid-template-columns:1.3fr .8fr .8fr;gap:12px;margin-bottom:14px}.detail-sticky{position:sticky;top:22px}.grid-2-cari{display:grid;grid-template-columns:.84fr 1.16fr;gap:16px;align-items:start}.split-scroll{height:calc(100vh - 190px);overflow:auto;min-height:520px}.split-scroll .section{margin-bottom:0}.split-scroll::-webkit-scrollbar{width:10px}.split-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}.split-scroll::-webkit-scrollbar-track{background:#f8fafc}.account-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.subsection-title{margin:0 0 12px;font-size:16px;font-weight:900;color:#0f172a}.grid-2-cari-legacy{display:grid;grid-template-columns:1.02fr .98fr;gap:16px;align-items:start}.cari-list-scroll{max-height:calc(100vh - 300px);overflow:auto;padding-right:4px}.cari-detail-scroll{max-height:calc(100vh - 210px);overflow:auto;padding-right:4px}.cari-list-scroll::-webkit-scrollbar,.cari-detail-scroll::-webkit-scrollbar{width:10px}.cari-list-scroll::-webkit-scrollbar-thumb,.cari-detail-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}.cari-list-scroll::-webkit-scrollbar-track,.cari-detail-scroll::-webkit-scrollbar-track{background:#f8fafc}
     .metric-mini{background:#fbfdff;border:1px solid var(--line);border-radius:14px;padding:12px}.metric-mini .k{font-size:11px;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}.metric-mini .v{font-size:18px;font-weight:900;color:var(--text)}
     .filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}.chip{border:none;border-radius:999px;padding:8px 12px;font-size:12px;font-weight:900;background:#e8eef9;color:#0f172a;cursor:pointer}.chip.active{background:var(--blue);color:#fff}
     .hero-name{font-size:28px;font-weight:900;line-height:1.1;margin:0 0 8px}.hero-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:13px;font-weight:800;margin-bottom:16px}
@@ -38,7 +38,7 @@
     .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.form-grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
     .toast{position:fixed;right:16px;bottom:16px;z-index:999999;background:#0f172a;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);font-size:13px;font-weight:800;display:none;max-width:340px}.click-row{cursor:pointer}.click-row:hover td{background:#f8fbff}.rule-box{padding:12px;border:1px solid var(--line);border-radius:14px;background:#fbfdff;font-size:13px;font-weight:700;color:#334155;line-height:1.6}.muted-note{font-size:12px;color:#64748b;font-weight:700}
     .btn[disabled]{opacity:.55;cursor:not-allowed}
-    @media (max-width:1200px){.cards,.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-2,.grid-2-cari,.grid-3,.toolbar,.form-grid,.form-grid-3{grid-template-columns:1fr}.detail-sticky{position:static}.split-scroll{height:auto;max-height:none;min-height:auto}}
+    @media (max-width:1200px){.cards,.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-2,.grid-2-cari,.grid-2-cari-legacy,.grid-3,.toolbar,.form-grid,.form-grid-3{grid-template-columns:1fr}.detail-sticky{position:static}.split-scroll{height:auto;max-height:none;min-height:auto}.cari-list-scroll,.cari-detail-scroll{max-height:none}}
     @media (max-width:860px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.main{padding:16px}.page-head h1{font-size:32px}}
     @media (max-width:640px){.cards,.grid-4{grid-template-columns:1fr}}
   </style>
@@ -449,31 +449,31 @@
     </section>
 
     <section id="tab-cariler" class="tab-page">
-      <div class="grid-2-cari">
-        <div class="split-scroll">
-          <div class="section">
-            <h2 class="section-title">Dinamik Cari Listesi</h2>
-            <div class="toolbar">
-              <input id="cariSearch" class="search-input" type="text" placeholder="Cari adı ile ara..." />
-              <select id="taxpayerFilter" class="select-input">
-                <option value="">Tüm Türler</option>
-                <option value="isletme_defteri">İşletme Defteri</option>
-                <option value="bilanco">Bilanço</option>
-                <option value="limited_sirket">Limited Şirket</option>
-              </select>
-              <select id="sortBy" class="select-input">
-                <option value="name">Ada Göre</option>
-                <option value="fee_desc">Defter Ücreti ↓</option>
-                <option value="score_desc">Skor ↓</option>
-                <option value="bakiye_desc">Bakiye ↓</option>
-                <option value="tahsilat_desc">Son Tahsilat ↓</option>
-              </select>
-            </div>
+      <div class="grid-2-cari-legacy">
+        <div class="section">
+          <h2 class="section-title">Dinamik Cari Listesi</h2>
+          <div class="toolbar">
+            <input id="cariSearch" class="search-input" type="text" placeholder="Cari adı ile ara..." />
+            <select id="taxpayerFilter" class="select-input">
+              <option value="">Tüm Türler</option>
+              <option value="isletme_defteri">İşletme Defteri</option>
+              <option value="bilanco">Bilanço</option>
+              <option value="limited_sirket">Limited Şirket</option>
+            </select>
+            <select id="sortBy" class="select-input">
+              <option value="name">Ada Göre</option>
+              <option value="fee_desc">Defter Ücreti ↓</option>
+              <option value="score_desc">Skor ↓</option>
+              <option value="bakiye_desc">Bakiye ↓</option>
+              <option value="tahsilat_desc">Son Tahsilat ↓</option>
+            </select>
+          </div>
+          <div class="cari-list-scroll">
             <div id="cariList" class="list"></div>
           </div>
         </div>
-        <div class="split-scroll">
-          <div class="section">
+        <div class="section detail-sticky">
+          <div class="cari-detail-scroll">
             <div id="selectedCariDetail" class="empty">Bir cari seç.</div>
           </div>
         </div>
@@ -777,6 +777,7 @@ function renderTag(t){
 function buildVersion(){const d=new Date(document.lastModified); const p=n=>String(n).padStart(2,"0"); return `V${p(d.getHours())}${p(d.getMinutes())}${p(d.getDate())}${p(d.getMonth()+1)}${String(d.getFullYear()).slice(-2)}-${p(d.getHours())}${p(d.getMinutes())}`}
 function setConnState(t){document.getElementById("connState").textContent=t}
 function notify(msg){const t=document.getElementById("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>t.style.display="none",2600)}
+function safeRun(fn,fallbackLabel=""){ try{ return fn(); } catch(err){ console.error(err); if(fallbackLabel) notify(`${fallbackLabel} hatası`); } }
 function togglePassword(){const i=document.getElementById("loginPassword"); i.type=i.type==="password"?"text":"password"}
 function submitLogin(e){e.preventDefault(); const v=(document.getElementById("loginPassword").value||"").trim(); const err=document.getElementById("loginError"); err.textContent=""; if(v!==LOCAL_PASSWORD){err.textContent="Şifre hatalı."; return false} localStorage.setItem(SESSION_KEY,"ok"); openApp(); refreshAll(); return false}
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
@@ -798,7 +799,7 @@ async function loadCariler(){
   if(state.cariler.length&&!state.selectedCariId) state.selectedCariId=state.cariler[0].cari_id;
   const c=await supabaseClient.from("v_cari_card_management").select("*").order("cari_name",{ascending:true});
   state.cariCards=c.data||[];
-  await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail();
+  await loadSelectedCariHareketler(); safeRun(()=>renderCariList()); safeRun(()=>renderSelectedCariDetail(),"Cari detay");
 }
 async function loadSelectedCariHareketler(){
   if(!state.selectedCariId){state.hareketler=[];return}
@@ -2180,7 +2181,7 @@ function renderCariList(){
     <div><div class="list-title">${escapeHtml(c.cari_name)} ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''} ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}</div>
     <div class="list-meta">Tür: ${escapeHtml(c.taxpayer_type||"-")} · Defter Ücreti: ${money(c.defter_ucreti||0)} · Skor: ${Number(c.score_total||0).toFixed(0)}<br>Son tahakkuk: ${shortDate(c.son_tahakkuk_tarihi)} · ${money(c.son_tahakkuk_tutari||0)}<br>Son tahsilat: ${shortDate(c.son_tahsilat_tarihi)} · ${money(c.son_tahsilat_tutari||0)}</div></div>
     <div class="tag ${Number(c.bakiye||0)>0?'red':'green'}">${money(c.bakiye||0)}</div></div>`).join(""):`<div class="empty">Cari bulunamadı.</div>`;
-  list.querySelectorAll("[data-cari-id]").forEach(el=>el.addEventListener("click",async()=>{state.selectedCariId=el.dataset.cariId; await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail();}));
+  list.querySelectorAll("[data-cari-id]").forEach(el=>el.addEventListener("click",async()=>{state.selectedCariId=el.dataset.cariId; await loadSelectedCariHareketler(); safeRun(()=>renderCariList()); safeRun(()=>renderSelectedCariDetail(),"Cari detay");}));
 }
 function getRangeStartDate(){
   const now=new Date(); let start=null;
@@ -4035,23 +4036,23 @@ async function saveCariCollection(){
 }
 
 async function refreshAll(){
-  await Promise.all([loadDashboard(),loadCariler(),loadAccounts(),loadApprovals(),loadFeeData(),loadDocuments(),loadYearTransitionData(true)]);
+  await Promise.all([loadDashboard(),loadCariler(),loadAccounts(),loadApprovals(),loadFeeData(),loadDocuments()]);
   sanitizeAllImportedMovementDates();
   refreshImportedMovementAnalysis(true);
   sanitizeAllImportedMovementDates();
   normalizeStateIds();
-  renderDashboard();
-  renderAccounts();
-  renderReports();
-  renderDocuments();
-  renderExpenses();
-  renderApprovals();
-  renderBackup();
-  renderOpsHealthPanel();
-  renderProdHardeningPanel();
-  renderGlobalAuditLog();
-  renderDeleteArchive();
-  if(state.selectedCariId) renderSelectedCariDetail();
+  safeRun(()=>renderDashboard());
+  safeRun(()=>renderAccounts());
+  safeRun(()=>renderReports());
+  safeRun(()=>renderDocuments());
+  safeRun(()=>renderExpenses());
+  safeRun(()=>renderApprovals());
+  safeRun(()=>renderBackup());
+  safeRun(()=>renderOpsHealthPanel());
+  safeRun(()=>renderProdHardeningPanel());
+  safeRun(()=>renderGlobalAuditLog());
+  safeRun(()=>renderDeleteArchive());
+  if(state.selectedCariId) safeRun(()=>renderSelectedCariDetail(), 'Cari detay');
 }
 document.getElementById("cariSearch").addEventListener("input",renderCariList);
 document.getElementById("taxpayerFilter").addEventListener("change",renderCariList);
