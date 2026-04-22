@@ -1642,9 +1642,9 @@ function parseMovementImportRows(rawText='', sourceLabel='manuel_yapistir'){
   }
   return rows;
 }
-function importMovementRows(parsed=[], sourceLabel='manuel_yapistir'){
+function importMovementRows(parsed=[], sourceLabel='manuel_yapistir', replaceExisting=false){
   if(!parsed.length){ notify('İçe alınacak hesap hareketi bulunamadı.'); return 0; }
-  const existing = state.movementTests || [];
+  const existing = replaceExisting ? [] : (state.movementTests || []);
   const existingKeys = new Set(existing.map(x=>`${x.movement_date}|${x.description}|${num(x.net_amount).toFixed(2)}|${x.import_bucket}|${x.external_ref||''}`));
   const newRows = [];
   let duplicateCount = 0;
@@ -1657,14 +1657,14 @@ function importMovementRows(parsed=[], sourceLabel='manuel_yapistir'){
     if(!row.txn_id) row.txn_id = txnId(row,'IMP');
     newRows.push(row);
   }
-  state.movementTests = [...newRows, ...existing];
+  state.movementTests = replaceExisting ? [...newRows] : [...newRows, ...existing];
   refreshImportedMovementAnalysis(true);
   const analyzedNew = state.movementTests.slice(0, newRows.length);
   const processable = analyzedNew.filter(x=>!x.approval_required).length;
   const approval = analyzedNew.filter(x=>x.approval_required).length;
   addAuditEvent('movement_import',{source_module:'movement_test', target_name:sourceLabel, amount:newRows.reduce((a,b)=>a+num(b.net_amount),0), note:`Yeni ${newRows.length} · Çift engel ${duplicateCount} · İşlenebilir ${processable} · Onay ${approval}`, summary:`Hesap hareketi içeri alındı · ${newRows.length} yeni · ${duplicateCount} çift engel`});
   if(duplicateCount>0) addAuditEvent('duplicate_blocked',{source_module:'movement_test', note:`${duplicateCount} test satırı çift kayıt filtresine takıldı.`, summary:`Çift kayıt engeli · movement_test · ${duplicateCount} satır`});
-  notify(`${newRows.length} hesap hareketi test merkezine alındı. İşlenebilir ${processable} · Onay ${approval}`);
+  notify(`${newRows.length} hesap hareketi test merkezine alındı. İşlenebilir ${processable} · Onay ${approval}${replaceExisting ? ' · Eski test kayıtları yenilendi' : ''}`);
   refreshAll();
   return newRows.length;
 }
@@ -1801,7 +1801,7 @@ function handleMovementFileImport(ev){
         const matrix = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
         const matrixParsed = parseWorksheetMatrixRows(matrix, file.name);
         if(matrixParsed.length){
-          importMovementRows(matrixParsed, file.name);
+          importMovementRows(matrixParsed, file.name, true);
           const current = document.getElementById('movementImportText');
           if(current) current.value = '';
           notify(`Excel sütunları işlendi: ${file.name}`);
@@ -1812,7 +1812,7 @@ function handleMovementFileImport(ev){
         if(hasStructuredHeaders){
           const parsed = parseImportReadyWorksheetRows(json, file.name);
           if(parsed.length){
-            importMovementRows(parsed, file.name);
+            importMovementRows(parsed, file.name, true);
             const current = document.getElementById('movementImportText');
             if(current) current.value = '';
             notify(`Import_Hazir dosyası işlendi: ${file.name}`);
@@ -2433,7 +2433,7 @@ function renderBackup(){
           <div class="field"><label>Drive Aracı</label><input id="backupDriveTool" value="${escapeHtml(cfg.drive_tool||'rclone')}" /></div>
           <div class="field"><label>Operatör</label><input id="backupOperator" value="${escapeHtml(cfg.operator_name||'Yerel Giriş')}" /></div>
         </div>
-        <div class="btn-row" style="margin-top:12px;">
+        <div class="rule-box" style="margin-top:12px;margin-bottom:12px;">Excel dosyası ile yeniden içe alırken eski test kayıtları otomatik yenilenir. Böylece bozuk eski import satırları ekranda kalmaz.</div><div class="btn-row" style="margin-top:12px;">
           <label class="tag gray" style="gap:8px;padding:8px 12px;"><input id="backupIncDocs" type="checkbox" ${cfg.include_documents?'checked':''}/> Belge</label>
           <label class="tag gray" style="gap:8px;padding:8px 12px;"><input id="backupIncBridge" type="checkbox" ${cfg.include_bridge?'checked':''}/> Köprü</label>
           <label class="tag gray" style="gap:8px;padding:8px 12px;"><input id="backupIncAudit" type="checkbox" ${cfg.include_audit?'checked':''}/> Audit</label>
