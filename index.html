@@ -2203,6 +2203,11 @@ function computeRunningRows(allRows, startDate=null){
   }
   return visible;
 }
+function getStatementBaseRows(){
+  const rows=[...(state.hareketler||[])].map(r=>({ ...r }));
+  if(state.selectedLedgerView === 'allhistory') return rows;
+  return rows;
+}
 function getStatementOpeningBalance(startDate){
   if(!startDate) return 0;
   const ordered = sortStatementRows(getStatementBaseRows()).map(r=>{
@@ -2490,10 +2495,10 @@ function renderSelectedCariDetail(){
     ${meta.isConsistent?'<span class="tag green">BAKİYE UYUMLU</span>':'<span class="tag red">BAKİYE KONTROL</span>'}
   </div>
   <div class="filter-chips" id="detailLedgerViewChips">
-    <button class="chip ${state.selectedLedgerView==='live2026'?'active':''}" data-ledger-view="live2026">Canlı Ekstre (Açılış + 2026)</button>
+    <button class="chip ${state.selectedLedgerView==='live2026'?'active':''}" data-ledger-view="live2026">Canlı Ekstre</button>
     <button class="chip ${state.selectedLedgerView==='allhistory'?'active':''}" data-ledger-view="allhistory">Tüm Geçmiş (Read-Only)</button>
   </div>
-  <div style="margin:-4px 0 12px 0;font-size:13px;color:#475569;font-weight:800;">${state.selectedLedgerView==='allhistory' ? 'Geçmiş kayıtlar görünür ama read-only arşivdir; bakiye motoruna müdahale etmez.' : 'Canlı görünüm açılış bakiyesi + 2026 hareketleri ile çalışır.'}</div>
+  <div style="margin:-4px 0 12px 0;font-size:13px;color:#475569;font-weight:800;">${state.selectedLedgerView==='allhistory' ? 'Geçmiş kayıtlar görünür ama read-only arşivdir; bakiye motoruna müdahale etmez.' : 'Canlı görünüm açılış bakiyesi ve aktif hareketlerle çalışır.'}</div>
   <div class="filter-chips" id="detailDateChips">
     <button class="chip ${state.selectedRange==='3m'?'active':''}" data-range="3m">3 Ay</button>
     <button class="chip ${state.selectedRange==='1m'?'active':''}" data-range="1m">1 Ay</button>
