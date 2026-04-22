@@ -432,6 +432,40 @@
   </div>
 </div>
 
+<div id="bankRuleModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:920px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Banka Kural Tanımı</h2>
+      <button class="btn btn-red" onclick="closeBankRuleModal()">Kapat</button>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px;">Açıklama içinde geçen anahtar kelimeye göre otomatik hedef öner. Aynı tip banka hareketleri sürekli elle seçilmesin.</div>
+    <div class="form-grid-3">
+      <div class="field">
+        <label>Kural Türü</label>
+        <select id="bankRuleType" class="select-input">
+          <option value="gider">Gider</option>
+          <option value="banka_masrafi">Banka Masrafı</option>
+          <option value="hesap">Hesap</option>
+          <option value="cari">Cari</option>
+        </select>
+      </div>
+      <div class="field"><label>Anahtar Kelime</label><input id="bankRuleKeyword" placeholder="Örn: masraf / hesap işletim ücreti / komisyon" /></div>
+      <div class="field"><label>Hedef Adı</label><input id="bankRuleTargetName" placeholder="Örn: Banka Masrafı" /></div>
+    </div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="field"><label>Hedef Tipi</label><input id="bankRuleTargetType" placeholder="Örn: gider / banka / diger" /></div>
+      <div class="field"><label>Not</label><input id="bankRuleNote" placeholder="Opsiyonel not" /></div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-blue" onclick="saveBankRule()">Kuralı Kaydet</button>
+    </div>
+    <div style="margin-top:18px;">
+      <h3 class="section-title" style="font-size:18px;">Tanımlı Kurallar</h3>
+      <div id="bankRuleListWrap" class="empty">Henüz kural yok.</div>
+    </div>
+  </div>
+</div>
+
 <div class="layout">
   <aside class="sidebar">
     <div style="text-align:center;margin-bottom:16px;"><img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" style="width:120px;display:block;margin:0 auto 10px;"></div>
@@ -756,6 +790,39 @@ function confirmDeleteAuth(){ const pwd=(document.getElementById('deleteAuthPass
 function logSystemError(module_name,msg,extra={}){ addAuditEvent('system_error',{source_module:module_name, note:msg, summary:`Hata · ${module_name} · ${msg}`,...extra}); }
 function persistApprovalOps(){ writeLocalObject(LOCAL_APPROVAL_OPS_KEY, state.approvalOps); }
 function persistBankOps(){ writeLocalObject(LOCAL_BANK_OPS_KEY, state.bankOps); }
+function getBankRules(){ return normalizeNumberedList(readLocalJson(LOCAL_BANK_RULES_KEY),'BRL').rows; }
+function setBankRules(rows){ writeLocalJson(LOCAL_BANK_RULES_KEY, rows); }
+function normalizeRuleText(v){ return String(v||'').toLocaleLowerCase('tr-TR').replace(/\s+/g,' ').trim(); }
+function bankDescriptionText(row){ return String(row?.description || row?.raw_content || row?.content_summary || row?.aciklama || row?.description_text || row?.source_description || '').trim(); }
+function applyBankRuleSuggestion(row){
+  const desc = normalizeRuleText(bankDescriptionText(row));
+  if(!desc) return row;
+  const rules = getBankRules();
+  const hit = rules.find(r => normalizeRuleText(r.keyword) && desc.includes(normalizeRuleText(r.keyword)));
+  if(!hit) return row;
+  const patched = {...row};
+  if(hit.rule_type === 'gider' || hit.rule_type === 'banka_masrafi'){
+    patched.suggested_financial_account_type = 'gider';
+    patched.suggested_expense_name = hit.target_name || 'Gider';
+    patched.suggested_target_name = hit.target_name || 'Gider';
+    patched.match_reason = `Kural eşleşti: ${hit.keyword}`;
+    patched.match_confidence = Math.max(num(patched.match_confidence||0), 96);
+    patched.approval_required = false;
+  } else if(hit.rule_type === 'hesap'){
+    patched.suggested_financial_account_type = hit.target_type || 'banka';
+    patched.suggested_target_name = hit.target_name || 'Hesap';
+    patched.match_reason = `Kural eşleşti: ${hit.keyword}`;
+    patched.match_confidence = Math.max(num(patched.match_confidence||0), 96);
+    patched.approval_required = false;
+  } else if(hit.rule_type === 'cari'){
+    patched.suggested_financial_account_type = 'cari';
+    patched.suggested_cari_name = hit.target_name || patched.suggested_cari_name || '';
+    patched.match_reason = `Kural eşleşti: ${hit.keyword}`;
+    patched.match_confidence = Math.max(num(patched.match_confidence||0), 96);
+    patched.approval_required = false;
+  }
+  return patched;
+}
 function latestIso(a,b){ const da=new Date(a||0).getTime(); const db=new Date(b||0).getTime(); return (db>da ? b : a) || b || a || null; }
 function normalizeAccountKey(v){ return String(v||'').trim().toLowerCase().replace(/\s+/g,' '); }
 function getLocalAccountOps(){ const norm=normalizeNumberedList(readLocalJson(LOCAL_ACCOUNT_OPS_KEY),'LAC'); if(norm.changed) writeLocalJson(LOCAL_ACCOUNT_OPS_KEY, norm.rows); return norm.rows; }
@@ -922,7 +989,17 @@ async function loadAccounts(){
     supabaseClient.from("v_banka_montaj_paneli").select("*").limit(50),
     supabaseClient.from("v_moka_transfer_paneli").select("*").limit(50)
   ]);
-  const importedMovements = readLocalJson(LOCAL_MOVEMENT_TEST_KEY).map(x=>({...x, txn_id:txnId(x,'IMP')}));
+  const importedMovements = readLocalJson(LOCAL_MOVEMENT_TEST_KEY).map(x=>{
+    const desc = String(x.description || x.raw_content || x.content_summary || x.aciklama || '').trim();
+    const row = {
+      ...x,
+      description: desc || '-',
+      raw_content: x.raw_content || desc || '',
+      content_summary: x.content_summary || desc || '',
+      txn_id:txnId(x,'IMP')
+    };
+    return applyBankRuleSuggestion(row);
+  });
   state.movementTests = importedMovements;
   const importedBank = importedMovements.filter(x=>x.import_bucket!=='moka').map(x=>({...x, is_imported_test:true}));
   const importedMoka = importedMovements.filter(x=>x.import_bucket==='moka').map(x=>({...x, is_imported_test:true}));
@@ -3121,7 +3198,10 @@ function renderAccounts(){
       <button class="chip ${state.bankFilter==='processed'?'active':''}" data-bfilter="processed">İşlenen</button>
       <button class="chip ${state.bankFilter==='ignored'?'active':''}" data-bfilter="ignored">İşlenmeyen</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez.</div>` + (bankRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{ const suggestion = bankSuggestedTarget(r); const conf = bankRowConfidence(r); return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(displayTxnNo(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
+    <div class="btn-row" style="margin-bottom:12px;">
+      <button class="btn btn-soft" onclick="openBankRuleModal()">Kural Tanımla</button>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez. Kural tanımlarsan açıklamaya göre otomatik hedef önerir.</div>` + (bankRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{ const suggestion = bankSuggestedTarget(r); const conf = bankRowConfidence(r); return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(displayTxnNo(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(bankDescriptionText(r)||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
 
   document.getElementById("mokaPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
       <div class="metric-mini"><div class="k">Toplam Moka Satırı</div><div class="v">${mokaStats.total}</div></div>
@@ -3139,7 +3219,7 @@ function renderAccounts(){
     </div>
     <div class="rule-box" style="margin-bottom:14px;">
       Moka kredi kartı tahsilatı <strong>doğrudan bankaya gelir yazılmaz</strong>. İlk kayıt <strong>Moka United</strong> içinde tutulur. Vadesi gelince bankaya aktarılan tutar ayrıca işlenir ve <strong>Moka United → Banka</strong> mahsup mantığıyla kapatılır.
-    </div>` + (mokaRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{ const cls = mokaRowClass(r); const tag = cls==='moka_tahsilat' ? '<span class="tag blue">Moka Tahsilat</span>' : (cls==='banka_aktarim' ? '<span class="tag green">Banka Aktarım</span>' : '<span class="tag amber">Belirsiz</span>'); return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${escapeHtml(displayTxnNo(r,'MOK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(r.description||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede Moka satırı yok.</div>`);
+    </div>` + (mokaRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{ const cls = mokaRowClass(r); const tag = cls==='moka_tahsilat' ? '<span class="tag blue">Moka Tahsilat</span>' : (cls==='banka_aktarim' ? '<span class="tag green">Banka Aktarım</span>' : '<span class="tag amber">Belirsiz</span>'); return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${escapeHtml(displayTxnNo(r,'MOK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(bankDescriptionText(r)||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(r.net_amount||0)}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede Moka satırı yok.</div>`);
 
   document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
   document.querySelectorAll('#mokaFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.mokaFilter = btn.dataset.mfilter; renderAccounts(); }));
@@ -4297,6 +4377,39 @@ async function saveCariCollection(){
   await loadSelectedCariHareketler();
   renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderDocuments(); renderReports();
   notify('Cari tahsilatı kaydedildi ve canlı yazım denendi.');
+}
+
+
+function renderBankRuleList(){
+  const target=document.getElementById('bankRuleListWrap');
+  if(!target) return;
+  const rows=getBankRules();
+  target.innerHTML = rows.length ? `<table><thead><tr><th>No</th><th>Tür</th><th>Anahtar</th><th>Hedef</th><th>Tip</th><th>Not</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(displayTxnNo(r,'BRL'))}</td><td>${escapeHtml(r.rule_type||'-')}</td><td>${escapeHtml(r.keyword||'-')}</td><td>${escapeHtml(r.target_name||'-')}</td><td>${escapeHtml(r.target_type||'-')}</td><td>${escapeHtml(r.note||'-')}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz kural yok.</div>`;
+}
+function openBankRuleModal(){
+  document.getElementById('bankRuleType').value='gider';
+  document.getElementById('bankRuleKeyword').value='';
+  document.getElementById('bankRuleTargetName').value='';
+  document.getElementById('bankRuleTargetType').value='gider';
+  document.getElementById('bankRuleNote').value='';
+  renderBankRuleList();
+  document.getElementById('bankRuleModal').style.display='flex';
+}
+function closeBankRuleModal(){ document.getElementById('bankRuleModal').style.display='none'; }
+function saveBankRule(){
+  const rule_type=document.getElementById('bankRuleType').value || 'gider';
+  const keyword=(document.getElementById('bankRuleKeyword').value||'').trim();
+  const target_name=(document.getElementById('bankRuleTargetName').value||'').trim();
+  const target_type=(document.getElementById('bankRuleTargetType').value||'').trim();
+  const note=(document.getElementById('bankRuleNote').value||'').trim();
+  if(!keyword || !target_name){ notify('Anahtar kelime ve hedef adı zorunlu.'); return; }
+  const rows=getBankRules();
+  rows.unshift(stampRecordIds({rule_type, keyword, target_name, target_type, note, created_at:new Date().toISOString()}, 'BRL'));
+  setBankRules(rows);
+  renderBankRuleList();
+  refreshImportedMovementAnalysis(true);
+  loadAccounts().then(()=>renderAccounts());
+  notify('Banka kuralı kaydedildi.');
 }
 
 async function refreshAll(){
