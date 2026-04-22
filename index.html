@@ -793,7 +793,34 @@ function persistBankOps(){ writeLocalObject(LOCAL_BANK_OPS_KEY, state.bankOps); 
 function getBankRules(){ return normalizeNumberedList(readLocalJson(LOCAL_BANK_RULES_KEY),'BRL').rows; }
 function setBankRules(rows){ writeLocalJson(LOCAL_BANK_RULES_KEY, rows); }
 function normalizeRuleText(v){ return String(v||'').toLocaleLowerCase('tr-TR').replace(/\s+/g,' ').trim(); }
-function bankDescriptionText(row){ return String(row?.description || row?.raw_content || row?.content_summary || row?.aciklama || row?.description_text || row?.source_description || '').trim(); }
+function bankDescriptionText(row){ return String(row?.description || row?.raw_content || row?.content_summary || row?.aciklama || row?.description_text || row?.source_description || row?.source_text || row?.dekont_aciklama || row?.aciklama_metni || '').trim(); }
+function firstNonEmptyText(){
+  for(let i=0;i<arguments.length;i++){
+    const v = String(arguments[i] ?? '').replace(/\s+/g,' ').trim();
+    if(v) return v;
+  }
+  return '';
+}
+function ensureImportedRowDescription(row){
+  const desc = firstNonEmptyText(
+    row?.description,
+    row?.aciklama,
+    row?.raw_content,
+    row?.content_summary,
+    row?.description_text,
+    row?.source_description,
+    row?.source_text,
+    row?.dekont_aciklama,
+    row?.aciklama_metni
+  );
+  return {
+    ...row,
+    description: desc || '-',
+    raw_content: row?.raw_content || desc || '',
+    content_summary: row?.content_summary || desc || '',
+    source_description: row?.source_description || desc || ''
+  };
+}
 function applyBankRuleSuggestion(row){
   const desc = normalizeRuleText(bankDescriptionText(row));
   if(!desc) return row;
@@ -990,14 +1017,10 @@ async function loadAccounts(){
     supabaseClient.from("v_moka_transfer_paneli").select("*").limit(50)
   ]);
   const importedMovements = readLocalJson(LOCAL_MOVEMENT_TEST_KEY).map(x=>{
-    const desc = String(x.description || x.raw_content || x.content_summary || x.aciklama || '').trim();
-    const row = {
+    const row = ensureImportedRowDescription({
       ...x,
-      description: desc || '-',
-      raw_content: x.raw_content || desc || '',
-      content_summary: x.content_summary || desc || '',
       txn_id:txnId(x,'IMP')
-    };
+    });
     return applyBankRuleSuggestion(row);
   });
   state.movementTests = importedMovements;
