@@ -1711,6 +1711,50 @@ function parseImportReadyWorksheetRows(records=[], sourceLabel='import_hazir'){
     return row;
   }).filter(r=>r.description || r.net_amount || r.movement_date);
 }
+function parseWorksheetMatrixRows(matrixRows, sourceLabel='xlsx_import'){
+  const rows = [];
+  const sessionRef = decisionRef('IMP');
+  const clean = (v)=>String(v ?? '').replace(/\s+/g,' ').trim();
+  const isDateLike = (v)=>/^\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4}$/.test(clean(v));
+  const parseExcelDate = (val)=>{
+    if(typeof val === 'number' && window.XLSX?.SSF){
+      const d = XLSX.SSF.parse_date_code(val);
+      if(d && d.y && d.m && d.d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+    }
+    return normalizeImportDate(val);
+  };
+  const validRows = (matrixRows || []).filter(r=>Array.isArray(r) && r.some(x=>String(x ?? '').trim() !== ''));
+  for(const arr of validRows){
+    const c0 = arr[0];
+    const c1 = clean(arr[1]);
+    const c2 = arr[2];
+    if(!isDateLike(c0)) continue;
+    const amount = parseTrNumber(c2);
+    const description = c1 || `${sourceLabel} hareketi`;
+    const normalizedDate = parseExcelDate(c0);
+    const import_bucket = movementImportClassifier(description);
+    const row = ensureImportedRowDescription({
+      id: uid('movimp'),
+      import_session_ref: sessionRef,
+      import_source: sourceLabel,
+      import_bucket,
+      movement_date: normalizedDate,
+      description,
+      net_amount: amount,
+      external_ref: null,
+      suggested_financial_account_type: import_bucket === 'moka' ? 'moka_united' : 'banka',
+      source_type: 'movement_import',
+      source_origin: sourceLabel,
+      imported_at: new Date().toISOString(),
+      is_test_import: true,
+      txn_id: null
+    });
+    row.txn_id = txnId({ id: row.id, movement_date: row.movement_date, description: row.description, amount: row.net_amount }, 'IMP');
+    rows.push(row);
+  }
+  return rows;
+}
+
 function analyzeMovementImport(){
   const raw = document.getElementById('movementImportText')?.value || '';
   const sourceLabel = document.getElementById('movementImportSource')?.value || 'manuel_yapistir';
@@ -1743,6 +1787,15 @@ function handleMovementFileImport(ev){
         const wb = XLSX.read(e.target?.result, {type:'array'});
         const targetSheetName = wb.SheetNames.includes('Import_Hazir') ? 'Import_Hazir' : wb.SheetNames[0];
         const ws = wb.Sheets[targetSheetName];
+        const matrix = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        const matrixParsed = parseWorksheetMatrixRows(matrix, file.name);
+        if(matrixParsed.length){
+          importMovementRows(matrixParsed, file.name);
+          const current = document.getElementById('movementImportText');
+          if(current) current.value = '';
+          notify(`Excel sütunları işlendi: ${file.name}`);
+          return;
+        }
         const json = XLSX.utils.sheet_to_json(ws, {defval:''});
         const hasStructuredHeaders = json.length && Object.keys(json[0]).some(k=>/(işlem no|islem no|tarih|açıklama|aciklama|tutar)/i.test(String(k)));
         if(hasStructuredHeaders){
