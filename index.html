@@ -4270,7 +4270,13 @@ function renderAccounts(){
     <button class="btn btn-soft" onclick="openManualFinanceModal('transfer')">Hesaplar Arası Transfer</button>
   </div>
   <div class="rule-box" style="margin-bottom:14px;">
-    Standart sıra: <strong>banka satırı incele</strong> → hedefi doğrula → <strong>emin değilsen Onay Merkezi</strong> → Moka kaynaklıysa <strong>önce Moka United</strong> → bankaya aktarım geldiğinde <strong>mahsup</strong>.
+    Standart sıra: <strong>banka satırı incele</strong> → hedefi doğrula → <strong>emin değilsen Onay Merkezi</strong> → <strong>mükerrer adayıysa kilitle</strong> → Moka kaynaklıysa <strong>önce Moka United</strong> → bankaya aktarım geldiğinde <strong>mahsup</strong>.
+  </div>
+  <div class="grid-4" style="margin-bottom:14px">
+    <div class="metric-mini"><div class="k">Banka Mutabakatı</div><div class="v">${money(combinedAccounts.filter(x=>String(x.account_type)==='banka').reduce((a,b)=>a+num(b.net_bakiye),0))}</div></div>
+    <div class="metric-mini"><div class="k">Kasa / Diğer</div><div class="v">${money(combinedAccounts.filter(x=>['kasa','diger'].includes(String(x.account_type))).reduce((a,b)=>a+num(b.net_bakiye),0))}</div></div>
+    <div class="metric-mini"><div class="k">Çek / Senet</div><div class="v">${money(combinedAccounts.filter(x=>['cek','senet'].includes(String(x.account_type))).reduce((a,b)=>a+num(b.net_bakiye),0))}</div></div>
+    <div class="metric-mini"><div class="k">Moka / POS</div><div class="v">${money(combinedAccounts.filter(x=>String(x.account_type).includes('moka') || String(x.account_name||'').toLowerCase().includes('pos')).reduce((a,b)=>a+num(b.net_bakiye),0))}</div></div>
   </div>
   <div class="grid-2" style="align-items:start;">
     <div>
@@ -4286,13 +4292,15 @@ function renderAccounts(){
   document.getElementById("bankPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
       <div class="metric-mini"><div class="k">Toplam Satır</div><div class="v">${bankStats.total}</div></div>
       <div class="metric-mini"><div class="k">İşlenebilir</div><div class="v">${bankStats.processable}</div></div>
-      <div class="metric-mini"><div class="k">Onaya Düşmeli</div><div class="v">${bankStats.needs_approval}</div></div>
+      <div class="metric-mini"><div class="k">Şüpheli</div><div class="v">${bankStats.needs_approval}</div></div>
+      <div class="metric-mini"><div class="k">Mükerrer</div><div class="v">${bankStats.duplicate}</div></div>
       <div class="metric-mini"><div class="k">Kuyruk / İşlenen</div><div class="v">${bankStats.queued} / ${bankStats.processed}</div></div>
     </div>
     <div class="filter-chips" id="bankFilterChips">
       <button class="chip ${state.bankFilter==='all'?'active':''}" data-bfilter="all">Tümü</button>
       <button class="chip ${state.bankFilter==='processable'?'active':''}" data-bfilter="processable">İşlenebilir</button>
-      <button class="chip ${state.bankFilter==='needs_approval'?'active':''}" data-bfilter="needs_approval">Onaya Düşmeli</button>
+      <button class="chip ${state.bankFilter==='needs_approval'?'active':''}" data-bfilter="needs_approval">Şüpheli</button>
+      <button class="chip ${state.bankFilter==='duplicate'?'active':''}" data-bfilter="duplicate">Mükerrer</button>
       <button class="chip ${state.bankFilter==='queued'?'active':''}" data-bfilter="queued">Onay Kuyruğu</button>
       <button class="chip ${state.bankFilter==='processed'?'active':''}" data-bfilter="processed">İşlenen</button>
       <button class="chip ${state.bankFilter==='ignored'?'active':''}" data-bfilter="ignored">İşlenmeyen</button>
