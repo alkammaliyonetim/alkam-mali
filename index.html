@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -1479,6 +1479,7 @@ function renderTag(t){
   if(t==="eksik") return `<span class="tag amber">Eksik</span>`;
   if(t==="farkli_tutar") return `<span class="tag red">Farklı Tutar</span>`;
   if(t==="muhtemel_duplicate") return `<span class="tag red">Muhtemel Çift</span>`;
+  if(t==="bakiye_tutarsiz") return `<span class="tag red">Bakiye / Kolon Hatası</span>`;
   if(t==="tamam") return `<span class="tag green">Tamam</span>`;
   if(t==="banka"||t==="kasa"||t==="moka_united"||t==="cek"||t==="senet"||t==="batak") return `<span class="tag gray">${escapeHtml(t)}</span>`;
   if(t==="gecikmis") return `<span class="tag red">Gecikmiş</span>`;
@@ -1850,6 +1851,91 @@ function movementImportClassifier(desc=''){
   if(/moka|united|sanal pos|pos /.test(s)) return 'moka';
   return 'bank';
 }
+function movementHeaderKey(v=''){
+  return String(v||'').toLocaleLowerCase('tr-TR')
+    .replace(/ı/g,'i').replace(/ş/g,'s').replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ö/g,'o')
+    .replace(/[^a-z0-9]+/g,' ')
+    .trim();
+}
+function isFiveColumnBankHeaderRow(cols=[]){
+  const keys = cols.map(movementHeaderKey);
+  return keys.includes('islem tarihi') && keys.includes('hesaba giris tarihi') && keys.includes('aciklama') && keys.includes('islem tutari') && keys.includes('yeni bakiye');
+}
+function parseFiveColumnBankRows(lines=[], sourceLabel='manuel_yapistir'){
+  const sessionRef = decisionRef('IMP');
+  const rows = [];
+  if(!lines.length) return rows;
+  const headerCols = lines[0].split('\t').map(x=>String(x||'').trim());
+  const keyMap = {};
+  headerCols.forEach((h,i)=>{ keyMap[movementHeaderKey(h)] = i; });
+  for(let li=1; li<lines.length; li++){
+    const rawLine = String(lines[li]||'');
+    if(!rawLine.trim()) continue;
+    const cols = rawLine.split('\t');
+    const dateRaw = cols[keyMap['islem tarihi']] ?? '';
+    const entryDateRaw = cols[keyMap['hesaba giris tarihi']] ?? '';
+    const descRaw = cols[keyMap['aciklama']] ?? '';
+    const amountRaw = cols[keyMap['islem tutari']] ?? '';
+    const balanceRaw = cols[keyMap['yeni bakiye']] ?? '';
+    if(!String(dateRaw).trim() && !String(descRaw).trim()) continue;
+    const movement_date = normalizeImportDate(dateRaw);
+    const entry_date = normalizeImportDate(entryDateRaw || dateRaw);
+    const description = String(descRaw||'').trim();
+    const amount = parseTrNumber(amountRaw);
+    const running_balance = parseTrNumber(balanceRaw);
+    const import_bucket = movementImportClassifier(description);
+    const row = ensureImportedRowDescription({
+      id: uid('movimp'),
+      import_session_ref: sessionRef,
+      import_source: sourceLabel,
+      import_profile: 'five_column_bank_statement',
+      import_bucket,
+      movement_date,
+      entry_date,
+      description: description || `${sourceLabel} hareketi`,
+      source_description: description || `${sourceLabel} hareketi`,
+      raw_content: rawLine,
+      net_amount: amount,
+      raw_amount: amount,
+      running_balance,
+      raw_running_balance: running_balance,
+      external_ref: null,
+      source_type: 'movement_import',
+      source_origin: sourceLabel,
+      imported_at: new Date().toISOString(),
+      is_test_import: true,
+      column_map_locked: true,
+      parse_warning: ''
+    });
+    row.txn_id = txnId({ id: row.id, movement_date: row.movement_date, description: row.description, amount: row.net_amount }, 'IMP');
+    rows.push(row);
+  }
+  return rows;
+}
+function validateImportedRunningBalances(rows=[]){
+  const ordered = [...(rows||[])].sort((a,b)=>{
+    const da = `${a.entry_date || a.movement_date || ''}|${a.id||''}`;
+    const db = `${b.entry_date || b.movement_date || ''}|${b.id||''}`;
+    return da.localeCompare(db);
+  });
+  let prevBalance = null;
+  const flagged = new Set();
+  for(const r of ordered){
+    if(r.import_profile !== 'five_column_bank_statement') continue;
+    const curr = num(r.running_balance ?? r.raw_running_balance ?? 0);
+    const amt = num(r.net_amount ?? r.raw_amount ?? 0);
+    if(prevBalance === null){
+      prevBalance = curr;
+      continue;
+    }
+    const expected = Number((prevBalance + amt).toFixed(2));
+    if(Math.abs(expected - curr) > 0.11){
+      flagged.add(String(r.id));
+    }
+    prevBalance = curr;
+  }
+  return flagged;
+}
 
 function sanitizeMovementDateValue(value){
   if(value===null || value===undefined || String(value).trim()==='') return value;
@@ -2015,19 +2101,22 @@ function refreshImportedMovementAnalysis(persist=true){
     const key=`${r.movement_date||''}|${num(r.net_amount||0).toFixed(2)}|${normalizeMatchText(r.description||'').slice(0,60)}`;
     similarMap[key]=(similarMap[key]||0)+1;
   }
+  const balanceMismatchIds = validateImportedRunningBalances(rows);
   state.movementTests=rows.map(r=>{
     const match=classifyImportedMovementReview(r);
     const similarKey=`${r.movement_date||''}|${num(r.net_amount||0).toFixed(2)}|${normalizeMatchText(r.description||'').slice(0,60)}`;
     const duplicateFlag=(similarMap[similarKey]||0)>1;
+    const balanceMismatch = balanceMismatchIds.has(String(r.id));
     const confidence=num(match.match_confidence||0);
-    const needsApproval=duplicateFlag || confidence<95 || !match.suggested_financial_account_type || (match.suggested_financial_account_type==='cari' && !match.suggested_cari_name);
+    const needsApproval=balanceMismatch || duplicateFlag || confidence<95 || !match.suggested_financial_account_type || (match.suggested_financial_account_type==='cari' && !match.suggested_cari_name);
     return {
       ...r,
       ...match,
-      issue_type: duplicateFlag ? 'muhtemel_duplicate' : (needsApproval ? 'onay_gerekli' : (r.issue_type||'')),
+      issue_type: balanceMismatch ? 'bakiye_tutarsiz' : (duplicateFlag ? 'muhtemel_duplicate' : (needsApproval ? 'onay_gerekli' : (r.issue_type||''))),
       is_duplicate_candidate: duplicateFlag,
+      running_balance_check: balanceMismatch ? 'failed' : (r.import_profile==='five_column_bank_statement' ? 'ok' : ''),
       review_status: needsApproval ? 'onaya_dusmeli' : 'islenebilir',
-      review_result_text: needsApproval ? (duplicateFlag ? 'Muhtemel çift / onay' : 'Operatör onayı gerekli') : 'Güçlü eşleşme',
+      review_result_text: balanceMismatch ? 'Kolon / bakiye kontrolü tutarsız' : (needsApproval ? (duplicateFlag ? 'Muhtemel çift / onay' : 'Operatör onayı gerekli') : 'Güçlü eşleşme'),
       approval_required: needsApproval
     };
   });
@@ -2075,10 +2164,17 @@ function rerunImportedMovementMatching(){
   renderAccounts(); renderApprovals(); renderMovementTestCenter();
 }
 function parseMovementImportRows(rawText='', sourceLabel='manuel_yapistir'){
+  const lines = String(rawText||'').split(/\r?\n/).filter(x=>String(x||'').trim()!=='');
+  if(!lines.length) return [];
+  const firstTabCols = String(lines[0]||'').split('\t').map(x=>String(x||'').trim());
+  if(isFiveColumnBankHeaderRow(firstTabCols)){
+    return parseFiveColumnBankRows(lines, sourceLabel);
+  }
+
   const sessionRef = decisionRef('IMP');
-  const lines = String(rawText||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
   const rows = [];
-  for(const line of lines){
+  for(const rawLine of lines){
+    const line = String(rawLine||'').trim();
     if(/^(tarih|date|aciklama|açıklama|tutar|amount|islem|işlem|tarih saat işlem no miktar bakiye işlem adı)/i.test(line)) continue;
 
     let dateVal='', descVal='', amountVal='', externalRef='';
@@ -2123,10 +2219,14 @@ function parseMovementImportRows(rawText='', sourceLabel='manuel_yapistir'){
       id: uid('movimp'),
       import_session_ref: sessionRef,
       import_source: sourceLabel,
+      import_profile: 'generic_text',
       import_bucket,
       movement_date: normalizedDate,
       description: descVal || `${sourceLabel} hareketi`,
       net_amount: amount,
+      raw_amount: amount,
+      running_balance: null,
+      raw_running_balance: null,
       external_ref: externalRef || null,
       suggested_financial_account_type: import_bucket === 'moka' ? 'moka_united' : 'banka',
       source_type: 'movement_import',
@@ -2183,7 +2283,7 @@ function parseImportReadyWorksheetRows(records=[], sourceLabel='import_hazir'){
   return records.map((rec)=>{
     const description = String(pick(rec,['Açıklama','Aciklama','description']) || '').trim();
     const dateRaw = pick(rec,['Tarih','movement_date','date']);
-    const amountRaw = pick(rec,['Tutar','Miktar','net_amount']);
+    const amountRaw = pick(rec,['İşlem Tutarı','Islem Tutari','Tutar','Miktar','net_amount']);
     const bucketRaw = String(pick(rec,['Önerilen Sınıf','Onerilen Sinif','import_bucket','Sınıf','Sinif']) || '').trim().toLowerCase();
     const hareketRaw = String(pick(rec,['Önerilen Hareket','Onerilen Hareket','movement_type']) || '').trim();
     const noRaw = String(pick(rec,['İşlem No','Islem No','operation_no','No']) || '').trim();
@@ -2191,6 +2291,7 @@ function parseImportReadyWorksheetRows(records=[], sourceLabel='import_hazir'){
     const amount = parseTrNumber(amountRaw);
     const normalizedDate = parseExcelDate(dateRaw);
     const import_bucket = bucketRaw.includes('moka') ? 'moka' : movementImportClassifier(description || hareketRaw);
+    const runningBalanceRaw = pick(rec,['Yeni Bakiye','YeniBakiye','running_balance','Bakiye']);
     const row = {
       id: uid('movimp'),
       import_session_ref: decisionRef('IMP'),
@@ -2201,6 +2302,9 @@ function parseImportReadyWorksheetRows(records=[], sourceLabel='import_hazir'){
       source_description: description || `${sourceLabel} hareketi`,
       raw_content: description || `${sourceLabel} hareketi`,
       net_amount: amount,
+      raw_amount: amount,
+      running_balance: parseTrNumber(runningBalanceRaw),
+      raw_running_balance: parseTrNumber(runningBalanceRaw),
       external_ref: refRaw || null,
       suggested_financial_account_type: import_bucket === 'moka' ? 'moka_united' : 'banka',
       suggested_movement_type: hareketRaw || null,
@@ -2220,7 +2324,7 @@ function parseWorksheetMatrixRows(matrixRows, sourceLabel='xlsx_import'){
   const rows = [];
   const sessionRef = decisionRef('IMP');
   const clean = (v)=>String(v ?? '').replace(/\s+/g,' ').trim();
-  const isDateLike = (v)=>/^\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4}$/.test(clean(v));
+  const isDateLike = (v)=>/^\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4}$/.test(clean(v)) || /^\d{4}[.\/-]\d{1,2}[.\/-]\d{1,2}$/.test(clean(v));
   const parseExcelDate = (val)=>{
     if(typeof val === 'number' && window.XLSX?.SSF){
       const d = XLSX.SSF.parse_date_code(val);
@@ -2229,11 +2333,55 @@ function parseWorksheetMatrixRows(matrixRows, sourceLabel='xlsx_import'){
     return normalizeImportDate(val);
   };
   const validRows = (matrixRows || []).filter(r=>Array.isArray(r) && r.some(x=>String(x ?? '').trim() !== ''));
+  if(validRows.length && isFiveColumnBankHeaderRow(validRows[0].map(clean))){
+    const header = validRows[0].map(clean);
+    const keyMap = {};
+    header.forEach((h,i)=>{ keyMap[movementHeaderKey(h)] = i; });
+    for(const arr of validRows.slice(1)){
+      const dateRaw = arr[keyMap['islem tarihi']] ?? '';
+      const entryRaw = arr[keyMap['hesaba giris tarihi']] ?? '';
+      const desc = clean(arr[keyMap['aciklama']]);
+      const amount = parseTrNumber(arr[keyMap['islem tutari']] ?? '');
+      const running_balance = parseTrNumber(arr[keyMap['yeni bakiye']] ?? '');
+      if(!clean(dateRaw) && !desc) continue;
+      const normalizedDate = parseExcelDate(dateRaw);
+      const entryDate = parseExcelDate(entryRaw || dateRaw);
+      const import_bucket = movementImportClassifier(desc);
+      const row = ensureImportedRowDescription({
+        id: uid('movimp'),
+        import_session_ref: sessionRef,
+        import_source: sourceLabel,
+        import_profile: 'five_column_bank_statement',
+        import_bucket,
+        movement_date: normalizedDate,
+        entry_date: entryDate,
+        description: desc || `${sourceLabel} hareketi`,
+        source_description: desc || `${sourceLabel} hareketi`,
+        raw_content: arr.map(x=>String(x ?? '')).join('\t'),
+        net_amount: amount,
+        raw_amount: amount,
+        running_balance,
+        raw_running_balance: running_balance,
+        external_ref: null,
+        suggested_financial_account_type: import_bucket === 'moka' ? 'moka_united' : 'banka',
+        source_type: 'movement_import',
+        source_origin: sourceLabel,
+        imported_at: new Date().toISOString(),
+        is_test_import: true,
+        txn_id: null,
+        column_map_locked: true
+      });
+      row.txn_id = txnId({ id: row.id, movement_date: row.movement_date, description: row.description, amount: row.net_amount }, 'IMP');
+      rows.push(row);
+    }
+    return rows;
+  }
+
   for(const arr of validRows){
     const c0 = arr[0];
     const c1 = clean(arr[1]);
     const c2 = arr[2];
-    if(!isDateLike(c0)) continue;
+    if(!isDateLike(c0) && !(typeof c0 === 'number')) continue;
     const amount = parseTrNumber(c2);
     const description = c1 || `${sourceLabel} hareketi`;
     const normalizedDate = parseExcelDate(c0);
@@ -2242,12 +2390,16 @@ function parseWorksheetMatrixRows(matrixRows, sourceLabel='xlsx_import'){
       id: uid('movimp'),
       import_session_ref: sessionRef,
       import_source: sourceLabel,
+      import_profile: 'generic_matrix',
       import_bucket,
       movement_date: normalizedDate,
       description,
       source_description: description,
       raw_content: description,
       net_amount: amount,
+      raw_amount: amount,
+      running_balance: null,
+      raw_running_balance: null,
       external_ref: null,
       suggested_financial_account_type: import_bucket === 'moka' ? 'moka_united' : 'banka',
       source_type: 'movement_import',
@@ -4383,6 +4535,7 @@ function renderMovementTestCenter(){
     processable: rows.filter(x=>!x.approval_required).length,
     approval: rows.filter(x=>x.approval_required).length,
     duplicate: rows.filter(x=>x.is_duplicate_candidate).length,
+    balance_error: rows.filter(x=>x.running_balance_check==='failed').length,
   };
   target.innerHTML = `<div class="btn-row" style="margin-bottom:14px;">
       <button class="btn btn-blue" onclick="analyzeMovementImport()">Yapıştırılan Hareketleri İçeri Al</button>
