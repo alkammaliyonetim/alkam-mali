@@ -1551,7 +1551,10 @@ async function loadAccounts(){
   state.movementTests = importedMovements;
   const importedBank = importedMovements.filter(x=>x.import_bucket!=='moka').map(x=>({...x, is_imported_test:true}));
   const importedMoka = importedMovements.filter(x=>x.import_bucket==='moka').map(x=>({...x, is_imported_test:true}));
-  state.accounts=(a.data||[]).map(x=>({...x, txn_id:txnId(x,'ACC')}));
+
+  const liveAccounts = (a.data||[]).map(x=>({...x, txn_id:txnId(x,'ACC')}));
+  state.accounts = liveAccounts.length ? liveAccounts : defaultAccountRows();
+
   state.bankPanel=[...(b.data||[]).map(x=>applyBankLearnSuggestion(applyBankRuleSuggestion({...x, txn_id:txnId(x,'BNK')}))), ...importedBank];
   state.mokaPanel=[...(m.data||[]).map(x=>applyBankLearnSuggestion(applyBankRuleSuggestion({...x, txn_id:txnId(x,'MOK')}))), ...importedMoka];
 }
@@ -4123,7 +4126,7 @@ function processBankRowFast(bucket,key){
   notify('Tek tık işlendi ve eşleşme öğrenildi.');
 }
 function renderAccounts(){
-  const combinedAccounts=getCombinedAccounts();
+  const combinedAccounts=ensureVisibleAccounts();
   const manualRows=[...getLocalAccountOps()].sort((a,b)=>new Date(b.entry_date||b.created_at||0)-new Date(a.entry_date||a.created_at||0));
   const bankRows = state.bankPanel.filter(r=>rowMatchesBankFilter(r,'bank'));
   const mokaRows = state.mokaPanel.filter(r=>rowMatchesBankFilter(r,'moka'));
