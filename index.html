@@ -5500,15 +5500,19 @@ async function refreshAll(){
   ];
   const results = await Promise.allSettled(loaders.map(x=>x[1]()));
   results.forEach((r,i)=>{ if(r.status==='rejected'){ console.error(r.reason); logSystemError('refresh_all', `${loaders[i][0]} yüklenemedi`, { note: String(r.reason?.message || r.reason || '') }); } });
-  sanitizeAllImportedMovementDates();
-  refreshImportedMovementAnalysis(true);
-  sanitizeAllImportedMovementDates();
-  normalizeStateIds();
-  state.employees = normalizeNumberedList(readLocalJson(LOCAL_EMPLOYEES_KEY),'EMPCRD').rows;
-  state.employeeAccruals = normalizeNumberedList(readLocalJson(LOCAL_EMPLOYEE_ACCRUALS_KEY),'EMP').rows;
-  state.localFeePeriods = normalizeNumberedList(readLocalJson(LOCAL_FEE_PERIODS_KEY),'LFP').rows;
+
+  safeRun(()=>sanitizeAllImportedMovementDates(),'Import tarih normalize 1');
+  safeRun(()=>refreshImportedMovementAnalysis(true),'Import analiz');
+  safeRun(()=>sanitizeAllImportedMovementDates(),'Import tarih normalize 2');
+  safeRun(()=>normalizeStateIds(),'ID normalize');
+
+  safeRun(()=>{ state.employees = normalizeNumberedList(readLocalJson(LOCAL_EMPLOYEES_KEY),'EMPCRD').rows; },'Çalışan local');
+  safeRun(()=>{ state.employeeAccruals = normalizeNumberedList(readLocalJson(LOCAL_EMPLOYEE_ACCRUALS_KEY),'EMP').rows; },'Çalışan tahakkuk local');
+  safeRun(()=>{ state.localFeePeriods = normalizeNumberedList(readLocalJson(LOCAL_FEE_PERIODS_KEY),'LFP').rows; },'Ücret dönem local');
+
   safeRun(()=>ensureFeeAccrualsForAllCariler(),'Ücret tahakkuku');
   safeRun(()=>ensureEmployeeSalaryAccruals(),'Maaş tahakkuku');
+
   safeRun(()=>renderDashboard(),'Dashboard');
   safeRun(()=>renderAccounts(),'Hesaplar');
   safeRun(()=>renderReports(),'Raporlar');
