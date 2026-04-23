@@ -3927,10 +3927,32 @@ function bankRowConfidence(r){
 function bankSuggestedTarget(r){
   return r.suggested_cari_name || r.suggested_expense_name || r.suggested_financial_account_name || r.suggested_financial_account_type || "-";
 }
-function bankNeedsApproval(r){
+function normalizeBankText(v=''){
+  return String(v||'').toLocaleLowerCase('tr-TR').replace(/\s+/g,' ').trim();
+}
+function bankOriginKey(r,bucket='bank'){
+  const desc = normalizeBankText(r.description || r.raw_content || '');
+  const ref = normalizeBankText(r.external_ref || r.reference_no || r.ref_no || '');
+  const amount = num(r.net_amount || r.amount || r.raw_amount || r.final_amount || 0).toFixed(2);
+  const date = String(r.movement_date || r.line_date || '').slice(0,10);
+  const acct = normalizeBankText(r.bank_account || r.account_no || r.iban || bucket);
+  return `${bucket}|${acct}|${date}|${amount}|${desc}|${ref}`;
+}
+function bankDuplicateCandidate(r,bucket='bank'){
+  const key = bankOriginKey(r,bucket);
+  const processed = (state.approvalOps?.processed || []).some(x=>String(x.bank_origin_key||'')===key);
+  const pending = (state.bankOps?.pending || []).some(x=>String(x.bank_origin_key||'')===key);
+  const history = (state.bankOps?.history || []).filter(x=>String(x.origin_key||x.row_key||'')===key).length;
+  return processed || pending || history > 1;
+}
+function bankSuspiciousCandidate(r){
   const conf = bankRowConfidence(r);
   const text = `${r.match_reason || ''} ${r.eslesme_sebebi || ''} ${r.description || ''} ${r.issue_type || ''}`.toLowerCase();
-  return !r.suggested_financial_account_type || !bankSuggestedTarget(r) || bankSuggestedTarget(r)==="-" || (conf && conf < 95) || text.includes('duplicate') || text.includes('çift') || text.includes('onay');
+  return !r.suggested_financial_account_type || !bankSuggestedTarget(r) || bankSuggestedTarget(r)==="-" || (conf && conf < 95) || text.includes('onay') || text.includes('zayif') || text.includes('zayıf') || text.includes('kontrol');
+}
+function bankNeedsApproval(r){
+  const text = `${r.match_reason || ''} ${r.eslesme_sebebi || ''} ${r.description || ''} ${r.issue_type || ''}`.toLowerCase();
+  return bankSuspiciousCandidate(r) || text.includes('duplicate') || text.includes('çift');
 }
 function bankControlBadge(r){
   if(bankNeedsApproval(r)) return '<span class="tag red">Onaya Düşmeli</span>';
@@ -3958,7 +3980,9 @@ function bankStatusInfo(r,bucket='bank'){
 function bankStatusCode(r,bucket='bank'){
   const info = bankStatusInfo(r,bucket);
   if(info?.status) return info.status;
-  return bankNeedsApproval(r) ? 'needs_approval' : 'processable';
+  if(bankDuplicateCandidate(r,bucket)) return 'duplicate';
+  if(bankNeedsApproval(r)) return 'needs_approval';
+  return 'processable';
 }
 function bankStatusBadge(r,bucket='bank'){
   const code = bankStatusCode(r,bucket);
@@ -3966,12 +3990,14 @@ function bankStatusBadge(r,bucket='bank'){
   if(code==='processed') return '<span class="tag green">İşlendi</span>';
   if(code==='ignored') return '<span class="tag gray">İşlenmeyen</span>';
   if(code==='rejected') return '<span class="tag red">Reddedildi</span>';
-  if(code==='needs_approval') return '<span class="tag red">Onaya Düşmeli</span>';
+  if(code==='duplicate') return '<span class="tag amber">Mükerrer Adayı</span>';
+  if(code==='needs_approval') return '<span class="tag red">Şüpheli / Onay</span>';
   return '<span class="tag green">İşlenebilir</span>';
 }
 function bankStatusNote(r,bucket='bank'){
   const info = bankStatusInfo(r,bucket);
   if(info?.note) return info.note;
+  if(bankDuplicateCandidate(r,bucket)) return 'Aynı banka anahtarıyla daha önce işlenmiş veya kuyruğa alınmış kayıt bulundu';
   return r.match_reason || r.eslesme_sebebi || (bankNeedsApproval(r) ? 'Operatör kararı gerekli' : 'Standart eşleşme');
 }
 function bankPendingRowsAsApprovalRows(){
@@ -3983,6 +4009,7 @@ function rowMatchesBankFilter(r,bucket='bank'){
   if(filter==='all') return true;
   if(filter==='processable') return code==='processable';
   if(filter==='needs_approval') return code==='needs_approval';
+  if(filter==='duplicate') return code==='duplicate';
   if(filter==='queued') return code==='queued';
   if(filter==='processed') return code==='processed';
   if(filter==='ignored') return code==='ignored' || code==='rejected';
@@ -4056,9 +4083,10 @@ function openBankActionModal(bucket,key){
 }
 function closeBankActionModal(){ document.getElementById('bankActionModal').style.display='none'; }
 function updateBankRowStatus(r,bucket,status,note,extra={}){
-  state.bankOps.row_status[bankRowKey(r,bucket)] = {status, note: note || '', updated_at:new Date().toISOString(), bucket, amount:num(r.net_amount||r.amount||0), description:r.description||'', ...extra};
+  const originKey = bankOriginKey(r,bucket);
+  state.bankOps.row_status[bankRowKey(r,bucket)] = {status, note: note || '', updated_at:new Date().toISOString(), bucket, amount:num(r.net_amount||r.amount||0), description:r.description||'', origin_key:originKey, ...extra};
   state.bankOps.history = state.bankOps.history || [];
-  state.bankOps.history.unshift({status, note: note || '', updated_at:new Date().toISOString(), bucket, row_key:bankRowKey(r,bucket), amount:num(r.net_amount||r.amount||0), description:r.description||''});
+  state.bankOps.history.unshift({status, note: note || '', updated_at:new Date().toISOString(), bucket, row_key:bankRowKey(r,bucket), origin_key:originKey, amount:num(r.net_amount||r.amount||0), description:r.description||''});
   persistBankOps();
 }
 function queueSelectedBankRowToApproval(){
@@ -4072,7 +4100,7 @@ function queueSelectedBankRowToApproval(){
   const forceOk=!!document.getElementById('bankDecisionForceCheck')?.checked;
   if(!targetName){ notify('Hedef adı gir.'); return; }
   if((bankNeedsApproval(r) || state.selectedBankBucket==='moka') && !forceOk){ notify('Kontrol kutusunu işaretle.'); return; }
-  const originKey = bankRowKey(r,state.selectedBankBucket);
+  const originKey = bankOriginKey(r,state.selectedBankBucket);
   state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.bank_origin_key)!==String(originKey));
   const pendingId=uid('bank_pending');
   const pendingRow={
@@ -4116,7 +4144,7 @@ function processSelectedBankRowDirect(){
   const forceOk=!!document.getElementById('bankDecisionForceCheck')?.checked;
   if(!targetName){ notify('Hedef adı gir.'); return; }
   if((bankNeedsApproval(r) || state.selectedBankBucket==='moka') && !forceOk){ notify('Kontrol kutusunu işaretle.'); return; }
-  const originKey = bankRowKey(r,state.selectedBankBucket);
+  const originKey = bankOriginKey(r,state.selectedBankBucket);
   state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.bank_origin_key)!==String(originKey));
   const bankRef = decisionRef('BNK');
   const bankProcessedId=uid('bank_processed');
@@ -4154,7 +4182,7 @@ function ignoreSelectedBankRow(){
   const r=getSelectedBankRow();
   if(!r){ notify('Satır bulunamadı.'); return; }
   const note=(document.getElementById('bankDecisionNote')?.value || '').trim() || 'Operatör tarafından işlenmeyen olarak bırakıldı';
-  const originKey = bankRowKey(r,state.selectedBankBucket);
+  const originKey = bankOriginKey(r,state.selectedBankBucket);
   state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.bank_origin_key)!==String(originKey));
   updateBankRowStatus(r,state.selectedBankBucket,'ignored',note,{});
   addAuditEvent('bank_ignored',{source_module:state.selectedBankBucket==='moka'?'moka_panel':'bank_panel', target_name:r.description || '-', amount:num(r.net_amount||r.amount||0), note, summary:`Banka/Moka satırı işlenmeyen yapıldı · ${r.description || '-'}`});
@@ -4173,8 +4201,9 @@ function processBankRowFast(bucket,key){
   const targetName = defs.targetName || bankSuggestedTarget(r);
   const movementType = defs.movementType || r.suggested_movement_type || 'tahsilat';
   if(!targetName || targetName==='-'){ notify('Hedef belirsiz, detaydan işlemelisin.'); return; }
+  if(bankDuplicateCandidate(r,bucket)){ notify('Bu satır mükerrer adayı. Tek tık işlenmez.'); return; }
   if(bankNeedsApproval(r) || bucket==='moka'){ openBankActionModal(bucket,key); notify('Bu satır tek tık için yeterince güvenli değil; detay ekranından kontrol et.'); return; }
-  const originKey = bankRowKey(r,bucket);
+  const originKey = bankOriginKey(r,bucket);
   state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.bank_origin_key)!==String(originKey));
   const bankRef = decisionRef('BNK');
   const bankProcessedId=uid('bank_processed');
@@ -4216,6 +4245,7 @@ function renderAccounts(){
     total: state.bankPanel.length,
     processable: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='processable').length,
     needs_approval: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='needs_approval').length,
+    duplicate: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='duplicate').length,
     queued: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='queued').length,
     processed: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='processed').length,
     ignored: state.bankPanel.filter(r=>['ignored','rejected'].includes(bankStatusCode(r,'bank'))).length,
