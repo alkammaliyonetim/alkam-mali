@@ -248,7 +248,7 @@
 </div>
 
 <div id="approvalDetailModal" class="modal-overlay" style="display:none;">
-  <div class="modal-card" style="max-width:980px;">
+  <div class="modal-card" style="max-width:1520px;width:95vw;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
       <h2 style="margin:0;font-size:24px;font-weight:900;">Onay Kaydı Detayı</h2>
       <button class="btn btn-red" onclick="closeApprovalDetailModal()">Kapat</button>
@@ -4185,15 +4185,84 @@ function getBankTargetDefaults(r,bucket='bank'){
 function syncBankTargetNameFromCari(){
   const cariId=document.getElementById('bankDecisionCariId')?.value || '';
   const input=document.getElementById('bankDecisionTargetName');
-  if(!input || !cariId) return;
-  const cari=state.cariler.find(x=>String(x.cari_id)===String(cariId));
-  if(cari) input.value = cari.cari_name || '';
+  if(input && cariId){
+    const cari=state.cariler.find(x=>String(x.cari_id)===String(cariId));
+    if(cari) input.value = cari.cari_name || '';
+  }
+  renderBankActionCariPreview();
+}
+async function renderBankActionCariPreview(){
+  const target=document.getElementById('bankActionCariPreview');
+  if(!target) return;
+  const targetType=document.getElementById('bankDecisionTargetType')?.value || 'cari';
+  const cariId=document.getElementById('bankDecisionCariId')?.value || '';
+  if(targetType!=='cari'){
+    target.innerHTML = '<div class="empty">Sağ panel yalnızca cari hedefinde canlı ekstre önizlemesi gösterir.</div>';
+    return;
+  }
+  if(!cariId){
+    target.innerHTML = '<div class="empty">Önizleme için cari seç.</div>';
+    return;
+  }
+  target.innerHTML = '<div class="empty">Cari ekstre önizlemesi hazırlanıyor...</div>';
+  try{
+    const c = state.cariler.find(x=>String(x.cari_id)===String(cariId));
+    const card = getCariCard(cariId);
+    const { data } = await supabaseClient.from("v_cari_hareket_dokumu").select("*").eq("cari_id",cariId).order("line_date",{ascending:false}).limit(500);
+    const localRows = buildLocalCariMovementRows(cariId);
+    const localFeeRows = feeAccrualRowsForCari(cariId);
+    const allRows = [ ...(data||[]), ...localRows, ...localFeeRows ].map(x=>({...x, txn_id:txnId(x,'HRK')}));
+    const rowsAsc = computeRunningRows(allRows, null);
+    const rowsDesc = [...rowsAsc].reverse();
+    const totalDebit = rowsAsc.reduce((a,r)=>a+num(r.debit),0);
+    const totalCredit = rowsAsc.reduce((a,r)=>a+num(r.credit),0);
+    const closingBalance = rowsAsc.length ? num(rowsAsc[rowsAsc.length-1].running_balance) : 0;
+    const systemBalance = c ? num(c.bakiye) : closingBalance;
+    const diff = Math.abs(closingBalance - systemBalance);
+    const sonTahakkuk = rowsDesc.find(r=>String(r.movement_type||'').toLowerCase().includes('tahakkuk'));
+    const sonTahsilat = rowsDesc.find(r=>String(r.movement_type||'').toLowerCase().includes('tahsilat'));
+    target.innerHTML = `
+      <div class="section" style="box-shadow:none;margin:0;padding:0;border:none;background:transparent;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;">
+          <div>
+            <div style="font-size:15px;font-weight:900;color:#64748b;">Canlı Cari Ekstre Önizlemesi</div>
+            <div style="font-size:28px;font-weight:900;line-height:1.1;">${escapeHtml(c?.cari_name || '-')}</div>
+            <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">
+              ${renderTag(card?.taxpayer_type || c?.taxpayer_type || '-')}
+              ${diff < 0.01 ? '<span class="tag green">BAKİYE UYUMLU</span>' : '<span class="tag red">BAKİYE FARKI</span>'}
+            </div>
+          </div>
+          <button class="btn btn-soft" onclick="state.selectedCariId='${escapeHtml(cariId)}'; closeBankActionModal(); renderCariList(); renderSelectedCariDetail();">Bu Cariye Git</button>
+        </div>
+        <div class="grid-4" style="margin-bottom:12px;">
+          <div class="metric-mini"><div class="k">Cari Kodu</div><div class="v">${escapeHtml(c?.cari_code || '-')}</div></div>
+          <div class="metric-mini"><div class="k">Aktif Ücret</div><div class="v">${money(card?.monthly_fee_amount || c?.defter_ucreti || 0)}</div></div>
+          <div class="metric-mini"><div class="k">Açılış Tarihi</div><div class="v">${shortDate(getFeeSetup(cariId)?.opening_date)}</div></div>
+          <div class="metric-mini"><div class="k">Skor</div><div class="v">${Number(c?.score_total || 0).toFixed(0)} / 100</div></div>
+          <div class="metric-mini"><div class="k">Son Tahakkuk</div><div class="v">${shortDate(sonTahakkuk?.line_date)}<br>${money(sonTahakkuk?.debit || 0)}</div></div>
+          <div class="metric-mini"><div class="k">Son Tahsilat</div><div class="v">${shortDate(sonTahsilat?.line_date)}<br>${money(sonTahsilat?.credit || 0)}</div></div>
+          <div class="metric-mini"><div class="k">Güncel Bakiye</div><div class="v">${balanceLabel(systemBalance)}</div></div>
+          <div class="metric-mini"><div class="k">Extre Kapanış</div><div class="v">${balanceLabel(closingBalance)}<br>Fark: ${money(diff)}</div></div>
+        </div>
+        <div class="grid-3" style="margin-bottom:12px;">
+          <div class="metric-mini"><div class="k">Toplam Borç</div><div class="v">${money(totalDebit)}</div></div>
+          <div class="metric-mini"><div class="k">Toplam Alacak</div><div class="v">${money(totalCredit)}</div></div>
+          <div class="metric-mini"><div class="k">Satır</div><div class="v">${rowsAsc.length}</div></div>
+        </div>
+        <div style="max-height:540px;overflow:auto;border:1px solid #d7dfef;border-radius:16px;background:#fff;">
+          ${buildStandardStatementTable(rowsDesc.slice(0,20))}
+        </div>
+      </div>`;
+  }catch(err){
+    target.innerHTML = '<div class="empty">Cari ekstre önizlemesi yüklenemedi.</div>';
+    logSystemError('bank_action_cari_preview','Cari ekstre önizleme yüklenemedi',{ note:String(err?.message || err || '') });
+  }
 }
 function getSelectedBankRow(){
   const arr = state.selectedBankBucket==='moka' ? state.mokaPanel : state.bankPanel;
   return arr.find(r=>bankRowKey(r,state.selectedBankBucket)===state.selectedBankKey) || null;
 }
-function openBankActionModal(bucket,key){
+async function openBankActionModal(bucket,key){
   state.selectedBankBucket=bucket;
   state.selectedBankKey=key;
   const r=getSelectedBankRow();
@@ -4202,36 +4271,45 @@ function openBankActionModal(bucket,key){
   const info=bankStatusInfo(r,bucket);
   const amount=num(r.net_amount || r.amount || 0);
   const recommended=bucket==='moka' ? mokaRecommendedAction(r) : (bankNeedsApproval(r) ? 'Önce onay merkezine gönder' : 'Doğrudan işlenebilir');
+  const matchedCari = state.cariler.find(c=>String(c.cari_name||'')===String(defs.targetName||'')) || null;
   const content=`
-    <div class="grid-4" style="margin-bottom:14px;">
-      <div class="metric-mini"><div class="k">İşlem ID</div><div class="v">${escapeHtml(txnId(r,bucket==='moka' ? 'MOK' : 'BNK'))}</div></div>
-      <div class="metric-mini"><div class="k">Kaynak</div><div class="v">${escapeHtml(bucket==='moka' ? 'Moka' : 'Banka')}</div></div>
-      <div class="metric-mini"><div class="k">Durum</div><div class="v">${bankStatusBadge(r,bucket)}</div></div>
-      <div class="metric-mini"><div class="k">Güven</div><div class="v">${bankRowConfidence(r) ? bankRowConfidence(r).toFixed(0) : '-'}</div></div>
-      <div class="metric-mini"><div class="k">Tutar</div><div class="v">${money(amount)}</div></div>
-    </div>
-    <div class="grid-2" style="margin-bottom:14px;">
-      <div class="rule-box"><strong>Açıklama</strong><br>${escapeHtml(r.description || '-')}</div>
-      <div class="rule-box"><strong>Operasyon Kuralı</strong><br>${escapeHtml(recommended)}<br>${escapeHtml(bankStatusNote(r,bucket))}</div>
-    </div>
-    <div class="form-grid-3">
-      <div class="field"><label>Hedef Tip</label><select id="bankDecisionTargetType" class="select-input"><option value="cari" ${defs.targetType==='cari'?'selected':''}>Cari</option><option value="gider" ${defs.targetType==='gider'?'selected':''}>Gider</option><option value="hesap" ${defs.targetType==='hesap'?'selected':''}>Hesap</option><option value="moka_united" ${defs.targetType==='moka_united'?'selected':''}>Moka United</option></select></div>
-      <div class="field"><label>Hareket</label><select id="bankDecisionMovementType" class="select-input"><option value="tahsilat" ${defs.movementType==='tahsilat'?'selected':''}>tahsilat</option><option value="tahakkuk" ${defs.movementType==='tahakkuk'?'selected':''}>tahakkuk</option><option value="mahsup" ${defs.movementType==='mahsup'?'selected':''}>mahsup</option><option value="gider" ${defs.movementType==='gider'?'selected':''}>gider</option></select></div>
-      <div class="field"><label>Tutar</label><input id="bankDecisionAmount" type="number" min="0" step="0.01" value="${amount}" /></div>
-    </div>
-    <div class="form-grid" style="margin-top:12px;">
-      <div class="field"><label>Cari Seç</label><select id="bankDecisionCariId" class="select-input" onchange="syncBankTargetNameFromCari()"><option value="">Cari seçiniz</option>${state.cariler.map(c=>`<option value="${escapeHtml(c.cari_id)}" ${(c.cari_name||'')===defs.targetName?'selected':''}>${escapeHtml(c.cari_name||'-')}</option>`).join('')}</select></div>
-      <div class="field"><label>Hedef Ad</label><input id="bankDecisionTargetName" value="${escapeHtml(defs.targetName || '')}" placeholder="Cari / gider / hesap adı" /></div>
-    </div>
-    <div class="field" style="margin-top:12px;"><label>Operasyon Notu</label><input id="bankDecisionNote" value="${escapeHtml(info?.note || defs.note || '')}" /></div>
-    <div class="field" style="margin-top:12px;"><label>Kontrol</label><div class="rule-box"><label style="display:flex;gap:8px;align-items:flex-start;font-weight:800;"><input id="bankDecisionForceCheck" type="checkbox" ${bankNeedsApproval(r)||bucket==='moka'?'':'checked'} /> Satırı kontrol ettim. Yanlış cari / yanlış mahsup / yanlış belge olmayacağını doğruladım.</label></div></div>
-    <div class="btn-row" style="margin-top:16px;">
-      <button class="btn btn-blue" onclick="queueSelectedBankRowToApproval()">Onay Merkezine Gönder</button>
-      <button class="btn btn-soft" onclick="processSelectedBankRowDirect()">Doğrudan İşle</button>
-      <button class="btn btn-red" onclick="ignoreSelectedBankRow()">İşlenmeyen Olarak İşaretle</button>
+    <div class="grid-2" style="align-items:start;gap:18px;">
+      <div>
+        <div class="grid-4" style="margin-bottom:14px;">
+          <div class="metric-mini"><div class="k">İşlem ID</div><div class="v">${escapeHtml(txnId(r,bucket==='moka' ? 'MOK' : 'BNK'))}</div></div>
+          <div class="metric-mini"><div class="k">Kaynak</div><div class="v">${escapeHtml(bucket==='moka' ? 'Moka' : 'Banka')}</div></div>
+          <div class="metric-mini"><div class="k">Durum</div><div class="v">${bankStatusBadge(r,bucket)}</div></div>
+          <div class="metric-mini"><div class="k">Güven</div><div class="v">${bankRowConfidence(r) ? bankRowConfidence(r).toFixed(0) : '-'}</div></div>
+          <div class="metric-mini"><div class="k">Tutar</div><div class="v">${money(amount)}</div></div>
+        </div>
+        <div class="grid-2" style="margin-bottom:14px;">
+          <div class="rule-box"><strong>Açıklama</strong><br>${escapeHtml(r.description || '-')}</div>
+          <div class="rule-box"><strong>Operasyon Kuralı</strong><br>${escapeHtml(recommended)}<br>${escapeHtml(bankStatusNote(r,bucket))}</div>
+        </div>
+        <div class="form-grid-3">
+          <div class="field"><label>Hedef Tip</label><select id="bankDecisionTargetType" class="select-input" onchange="renderBankActionCariPreview()"><option value="cari" ${defs.targetType==='cari'?'selected':''}>Cari</option><option value="gider" ${defs.targetType==='gider'?'selected':''}>Gider</option><option value="hesap" ${defs.targetType==='hesap'?'selected':''}>Hesap</option><option value="moka_united" ${defs.targetType==='moka_united'?'selected':''}>Moka United</option></select></div>
+          <div class="field"><label>Hareket</label><select id="bankDecisionMovementType" class="select-input"><option value="tahsilat" ${defs.movementType==='tahsilat'?'selected':''}>tahsilat</option><option value="tahakkuk" ${defs.movementType==='tahakkuk'?'selected':''}>tahakkuk</option><option value="mahsup" ${defs.movementType==='mahsup'?'selected':''}>mahsup</option><option value="gider" ${defs.movementType==='gider'?'selected':''}>gider</option></select></div>
+          <div class="field"><label>Tutar</label><input id="bankDecisionAmount" type="number" min="0" step="0.01" value="${amount}" /></div>
+        </div>
+        <div class="form-grid" style="margin-top:12px;">
+          <div class="field"><label>Cari Seç</label><select id="bankDecisionCariId" class="select-input" onchange="syncBankTargetNameFromCari()"><option value="">Cari seçiniz</option>${state.cariler.map(c=>`<option value="${escapeHtml(c.cari_id)}" ${String(c.cari_id)===String(matchedCari?.cari_id||'')?'selected':''}>${escapeHtml(c.cari_name||'-')}</option>`).join('')}</select></div>
+          <div class="field"><label>Hedef Ad</label><input id="bankDecisionTargetName" value="${escapeHtml(defs.targetName || '')}" placeholder="Cari / gider / hesap adı" /></div>
+        </div>
+        <div class="field" style="margin-top:12px;"><label>Operasyon Notu</label><input id="bankDecisionNote" value="${escapeHtml(info?.note || defs.note || '')}" /></div>
+        <div class="field" style="margin-top:12px;"><label>Kontrol</label><div class="rule-box"><label style="display:flex;gap:8px;align-items:flex-start;font-weight:800;"><input id="bankDecisionForceCheck" type="checkbox" ${bankNeedsApproval(r)||bucket==='moka'?'':'checked'} /> Satırı kontrol ettim. Yanlış cari / yanlış mahsup / yanlış belge olmayacağını doğruladım.</label></div></div>
+        <div class="btn-row" style="margin-top:16px;">
+          <button class="btn btn-blue" onclick="queueSelectedBankRowToApproval()">Onay Merkezine Gönder</button>
+          <button class="btn btn-soft" onclick="processSelectedBankRowDirect()">Doğrudan İşle</button>
+          <button class="btn btn-red" onclick="ignoreSelectedBankRow()">İşlenmeyen Olarak İşaretle</button>
+        </div>
+      </div>
+      <div>
+        <div id="bankActionCariPreview" class="empty">Cari ekstre önizlemesi hazırlanıyor...</div>
+      </div>
     </div>`;
   document.getElementById('bankActionContent').innerHTML=content;
   document.getElementById('bankActionModal').style.display='flex';
+  await renderBankActionCariPreview();
 }
 function closeBankActionModal(){ document.getElementById('bankActionModal').style.display='none'; }
 function updateBankRowStatus(r,bucket,status,note,extra={}){
