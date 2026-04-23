@@ -752,8 +752,8 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_BANK_LEARN_KEY="alkam_local_bank_learn_v1"; const LOCAL_EMPLOYEES_KEY="alkam_local_employees_v1"; const LOCAL_EMPLOYEE_ACCRUALS_KEY="alkam_local_employee_accruals_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_CARI_FEE_SETUP_KEY="alkam_local_cari_fee_setup_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],employees:[],employeeAccruals:[],selectedEmployeeId:null,cariFeeSetups:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_BANK_LEARN_KEY="alkam_local_bank_learn_v1"; const LOCAL_EMPLOYEES_KEY="alkam_local_employees_v1"; const LOCAL_EMPLOYEE_ACCRUALS_KEY="alkam_local_employee_accruals_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_CARI_FEE_SETUP_KEY="alkam_local_cari_fee_setup_v1"; const LOCAL_FEE_PERIODS_KEY="alkam_local_fee_periods_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],employees:[],employeeAccruals:[],selectedEmployeeId:null,cariFeeSetups:[],localFeePeriods:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
 
 const LIVE_SYNC_TABLES={
   account_ops:'alkam_manual_account_ops',
@@ -1560,12 +1560,13 @@ async function loadAccounts(){
 }
 
 async function loadFeeData(){
-  const [t, c] = await Promise.all([
+  state.localFeePeriods = normalizeNumberedList(readLocalJson(LOCAL_FEE_PERIODS_KEY),'LFP').rows;
+  const [t, c] = await Promise.allSettled([
     supabaseClient.from("v_cari_fee_timeline").select("*").order("valid_from",{ascending:false}),
     supabaseClient.from("v_monthly_fee_accrual_control").select("*").order("period_start",{ascending:false})
   ]);
-  state.feeTimeline = t.data || [];
-  state.feeControl = c.data || [];
+  state.feeTimeline = t.status==='fulfilled' ? (t.value.data || []) : [];
+  state.feeControl = c.status==='fulfilled' ? (c.value.data || []) : [];
 }
 function monthTokenTR(monthNo){
   return ['','OCAK26','ŞUBAT26','MART26','NİSAN26','MAYIS26','HAZİRAN26','TEMMUZ26','AĞUSTOS26','EYLÜL26','EKİM26','KASIM26','ARALIK26'][monthNo] || '';
@@ -3008,9 +3009,43 @@ function rangeFilteredHareketler(){
   return state.hareketler.filter(h=>new Date(h.line_date)>=start);
 }
 function getCariCard(id){ return state.cariCards.find(x=>x.cari_id===id) || null; }
-function getFeeTimeline(id){ return state.feeTimeline.filter(x=>String(x.cari_id)===String(id)).sort((a,b)=>String(a.valid_from||'').localeCompare(String(b.valid_from||''))); }
+function getFeeTimeline(id){ return mergedFeeTimelineRows((state.feeTimeline||[]).filter(x=>String(x.cari_id)===String(id)), getLocalFeeTimeline(id)); }
 function getFeeControl(id){ return state.feeControl.filter(x=>x.cari_id===id); }
 function getFeeSetup(id){ return (state.cariFeeSetups||[]).find(x=>String(x.cari_id)===String(id)) || null; }
+function persistLocalFeePeriods(){ writeLocalJson(LOCAL_FEE_PERIODS_KEY, state.localFeePeriods || []); }
+function feePeriodKey(row){ return `${row.cari_id}|${String(row.valid_from||'').slice(0,10)}|${num(row.current_fee||row.fee_amount||row.amount||0).toFixed(2)}`; }
+function getLocalFeeTimeline(id){ return (state.localFeePeriods||[]).filter(x=>String(x.cari_id)===String(id)); }
+function mergedFeeTimelineRows(liveRows=[], localRows=[]){
+  const map = new Map();
+  [...liveRows, ...localRows].forEach(r=>{
+    if(!r) return;
+    const row = stampRecordIds({...r}, 'LFP');
+    const key = String(row.id || feePeriodKey(row));
+    map.set(key, row);
+  });
+  return [...map.values()].sort((a,b)=>String(b.valid_from||'').localeCompare(String(a.valid_from||'')));
+}
+function upsertLocalFeePeriod(row){
+  const stamped = stampRecordIds({
+    source: 'local_first',
+    sync_status: 'local_only',
+    created_at: row.created_at || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...row
+  }, 'LFP');
+  const key = String(stamped.id || feePeriodKey(stamped));
+  state.localFeePeriods = (state.localFeePeriods || []).filter(x=>String(x.id || feePeriodKey(x)) !== key);
+  state.localFeePeriods.unshift(stamped);
+  persistLocalFeePeriods();
+  return stamped;
+}
+function closeLocalFeePeriod(id, validTo){
+  state.localFeePeriods = (state.localFeePeriods || []).map(r=>{
+    if(String(r.id)!==String(id)) return r;
+    return {...r, valid_to: validTo, updated_at:new Date().toISOString(), sync_status:r.sync_status||'local_only'};
+  });
+  persistLocalFeePeriods();
+}
 function monthTokenFromIso(v){ const d=new Date(v); if(Number.isNaN(d.getTime())) return ''; const months=['OCAK','ŞUBAT','MART','NİSAN','MAYIS','HAZİRAN','TEMMUZ','AĞUSTOS','EYLÜL','EKİM','KASIM','ARALIK']; return `${months[d.getMonth()]}${d.getFullYear()}`; }
 function feeDescriptionFromDate(v){ return `${monthTokenFromIso(v)} AYI MUHASEBE ÜCRETİ`; }
 function feeAccrualRowsForCari(id){ return (state.operationalLedger||[]).filter(x=>String(x.cari_id)===String(id) && String(x.source_module||'')==='fee_auto' && String(x.movement_type||'').toLowerCase()==='tahakkuk'); }
@@ -3189,13 +3224,34 @@ async function saveAnnualFeePeriod(){
   const validFrom = feeYearStart(state.selectedCariId, year);
   const validTo = feeYearEnd(year);
   const existing = getFeeTimeline(state.selectedCariId).find(r=>String(r.valid_from||'').slice(0,10)===validFrom);
-  if(existing){
-    const upd = await supabaseClient.from("cari_fee_history").update(feeHistoryUpdatePayload({ fee_amount:feeAmount, valid_to:validTo, note, updated_at:new Date().toISOString() })).eq("id", existing.id);
-    if(upd.error){ notify("Yıllık ücret güncellenemedi: " + upd.error.message); return; }
-  }else{
-    const ins = await supabaseClient.from("cari_fee_history").insert([feeHistoryInsertPayload({ cari_id:state.selectedCariId, fee_amount:feeAmount, valid_from:validFrom, valid_to:validTo, note, created_at:new Date().toISOString(), updated_at:new Date().toISOString() })]);
-    if(ins.error){ notify("Yıllık ücret kaydedilemedi: " + ins.error.message); return; }
+
+  const localPayload = {
+    id: existing?.id && String(existing?.source||'')==='local_first' ? existing.id : undefined,
+    cari_id: state.selectedCariId,
+    current_fee: feeAmount,
+    valid_from: validFrom,
+    valid_to: validTo,
+    note,
+    source: 'local_first',
+    sync_status: 'local_only'
+  };
+  upsertLocalFeePeriod(localPayload);
+
+  let syncMessage = 'Yerel kayıt tamamlandı.';
+  try{
+    if(existing && String(existing.source||'')!=='local_first'){
+      const upd = await supabaseClient.from("cari_fee_history").update(feeHistoryUpdatePayload({ fee_amount:feeAmount, valid_to:validTo, note, updated_at:new Date().toISOString() })).eq("id", existing.id);
+      if(upd.error) throw upd.error;
+      syncMessage = 'Canlı tabloya da yazıldı.';
+    }else{
+      const ins = await supabaseClient.from("cari_fee_history").insert([feeHistoryInsertPayload({ cari_id:state.selectedCariId, fee_amount:feeAmount, valid_from:validFrom, valid_to:validTo, note, created_at:new Date().toISOString(), updated_at:new Date().toISOString() })]);
+      if(ins.error) throw ins.error;
+      syncMessage = 'Canlı tabloya da yazıldı.';
+    }
+  }catch(err){
+    logSystemError('fee_history_sync', 'Ücret dönemi canlıya yazılamadı', { note:String(err?.message || err || '') });
   }
+
   await loadFeeData();
   ensureFeeAccrualsForCariYear(state.selectedCariId, year);
   ensureFeeAccrualsForAllCariler();
@@ -3203,7 +3259,7 @@ async function saveAnnualFeePeriod(){
   renderSelectedCariDetail();
   renderReports();
   renderFeeModal();
-  notify(`${year} yılı için bugüne kadarki eksik ay tahakkukları kontrol edilip tamamlandı.`);
+  notify(`${year} yılı kaydedildi. ${syncMessage}`);
 }
 
 function buildExpectedFeeRowsForYear(cariId, year){
@@ -3751,7 +3807,7 @@ function renderFeeModal(){
   }
   const periods = [...getFeeTimeline(state.selectedCariId)].sort((a,b)=>String(b.valid_from||"").localeCompare(String(a.valid_from||"")));
   const controls = [...getFeeControl(state.selectedCariId)].sort((a,b)=>String(b.period_start||"").localeCompare(String(a.period_start||"")));
-  document.getElementById("feeTimelineWrap").innerHTML = periods.length ? `<table><thead><tr><th>Başlangıç</th><th>Bitiş</th><th class="text-right">Ücret</th><th>Durum</th><th>Not</th></tr></thead><tbody>${periods.map(r=>`<tr><td>${shortDate(r.valid_from)}</td><td>${r.valid_to ? shortDate(r.valid_to) : '<span class="tag green">Açık</span>'}</td><td class="text-right">${money(r.fee_amount || r.current_fee || r.amount || 0)}</td><td>${!r.valid_to ? '<span class="tag blue">Aktif Dönem</span>' : '<span class="tag gray">Kapalı</span>'}</td><td>${escapeHtml(r.note || r.change_reason || '-')}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Bu caride ücret geçmişi yok.</div>`;
+  document.getElementById("feeTimelineWrap").innerHTML = periods.length ? `<table><thead><tr><th>Başlangıç</th><th>Bitiş</th><th class="text-right">Ücret</th><th>Durum</th><th>Kaynak</th><th>Not</th></tr></thead><tbody>${periods.map(r=>`<tr><td>${shortDate(r.valid_from)}</td><td>${r.valid_to ? shortDate(r.valid_to) : '<span class="tag green">Açık</span>'}</td><td class="text-right">${money(r.fee_amount || r.current_fee || r.amount || 0)}</td><td>${!r.valid_to ? '<span class="tag blue">Aktif Dönem</span>' : '<span class="tag gray">Kapalı</span>'}</td><td>${String(r.source||'')==='local_first' || String(r.sync_status||'')==='local_only' ? '<span class="tag amber">Yerel Kayıt</span>' : '<span class="tag green">Canlı</span>'}</td><td>${escapeHtml(r.note || r.change_reason || '-')}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Bu caride ücret geçmişi yok.</div>`;
   document.getElementById("feeControlWrap").innerHTML = controls.length ? `<table><thead><tr><th>Dönem</th><th>Durum</th><th class="text-right">Beklenen</th><th class="text-right">Bulunan</th><th>Açıklama</th></tr></thead><tbody>${controls.map(r=>`<tr><td>${shortDate(r.period_start)}${r.period_end ? ' - ' + shortDate(r.period_end) : ''}</td><td>${renderTag(r.control_status || r.issue_type || (num(r.diff_amount) !== 0 ? 'farkli_tutar' : 'tamam'))}</td><td class="text-right">${money(r.expected_amount || r.expected_fee_amount || r.current_fee || 0)}</td><td class="text-right">${money(r.existing_amount || r.actual_amount || r.posted_amount || 0)}</td><td>${escapeHtml(r.note || r.issue_reason || r.status_note || '-')}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Bu cari için kontrol sorunu görünmüyor.</div>`; renderFeeYearSuggestWrap();
 }
 function openFeeModal(){
@@ -3819,13 +3875,22 @@ async function closeActiveFeePeriodToday(){
   const openPeriod = getOpenFeePeriod(state.selectedCariId);
   if(!openPeriod){ notify("Açık ücret dönemi yok."); return; }
   const today = new Date().toISOString().slice(0,10);
-  const res = await supabaseClient.from("cari_fee_history").update(feeHistoryUpdatePayload({ valid_to:today, updated_at:new Date().toISOString() })).eq("id", openPeriod.id);
-  if(res.error){ notify("Açık dönem kapatılamadı: " + res.error.message); return; }
-  notify("Açık ücret dönemi bugün kapatıldı.");
+  if(String(openPeriod.source||'')==='local_first') closeLocalFeePeriod(openPeriod.id, today);
+  let syncMessage = 'Yerel kayıt güncellendi.';
+  try{
+    if(String(openPeriod.source||'')!=='local_first'){
+      const res = await supabaseClient.from("cari_fee_history").update(feeHistoryUpdatePayload({ valid_to:today, updated_at:new Date().toISOString() })).eq("id", openPeriod.id);
+      if(res.error) throw res.error;
+      syncMessage = 'Canlı tablo da güncellendi.';
+    }
+  }catch(err){
+    logSystemError('fee_history_sync', 'Açık dönem canlı kapatılamadı', { note:String(err?.message || err || '') });
+  }
   await Promise.all([loadCariler(), loadFeeData()]);
   renderSelectedCariDetail();
   renderReports();
   renderFeeModal();
+  notify(`Açık ücret dönemi kapatıldı. ${syncMessage}`);
 }
 function approvalConfidence(r){
   return num(r.confidence_score ?? r.match_confidence ?? r.guven_puani ?? r.ai_score ?? r.suggested_confidence);
@@ -5222,10 +5287,15 @@ async function saveCariCard(){
     const yearEnd = yearEndFromDate(opening_date);
     const sameYearFirst = getFeeTimeline(state.selectedCariId).find(x=>String(x.valid_from||'').slice(0,10)===String(opening_date).slice(0,10));
     if(!sameYearFirst){
-      const insertPayload = feeHistoryInsertPayload({ cari_id: state.selectedCariId, fee_amount: num(payload.monthly_fee_amount), valid_from: String(opening_date).slice(0,10), valid_to: yearEnd, note: 'İlk ücret dönemi', created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-      const ins = await supabaseClient.from("cari_fee_history").insert([insertPayload]);
-      if(ins.error){ logSystemError('cari_fee_history', ins.error.message, {target_name:payload.cari_name || state.selectedCariId, amount:num(payload.monthly_fee_amount)}); }
-      else { await loadFeeData(); }
+      upsertLocalFeePeriod({ cari_id: state.selectedCariId, current_fee: num(payload.monthly_fee_amount), valid_from: String(opening_date).slice(0,10), valid_to: yearEnd, note: 'İlk ücret dönemi', source:'local_first', sync_status:'local_only' });
+      try{
+        const insertPayload = feeHistoryInsertPayload({ cari_id: state.selectedCariId, fee_amount: num(payload.monthly_fee_amount), valid_from: String(opening_date).slice(0,10), valid_to: yearEnd, note: 'İlk ücret dönemi', created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+        const ins = await supabaseClient.from("cari_fee_history").insert([insertPayload]);
+        if(ins.error) throw ins.error;
+        await loadFeeData();
+      }catch(err){
+        logSystemError('cari_fee_history', String(err?.message || err || 'Ücret dönemi canlıya yazılamadı'), {target_name:payload.cari_name || state.selectedCariId, amount:num(payload.monthly_fee_amount)});
+      }
     }
   }
   ensureFeeAccrualsForAllCariler();
@@ -5436,6 +5506,7 @@ async function refreshAll(){
   normalizeStateIds();
   state.employees = normalizeNumberedList(readLocalJson(LOCAL_EMPLOYEES_KEY),'EMPCRD').rows;
   state.employeeAccruals = normalizeNumberedList(readLocalJson(LOCAL_EMPLOYEE_ACCRUALS_KEY),'EMP').rows;
+  state.localFeePeriods = normalizeNumberedList(readLocalJson(LOCAL_FEE_PERIODS_KEY),'LFP').rows;
   safeRun(()=>ensureFeeAccrualsForAllCariler(),'Ücret tahakkuku');
   safeRun(()=>ensureEmployeeSalaryAccruals(),'Maaş tahakkuku');
   safeRun(()=>renderDashboard(),'Dashboard');
