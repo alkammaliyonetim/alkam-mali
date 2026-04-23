@@ -803,7 +803,47 @@ function persistApprovalOps(){ writeLocalObject(LOCAL_APPROVAL_OPS_KEY, state.ap
 function persistBankOps(){ writeLocalObject(LOCAL_BANK_OPS_KEY, state.bankOps); }
 function getBankRules(){ return normalizeNumberedList(readLocalJson(LOCAL_BANK_RULES_KEY),'BRL').rows; }
 function setBankRules(rows){ writeLocalJson(LOCAL_BANK_RULES_KEY, rows); }
+function getBankLearnRows(){ return normalizeNumberedList(readLocalJson(LOCAL_BANK_LEARN_KEY),'BLR').rows; }
+function setBankLearnRows(rows){ writeLocalJson(LOCAL_BANK_LEARN_KEY, rows); }
 function normalizeRuleText(v){ return String(v||'').toLocaleLowerCase('tr-TR').replace(/\s+/g,' ').trim(); }
+function bankLearnKeyword(text=''){
+  let s = normalizeRuleText(text);
+  s = s.replace(/\d+[.,]?\d*/g,' ').replace(/\b\d{4,}\b/g,' ').replace(/[\/|,:;()'"-]/g,' ');
+  s = s.replace(/\b(qnb|banka|aş|a\.ş|turkiye|türkiye|garanti|katilim|katılım)\b/g,' ');
+  s = s.replace(/\s+/g,' ').trim();
+  const words = s.split(' ').filter(w=>w && w.length>=4);
+  return words.slice(0,5).join(' ');
+}
+function applyBankLearnSuggestion(row){
+  const key = bankLearnKeyword(bankDescriptionText(row));
+  if(!key) return row;
+  const hit = getBankLearnRows().find(x=>bankLearnKeyword(x.keyword||'')===key);
+  if(!hit) return row;
+  const next = {...row};
+  next.suggested_financial_account_type = hit.target_type || next.suggested_financial_account_type || 'cari';
+  next.suggested_movement_type = hit.movement_type || next.suggested_movement_type || 'tahsilat';
+  if(hit.target_type==='cari') next.suggested_cari_name = hit.target_name || next.suggested_cari_name || '';
+  if(hit.target_type==='gider') next.suggested_expense_name = hit.target_name || next.suggested_expense_name || '';
+  if(hit.target_type==='hesap' || hit.target_type==='moka_united') next.suggested_financial_account_name = hit.target_name || next.suggested_financial_account_name || '';
+  next.match_reason = `Öğrenilmiş eşleşme: ${hit.keyword}`;
+  next.match_confidence = Math.max(num(next.match_confidence||0), 99);
+  next.approval_required = false;
+  return next;
+}
+function learnFromBankDecision(row,targetType,targetName,movementType){
+  const keyword = bankLearnKeyword(bankDescriptionText(row));
+  if(!keyword || !targetType || !targetName) return;
+  let rows = getBankLearnRows().filter(x=>!(bankLearnKeyword(x.keyword||'')===keyword && String(x.target_type||'')===String(targetType)));
+  rows.unshift(stampRecordIds({
+    keyword,
+    sample_description: bankDescriptionText(row),
+    target_type: targetType,
+    target_name: targetName,
+    movement_type: movementType || 'tahsilat',
+    created_at: new Date().toISOString()
+  }, 'BLR'));
+  setBankLearnRows(rows);
+}
 function bankDescriptionText(row){ return String(row?.description || row?.raw_content || row?.content_summary || row?.aciklama || row?.description_text || row?.source_description || row?.source_text || row?.dekont_aciklama || row?.aciklama_metni || '').trim(); }
 function firstNonEmptyText(){
   for(let i=0;i<arguments.length;i++){
@@ -1125,14 +1165,14 @@ async function loadAccounts(){
       ...x,
       txn_id:txnId(x,'IMP')
     });
-    return applyBankRuleSuggestion(row);
+    return applyBankLearnSuggestion(applyBankRuleSuggestion(row));
   });
   state.movementTests = importedMovements;
   const importedBank = importedMovements.filter(x=>x.import_bucket!=='moka').map(x=>({...x, is_imported_test:true}));
   const importedMoka = importedMovements.filter(x=>x.import_bucket==='moka').map(x=>({...x, is_imported_test:true}));
   state.accounts=(a.data||[]).map(x=>({...x, txn_id:txnId(x,'ACC')}));
-  state.bankPanel=[...(b.data||[]).map(x=>({...x, txn_id:txnId(x,'BNK')})), ...importedBank];
-  state.mokaPanel=[...(m.data||[]).map(x=>({...x, txn_id:txnId(x,'MOK')})), ...importedMoka];
+  state.bankPanel=[...(b.data||[]).map(x=>applyBankLearnSuggestion(applyBankRuleSuggestion({...x, txn_id:txnId(x,'BNK')}))), ...importedBank];
+  state.mokaPanel=[...(m.data||[]).map(x=>applyBankLearnSuggestion(applyBankRuleSuggestion({...x, txn_id:txnId(x,'MOK')}))), ...importedMoka];
 }
 
 async function loadFeeData(){
@@ -2594,6 +2634,29 @@ function tahsilatRowsForCari(id){ const local=(state.operationalLedger||[]).filt
 function hasSimilarTahsilat(id,date,amount){ return tahsilatRowsForCari(id).some(r=>String((r.line_date||r.entry_date||r.created_at||'')).slice(0,10)===String(date).slice(0,10) && Math.abs(num(r.amount||r.net_amount)-num(amount))<0.01); }
 function hasSimilarTahakkuk(id, date, amount, desc){ return feeAccrualRowsForCari(id).some(r=>String((r.line_date||r.entry_date||'')).slice(0,10)===String(date).slice(0,10) && Math.abs(num(r.amount)-num(amount))<0.01 && String(r.description||'').trim()===String(desc||'').trim()); }
 function yearEndFromDate(v){ const d=new Date(v); if(Number.isNaN(d.getTime())) return ''; return `${d.getFullYear()}-12-31`; }
+function feeHistoryInsertPayload(base){
+  return {
+    cari_id: base.cari_id,
+    current_fee: num(base.fee_amount ?? base.current_fee ?? base.amount ?? 0),
+    valid_from: base.valid_from,
+    valid_to: base.valid_to ?? null,
+    note: base.note ?? null,
+    created_at: base.created_at || new Date().toISOString(),
+    updated_at: base.updated_at || new Date().toISOString()
+  };
+}
+function feeHistoryUpdatePayload(base){
+  const payload = {
+    updated_at: base.updated_at || new Date().toISOString()
+  };
+  if(base.fee_amount !== undefined || base.current_fee !== undefined || base.amount !== undefined){
+    payload.current_fee = num(base.fee_amount ?? base.current_fee ?? base.amount ?? 0);
+  }
+  if(base.valid_to !== undefined) payload.valid_to = base.valid_to;
+  if(base.valid_from !== undefined) payload.valid_from = base.valid_from;
+  if(base.note !== undefined) payload.note = base.note;
+  return payload;
+}
 function feePeriodsForCari(id){
   const periods = getFeeTimeline(id).map(r=>({
     id:r.id || txnId(r,'CFH'),
@@ -2743,10 +2806,10 @@ async function saveAnnualFeePeriod(){
   const validTo = feeYearEnd(year);
   const existing = getFeeTimeline(state.selectedCariId).find(r=>String(r.valid_from||'').slice(0,10)===validFrom);
   if(existing){
-    const upd = await supabaseClient.from("cari_fee_history").update({ fee_amount:feeAmount, valid_to:validTo, note, updated_at:new Date().toISOString() }).eq("id", existing.id);
+    const upd = await supabaseClient.from("cari_fee_history").update(feeHistoryUpdatePayload({ fee_amount:feeAmount, valid_to:validTo, note, updated_at:new Date().toISOString() })).eq("id", existing.id);
     if(upd.error){ notify("Yıllık ücret güncellenemedi: " + upd.error.message); return; }
   }else{
-    const ins = await supabaseClient.from("cari_fee_history").insert([{ cari_id:state.selectedCariId, fee_amount:feeAmount, valid_from:validFrom, valid_to:validTo, note, created_at:new Date().toISOString(), updated_at:new Date().toISOString() }]);
+    const ins = await supabaseClient.from("cari_fee_history").insert([feeHistoryInsertPayload({ cari_id:state.selectedCariId, fee_amount:feeAmount, valid_from:validFrom, valid_to:validTo, note, created_at:new Date().toISOString(), updated_at:new Date().toISOString() })]);
     if(ins.error){ notify("Yıllık ücret kaydedilemedi: " + ins.error.message); return; }
   }
   await loadFeeData();
@@ -3346,7 +3409,7 @@ async function saveFeePeriod(){
   }
   if(openPeriod && autoClosePrev){
     const closePayload = { valid_to: dayBefore(validFrom), updated_at:new Date().toISOString() };
-    const closeRes = await supabaseClient.from("cari_fee_history").update(closePayload).eq("id", openPeriod.id);
+    const closeRes = await supabaseClient.from("cari_fee_history").update(feeHistoryUpdatePayload(closePayload)).eq("id", openPeriod.id);
     if(closeRes.error){ notify("Önceki dönem kapatılamadı: " + closeRes.error.message); return; }
   }
   const insertPayload = {
@@ -3372,7 +3435,7 @@ async function closeActiveFeePeriodToday(){
   const openPeriod = getOpenFeePeriod(state.selectedCariId);
   if(!openPeriod){ notify("Açık ücret dönemi yok."); return; }
   const today = new Date().toISOString().slice(0,10);
-  const res = await supabaseClient.from("cari_fee_history").update({ valid_to:today, updated_at:new Date().toISOString() }).eq("id", openPeriod.id);
+  const res = await supabaseClient.from("cari_fee_history").update(feeHistoryUpdatePayload({ valid_to:today, updated_at:new Date().toISOString() })).eq("id", openPeriod.id);
   if(res.error){ notify("Açık dönem kapatılamadı: " + res.error.message); return; }
   notify("Açık ücret dönemi bugün kapatıldı.");
   await Promise.all([loadCariler(), loadFeeData()]);
@@ -3612,13 +3675,14 @@ function processSelectedBankRowDirect(){
   };
   state.approvalOps.processed.unshift(processed);
   persistApprovalOps();
+  learnFromBankDecision(r,targetType,targetName,movementType);
   updateBankRowStatus(r,state.selectedBankBucket,'processed',note,{target_type:targetType,target_name:targetName,movement_type:movementType,decision_ref:bankRef});
   addLedgerEntry({ledger_ref:bankRef, source_module:state.selectedBankBucket==='moka'?'moka_panel':'bank_panel', source_summary:r.description || 'Banka satırı', target_type:targetType, target_name:targetName, movement_type:movementType, amount, decision_note:note});
   addAuditEvent('bank_processed_direct',{event_ref:bankRef, source_module:state.selectedBankBucket==='moka'?'moka_panel':'bank_panel', source_type:r.source_type || state.selectedBankBucket, target_name:targetName, target_type:targetType, movement_type:movementType, amount, note});
   closeBankActionModal();
   renderAccounts();
   renderApprovals();
-  notify('Satır işlendi.');
+  notify('Satır işlendi ve eşleşme hafızaya alındı.');
 }
 function ignoreSelectedBankRow(){
   const r=getSelectedBankRow();
@@ -3632,6 +3696,50 @@ function ignoreSelectedBankRow(){
   renderAccounts();
   renderApprovals();
   notify('Satır işlenmeyen olarak işaretlendi.');
+}
+function processBankRowFast(bucket,key){
+  state.selectedBankBucket=bucket;
+  state.selectedBankKey=key;
+  const r=getSelectedBankRow();
+  if(!r){ notify('Satır bulunamadı.'); return; }
+  const defs=getBankTargetDefaults(r,bucket);
+  const targetType = defs.targetType || r.suggested_financial_account_type || 'cari';
+  const targetName = defs.targetName || bankSuggestedTarget(r);
+  const movementType = defs.movementType || r.suggested_movement_type || 'tahsilat';
+  if(!targetName || targetName==='-'){ notify('Hedef belirsiz, detaydan işlemelisin.'); return; }
+  if(bankNeedsApproval(r) || bucket==='moka'){ openBankActionModal(bucket,key); notify('Bu satır tek tık için yeterince güvenli değil; detay ekranından kontrol et.'); return; }
+  const originKey = bankRowKey(r,bucket);
+  state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.bank_origin_key)!==String(originKey));
+  const bankRef = decisionRef('BNK');
+  const bankProcessedId=uid('bank_processed');
+  const amount=num(r.net_amount || r.amount || 0);
+  state.approvalOps.processed.unshift({
+    id:bankProcessedId,
+    txn_id:bankProcessedId,
+    decision_ref: bankRef,
+    source_type: bucket==='moka' ? 'moka_panel' : 'banka_panel',
+    content_summary:r.description || 'Banka satırı',
+    raw_content:r.description || '',
+    final_target_type:targetType,
+    final_cari_name: targetType==='cari' ? targetName : null,
+    final_expense_name: targetType==='gider' ? targetName : null,
+    final_financial_account_name: targetType==='hesap' || targetType==='moka_united' ? targetName : null,
+    final_movement_type:movementType,
+    final_amount:amount,
+    decision_note:'İşlenebilir satır tek tık işlendi',
+    processed_at:new Date().toISOString(),
+    processed_locally:true,
+    bank_origin_key: originKey,
+    bank_origin_bucket: bucket
+  });
+  persistApprovalOps();
+  learnFromBankDecision(r,targetType,targetName,movementType);
+  updateBankRowStatus(r,bucket,'processed','İşlenebilir satır tek tık işlendi',{target_type:targetType,target_name:targetName,movement_type:movementType,decision_ref:bankRef});
+  addLedgerEntry({ledger_ref:bankRef, source_module:bucket==='moka'?'moka_panel':'bank_panel', source_summary:r.description || 'Banka satırı', target_type:targetType, target_name:targetName, movement_type:movementType, amount, decision_note:'İşlenebilir satır tek tık işlendi'});
+  addAuditEvent('bank_processed_fast',{event_ref:bankRef, source_module:bucket==='moka'?'moka_panel':'bank_panel', source_type:r.source_type || bucket, target_name:targetName, target_type:targetType, movement_type:movementType, amount, note:'İşlenebilir satır tek tık işlendi'});
+  renderAccounts();
+  renderApprovals();
+  notify('Tek tık işlendi ve eşleşme öğrenildi.');
 }
 function renderAccounts(){
   const combinedAccounts=getCombinedAccounts();
@@ -3695,8 +3803,10 @@ function renderAccounts(){
     </div>
     <div class="btn-row" style="margin-bottom:12px;">
       <button class="btn btn-soft" onclick="openBankRuleModal()">Kural Tanımla</button>
+      <span class="tag gray">Öğrenilmiş eşleşme: ${getBankLearnRows().length}</span>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez. Kural tanımlarsan açıklamaya göre otomatik hedef önerir.</div>` + (bankRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{ const suggestion = bankSuggestedTarget(r); const conf = bankRowConfidence(r); return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(displayTxnNo(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(bankDescriptionText(r)||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td class="text-right">${money(num(r.net_amount ?? r.amount ?? r.raw_amount ?? r.final_amount ?? 0))}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez. Kural tanımlarsan açıklamaya göre otomatik hedef önerir.</div>` + (bankRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th>Hızlı İşlem</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{ const suggestion = bankSuggestedTarget(r); const conf = bankRowConfidence(r); const fastBtn = bankStatusCode(r,'bank')==='processable' ? `<button class="btn btn-blue" style="padding:6px 10px;font-size:12px;" onclick="event.stopPropagation();processBankRowFast('bank','${escapeHtml(bankRowKey(r,'bank'))}')">Hemen İşle</button>` : `<span class="tag gray">Detay</span>`;
+    return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(displayTxnNo(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(bankDescriptionText(r)||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td>${fastBtn}</td><td class="text-right">${money(num(r.net_amount ?? r.amount ?? r.raw_amount ?? r.final_amount ?? 0))}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
 
   document.getElementById("mokaPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
       <div class="metric-mini"><div class="k">Toplam Moka Satırı</div><div class="v">${mokaStats.total}</div></div>
@@ -4728,7 +4838,7 @@ async function saveCariCard(){
     const yearEnd = yearEndFromDate(opening_date);
     const sameYearFirst = getFeeTimeline(state.selectedCariId).find(x=>String(x.valid_from||'').slice(0,10)===String(opening_date).slice(0,10));
     if(!sameYearFirst){
-      const insertPayload = { cari_id: state.selectedCariId, fee_amount: num(payload.monthly_fee_amount), valid_from: String(opening_date).slice(0,10), valid_to: yearEnd, note: 'İlk ücret dönemi', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+      const insertPayload = feeHistoryInsertPayload({ cari_id: state.selectedCariId, fee_amount: num(payload.monthly_fee_amount), valid_from: String(opening_date).slice(0,10), valid_to: yearEnd, note: 'İlk ücret dönemi', created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
       const ins = await supabaseClient.from("cari_fee_history").insert([insertPayload]);
       if(ins.error){ logSystemError('cari_fee_history', ins.error.message, {target_name:payload.cari_name || state.selectedCariId, amount:num(payload.monthly_fee_amount)}); }
       else { await loadFeeData(); }
