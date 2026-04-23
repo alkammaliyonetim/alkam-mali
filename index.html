@@ -721,7 +721,7 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_CARI_FEE_SETUP_KEY="alkam_local_cari_fee_setup_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_BANK_LEARN_KEY="alkam_local_bank_learn_v1"; const LOCAL_EMPLOYEES_KEY="alkam_local_employees_v1"; const LOCAL_EMPLOYEE_ACCRUALS_KEY="alkam_local_employee_accruals_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_CARI_FEE_SETUP_KEY="alkam_local_cari_fee_setup_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
 const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],employees:[],employeeAccruals:[],selectedEmployeeId:null,cariFeeSetups:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
 
 const LIVE_SYNC_TABLES={
@@ -1374,6 +1374,7 @@ function renderTag(t){
 function buildVersion(){const d=new Date(document.lastModified); const p=n=>String(n).padStart(2,"0"); return `V${p(d.getHours())}${p(d.getMinutes())}${p(d.getDate())}${p(d.getMonth()+1)}${String(d.getFullYear()).slice(-2)}-${p(d.getHours())}${p(d.getMinutes())}`}
 function setConnState(t){document.getElementById("connState").textContent=t}
 function notify(msg){const t=document.getElementById("toast"); t.textContent=msg; t.style.display="block"; clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>t.style.display="none",2600)}
+function safeRun(fn,label=""){ try{ return fn(); } catch(err){ console.error(err); logSystemError("ui_render", label || "render", { note:String(err?.message||err||"") }); } }
 function togglePassword(event){
   if(event) event.preventDefault();
   const i=document.getElementById("loginPassword");
@@ -5335,21 +5336,21 @@ async function refreshAll(){
   normalizeStateIds();
   state.employees = normalizeNumberedList(readLocalJson(LOCAL_EMPLOYEES_KEY),'EMPCRD').rows;
   state.employeeAccruals = normalizeNumberedList(readLocalJson(LOCAL_EMPLOYEE_ACCRUALS_KEY),'EMP').rows;
-  ensureFeeAccrualsForAllCariler();
-  ensureEmployeeSalaryAccruals();
-  renderDashboard();
-  renderAccounts();
-  renderReports();
-  renderDocuments();
-  renderExpenses();
-  renderEmployees();
-  renderApprovals();
-  renderBackup();
-  renderOpsHealthPanel();
-  renderProdHardeningPanel();
-  renderGlobalAuditLog();
-  renderDeleteArchive();
-  if(state.selectedCariId) renderSelectedCariDetail();
+  safeRun(()=>ensureFeeAccrualsForAllCariler(),'Ücret tahakkuku');
+  safeRun(()=>ensureEmployeeSalaryAccruals(),'Maaş tahakkuku');
+  safeRun(()=>renderDashboard(),'Dashboard');
+  safeRun(()=>renderAccounts(),'Hesaplar');
+  safeRun(()=>renderReports(),'Raporlar');
+  safeRun(()=>renderDocuments(),'Belgeler');
+  safeRun(()=>renderExpenses(),'Giderler');
+  safeRun(()=>renderEmployees(),'Çalışanlar');
+  safeRun(()=>renderApprovals(),'Onay');
+  safeRun(()=>renderBackup(),'Yedekleme');
+  safeRun(()=>renderOpsHealthPanel(),'Ops');
+  safeRun(()=>renderProdHardeningPanel(),'Prod');
+  safeRun(()=>renderGlobalAuditLog(),'Audit');
+  safeRun(()=>renderDeleteArchive(),'Silme arşivi');
+  if(state.selectedCariId) safeRun(()=>renderSelectedCariDetail(),'Cari detay');
 }
 document.getElementById("cariSearch").addEventListener("input",renderCariList);
 document.getElementById("taxpayerFilter").addEventListener("change",renderCariList);
