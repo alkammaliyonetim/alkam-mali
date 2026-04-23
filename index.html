@@ -486,6 +486,7 @@
       <button class="nav-btn" data-tab="cariler">Cariler</button>
       <button class="nav-btn" data-tab="hesaplar">Hesaplar</button>
       <button class="nav-btn" data-tab="giderler">Giderler</button>
+      <button class="nav-btn" data-tab="calisanlar">Çalışanlar</button>
       <button class="nav-btn" data-tab="raporlar">Raporlar</button>
       <button class="nav-btn" data-tab="belgeler">Belgeler</button>
       <button class="nav-btn" data-tab="onay">Onay Merkezi</button>
@@ -620,6 +621,10 @@
       <div class="section"><h2 class="section-title">Giderler Dinamik Kontrol Paneli</h2><div id="expenseWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
+    <section id="tab-calisanlar" class="tab-page">
+      <div class="section"><h2 class="section-title">Çalışanlar</h2><div id="employeeWrap" class="empty">Yükleniyor...</div></div>
+    </section>
+
     <section id="tab-raporlar" class="tab-page">
       <div class="section"><h2 class="section-title">Raporlar</h2><div id="reportWrap" class="empty">Yükleniyor...</div></div>
     </section>
@@ -652,6 +657,63 @@
   </main>
 </div>
 
+
+<div id="employeeModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:980px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 id="employeeModalTitle" style="margin:0;font-size:24px;font-weight:900;">Çalışan Kartı</h2>
+      <button class="btn btn-red" onclick="closeEmployeeModal()">Kapat</button>
+    </div>
+    <input id="employeeIdInput" type="hidden" />
+    <div class="rule-box" style="margin-bottom:12px;">Uluslararası işleyiş mantığı: sözleşme, tahakkuk ve ödeme ayrı izlenir. Maaş tahakkuku ay sonunda doğar; prim, kâr payı, maaş farkı ve diğer tahakkuklar ayrı tipte manuel kaydedilir. Mükerrer tahakkuklar engellenir.</div>
+    <div class="form-grid">
+      <div class="field"><label>Çalışan Adı</label><input id="employeeNameInput" /></div>
+      <div class="field"><label>Personel Kodu</label><input id="employeeCodeInput" placeholder="Opsiyonel" /></div>
+    </div>
+    <div class="form-grid-3" style="margin-top:12px;">
+      <div class="field"><label>Bölüm</label><input id="employeeDeptInput" placeholder="Muhasebe / Operasyon / Yönetim" /></div>
+      <div class="field"><label>Maliyet Merkezi</label><input id="employeeCostCenterInput" placeholder="Opsiyonel" /></div>
+      <div class="field"><label>Sözleşme Durumu</label><select id="employeeStatusInput"><option value="active">Aktif</option><option value="passive">Pasif</option></select></div>
+    </div>
+    <div class="form-grid-3" style="margin-top:12px;">
+      <div class="field"><label>Sözleşme Başlangıç</label><input id="employeeStartInput" type="date" /></div>
+      <div class="field"><label>Sözleşme Bitiş</label><input id="employeeEndInput" type="date" /></div>
+      <div class="field"><label>Aylık Maaş Tutarı</label><input id="employeeSalaryInput" type="number" min="0" step="0.01" /></div>
+    </div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="field"><label>E-posta</label><input id="employeeEmailInput" /></div>
+      <div class="field"><label>Not</label><input id="employeeNoteInput" placeholder="Sözleşme notu" /></div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-blue" onclick="saveEmployeeCard()">Kaydet / Güncelle</button>
+    </div>
+  </div>
+</div>
+
+<div id="employeeAccrualModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:860px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Çalışan Manuel Tahakkuk</h2>
+      <button class="btn btn-red" onclick="closeEmployeeAccrualModal()">Kapat</button>
+    </div>
+    <input id="employeeAccrualEmployeeId" type="hidden" />
+    <div id="employeeAccrualInfo" class="rule-box" style="margin-bottom:12px;">Seçili çalışan yok.</div>
+    <div class="form-grid-3">
+      <div class="field"><label>Tahakkuk Türü</label><select id="employeeAccrualType"><option value="bonus">Prim</option><option value="profit_share">Kâr Payı</option><option value="salary_adjustment">Maaş Farkı</option><option value="other">Diğer</option></select></div>
+      <div class="field"><label>Tahakkuk Tarihi</label><input id="employeeAccrualDate" type="date" /></div>
+      <div class="field"><label>Tutar</label><input id="employeeAccrualAmount" type="number" min="0" step="0.01" /></div>
+    </div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="field"><label>Açıklama</label><input id="employeeAccrualDesc" placeholder="Örn: NİSAN2026 PRİM TAHAKKUKU" /></div>
+      <div class="field"><label>Not</label><input id="employeeAccrualNote" placeholder="Opsiyonel" /></div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-blue" onclick="saveEmployeeManualAccrual()">Tahakkuku Kaydet</button>
+    </div>
+  </div>
+</div>
+
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -660,7 +722,7 @@ const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
 const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_CARI_FEE_SETUP_KEY="alkam_local_cari_fee_setup_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],cariFeeSetups:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],employees:[],employeeAccruals:[],selectedEmployeeId:null,cariFeeSetups:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
 
 const LIVE_SYNC_TABLES={
   account_ops:'alkam_manual_account_ops',
@@ -1057,6 +1119,227 @@ function localCollectionsForCari(cariId){ return getLocalCariCollections().filte
 function applyLocalCollectionsToCariRow(row){ const locals=localCollectionsForCari(row.cari_id); if(!locals.length) return {...row}; const monthlyToken=new Date().toISOString().slice(0,7); const sum=locals.reduce((a,b)=>a+num(b.amount),0); const monthlySum=locals.filter(x=>String(x.line_date||x.created_at||'').slice(0,7)===monthlyToken).reduce((a,b)=>a+num(b.amount),0); const latest=[...locals].sort((a,b)=>new Date(b.line_date||b.created_at||0)-new Date(a.line_date||a.created_at||0))[0]; const next={...row, bakiye:num(row.bakiye)-sum, bu_ay_tahsilat:num(row.bu_ay_tahsilat)+monthlySum}; const baseTime=new Date(row.son_tahsilat_tarihi||0).getTime(); const localTime=new Date(latest?.line_date||latest?.created_at||0).getTime(); if(latest && localTime>=baseTime){ next.son_tahsilat_tarihi=latest.line_date||latest.created_at; next.son_tahsilat_tutari=num(latest.amount); } const lastTime=new Date(next.son_tahsilat_tarihi||0).getTime(); if(lastTime>0) next.is_tahsilat_3_ay_gecikmis=((Date.now()-lastTime)/86400000)>90; return next; }
 function buildLocalCariMovementRows(cariId){ return localCollectionsForCari(cariId).map(x=>({ id:x.id, txn_id:x.txn_id, operation_no:x.operation_no, cari_id:x.cari_id, line_date:x.line_date||x.created_at, movement_type:'Tahsilat', description:x.description || `Müşteriden Tahsilat | ${x.channel || 'Yerel kayıt'}`, amount:num(x.amount), debit:0, credit:num(x.amount), source_module:'local_cari_collection', document_no:x.document_no||null })); }
 function persistLedger(){ writeLocalJson(LOCAL_LEDGER_KEY, state.operationalLedger); }
+function persistEmployees(){ writeLocalJson(LOCAL_EMPLOYEES_KEY, state.employees||[]); }
+function persistEmployeeAccruals(){ writeLocalJson(LOCAL_EMPLOYEE_ACCRUALS_KEY, state.employeeAccruals||[]); }
+function endOfMonthIso(v){
+  const d = new Date(v);
+  if(Number.isNaN(d.getTime())) return '';
+  const e = new Date(d.getFullYear(), d.getMonth()+1, 0);
+  return e.toISOString().slice(0,10);
+}
+function employeeAccrualTypeLabel(t){
+  if(t==='salary') return 'Maaş';
+  if(t==='bonus') return 'Prim';
+  if(t==='profit_share') return 'Kâr Payı';
+  if(t==='salary_adjustment') return 'Maaş Farkı';
+  return 'Diğer';
+}
+function employeePeriodToken(v){
+  const d=new Date(v);
+  if(Number.isNaN(d.getTime())) return '';
+  const months=['OCAK','ŞUBAT','MART','NİSAN','MAYIS','HAZİRAN','TEMMUZ','AĞUSTOS','EYLÜL','EKİM','KASIM','ARALIK'];
+  return `${months[d.getMonth()]}${d.getFullYear()}`;
+}
+function employeeSalaryAccrualDesc(v){ return `${employeePeriodToken(v)} MAAŞ TAHAKKUKU`; }
+function getEmployeeById(id){ return (state.employees||[]).find(x=>String(x.id)===String(id)); }
+function employeeAccrualRowsForEmployee(id){ return (state.employeeAccruals||[]).filter(x=>String(x.employee_id)===String(id)); }
+function hasSimilarEmployeeAccrual(employeeId, lineDate, amount, accrualType, desc){
+  return employeeAccrualRowsForEmployee(employeeId).some(r=>String(r.line_date||'').slice(0,10)===String(lineDate).slice(0,10) && Math.abs(num(r.amount)-num(amount))<0.01 && String(r.accrual_type||'')===String(accrualType||'') && String(r.description||'').trim()===String(desc||'').trim());
+}
+function buildEmployeeSalarySchedule(employee){
+  if(!employee || String(employee.status||'')!=='active' || num(employee.monthly_salary)<=0 || !employee.start_date) return [];
+  const today = new Date();
+  const endCap = employee.end_date ? new Date(employee.end_date) : today;
+  const finalEnd = endCap < today ? endCap : today;
+  if(Number.isNaN(finalEnd.getTime())) return [];
+  const start = new Date(employee.start_date);
+  if(Number.isNaN(start.getTime())) return [];
+  const rows = [];
+  let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+  while(cursor <= finalEnd){
+    const monthEnd = new Date(cursor.getFullYear(), cursor.getMonth()+1, 0);
+    if(monthEnd >= start && monthEnd <= finalEnd){
+      const dt = monthEnd.toISOString().slice(0,10);
+      rows.push({ employee_id:employee.id, line_date:dt, amount:num(employee.monthly_salary), accrual_type:'salary', description:employeeSalaryAccrualDesc(dt), period_key:dt.slice(0,7) });
+    }
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
+  }
+  return rows;
+}
+function ensureEmployeeSalaryAccruals(){
+  state.employees=(state.employees||[]);
+  state.employeeAccruals=(state.employeeAccruals||[]);
+  (state.employees||[]).forEach(emp=>{
+    buildEmployeeSalarySchedule(emp).forEach(plan=>{
+      if(hasSimilarEmployeeAccrual(emp.id, plan.line_date, plan.amount, 'salary', plan.description)) return;
+      const row = stampRecordIds({
+        employee_id: emp.id,
+        employee_name: emp.name || '-',
+        accrual_type:'salary',
+        line_date: plan.line_date,
+        period_key: plan.period_key,
+        description: plan.description,
+        amount: plan.amount,
+        contract_start: emp.start_date,
+        contract_end: emp.end_date || null,
+        source_module:'employee_salary_auto',
+        created_at:new Date().toISOString()
+      }, 'EMP');
+      state.employeeAccruals.unshift(row);
+      addLedgerEntry({
+        ledger_ref: row.operation_no,
+        source_module:'employee_salary_auto',
+        source_summary: row.description,
+        target_type:'employee',
+        target_name: emp.name || '-',
+        movement_type:'tahakkuk',
+        amount: row.amount,
+        line_date: row.line_date,
+        decision_note:'Ay sonu maaş tahakkuku'
+      });
+    });
+  });
+  persistEmployeeAccruals();
+}
+function employeeSummary(){
+  const emps = state.employees||[];
+  const accr = state.employeeAccruals||[];
+  const now = new Date();
+  const ym = now.toISOString().slice(0,7);
+  const yr = String(now.getFullYear());
+  return {
+    total: emps.length,
+    active: emps.filter(x=>String(x.status||'')==='active').length,
+    passive: emps.filter(x=>String(x.status||'')!=='active').length,
+    thisMonthSalary: accr.filter(x=>x.accrual_type==='salary' && String(x.line_date||'').slice(0,7)===ym).reduce((a,b)=>a+num(b.amount),0),
+    thisMonthManual: accr.filter(x=>x.accrual_type!=='salary' && String(x.line_date||'').slice(0,7)===ym).reduce((a,b)=>a+num(b.amount),0),
+    thisYearTotal: accr.filter(x=>String(x.line_date||'').slice(0,4)===yr).reduce((a,b)=>a+num(b.amount),0)
+  };
+}
+function renderEmployeeModal(){
+  const title=document.getElementById('employeeModalTitle');
+  const id=document.getElementById('employeeIdInput').value;
+  const row=getEmployeeById(id);
+  if(title) title.textContent = row ? 'Çalışan Kartı Düzenle' : 'Yeni Çalışan Kartı';
+}
+function openEmployeeModal(id=''){
+  const row=id ? getEmployeeById(id) : null;
+  document.getElementById('employeeIdInput').value = row?.id || '';
+  document.getElementById('employeeNameInput').value = row?.name || '';
+  document.getElementById('employeeCodeInput').value = row?.employee_code || '';
+  document.getElementById('employeeDeptInput').value = row?.department || '';
+  document.getElementById('employeeCostCenterInput').value = row?.cost_center || '';
+  document.getElementById('employeeStatusInput').value = row?.status || 'active';
+  document.getElementById('employeeStartInput').value = row?.start_date || '';
+  document.getElementById('employeeEndInput').value = row?.end_date || '';
+  document.getElementById('employeeSalaryInput').value = row?.monthly_salary || '';
+  document.getElementById('employeeEmailInput').value = row?.email || '';
+  document.getElementById('employeeNoteInput').value = row?.note || '';
+  renderEmployeeModal();
+  document.getElementById('employeeModal').style.display='flex';
+}
+function closeEmployeeModal(){ document.getElementById('employeeModal').style.display='none'; }
+function saveEmployeeCard(){
+  const id=document.getElementById('employeeIdInput').value || '';
+  const name=(document.getElementById('employeeNameInput').value||'').trim();
+  const start=document.getElementById('employeeStartInput').value || '';
+  const salary=num(document.getElementById('employeeSalaryInput').value||0);
+  if(!name || !start){ notify('Çalışan adı ve sözleşme başlangıcı zorunlu.'); return; }
+  const row = stampRecordIds({
+    id: id || uid('emp'),
+    name,
+    employee_code:(document.getElementById('employeeCodeInput').value||'').trim() || null,
+    department:(document.getElementById('employeeDeptInput').value||'').trim() || null,
+    cost_center:(document.getElementById('employeeCostCenterInput').value||'').trim() || null,
+    status:document.getElementById('employeeStatusInput').value || 'active',
+    start_date:start,
+    end_date:document.getElementById('employeeEndInput').value || null,
+    monthly_salary:salary,
+    email:(document.getElementById('employeeEmailInput').value||'').trim() || null,
+    note:(document.getElementById('employeeNoteInput').value||'').trim() || null,
+    updated_at:new Date().toISOString(),
+    created_at:(getEmployeeById(id)?.created_at) || new Date().toISOString()
+  }, 'EMPCRD');
+  state.employees = (state.employees||[]).filter(x=>String(x.id)!==String(row.id));
+  state.employees.unshift(row);
+  persistEmployees();
+  ensureEmployeeSalaryAccruals();
+  addAuditEvent('employee_contract_saved',{source_module:'employees', target_name:row.name, amount:row.monthly_salary, note:'Çalışan sözleşmesi kaydedildi', summary:`Çalışan kartı kaydedildi · ${row.name}`});
+  closeEmployeeModal();
+  renderEmployees();
+  renderReports();
+  notify('Çalışan kartı kaydedildi.');
+}
+function openEmployeeAccrualModal(employeeId){
+  const emp=getEmployeeById(employeeId);
+  if(!emp){ notify('Çalışan bulunamadı.'); return; }
+  document.getElementById('employeeAccrualEmployeeId').value = emp.id;
+  document.getElementById('employeeAccrualInfo').innerHTML = `<strong>${escapeHtml(emp.name)}</strong> için manuel tahakkuk gireceksin. Maaş dışı kalemler ayrı tipte izlenir.`;
+  document.getElementById('employeeAccrualType').value = 'bonus';
+  document.getElementById('employeeAccrualDate').value = new Date().toISOString().slice(0,10);
+  document.getElementById('employeeAccrualAmount').value = '';
+  document.getElementById('employeeAccrualDesc').value = '';
+  document.getElementById('employeeAccrualNote').value = '';
+  document.getElementById('employeeAccrualModal').style.display='flex';
+}
+function closeEmployeeAccrualModal(){ document.getElementById('employeeAccrualModal').style.display='none'; }
+function saveEmployeeManualAccrual(){
+  const employeeId=document.getElementById('employeeAccrualEmployeeId').value;
+  const emp=getEmployeeById(employeeId);
+  const accrualType=document.getElementById('employeeAccrualType').value || 'bonus';
+  const lineDate=document.getElementById('employeeAccrualDate').value || new Date().toISOString().slice(0,10);
+  const amount=num(document.getElementById('employeeAccrualAmount').value||0);
+  const desc=(document.getElementById('employeeAccrualDesc').value||'').trim() || `${employeePeriodToken(lineDate)} ${employeeAccrualTypeLabel(accrualType).toLocaleUpperCase('tr-TR')} TAHAKKUKU`;
+  const note=(document.getElementById('employeeAccrualNote').value||'').trim() || null;
+  if(!emp || amount<=0){ notify('Çalışan ve tutar zorunlu.'); return; }
+  if(hasSimilarEmployeeAccrual(employeeId,lineDate,amount,accrualType,desc)){ notify('Benzer tahakkuk zaten var. Mükerrer kayıt engellendi.'); return; }
+  const row = stampRecordIds({
+    employee_id: emp.id,
+    employee_name: emp.name,
+    accrual_type: accrualType,
+    line_date: lineDate,
+    period_key: String(lineDate).slice(0,7),
+    description: desc,
+    amount,
+    note,
+    source_module:'employee_manual_accrual',
+    created_at:new Date().toISOString()
+  }, 'EMP');
+  state.employeeAccruals.unshift(row);
+  persistEmployeeAccruals();
+  addLedgerEntry({ledger_ref:row.operation_no, source_module:'employee_manual_accrual', source_summary:row.description, target_type:'employee', target_name:emp.name, movement_type:'tahakkuk', amount:row.amount, line_date:row.line_date, decision_note:note || 'Manuel çalışan tahakkuku'});
+  addAuditEvent('employee_manual_accrual_saved',{source_module:'employees', target_name:emp.name, amount, note:note || desc, summary:`Çalışan manuel tahakkuku kaydedildi · ${emp.name}`});
+  closeEmployeeAccrualModal();
+  renderEmployees();
+  renderReports();
+  notify('Çalışan tahakkuku kaydedildi.');
+}
+function renderEmployees(){
+  ensureEmployeeSalaryAccruals();
+  const wrap=document.getElementById('employeeWrap'); if(!wrap) return;
+  const emps=[...(state.employees||[])].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'tr'));
+  const s=employeeSummary();
+  wrap.innerHTML = `<div class="btn-row" style="margin-bottom:14px;">
+      <button class="btn btn-blue" onclick="openEmployeeModal()">Yeni Çalışan</button>
+    </div>
+    <div class="grid-4" style="margin-bottom:14px;">
+      <div class="card"><div class="card-label">Toplam Çalışan</div><div class="card-value">${s.total}</div></div>
+      <div class="card"><div class="card-label">Aktif / Pasif</div><div class="card-value">${s.active} / ${s.passive}</div></div>
+      <div class="card"><div class="card-label">Bu Ay Maaş / Manuel</div><div class="card-value">${money(s.thisMonthSalary)} / ${money(s.thisMonthManual)}</div></div>
+      <div class="card"><div class="card-label">Bu Yıl Toplam Tahakkuk</div><div class="card-value">${money(s.thisYearTotal)}</div></div>
+    </div>
+    <div class="rule-box" style="margin-bottom:14px;">Standart işleyiş: sözleşme kartı tanımlanır, aylık maaş tahakkuku ayın son günü otomatik oluşur. Prim, kâr payı, maaş farkı ve diğer kalemler manuel tahakkuk olarak ayrı izlenir. Tahakkuk ve ödeme birbirinden ayrıdır.</div>
+    <div class="grid-2">
+      <div class="section" style="box-shadow:none;margin:0;">
+        <h3 class="section-title" style="font-size:20px;">Çalışan Kartları</h3>
+        ${emps.length ? `<table><thead><tr><th>Çalışan</th><th>Bölüm</th><th>Sözleşme</th><th class="text-right">Aylık Maaş</th><th>İşlem</th></tr></thead><tbody>${emps.map(emp=>`<tr><td>${escapeHtml(emp.name)}<div class="muted-note">${escapeHtml(emp.employee_code||'-')}</div></td><td>${escapeHtml(emp.department||'-')}<div class="muted-note">${escapeHtml(emp.cost_center||'-')}</div></td><td>${shortDate(emp.start_date)}${emp.end_date ? ' - '+shortDate(emp.end_date) : ''}<div class="muted-note">${renderTag(emp.status==='active'?'aktif':'pasif')}</div></td><td class="text-right">${money(emp.monthly_salary||0)}</td><td><div class="btn-row"><button class="btn btn-soft" onclick="openEmployeeModal('${escapeHtml(emp.id)}')">Düzenle</button><button class="btn btn-soft" onclick="openEmployeeAccrualModal('${escapeHtml(emp.id)}')">Manuel Tahakkuk</button></div></td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz çalışan kartı yok.</div>`}
+      </div>
+      <div class="section" style="box-shadow:none;margin:0;">
+        <h3 class="section-title" style="font-size:20px;">Tahakkuk Özeti</h3>
+        ${state.employeeAccruals.length ? `<table><thead><tr><th>Çalışan</th><th>Tarih</th><th>Tür</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${[...state.employeeAccruals].sort((a,b)=>String(b.line_date||'').localeCompare(String(a.line_date||''))).slice(0,20).map(r=>`<tr><td>${escapeHtml(r.employee_name||'-')}</td><td>${shortDate(r.line_date)}</td><td>${renderTag(employeeAccrualTypeLabel(r.accrual_type||'other'))}</td><td>${escapeHtml(r.description||'-')}</td><td class="text-right">${money(r.amount||0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz çalışan tahakkuku yok.</div>`}
+      </div>
+    </div>`;
+}
 function persistAudit(){ writeLocalJson(LOCAL_AUDIT_KEY, state.auditTrail); }
 function decisionRef(prefix='OP'){ const d=new Date(); const p=n=>String(n).padStart(2,'0'); return `${prefix}-${String(d.getFullYear()).slice(-2)}${p(d.getMonth()+1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`; }
 function stableHash(input=''){ let h=0; const s=String(input||''); for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return Math.abs(h).toString(36).toUpperCase(); }
@@ -1125,7 +1408,7 @@ function submitLogin(e){
 }
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
 function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
-function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, çek, senet, Moka ve transfer yönetimi"],giderler:["Giderler","Sabit ve değişken gider, tahakkuk ve ödeme kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
+function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, çek, senet, Moka ve transfer yönetimi"],giderler:["Giderler","Sabit ve değişken gider, tahakkuk ve ödeme kontrol ekranı"],calisanlar:["Çalışanlar","Sözleşme, maaş tahakkuku ve manuel personel tahakkukları"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
 async function loadDashboard(){
@@ -5050,12 +5333,16 @@ async function refreshAll(){
   refreshImportedMovementAnalysis(true);
   sanitizeAllImportedMovementDates();
   normalizeStateIds();
+  state.employees = normalizeNumberedList(readLocalJson(LOCAL_EMPLOYEES_KEY),'EMPCRD').rows;
+  state.employeeAccruals = normalizeNumberedList(readLocalJson(LOCAL_EMPLOYEE_ACCRUALS_KEY),'EMP').rows;
   ensureFeeAccrualsForAllCariler();
+  ensureEmployeeSalaryAccruals();
   renderDashboard();
   renderAccounts();
   renderReports();
   renderDocuments();
   renderExpenses();
+  renderEmployees();
   renderApprovals();
   renderBackup();
   renderOpsHealthPanel();
