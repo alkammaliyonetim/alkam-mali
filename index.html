@@ -1068,10 +1068,27 @@ function getCombinedAccounts(){
   (state.accounts||[]).forEach(r=>{ const key=normalizeAccountKey(r.account_key || r.account_id || r.account_code || r.account_name); if(!key) return; map.set(key,{ account_key:key, account_name:r.account_name||r.account_code||'Hesap', account_type:r.account_type||'diger', net_bakiye:num(r.net_bakiye||0), son_hareket_tarihi:r.son_hareket_tarihi||null }); });
   getLocalAccountOps().forEach(op=>{
     if(op.type==='account_create'){ const key=normalizeAccountKey(op.account_key || op.account_name); if(!key) return; if(!map.has(key)) map.set(key,{account_key:key, account_name:op.account_name||'Yeni Hesap', account_type:op.account_type||'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const acc=map.get(key); acc.net_bakiye=num(acc.net_bakiye)+num(op.opening_balance||0); acc.son_hareket_tarihi=latestIso(acc.son_hareket_tarihi, op.entry_date||op.created_at); }
-    if(op.type==='account_entry' || op.type==='cari_collection'){ const key=normalizeAccountKey(op.account_key || op.account_name); if(!key) return; if(!map.has(key)) map.set(key,{account_key:key, account_name:op.account_name||'Manuel Hesap', account_type:op.account_type||'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const acc=map.get(key); acc.net_bakiye=num(acc.net_bakiye)+(String(op.direction||'giris')==='cikis' ? -num(op.amount) : num(op.amount)); acc.son_hareket_tarihi=latestIso(acc.son_hareket_tarihi, op.entry_date||op.created_at); }
-    if(op.type==='account_transfer'){ const sk=normalizeAccountKey(op.source_account_key || op.source_account_name); const tk=normalizeAccountKey(op.target_account_key || op.target_account_name); if(sk){ if(!map.has(sk)) map.set(sk,{account_key:sk, account_name:op.source_account_name||'Kaynak Hesap', account_type:'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const s=map.get(sk); s.net_bakiye=num(s.net_bakiye)-num(op.amount); s.son_hareket_tarihi=latestIso(s.son_hareket_tarihi, op.entry_date||op.created_at); } if(tk){ if(!map.has(tk)) map.set(tk,{account_key:tk, account_name:op.target_account_name||'Hedef Hesap', account_type:'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const t=map.get(tk); t.net_bakiye=num(t.net_bakiye)+num(op.amount); t.son_hareket_tarihi=latestIso(t.son_hareket_tarihi, op.entry_date||op.created_at); } }
+    if(op.type==='account_entry' || op.type==='cari_collection'){ const key=normalizeAccountKey(op.account_key || op.account_name); if(!key) return; if(!map.has(key)) map.set(key,{account_key:key, account_name:op.account_name||'Manuel Hesap', account_type:op.account_type||'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const acc=map.get(key); acc.net_bakiye=num(acc.net_bakiye)+(String(op.direction||'giris')==='cikis' ? -num(op.amount||0) : num(op.amount||0)); acc.son_hareket_tarihi=latestIso(acc.son_hareket_tarihi, op.entry_date||op.created_at); }
+    if(op.type==='account_transfer'){ const sk=normalizeAccountKey(op.source_account_key || op.source_account_name); const tk=normalizeAccountKey(op.target_account_key || op.target_account_name); if(sk){ if(!map.has(sk)) map.set(sk,{account_key:sk, account_name:op.source_account_name||'Kaynak Hesap', account_type:'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const s=map.get(sk); s.net_bakiye=num(s.net_bakiye)-num(op.amount||0); s.son_hareket_tarihi=latestIso(s.son_hareket_tarihi, op.entry_date||op.created_at); } if(tk){ if(!map.has(tk)) map.set(tk,{account_key:tk, account_name:op.target_account_name||'Hedef Hesap', account_type:'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const t=map.get(tk); t.net_bakiye=num(t.net_bakiye)+num(op.amount||0); t.son_hareket_tarihi=latestIso(t.son_hareket_tarihi, op.entry_date||op.created_at); } }
   });
   return [...map.values()].sort((a,b)=>String(a.account_name||'').localeCompare(String(b.account_name||''),'tr'));
+}
+function defaultAccountRows(){
+  return [
+    {account_key:'banka_hesabi', account_name:'Banka Hesabı', account_type:'banka', net_bakiye:0, son_hareket_tarihi:null},
+    {account_key:'batak_supheli_alacak', account_name:'Batak / Şüpheli Alacak', account_type:'batak', net_bakiye:0, son_hareket_tarihi:null},
+    {account_key:'cek_portfoyu', account_name:'Çek Portföyü', account_type:'cek', net_bakiye:0, son_hareket_tarihi:null},
+    {account_key:'diger_finansal_hesap', account_name:'Diğer Finansal Hesap', account_type:'diger', net_bakiye:0, son_hareket_tarihi:null},
+    {account_key:'moka_united', account_name:'Moka United', account_type:'moka_united', net_bakiye:0, son_hareket_tarihi:null},
+    {account_key:'nakit_kasa', account_name:'Nakit Kasa', account_type:'kasa', net_bakiye:0, son_hareket_tarihi:null},
+    {account_key:'senet_portfoyu', account_name:'Senet Portföyü', account_type:'senet', net_bakiye:0, son_hareket_tarihi:null}
+  ].map(r=>({...r, txn_id:txnId(r,'ACC')}));
+}
+function ensureVisibleAccounts(){
+  const combined = getCombinedAccounts();
+  if(combined.length) return combined;
+  state.accounts = defaultAccountRows();
+  return getCombinedAccounts();
 }
 function getAccountByKey(key){ return getCombinedAccounts().find(x=>x.account_key===normalizeAccountKey(key)) || null; }
 function getLocalOpsByAccount(accountKey){
@@ -4299,7 +4316,8 @@ function renderBankMatchHistory(){
       <div class="metric-mini"><div class="k">Gidere Giden</div><div class="v">${summary.gider}</div></div>
       <div class="metric-mini"><div class="k">Hesap/Moka</div><div class="v">${summary.hesap}</div></div>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Bu tablo uygulama içi montaj defteridir. Hangi banka/Moka satırının hangi hedefe, hangi hareket tipiyle işlendiği iz bırakır.</div>` + (rows.length ? `<table><thead><tr><th>Ref</th><th>Kaynak</th><th>Hedef</th><th>Hareket</th><th class="text-right">Tutar</th><th>Tarih</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.ledger_ref || '-')}</td><td>${escapeHtml(r.source_module || '-')}<br><span style="color:var(--muted);font-weight:700;">${escapeHtml(r.source_summary || '-')}</span></td><td>${escapeHtml(r.target_name || '-')}<br><span style="color:var(--muted);font-weight:700;">${escapeHtml(r.target_type || '-')}</span></td><td>${escapeHtml(r.movement_type || '-')}</td><td class="text-right">${money(r.amount || 0)}</td><td>${shortDate(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz montaj kaydı yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">Bu tablo uygulama içi montaj defteridir. Hangi banka/Moka satırının hangi hedefe, hangi hareket tipiyle işlendiği iz bırakır.</div>` + (rows.length ? `<table><thead><tr><th>Ref</th><th>Kaynak</th><th>Hedef</th><th>Hareket</th><th class="text-right">Tutar</th><th>Tarih</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${escapeHtml(r.ledger_ref || '-')}</td><td>${escapeHtml(r.source_module || '-')}<br><span style="color:var(--muted);
+  target.innerHTML = html;font-weight:700;">${escapeHtml(r.source_summary || '-')}</span></td><td>${escapeHtml(r.target_name || '-')}<br><span style="color:var(--muted);font-weight:700;">${escapeHtml(r.target_type || '-')}</span></td><td>${escapeHtml(r.movement_type || '-')}</td><td class="text-right">${money(r.amount || 0)}</td><td>${shortDate(r.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz montaj kaydı yok.</div>`);
 }
 function renderApprovalAudit(){
   const rows=[...(state.auditTrail || [])].slice(0,25);
