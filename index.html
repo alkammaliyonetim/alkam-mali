@@ -714,6 +714,37 @@
 </div>
 
 
+
+<div id="employeeBulkAccrualModal" class="modal-overlay" style="display:none;">
+  <div class="modal-card" style="max-width:1080px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
+      <h2 style="margin:0;font-size:24px;font-weight:900;">Çalışan Toplu Tahakkuk</h2>
+      <button class="btn btn-red" onclick="closeEmployeeBulkAccrualModal()">Kapat</button>
+    </div>
+    <div class="rule-box" style="margin-bottom:12px;">Burada tahakkuk adını, tarihini ve tutarını sen belirleyip seçili çalışanlara toplu işleyebilirsin. Mükerrer kayıtlar otomatik atlanır.</div>
+    <div class="form-grid-3">
+      <div class="field"><label>Tahakkuk Türü</label><select id="employeeBulkAccrualType"><option value="bonus">Prim</option><option value="profit_share">Kâr Payı</option><option value="salary_adjustment">Maaş Farkı</option><option value="other">Diğer</option></select></div>
+      <div class="field"><label>Tahakkuk Tarihi</label><input id="employeeBulkAccrualDate" type="date" /></div>
+      <div class="field"><label>Tutar</label><input id="employeeBulkAccrualAmount" type="number" min="0" step="0.01" /></div>
+    </div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="field"><label>Tahakkuk Adı / Açıklama</label><input id="employeeBulkAccrualDesc" placeholder="Örn: NİSAN2026 EK PRİM TAHAKKUKU" /></div>
+      <div class="field"><label>Not</label><input id="employeeBulkAccrualNote" placeholder="Opsiyonel not" /></div>
+    </div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="field"><label>Uygulama Şekli</label><select id="employeeBulkAccrualMode"><option value="selected">Seçili çalışanlar</option><option value="active">Tüm aktif çalışanlar</option></select></div>
+      <div class="field"><label>Hızlı Seçim</label><div class="btn-row"><button class="btn btn-soft" type="button" onclick="setAllEmployeeBulkChecks(true)">Hepsini Seç</button><button class="btn btn-soft" type="button" onclick="setAllEmployeeBulkChecks(false)">Temizle</button></div></div>
+    </div>
+    <div class="section" style="box-shadow:none;margin:12px 0 0;">
+      <h3 class="section-title" style="font-size:18px;">Çalışan Seçimi</h3>
+      <div id="employeeBulkAccrualListWrap" class="empty">Yükleniyor...</div>
+    </div>
+    <div class="btn-row" style="margin-top:16px;">
+      <button class="btn btn-blue" onclick="saveEmployeeBulkAccrual()">Toplu Tahakkuku Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" class="toast"></div>
 
 <script>
@@ -1314,6 +1345,71 @@ function saveEmployeeManualAccrual(){
   renderReports();
   notify('Çalışan tahakkuku kaydedildi.');
 }
+
+function renderEmployeeBulkAccrualList(){
+  const target=document.getElementById('employeeBulkAccrualListWrap');
+  if(!target) return;
+  const rows=[...(state.employees||[])].sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'tr'));
+  target.innerHTML = rows.length ? `<table><thead><tr><th>Seç</th><th>Çalışan</th><th>Bölüm</th><th>Durum</th><th class="text-right">Aylık Maaş</th></tr></thead><tbody>${rows.map(r=>`<tr><td><input class="employee-bulk-check" type="checkbox" data-employee-id="${escapeHtml(r.id)}" ${String(r.status||'')==='active' ? 'checked' : ''}></td><td>${escapeHtml(r.name||'-')}</td><td>${escapeHtml(r.department||'-')}</td><td>${renderTag(String(r.status||'active')==='active'?'aktif':'pasif')}</td><td class="text-right">${money(r.monthly_salary||0)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Çalışan kartı yok.</div>`;
+}
+function setAllEmployeeBulkChecks(flag){
+  document.querySelectorAll('.employee-bulk-check').forEach(el=>el.checked=!!flag);
+}
+function openEmployeeBulkAccrualModal(){
+  document.getElementById('employeeBulkAccrualType').value='bonus';
+  document.getElementById('employeeBulkAccrualDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('employeeBulkAccrualAmount').value='';
+  document.getElementById('employeeBulkAccrualDesc').value='';
+  document.getElementById('employeeBulkAccrualNote').value='';
+  document.getElementById('employeeBulkAccrualMode').value='selected';
+  renderEmployeeBulkAccrualList();
+  document.getElementById('employeeBulkAccrualModal').style.display='flex';
+}
+function closeEmployeeBulkAccrualModal(){ document.getElementById('employeeBulkAccrualModal').style.display='none'; }
+function getSelectedEmployeeBulkIds(){
+  return [...document.querySelectorAll('.employee-bulk-check:checked')].map(el=>el.dataset.employeeId);
+}
+function saveEmployeeBulkAccrual(){
+  const accrualType=document.getElementById('employeeBulkAccrualType').value || 'bonus';
+  const lineDate=document.getElementById('employeeBulkAccrualDate').value || new Date().toISOString().slice(0,10);
+  const amount=num(document.getElementById('employeeBulkAccrualAmount').value||0);
+  const desc=(document.getElementById('employeeBulkAccrualDesc').value||'').trim() || `${employeePeriodToken(lineDate)} ${employeeAccrualTypeLabel(accrualType).toLocaleUpperCase('tr-TR')} TAHAKKUKU`;
+  const note=(document.getElementById('employeeBulkAccrualNote').value||'').trim() || null;
+  const mode=document.getElementById('employeeBulkAccrualMode').value || 'selected';
+  if(amount<=0){ notify('Toplu tahakkuk tutarı zorunlu.'); return; }
+  let targets = [];
+  if(mode==='active') targets = (state.employees||[]).filter(x=>String(x.status||'')==='active').map(x=>x.id);
+  else targets = getSelectedEmployeeBulkIds();
+  if(!targets.length){ notify('En az 1 çalışan seç.'); return; }
+  let saved=0; let skipped=0;
+  targets.forEach(employeeId=>{
+    const emp=getEmployeeById(employeeId);
+    if(!emp) return;
+    if(hasSimilarEmployeeAccrual(employeeId,lineDate,amount,accrualType,desc)){ skipped++; return; }
+    const row = stampRecordIds({
+      employee_id: emp.id,
+      employee_name: emp.name,
+      accrual_type: accrualType,
+      line_date: lineDate,
+      period_key: String(lineDate).slice(0,7),
+      description: desc,
+      amount,
+      note,
+      source_module:'employee_bulk_accrual',
+      created_at:new Date().toISOString()
+    }, 'EMP');
+    state.employeeAccruals.unshift(row);
+    addLedgerEntry({ledger_ref:row.operation_no, source_module:'employee_bulk_accrual', source_summary:row.description, target_type:'employee', target_name:emp.name, movement_type:'tahakkuk', amount:row.amount, line_date:row.line_date, decision_note:note || 'Toplu çalışan tahakkuku'});
+    saved++;
+  });
+  persistEmployeeAccruals();
+  addAuditEvent('employee_bulk_accrual_saved',{source_module:'employees', target_name:`${saved} çalışan`, amount:amount, note:note || desc, summary:`Toplu çalışan tahakkuku kaydedildi · ${saved} çalışan`});
+  closeEmployeeBulkAccrualModal();
+  renderEmployees();
+  renderReports();
+  notify(`Toplu tahakkuk tamamlandı. Kaydedilen: ${saved} · Atlanan mükerrer: ${skipped}`);
+}
+
 function renderEmployees(){
   ensureEmployeeSalaryAccruals();
   const wrap=document.getElementById('employeeWrap'); if(!wrap) return;
@@ -1321,6 +1417,7 @@ function renderEmployees(){
   const s=employeeSummary();
   wrap.innerHTML = `<div class="btn-row" style="margin-bottom:14px;">
       <button class="btn btn-blue" onclick="openEmployeeModal()">Yeni Çalışan</button>
+      <button class="btn btn-soft" onclick="openEmployeeBulkAccrualModal()">Toplu Tahakkuk</button>
     </div>
     <div class="grid-4" style="margin-bottom:14px;">
       <div class="card"><div class="card-label">Toplam Çalışan</div><div class="card-value">${s.total}</div></div>
