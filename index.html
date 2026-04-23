@@ -5490,15 +5490,15 @@ function saveBankRule(){
 }
 
 async function refreshAll(){
-  await loadDocuments();
   const loaders = [
-    ['Dashboard', loadDashboard()],
-    ['Cariler', loadCariler()],
-    ['Hesaplar', loadAccounts()],
-    ['Onay', loadApprovals()],
-    ['Ücret', loadFeeData()]
+    ['Dashboard', ()=>loadDashboard()],
+    ['Cariler', ()=>loadCariler()],
+    ['Hesaplar', ()=>loadAccounts()],
+    ['Onay', ()=>loadApprovals()],
+    ['Ücret', ()=>loadFeeData()],
+    ['Belgeler', ()=>loadDocuments()]
   ];
-  const results = await Promise.allSettled(loaders.map(x=>x[1]));
+  const results = await Promise.allSettled(loaders.map(x=>x[1]()));
   results.forEach((r,i)=>{ if(r.status==='rejected'){ console.error(r.reason); logSystemError('refresh_all', `${loaders[i][0]} yüklenemedi`, { note: String(r.reason?.message || r.reason || '') }); } });
   sanitizeAllImportedMovementDates();
   refreshImportedMovementAnalysis(true);
