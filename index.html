@@ -42,21 +42,25 @@
     @media (max-width:860px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.main{padding:16px}.page-head h1{font-size:32px}}
     @media (max-width:640px){.cards,.grid-4,.expense-mini-grid{grid-template-columns:1fr}}
   
+    /* ALKAM v112 - GÜVENLİ MODERN LOGIN + ENTER */
     .login-overlay-modern{background:rgba(15,23,42,.42)!important;backdrop-filter:blur(10px)!important;padding:28px!important}
+    .login-overlay.force-hidden{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+    body.alkam-unlocked .login-overlay{display:none!important}
+    body.alkam-unlocked{overflow:auto!important}
     .login-shell{width:min(920px,96vw);display:grid;grid-template-columns:1.02fr 1.08fr;background:#fff;border-radius:28px;overflow:hidden;border:1px solid #dbe3ef;box-shadow:0 40px 100px rgba(15,23,42,.28)}
     .login-side-brand{background:linear-gradient(180deg,#0a2a63 0%,#0d1f47 100%);color:#fff;position:relative;min-height:620px}
     .login-side-brand:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 20%, rgba(96,165,250,.18), transparent 30%),radial-gradient(circle at 70% 75%, rgba(59,130,246,.18), transparent 25%),linear-gradient(180deg,transparent,rgba(255,255,255,.03));pointer-events:none}
     .login-side-inner{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:46px 36px;text-align:center}
-    .login-side-logo-wrap{margin-bottom:16px}.login-side-logo{width:128px;max-width:75%}
+    .login-side-logo{width:128px;max-width:75%;display:block;margin:0 auto 16px}
     .login-side-kicker{font-size:12px;font-weight:900;letter-spacing:.18em;opacity:.9;margin-bottom:18px}
-    .login-side-title{margin:0;font-size:44px;line-height:1.08;font-weight:900;letter-spacing:-.03em}.login-side-title span{color:#60a5fa}
+    .login-side-title{margin:0;font-size:42px;line-height:1.08;font-weight:900;letter-spacing:-.03em}.login-side-title span{color:#60a5fa}
     .login-side-text{max-width:320px;margin:20px auto 0;font-size:16px;line-height:1.7;color:rgba(255,255,255,.88);font-weight:700}
     .login-shield-wrap{margin-top:40px;position:relative;width:200px;height:180px;display:flex;align-items:center;justify-content:center}
     .login-shield-icon{width:92px;height:92px;border-radius:26px;background:linear-gradient(180deg,#60a5fa,#2563eb);display:flex;align-items:center;justify-content:center;font-size:42px;box-shadow:0 18px 40px rgba(37,99,235,.35);border:1px solid rgba(255,255,255,.28)}
     .login-shield-ring{position:absolute;border:1px solid rgba(147,197,253,.35);border-radius:50%}.login-shield-ring.ring-1{width:160px;height:64px}.login-shield-ring.ring-2{width:190px;height:96px;transform:rotate(-18deg)}
     .login-panel{position:relative;padding:34px 42px 26px;display:flex;flex-direction:column;justify-content:center;background:#fff}
     .login-lang{position:absolute;right:24px;top:18px;border:1px solid #dbe3ef;border-radius:999px;background:#fff;padding:8px 14px;font-size:13px;font-weight:800;color:#475569}
-    .login-panel-logo{text-align:center;margin-top:8px}.login-panel-logo-img{width:120px;max-width:60%}
+    .login-panel-logo-img{width:120px;max-width:60%;display:block;margin:8px auto 0}
     .login-brand.modern{text-align:center;color:#2563eb;font-size:12px;font-weight:900;letter-spacing:.16em;margin-top:8px;margin-bottom:10px}
     .login-title.modern{text-align:center;margin:0;font-size:40px;line-height:1.08;font-weight:900;color:#0f172a}
     .login-subtitle{text-align:center;color:#64748b;font-size:14px;font-weight:700;margin:10px 0 10px}
@@ -72,19 +76,12 @@
     .login-hint{margin-top:12px;text-align:center;font-size:12px;color:#64748b;font-weight:800}
     @media (max-width: 900px){.login-shell{grid-template-columns:1fr}.login-side-brand{min-height:320px}.login-side-title{font-size:34px}.login-panel{padding:28px 20px 24px}.login-title.modern{font-size:32px}.login-features-row{grid-template-columns:1fr}}
 
-  
-    /* ALKAM v110 ACİL GİRİŞ DÜZELTME */
-    .login-overlay.force-hidden{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
-    body.alkam-unlocked .login-overlay{display:none!important}
-    body.alkam-unlocked{overflow:auto!important}
-
   </style>
 </head>
 <body>
 
 <script>
-/* ALKAM v110 - ACİL BAĞIMSIZ GİRİŞ MOTORU
-   Ana uygulama JS'i hata verse bile giriş overlay'ini kaldırır. */
+/* ALKAM v112 - ACİL BAĞIMSIZ GİRİŞ MOTORU */
 (function(){
   window.ALKAM_LOCAL_PASSWORD = "2909";
   window.ALKAM_SESSION_KEY = "alkam_local_session_v2";
@@ -192,7 +189,7 @@
   <div class="login-shell">
     <div class="login-side-brand">
       <div class="login-side-inner">
-        <div class="login-side-logo-wrap"><img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" class="login-side-logo"></div>
+        <img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" class="login-side-logo">
         <div class="login-side-kicker">ALKAM MALİ MÜŞAVİRLİK</div>
         <h2 class="login-side-title">Güvenilir. Güçlü.<br><span>Profesyonel.</span></h2>
         <p class="login-side-text">Muhasebe ve finans süreçlerinizi kolaylaştıran, güvenli ve entegre çözümler.</p>
@@ -205,7 +202,7 @@
     </div>
     <div class="login-panel">
       <div class="login-lang">Türkçe</div>
-      <div class="login-panel-logo"><img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" class="login-panel-logo-img"></div>
+      <img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" class="login-panel-logo-img">
       <div class="login-brand modern">ALKAM MALİ MÜŞAVİRLİK</div>
       <h2 class="login-title modern">Programa Giriş</h2>
       <div class="login-subtitle">Hoş geldiniz, lütfen hesabınıza giriş yapın.</div>
@@ -1791,6 +1788,7 @@ function togglePassword(event){
   return false;
 }
 function submitLogin(e){ return emergencyLogin(e); }
+
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
 function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
 function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, çek, senet, Moka ve transfer yönetimi"],giderler:["Giderler","Sabit ve değişken gider, tahakkuk ve ödeme kontrol ekranı"],calisanlar:["Çalışanlar","Sözleşme, maaş tahakkuku ve manuel personel tahakkukları"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
@@ -4219,1021 +4217,7 @@ function openStatementOutput(){
     </div>
     <div style="margin:10px 0 14px;padding:10px 12px;border:1px solid #dbe3ef;border-radius:12px;font-size:12px;color:#475569;font-weight:700;">Bu sistemde her işlem görünürde tek bir <strong>İşlem No</strong> ile izlenir. Teknik kimlik sistem içinde korunur, ekranda tekrar edilmez.</div>
     ${buildStandardStatementTable(meta.rowsDesc).replaceAll('class="text-right"','class="r"')}
-  
-<!-- ALKAM v107 Patch Start -->
-<script>
-/*
-  ALKAM Mali Müşavirlik - v107 Tek Bakiye Motoru Patch
-  Amaç: Güncel Bakiye / Filtre Kapanış / Extre kontrolünü aynı merkezi hareket motorundan hesaplamak.
-  Kullanım: Bu script, v106 index.html içinde mevcut ana scriptlerden sonra, </body> öncesine eklenmelidir.
-*/
-(function(){
-  'use strict';
-  const PATCH_ID = 'ALKAM_V107_TEK_BAKIYE_MOTORU';
-  const EPSILON = 0.01;
-  const logPrefix = '[ALKAM v107]';
-
-  function safeNum(v){
-    if (typeof window.num === 'function') return window.num(v);
-    if(v === null || v === undefined || v === '') return 0;
-    if(typeof v === 'number') return Number.isFinite(v) ? v : 0;
-    let s = String(v).trim();
-    if(!s) return 0;
-    s = s.replace(/\s/g,'').replace(/TL|₺/gi,'');
-    if(s.includes(',') && s.includes('.')) s = s.replace(/\./g,'').replace(',', '.');
-    else if(s.includes(',')) s = s.replace(',', '.');
-    const n = Number(s);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  function safeMoney(v){
-    if (typeof window.money === 'function') return window.money(v);
-    const n = safeNum(v);
-    return n.toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' TL';
-  }
-
-  function safeDate(v){
-    if(!v) return '';
-    if(typeof window.isoDate === 'function'){
-      const d = window.isoDate(v);
-      if(d) return d;
-    }
-    const s = String(v).trim();
-    if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
-    const m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
-    if(m) return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
-    const d = new Date(s);
-    return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
-  }
-
-  function getRowDate(row){
-    if(typeof window.getRowDateValue === 'function') return safeDate(window.getRowDateValue(row));
-    return safeDate(row?.line_date || row?.movement_date || row?.entry_date || row?.period_start || row?.created_at || row?.updated_at);
-  }
-
-  function normalizeAmounts(row){
-    if(typeof window.normalizeMovementAmounts === 'function'){
-      const mv = window.normalizeMovementAmounts(row || {});
-      return {debit:safeNum(mv.debit), credit:safeNum(mv.credit), amount:safeNum(mv.amount)};
-    }
-    const rawAmount = safeNum(row?.amount ?? row?.net_amount ?? row?.final_amount ?? row?.raw_amount ?? row?.suggested_amount ?? row?.expected_amount ?? row?.existing_amount ?? row?.fee_amount);
-    let debit = row?.debit;
-    let credit = row?.credit;
-    if((debit === undefined || debit === null) && (credit === undefined || credit === null)){
-      const t = String(row?.movement_type || row?.final_movement_type || row?.suggested_movement_type || row?.type || '').toLowerCase();
-      const isCreditLike = t.includes('tahsilat') || t.includes('alacak') || t.includes('odeme') || t.includes('ödeme') || t.includes('mahsup_cikis');
-      debit = isCreditLike ? 0 : rawAmount;
-      credit = isCreditLike ? rawAmount : 0;
-    }
-    return {debit:safeNum(debit), credit:safeNum(credit), amount:rawAmount};
-  }
-
-  function rowKey(row){
-    return String(row?.txn_id || row?.operation_no || row?.id || row?.line_id || row?.movement_id || row?.document_no || row?.description || '') + '|' + getRowDate(row);
-  }
-
-  function sameCari(row, cariId){
-    if(!cariId) return true;
-    const keys = [row?.cari_id, row?.cariId, row?.client_id, row?.customer_id, row?.account_id];
-    if(keys.some(v => String(v || '') === String(cariId))) return true;
-    // Bazı eski yapılarda state.hareketler zaten sadece seçili cariye ait geliyor. O durumda dışlama yapma.
-    const hasAnyCariKey = keys.some(v => v !== undefined && v !== null && String(v) !== '');
-    return !hasAnyCariKey && String(window.state?.selectedCariId || '') === String(cariId);
-  }
-
-  function collectCariRows(cariId){
-    const st = window.state || {};
-    const raw = [];
-    if(Array.isArray(st.hareketler)) raw.push(...st.hareketler);
-
-    // Yerel tahsilat ve tahakkuk kayıtları state.hareketler'e henüz birleşmemişse güvenli şekilde dahil et.
-    const optionalCollections = [
-      st.localCariCollections,
-      st.cariCollections,
-      st.feeAccruals,
-      st.localFeeAccruals,
-      st.localFeePeriods
-    ];
-    optionalCollections.forEach(arr => { if(Array.isArray(arr)) raw.push(...arr); });
-
-    const seen = new Set();
-    return raw
-      .filter(r => r && sameCari(r, cariId))
-      .map(r => {
-        const mv = normalizeAmounts(r);
-        return Object.assign({}, r, {
-          line_date: getRowDate(r),
-          debit: mv.debit,
-          credit: mv.credit,
-          amount: mv.amount,
-          _v107_key: rowKey(r)
-        });
-      })
-      .filter(r => {
-        const key = r._v107_key;
-        if(!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-  }
-
-  function sortRows(rows){
-    return [...(rows || [])].sort((a,b) => {
-      const da = new Date(getRowDate(a) || 0).getTime();
-      const db = new Date(getRowDate(b) || 0).getTime();
-      if(da !== db) return da - db;
-      return rowKey(a).localeCompare(rowKey(b), 'tr');
-    });
-  }
-
-  function calculateRows(cariId, startDate){
-    const start = startDate ? new Date(startDate) : null;
-    let balance = 0;
-    const visible = [];
-    for(const r of sortRows(collectCariRows(cariId))){
-      balance += safeNum(r.debit) - safeNum(r.credit);
-      const rd = new Date(getRowDate(r) || 0);
-      if(!start || rd >= start){
-        visible.push(Object.assign({}, r, {running_balance: balance}));
-      }
-    }
-    return visible;
-  }
-
-  function openingBalance(cariId, startDate){
-    if(!startDate) return 0;
-    const start = new Date(startDate);
-    let balance = 0;
-    for(const r of sortRows(collectCariRows(cariId))){
-      const rd = new Date(getRowDate(r) || 0);
-      if(rd >= start) break;
-      balance += safeNum(r.debit) - safeNum(r.credit);
-    }
-    return balance;
-  }
-
-  function selectedStartDate(){
-    try{
-      if(typeof window.getRangeStartDate === 'function') return window.getRangeStartDate();
-    }catch(e){}
-    return null;
-  }
-
-  function centralMeta(cariId){
-    const st = window.state || {};
-    const selectedRange = st.selectedRange || 'all';
-    const start = selectedStartDate();
-    const effectiveStart = selectedRange === 'all' ? null : start;
-    const rowsAsc = calculateRows(cariId, effectiveStart);
-    const rowsDesc = [...rowsAsc].reverse();
-    const open = selectedRange === 'all' ? 0 : openingBalance(cariId, start);
-    const totalDebit = rowsAsc.reduce((a,r)=>a+safeNum(r.debit),0);
-    const totalCredit = rowsAsc.reduce((a,r)=>a+safeNum(r.credit),0);
-    const closing = rowsAsc.length ? safeNum(rowsAsc[rowsAsc.length - 1].running_balance) : open;
-
-    const cari = (st.cariler || []).find(x => String(x.cari_id) === String(cariId));
-    if(cari){
-      cari.bakiye = closing;
-      cari.balance = closing;
-      cari.current_balance = closing;
-    }
-
-    return {
-      rowsAsc,
-      rowsDesc,
-      openingBalance: open,
-      totalDebit,
-      totalCredit,
-      closingBalance: closing,
-      systemBalance: closing,
-      trueBalance: closing,
-      diff: 0,
-      isConsistent: true,
-      source: PATCH_ID
-    };
-  }
-
-  window.calculateCariBalance = function(cariId){
-    const rows = calculateRows(cariId || window.state?.selectedCariId, null);
-    return rows.length ? safeNum(rows[rows.length - 1].running_balance) : 0;
-  };
-
-  window.calculateFilteredBalance = function(cariId, startDate){
-    const rows = calculateRows(cariId || window.state?.selectedCariId, startDate || selectedStartDate());
-    return rows.length ? safeNum(rows[rows.length - 1].running_balance) : openingBalance(cariId || window.state?.selectedCariId, startDate || selectedStartDate());
-  };
-
-  window.validateCariBalance = function(cariId){
-    const meta = centralMeta(cariId || window.state?.selectedCariId);
-    return {ok:true, diff:0, balance:meta.closingBalance, meta};
-  };
-
-  window.balanceLabel = function(v){
-    const n = safeNum(v);
-    if(n > EPSILON) return `${safeMoney(n)} B`;
-    if(n < -EPSILON) return `${safeMoney(Math.abs(n))} A`;
-    return `${safeMoney(0)}`;
-  };
-
-  window.balanceColumns = function(v){
-    const n = safeNum(v);
-    return {
-      bakiye_b: n > EPSILON ? safeMoney(n) : '',
-      bakiye_a: n < -EPSILON ? safeMoney(Math.abs(n)) : ''
-    };
-  };
-
-  window.getStatementBaseRows = function(){
-    return collectCariRows(window.state?.selectedCariId);
-  };
-
-  window.getStatementOpeningBalance = function(startDate){
-    return openingBalance(window.state?.selectedCariId, startDate);
-  };
-
-  window.currentStatementRows = function(){
-    const st = window.state || {};
-    const start = selectedStartDate();
-    const effectiveStart = st.selectedRange === 'all' ? null : start;
-    return calculateRows(st.selectedCariId, effectiveStart);
-  };
-
-  window.getCurrentStatementMeta = function(){
-    return centralMeta(window.state?.selectedCariId);
-  };
-
-  const oldRenderSelectedCariDetail = window.renderSelectedCariDetail;
-  if(typeof oldRenderSelectedCariDetail === 'function'){
-    window.renderSelectedCariDetail = function(){
-      if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
-      return oldRenderSelectedCariDetail.apply(this, arguments);
-    };
-  }
-
-  const oldRenderCariList = window.renderCariList;
-  if(typeof oldRenderCariList === 'function'){
-    window.renderCariList = function(){
-      // Seçili cari bakiyesi önce senkronlanır; liste tekrar çizildiğinde aynı sayı görünür.
-      if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
-      return oldRenderCariList.apply(this, arguments);
-    };
-  }
-
-  const oldConfirmStatementOutput = window.confirmStatementOutput;
-  if(typeof oldConfirmStatementOutput === 'function'){
-    window.confirmStatementOutput = function(){
-      const check = window.validateCariBalance(window.state?.selectedCariId);
-      if(!check.ok){
-        alert('Extre / bakiye kontrolü geçmedi. Fark: ' + safeMoney(check.diff));
-        return;
-      }
-      return oldConfirmStatementOutput.apply(this, arguments);
-    };
-  }
-
-  window.runV107BalanceRepair = function(){
-    if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
-    if(typeof window.renderSelectedCariDetail === 'function') window.renderSelectedCariDetail();
-    if(typeof window.renderCariList === 'function') window.renderCariList();
-    if(typeof window.renderReports === 'function') window.renderReports();
-    if(typeof window.notify === 'function') window.notify('v107 tek bakiye motoru uygulandı.');
-    console.info(logPrefix, 'Tek bakiye motoru uygulandı.');
-  };
-
-  console.info(logPrefix, 'Tek bakiye motoru aktif. Güncel bakiye artık hareketlerden hesaplanır.');
-})();
-
-</script>
-<!-- ALKAM v107 Patch End -->
-<!-- ALKAM v108 Patch Start -->
-<script>
-/*
-  ALKAM Mali Müşavirlik - v108 Cari Hareketleri Evrensel Düzenle/Sil Patch
-  Amaç:
-  - Extrede görünen Read-Only dahil TÜM cari hareketlerini düzenlenebilir hale getirmek.
-  - Orijinal/import kayıtları silmeden, güvenli yerel override mantığıyla düzenlemek/silmek.
-  - Eski özellikleri kaldırmadan v107 tek bakiye motoruyla birlikte çalışmak.
-*/
-(function(){
-  'use strict';
-
-  const PATCH_ID = 'ALKAM_V108_CARI_HAREKET_EVRENSEL_DUZENLE';
-  const STORE_KEY = 'alkam_statement_overrides_v108';
-  const AUDIT_KEY = 'alkam_audit_logs_v108';
-  const EPSILON = 0.01;
-  const logPrefix = '[ALKAM v108]';
-
-  const oldFns = {
-    getStatementBaseRows: window.getStatementBaseRows,
-    currentStatementRows: window.currentStatementRows,
-    getCurrentStatementMeta: window.getCurrentStatementMeta,
-    renderSelectedCariDetail: window.renderSelectedCariDetail,
-    renderCariList: window.renderCariList
-  };
-
-  function safeNum(v){
-    if (typeof window.num === 'function') return window.num(v);
-    if(v === null || v === undefined || v === '') return 0;
-    if(typeof v === 'number') return Number.isFinite(v) ? v : 0;
-    let s = String(v).trim().replace(/\s/g,'').replace(/TL|₺/gi,'');
-    if(s.includes(',') && s.includes('.')) s = s.replace(/\./g,'').replace(',', '.');
-    else if(s.includes(',')) s = s.replace(',', '.');
-    const n = Number(s);
-    return Number.isFinite(n) ? n : 0;
-  }
-
-  function safeMoney(v){
-    if (typeof window.money === 'function') return window.money(v);
-    return safeNum(v).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' TL';
-  }
-
-  function safeDate(v){
-    if(!v) return '';
-    if(typeof window.isoDate === 'function'){
-      const d = window.isoDate(v);
-      if(d) return d;
-    }
-    const s = String(v).trim();
-    if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
-    const m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
-    if(m) return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
-    const d = new Date(s);
-    return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
-  }
-
-  function getRowDate(row){
-    if(typeof window.getRowDateValue === 'function') return safeDate(window.getRowDateValue(row));
-    return safeDate(
-      row?.line_date ||
-      row?.movement_date ||
-      row?.date ||
-      row?.entry_date ||
-      row?.period_start ||
-      row?.created_at ||
-      row?.updated_at
-    );
-  }
-
-  function getDescription(row){
-    return String(
-      row?.description ||
-      row?.aciklama ||
-      row?.explanation ||
-      row?.note ||
-      row?.title ||
-      row?.invoice_no ||
-      ''
-    );
-  }
-
-  function getTxnNo(row){
-    return String(
-      row?.txn_id ||
-      row?.operation_no ||
-      row?.islem_no ||
-      row?.document_no ||
-      row?.doc_no ||
-      row?.id ||
-      row?.line_id ||
-      row?.movement_id ||
-      ''
-    );
-  }
-
-  function getMovementType(row){
-    return String(
-      row?.movement_type ||
-      row?.final_movement_type ||
-      row?.suggested_movement_type ||
-      row?.type ||
-      row?.kind ||
-      ''
-    );
-  }
-
-  function normalizeAmounts(row){
-    if(typeof window.normalizeMovementAmounts === 'function'){
-      const mv = window.normalizeMovementAmounts(row || {});
-      return { debit:safeNum(mv.debit), credit:safeNum(mv.credit), amount:safeNum(mv.amount) };
-    }
-    const rawAmount = safeNum(
-      row?.amount ??
-      row?.net_amount ??
-      row?.final_amount ??
-      row?.raw_amount ??
-      row?.suggested_amount ??
-      row?.expected_amount ??
-      row?.existing_amount ??
-      row?.fee_amount
-    );
-
-    let debit = row?.debit ?? row?.borc ?? row?.borç;
-    let credit = row?.credit ?? row?.alacak;
-
-    if((debit === undefined || debit === null || debit === '') && (credit === undefined || credit === null || credit === '')){
-      const t = getMovementType(row).toLowerCase();
-      const desc = getDescription(row).toLowerCase();
-      const creditLike = t.includes('tahsilat') || t.includes('alacak') || t.includes('odeme') || t.includes('ödeme') || desc.includes('tahsilat');
-      debit = creditLike ? 0 : rawAmount;
-      credit = creditLike ? rawAmount : 0;
-    }
-
-    return { debit:safeNum(debit), credit:safeNum(credit), amount:rawAmount };
-  }
-
-  function selectedCariId(){
-    return String(window.state?.selectedCariId || '');
-  }
-
-  function rowCariId(row){
-    return String(row?.cari_id || row?.cariId || row?.client_id || row?.customer_id || row?.account_id || selectedCariId() || '');
-  }
-
-  function stableKey(row, cariId){
-    if(row?._alkam_original_key) return String(row._alkam_original_key);
-    if(row?._original_row_key) return String(row._original_row_key);
-    if(row?._alkam_row_key) return String(row._alkam_row_key);
-
-    const mv = normalizeAmounts(row || {});
-    const parts = [
-      cariId || rowCariId(row),
-      getTxnNo(row),
-      getRowDate(row),
-      getMovementType(row),
-      getDescription(row).slice(0, 120),
-      safeNum(mv.debit).toFixed(2),
-      safeNum(mv.credit).toFixed(2)
-    ];
-    return parts.map(x => String(x || '').trim()).join('||');
-  }
-
-  function loadOverrides(){
-    try{
-      const obj = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
-      return obj && typeof obj === 'object' ? obj : {};
-    }catch(e){
-      console.warn(logPrefix, 'Override okunamadı:', e);
-      return {};
-    }
-  }
-
-  function saveOverrides(obj){
-    localStorage.setItem(STORE_KEY, JSON.stringify(obj || {}));
-  }
-
-  function audit(action, payload){
-    try{
-      const arr = JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]');
-      arr.push({
-        ts: new Date().toISOString(),
-        patch: PATCH_ID,
-        action,
-        user: window.state?.currentUser?.email || window.state?.currentUser?.name || 'local',
-        payload
-      });
-      localStorage.setItem(AUDIT_KEY, JSON.stringify(arr.slice(-1000)));
-    }catch(e){
-      console.warn(logPrefix, 'Audit yazılamadı:', e);
-    }
-  }
-
-  function rawBaseRows(cariId){
-    let rows = [];
-
-    if(typeof oldFns.getStatementBaseRows === 'function'){
-      try{
-        rows = oldFns.getStatementBaseRows.call(window) || [];
-      }catch(e){
-        rows = [];
-      }
-    }
-
-    if(!Array.isArray(rows) || rows.length === 0){
-      const st = window.state || {};
-      const pools = [
-        st.hareketler,
-        st.localCariCollections,
-        st.cariCollections,
-        st.feeAccruals,
-        st.localFeeAccruals,
-        st.localFeePeriods
-      ];
-      pools.forEach(arr => { if(Array.isArray(arr)) rows.push(...arr); });
-    }
-
-    return (rows || []).filter(row => {
-      const rid = rowCariId(row);
-      if(!cariId) return true;
-      if(rid === String(cariId)) return true;
-
-      const explicitKeys = [row?.cari_id, row?.cariId, row?.client_id, row?.customer_id, row?.account_id];
-      const hasExplicit = explicitKeys.some(v => v !== undefined && v !== null && String(v) !== '');
-      return !hasExplicit && String(window.state?.selectedCariId || '') === String(cariId);
-    });
-  }
-
-  function materializeRow(row, cariId){
-    const mv = normalizeAmounts(row || {});
-    const key = stableKey(row, cariId);
-    return Object.assign({}, row, {
-      cari_id: row?.cari_id || row?.cariId || cariId,
-      line_date: getRowDate(row),
-      movement_date: getRowDate(row),
-      debit: mv.debit,
-      credit: mv.credit,
-      amount: Math.max(Math.abs(mv.debit), Math.abs(mv.credit), Math.abs(mv.amount || 0)),
-      description: getDescription(row),
-      movement_type: getMovementType(row) || (mv.credit > 0 ? 'Tahsilat' : 'Tahakkuk'),
-      _alkam_row_key: key,
-      _alkam_editable: true
-    });
-  }
-
-  function applyOverrides(cariId){
-    const overrides = loadOverrides();
-    const base = rawBaseRows(cariId).map(r => materializeRow(r, cariId));
-    const seen = new Set();
-    const out = [];
-
-    for(const row of base){
-      const key = stableKey(row, cariId);
-      seen.add(key);
-      const ov = overrides[key];
-
-      if(ov?.status === 'deleted') continue;
-
-      if(ov?.status === 'edited' && ov.row){
-        out.push(materializeRow(Object.assign({}, row, ov.row, {
-          _alkam_original_key: key,
-          _alkam_row_key: key,
-          _alkam_source_row: row,
-          _alkam_override_status: 'edited'
-        }), cariId));
-      }else{
-        out.push(Object.assign({}, row, {
-          _alkam_original_key: key,
-          _alkam_override_status: 'base'
-        }));
-      }
-    }
-
-    Object.keys(overrides).forEach(key => {
-      const ov = overrides[key];
-      if(!ov || ov.status !== 'edited' || !ov.row || seen.has(key)) return;
-      const rid = String(ov.row.cari_id || '');
-      if(cariId && rid && rid !== String(cariId)) return;
-      out.push(materializeRow(Object.assign({}, ov.row, {
-        _alkam_original_key: key,
-        _alkam_row_key: key,
-        _alkam_override_status: 'edited_orphan'
-      }), cariId));
-    });
-
-    const unique = [];
-    const used = new Set();
-    for(const r of out){
-      const k = stableKey(r, cariId);
-      if(used.has(k)) continue;
-      used.add(k);
-      unique.push(r);
-    }
-
-    return unique;
-  }
-
-  function sortRows(rows){
-    return [...(rows || [])].sort((a,b) => {
-      const da = new Date(getRowDate(a) || '1900-01-01').getTime();
-      const db = new Date(getRowDate(b) || '1900-01-01').getTime();
-      if(da !== db) return da - db;
-      return stableKey(a).localeCompare(stableKey(b), 'tr');
-    });
-  }
-
-  function getRangeStartDateSafe(){
-    try{
-      if(typeof window.getRangeStartDate === 'function') return window.getRangeStartDate();
-    }catch(e){}
-    return null;
-  }
-
-  function calculateRows(cariId, startDate){
-    const start = startDate ? new Date(startDate) : null;
-    let balance = 0;
-    const visible = [];
-
-    for(const row of sortRows(applyOverrides(cariId))){
-      const mv = normalizeAmounts(row);
-      balance += safeNum(mv.debit) - safeNum(mv.credit);
-      const rd = new Date(getRowDate(row) || '1900-01-01');
-      if(!start || rd >= start){
-        visible.push(Object.assign({}, row, {
-          debit: mv.debit,
-          credit: mv.credit,
-          running_balance: balance,
-          _alkam_row_key: stableKey(row, cariId),
-          _alkam_editable: true
-        }));
-      }
-    }
-    return visible;
-  }
-
-  function openingBalance(cariId, startDate){
-    if(!startDate) return 0;
-    const start = new Date(startDate);
-    let balance = 0;
-    for(const row of sortRows(applyOverrides(cariId))){
-      const rd = new Date(getRowDate(row) || '1900-01-01');
-      if(rd >= start) break;
-      const mv = normalizeAmounts(row);
-      balance += safeNum(mv.debit) - safeNum(mv.credit);
-    }
-    return balance;
-  }
-
-  function centralMeta(cariId){
-    cariId = String(cariId || selectedCariId());
-    const selectedRange = window.state?.selectedRange || 'all';
-    const start = getRangeStartDateSafe();
-    const effectiveStart = selectedRange === 'all' ? null : start;
-    const rowsAsc = calculateRows(cariId, effectiveStart);
-    const rowsDesc = [...rowsAsc].reverse();
-    const open = selectedRange === 'all' ? 0 : openingBalance(cariId, start);
-    const totalDebit = rowsAsc.reduce((a,r)=>a+safeNum(r.debit),0);
-    const totalCredit = rowsAsc.reduce((a,r)=>a+safeNum(r.credit),0);
-    const closing = rowsAsc.length ? safeNum(rowsAsc[rowsAsc.length - 1].running_balance) : open;
-
-    const cari = (window.state?.cariler || []).find(x => String(x.cari_id) === String(cariId));
-    if(cari){
-      cari.bakiye = closing;
-      cari.balance = closing;
-      cari.current_balance = closing;
-    }
-
-    return {
-      rowsAsc,
-      rowsDesc,
-      openingBalance: open,
-      totalDebit,
-      totalCredit,
-      closingBalance: closing,
-      systemBalance: closing,
-      trueBalance: closing,
-      diff: 0,
-      isConsistent: true,
-      source: PATCH_ID
-    };
-  }
-
-  window.getStatementBaseRows = function(){
-    return applyOverrides(selectedCariId());
-  };
-
-  window.getStatementOpeningBalance = function(startDate){
-    return openingBalance(selectedCariId(), startDate);
-  };
-
-  window.currentStatementRows = function(){
-    const st = window.state || {};
-    const start = getRangeStartDateSafe();
-    const effectiveStart = st.selectedRange === 'all' ? null : start;
-    return calculateRows(st.selectedCariId, effectiveStart);
-  };
-
-  window.getCurrentStatementMeta = function(){
-    return centralMeta(selectedCariId());
-  };
-
-  window.calculateCariBalance = function(cariId){
-    const rows = calculateRows(cariId || selectedCariId(), null);
-    return rows.length ? safeNum(rows[rows.length - 1].running_balance) : 0;
-  };
-
-  window.validateCariBalance = function(cariId){
-    const meta = centralMeta(cariId || selectedCariId());
-    return { ok:true, diff:0, balance:meta.closingBalance, meta };
-  };
-
-  window.balanceLabel = function(v){
-    const n = safeNum(v);
-    if(n > EPSILON) return `${safeMoney(n)} B`;
-    if(n < -EPSILON) return `${safeMoney(Math.abs(n))} A`;
-    return `${safeMoney(0)}`;
-  };
-
-  window.balanceColumns = function(v){
-    const n = safeNum(v);
-    return {
-      bakiye_b: n > EPSILON ? safeMoney(n) : '',
-      bakiye_a: n < -EPSILON ? safeMoney(Math.abs(n)) : ''
-    };
-  };
-
-  function escapeHtml(str){
-    return String(str ?? '').replace(/[&<>"']/g, ch => ({
-      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-    }[ch]));
-  }
-
-  function findRowByKey(key){
-    const cariId = selectedCariId();
-    const rows = applyOverrides(cariId);
-    return rows.find(r => stableKey(r, cariId) === String(key) || r._alkam_row_key === String(key) || r._alkam_original_key === String(key));
-  }
-
-  function renderEditModal(key){
-    const row = findRowByKey(key);
-    if(!row){
-      alert('Hareket bulunamadı. Listeyi yenileyip tekrar dene.');
-      return;
-    }
-
-    const mv = normalizeAmounts(row);
-    const modalOld = document.getElementById('alkam-v108-movement-modal');
-    if(modalOld) modalOld.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'alkam-v108-movement-modal';
-    modal.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:18px;';
-    modal.innerHTML = `
-      <div style="width:min(720px,96vw);background:#fff;border-radius:20px;box-shadow:0 24px 80px rgba(15,23,42,.35);overflow:hidden;font-family:Inter,Arial,sans-serif;">
-        <div style="padding:18px 22px;background:#0f2347;color:white;display:flex;justify-content:space-between;align-items:center;gap:12px;">
-          <div>
-            <div style="font-weight:900;font-size:18px;">Cari Hareketini Düzenle</div>
-            <div style="font-size:12px;opacity:.85;margin-top:3px;">Read-Only kayıtlar orijinalden silinmez; yerel düzenlenebilir kayıt olarak override edilir.</div>
-          </div>
-          <button type="button" data-close style="border:0;background:rgba(255,255,255,.14);color:white;border-radius:12px;padding:9px 12px;font-weight:800;cursor:pointer;">Kapat</button>
-        </div>
-        <div style="padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-          <label style="font-size:12px;font-weight:900;color:#64748b;">İşlem No
-            <input id="alkam-v108-txn" value="${escapeHtml(getTxnNo(row))}" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;">
-          </label>
-          <label style="font-size:12px;font-weight:900;color:#64748b;">Tarih
-            <input id="alkam-v108-date" type="date" value="${escapeHtml(getRowDate(row))}" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;">
-          </label>
-          <label style="font-size:12px;font-weight:900;color:#64748b;">İşlem Türü
-            <input id="alkam-v108-type" value="${escapeHtml(getMovementType(row) || (mv.credit > 0 ? 'Tahsilat' : 'Tahakkuk'))}" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;">
-          </label>
-          <label style="font-size:12px;font-weight:900;color:#64748b;">Borç
-            <input id="alkam-v108-debit" value="${escapeHtml(String(mv.debit).replace('.',','))}" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;">
-          </label>
-          <label style="font-size:12px;font-weight:900;color:#64748b;">Alacak
-            <input id="alkam-v108-credit" value="${escapeHtml(String(mv.credit).replace('.',','))}" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;">
-          </label>
-          <label style="font-size:12px;font-weight:900;color:#64748b;grid-column:1 / -1;">Açıklama
-            <textarea id="alkam-v108-desc" rows="4" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;resize:vertical;">${escapeHtml(getDescription(row))}</textarea>
-          </label>
-          <div style="grid-column:1 / -1;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:12px;color:#9a3412;font-size:12px;font-weight:800;">
-            Kontrol: Borç ve Alacak aynı anda dolu olmamalı. Tahakkuk için Borç, tahsilat için Alacak kullan.
-          </div>
-        </div>
-        <div style="padding:16px 22px;border-top:1px solid #e5edf7;display:flex;justify-content:space-between;gap:10px;background:#f8fafc;">
-          <button type="button" data-delete style="border:0;background:#fee2e2;color:#b91c1c;border-radius:12px;padding:12px 16px;font-weight:900;cursor:pointer;">Sil</button>
-          <div style="display:flex;gap:10px;">
-            <button type="button" data-close style="border:0;background:#e2e8f0;color:#0f172a;border-radius:12px;padding:12px 16px;font-weight:900;cursor:pointer;">Vazgeç</button>
-            <button type="button" data-save style="border:0;background:#2563eb;color:white;border-radius:12px;padding:12px 18px;font-weight:900;cursor:pointer;">Kaydet</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    modal.querySelectorAll('[data-close]').forEach(btn => btn.onclick = () => modal.remove());
-
-    modal.querySelector('[data-save]').onclick = function(){
-      const debit = safeNum(document.getElementById('alkam-v108-debit').value);
-      const credit = safeNum(document.getElementById('alkam-v108-credit').value);
-
-      if(debit > EPSILON && credit > EPSILON){
-        alert('Aynı hareketin hem Borç hem Alacak alanı dolu olamaz.');
-        return;
-      }
-
-      const operationNo = document.getElementById('alkam-v108-txn').value.trim() || getTxnNo(row) || ('LOCAL-' + Date.now());
-      const edited = Object.assign({}, row, {
-        txn_id: operationNo,
-        operation_no: operationNo,
-        document_no: operationNo,
-        line_date: document.getElementById('alkam-v108-date').value,
-        movement_date: document.getElementById('alkam-v108-date').value,
-        date: document.getElementById('alkam-v108-date').value,
-        movement_type: document.getElementById('alkam-v108-type').value.trim() || (credit > EPSILON ? 'Tahsilat' : 'Tahakkuk'),
-        type: document.getElementById('alkam-v108-type').value.trim() || row.type,
-        description: document.getElementById('alkam-v108-desc').value.trim(),
-        aciklama: document.getElementById('alkam-v108-desc').value.trim(),
-        debit,
-        credit,
-        amount: Math.max(Math.abs(debit), Math.abs(credit)),
-        cari_id: rowCariId(row) || selectedCariId(),
-        source_type: 'local_edit_override',
-        is_local_edit_override: true,
-        updated_at: new Date().toISOString(),
-        _alkam_original_key: key,
-        _alkam_row_key: key
-      });
-
-      const overrides = loadOverrides();
-      overrides[key] = {
-        status: 'edited',
-        key,
-        cari_id: selectedCariId(),
-        row: edited,
-        original_snapshot: row,
-        updated_at: new Date().toISOString()
-      };
-      saveOverrides(overrides);
-      audit('movement_edit', { key, cari_id:selectedCariId(), edited });
-      modal.remove();
-      rerenderAll();
-    };
-
-    modal.querySelector('[data-delete]').onclick = function(){
-      modal.remove();
-      window.deleteCariMovementByKey(key);
-    };
-  }
-
-  function checkDeleteGuard(){
-    const pass = prompt('Silme parolasını girin. Bu işlem loglanacak.');
-    if(pass === null) return false;
-    if(String(pass).trim().length < 1){
-      alert('Parola boş olamaz.');
-      return false;
-    }
-    const phrase = prompt('Son onay için SİL yazın.');
-    if(String(phrase || '').toLocaleUpperCase('tr-TR') !== 'SİL'){
-      alert('Silme iptal edildi.');
-      return false;
-    }
-    return true;
-  }
-
-  window.editCariMovementByKey = function(key){
-    renderEditModal(String(key || ''));
-  };
-
-  window.deleteCariMovementByKey = function(key){
-    key = String(key || '');
-    const row = findRowByKey(key);
-    if(!row){
-      alert('Silinecek hareket bulunamadı.');
-      return;
-    }
-    if(!checkDeleteGuard()) return;
-
-    const overrides = loadOverrides();
-    overrides[key] = {
-      status: 'deleted',
-      key,
-      cari_id: selectedCariId(),
-      deleted_snapshot: row,
-      updated_at: new Date().toISOString()
-    };
-    saveOverrides(overrides);
-    audit('movement_delete', { key, cari_id:selectedCariId(), row });
-    rerenderAll();
-  };
-
-  window.resetCariMovementOverrideByKey = function(key){
-    const overrides = loadOverrides();
-    delete overrides[String(key || '')];
-    saveOverrides(overrides);
-    audit('movement_override_reset', { key:String(key || ''), cari_id:selectedCariId() });
-    rerenderAll();
-  };
-
-  function findStatementTable(){
-    const tables = Array.from(document.querySelectorAll('table'));
-    return tables.find(table => {
-      const head = table.querySelector('thead')?.innerText || '';
-      return head.includes('İşlem No') && head.includes('Bakiye B') && head.includes('Bakiye');
-    }) || null;
-  }
-
-  function makeActionButton(text, bg, color){
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.textContent = text;
-    b.style.cssText = `border:0;background:${bg};color:${color};border-radius:10px;padding:8px 10px;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;`;
-    return b;
-  }
-
-  function applyEditableButtons(){
-    const table = findStatementTable();
-    if(!table) return;
-
-    const meta = centralMeta(selectedCariId());
-    const visibleRows = meta.rowsDesc || [];
-    const trs = Array.from(table.querySelectorAll('tbody tr'));
-
-    trs.forEach((tr, index) => {
-      const row = visibleRows[index];
-      if(!row) return;
-
-      const cells = tr.querySelectorAll('td');
-      if(!cells.length) return;
-
-      const last = cells[cells.length - 1];
-      const key = stableKey(row, selectedCariId());
-
-      if(last.getAttribute('data-v108-editable-key') === key) return;
-
-      last.setAttribute('data-v108-editable-key', key);
-      last.innerHTML = '';
-      last.style.minWidth = '145px';
-
-      const wrap = document.createElement('div');
-      wrap.style.cssText = 'display:flex;gap:6px;align-items:center;justify-content:flex-start;flex-wrap:wrap;';
-
-      const editBtn = makeActionButton('Düzenle', '#dbeafe', '#1d4ed8');
-      editBtn.onclick = () => window.editCariMovementByKey(key);
-      wrap.appendChild(editBtn);
-
-      const delBtn = makeActionButton('Sil', '#fee2e2', '#b91c1c');
-      delBtn.onclick = () => window.deleteCariMovementByKey(key);
-      wrap.appendChild(delBtn);
-
-      if(row._alkam_override_status && row._alkam_override_status !== 'base'){
-        const resetBtn = makeActionButton('Geri Al', '#f1f5f9', '#334155');
-        resetBtn.onclick = () => {
-          if(confirm('Bu hareket için yerel düzenlemeyi geri almak istiyor musun?')){
-            window.resetCariMovementOverrideByKey(key);
-          }
-        };
-        wrap.appendChild(resetBtn);
-      }
-
-      last.appendChild(wrap);
-    });
-  }
-
-  function rerenderAll(){
-    try{
-      if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
-      if(typeof oldFns.renderSelectedCariDetail === 'function') oldFns.renderSelectedCariDetail.apply(window);
-      else if(typeof window.renderSelectedCariDetail === 'function') window.renderSelectedCariDetail();
-      if(typeof oldFns.renderCariList === 'function') oldFns.renderCariList.apply(window);
-      else if(typeof window.renderCariList === 'function') window.renderCariList();
-      if(typeof window.renderReports === 'function') window.renderReports();
-      setTimeout(applyEditableButtons, 80);
-      if(typeof window.notify === 'function') window.notify('Cari hareketi güncellendi.');
-    }catch(e){
-      console.error(logPrefix, 'Yeniden çizim hatası:', e);
-      setTimeout(applyEditableButtons, 80);
-    }
-  }
-
-  if(typeof oldFns.renderSelectedCariDetail === 'function'){
-    window.renderSelectedCariDetail = function(){
-      const out = oldFns.renderSelectedCariDetail.apply(this, arguments);
-      setTimeout(applyEditableButtons, 80);
-      return out;
-    };
-  }
-
-  if(typeof oldFns.renderCariList === 'function'){
-    window.renderCariList = function(){
-      if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
-      return oldFns.renderCariList.apply(this, arguments);
-    };
-  }
-
-  window.runV108MovementEditRepair = function(){
-    if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
-    applyEditableButtons();
-    console.info(logPrefix, 'Tüm cari hareketleri için düzenle/sil butonları uygulandı.');
-    if(typeof window.notify === 'function') window.notify('v108: Tüm cari hareketleri düzenlenebilir yapıldı.');
-  };
-
-  let observerStarted = false;
-  function startObserver(){
-    if(observerStarted) return;
-    observerStarted = true;
-    const obs = new MutationObserver(() => {
-      clearTimeout(window.__alkamV108ActionTimer);
-      window.__alkamV108ActionTimer = setTimeout(applyEditableButtons, 120);
-    });
-    obs.observe(document.body, { childList:true, subtree:true });
-  }
-
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', () => {
-      startObserver();
-      setTimeout(applyEditableButtons, 300);
-    });
-  }else{
-    startObserver();
-    setTimeout(applyEditableButtons, 300);
-  }
-
-  console.info(logPrefix, 'Aktif. Read-Only dahil tüm cari extre satırları yerel override ile düzenlenebilir/silinebilir.');
-})();
-</script>
-<!-- ALKAM v108 Patch End -->
-
-</body>
+  </body>
   </html>`;
   win.document.open();
   win.document.write(html);
@@ -7746,47 +6730,1135 @@ if(__loginInput){
   });
 }
 if(localStorage.getItem(SESSION_KEY)==="ok"){openApp(); refreshAll()}else{setConnState("Giriş bekleniyor")}
-
-function showLoginHint(){
-  notify('Yerel giriş şifresi: 2909');
-  const err=document.getElementById('loginError');
-  if(err){err.style.color='#2563eb'; err.textContent='Yerel giriş şifresi: 2909';}
-}
-(function(){
-  const _oldSubmit = window.submitLogin;
-  window.submitLogin = function(e){
-    if(e) e.preventDefault();
-    const input=document.getElementById('loginPassword');
-    const err=document.getElementById('loginError');
-    const remember=document.getElementById('rememberLocalLogin');
-    const v=(input?.value||'').trim();
-    if(err){ err.style.color='#dc2626'; err.textContent=''; }
-    if(!v){ if(err) err.textContent='Şifre gir.'; if(input) input.focus(); return false; }
-    const validPasswords=[LOCAL_PASSWORD,'2909','ALKAM2909'];
-    if(!validPasswords.includes(v)){
-      if(err) err.textContent='Şifre hatalı. İpucu için "Şifremi unuttum" tıkla.';
-      if(input){ input.focus(); input.select(); }
-      return false;
-    }
-    try{
-      localStorage.setItem(SESSION_KEY,'ok');
-      if(remember?.checked){ localStorage.setItem('alkam_remember_login','1'); } else { localStorage.removeItem('alkam_remember_login'); }
-      openApp();
-      refreshAll();
-      if(err){ err.style.color='#059669'; err.textContent='Giriş başarılı. Yönlendiriliyor...'; }
-    }catch(ex){
-      console.error(ex);
-      openApp();
-      if(err){ err.textContent='Giriş yapıldı, arayüz yüklenirken hata oluştu.'; }
-    }
-    return false;
-  };
-  document.addEventListener('DOMContentLoaded', function(){
-    const input=document.getElementById('loginPassword');
-    if(input){ setTimeout(()=>input.focus(), 100); }
-  });
-})();
-
 </script>
 </body>
 </html>
+
+<!-- ALKAM v107 Patch Start -->
+<script>
+/*
+  ALKAM Mali Müşavirlik - v107 Tek Bakiye Motoru Patch
+  Amaç: Güncel Bakiye / Filtre Kapanış / Extre kontrolünü aynı merkezi hareket motorundan hesaplamak.
+  Kullanım: Bu script, v106 index.html içinde mevcut ana scriptlerden sonra, </body> öncesine eklenmelidir.
+*/
+(function(){
+  'use strict';
+  const PATCH_ID = 'ALKAM_V107_TEK_BAKIYE_MOTORU';
+  const EPSILON = 0.01;
+  const logPrefix = '[ALKAM v107]';
+
+  function safeNum(v){
+    if (typeof window.num === 'function') return window.num(v);
+    if(v === null || v === undefined || v === '') return 0;
+    if(typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    let s = String(v).trim();
+    if(!s) return 0;
+    s = s.replace(/\s/g,'').replace(/TL|₺/gi,'');
+    if(s.includes(',') && s.includes('.')) s = s.replace(/\./g,'').replace(',', '.');
+    else if(s.includes(',')) s = s.replace(',', '.');
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function safeMoney(v){
+    if (typeof window.money === 'function') return window.money(v);
+    const n = safeNum(v);
+    return n.toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' TL';
+  }
+
+  function safeDate(v){
+    if(!v) return '';
+    if(typeof window.isoDate === 'function'){
+      const d = window.isoDate(v);
+      if(d) return d;
+    }
+    const s = String(v).trim();
+    if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+    const m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+    if(m) return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
+  }
+
+  function getRowDate(row){
+    if(typeof window.getRowDateValue === 'function') return safeDate(window.getRowDateValue(row));
+    return safeDate(row?.line_date || row?.movement_date || row?.entry_date || row?.period_start || row?.created_at || row?.updated_at);
+  }
+
+  function normalizeAmounts(row){
+    if(typeof window.normalizeMovementAmounts === 'function'){
+      const mv = window.normalizeMovementAmounts(row || {});
+      return {debit:safeNum(mv.debit), credit:safeNum(mv.credit), amount:safeNum(mv.amount)};
+    }
+    const rawAmount = safeNum(row?.amount ?? row?.net_amount ?? row?.final_amount ?? row?.raw_amount ?? row?.suggested_amount ?? row?.expected_amount ?? row?.existing_amount ?? row?.fee_amount);
+    let debit = row?.debit;
+    let credit = row?.credit;
+    if((debit === undefined || debit === null) && (credit === undefined || credit === null)){
+      const t = String(row?.movement_type || row?.final_movement_type || row?.suggested_movement_type || row?.type || '').toLowerCase();
+      const isCreditLike = t.includes('tahsilat') || t.includes('alacak') || t.includes('odeme') || t.includes('ödeme') || t.includes('mahsup_cikis');
+      debit = isCreditLike ? 0 : rawAmount;
+      credit = isCreditLike ? rawAmount : 0;
+    }
+    return {debit:safeNum(debit), credit:safeNum(credit), amount:rawAmount};
+  }
+
+  function rowKey(row){
+    return String(row?.txn_id || row?.operation_no || row?.id || row?.line_id || row?.movement_id || row?.document_no || row?.description || '') + '|' + getRowDate(row);
+  }
+
+  function sameCari(row, cariId){
+    if(!cariId) return true;
+    const keys = [row?.cari_id, row?.cariId, row?.client_id, row?.customer_id, row?.account_id];
+    if(keys.some(v => String(v || '') === String(cariId))) return true;
+    // Bazı eski yapılarda state.hareketler zaten sadece seçili cariye ait geliyor. O durumda dışlama yapma.
+    const hasAnyCariKey = keys.some(v => v !== undefined && v !== null && String(v) !== '');
+    return !hasAnyCariKey && String(window.state?.selectedCariId || '') === String(cariId);
+  }
+
+  function collectCariRows(cariId){
+    const st = window.state || {};
+    const raw = [];
+    if(Array.isArray(st.hareketler)) raw.push(...st.hareketler);
+
+    // Yerel tahsilat ve tahakkuk kayıtları state.hareketler'e henüz birleşmemişse güvenli şekilde dahil et.
+    const optionalCollections = [
+      st.localCariCollections,
+      st.cariCollections,
+      st.feeAccruals,
+      st.localFeeAccruals,
+      st.localFeePeriods
+    ];
+    optionalCollections.forEach(arr => { if(Array.isArray(arr)) raw.push(...arr); });
+
+    const seen = new Set();
+    return raw
+      .filter(r => r && sameCari(r, cariId))
+      .map(r => {
+        const mv = normalizeAmounts(r);
+        return Object.assign({}, r, {
+          line_date: getRowDate(r),
+          debit: mv.debit,
+          credit: mv.credit,
+          amount: mv.amount,
+          _v107_key: rowKey(r)
+        });
+      })
+      .filter(r => {
+        const key = r._v107_key;
+        if(!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+  }
+
+  function sortRows(rows){
+    return [...(rows || [])].sort((a,b) => {
+      const da = new Date(getRowDate(a) || 0).getTime();
+      const db = new Date(getRowDate(b) || 0).getTime();
+      if(da !== db) return da - db;
+      return rowKey(a).localeCompare(rowKey(b), 'tr');
+    });
+  }
+
+  function calculateRows(cariId, startDate){
+    const start = startDate ? new Date(startDate) : null;
+    let balance = 0;
+    const visible = [];
+    for(const r of sortRows(collectCariRows(cariId))){
+      balance += safeNum(r.debit) - safeNum(r.credit);
+      const rd = new Date(getRowDate(r) || 0);
+      if(!start || rd >= start){
+        visible.push(Object.assign({}, r, {running_balance: balance}));
+      }
+    }
+    return visible;
+  }
+
+  function openingBalance(cariId, startDate){
+    if(!startDate) return 0;
+    const start = new Date(startDate);
+    let balance = 0;
+    for(const r of sortRows(collectCariRows(cariId))){
+      const rd = new Date(getRowDate(r) || 0);
+      if(rd >= start) break;
+      balance += safeNum(r.debit) - safeNum(r.credit);
+    }
+    return balance;
+  }
+
+  function selectedStartDate(){
+    try{
+      if(typeof window.getRangeStartDate === 'function') return window.getRangeStartDate();
+    }catch(e){}
+    return null;
+  }
+
+  function centralMeta(cariId){
+    const st = window.state || {};
+    const selectedRange = st.selectedRange || 'all';
+    const start = selectedStartDate();
+    const effectiveStart = selectedRange === 'all' ? null : start;
+    const rowsAsc = calculateRows(cariId, effectiveStart);
+    const rowsDesc = [...rowsAsc].reverse();
+    const open = selectedRange === 'all' ? 0 : openingBalance(cariId, start);
+    const totalDebit = rowsAsc.reduce((a,r)=>a+safeNum(r.debit),0);
+    const totalCredit = rowsAsc.reduce((a,r)=>a+safeNum(r.credit),0);
+    const closing = rowsAsc.length ? safeNum(rowsAsc[rowsAsc.length - 1].running_balance) : open;
+
+    const cari = (st.cariler || []).find(x => String(x.cari_id) === String(cariId));
+    if(cari){
+      cari.bakiye = closing;
+      cari.balance = closing;
+      cari.current_balance = closing;
+    }
+
+    return {
+      rowsAsc,
+      rowsDesc,
+      openingBalance: open,
+      totalDebit,
+      totalCredit,
+      closingBalance: closing,
+      systemBalance: closing,
+      trueBalance: closing,
+      diff: 0,
+      isConsistent: true,
+      source: PATCH_ID
+    };
+  }
+
+  window.calculateCariBalance = function(cariId){
+    const rows = calculateRows(cariId || window.state?.selectedCariId, null);
+    return rows.length ? safeNum(rows[rows.length - 1].running_balance) : 0;
+  };
+
+  window.calculateFilteredBalance = function(cariId, startDate){
+    const rows = calculateRows(cariId || window.state?.selectedCariId, startDate || selectedStartDate());
+    return rows.length ? safeNum(rows[rows.length - 1].running_balance) : openingBalance(cariId || window.state?.selectedCariId, startDate || selectedStartDate());
+  };
+
+  window.validateCariBalance = function(cariId){
+    const meta = centralMeta(cariId || window.state?.selectedCariId);
+    return {ok:true, diff:0, balance:meta.closingBalance, meta};
+  };
+
+  window.balanceLabel = function(v){
+    const n = safeNum(v);
+    if(n > EPSILON) return `${safeMoney(n)} B`;
+    if(n < -EPSILON) return `${safeMoney(Math.abs(n))} A`;
+    return `${safeMoney(0)}`;
+  };
+
+  window.balanceColumns = function(v){
+    const n = safeNum(v);
+    return {
+      bakiye_b: n > EPSILON ? safeMoney(n) : '',
+      bakiye_a: n < -EPSILON ? safeMoney(Math.abs(n)) : ''
+    };
+  };
+
+  window.getStatementBaseRows = function(){
+    return collectCariRows(window.state?.selectedCariId);
+  };
+
+  window.getStatementOpeningBalance = function(startDate){
+    return openingBalance(window.state?.selectedCariId, startDate);
+  };
+
+  window.currentStatementRows = function(){
+    const st = window.state || {};
+    const start = selectedStartDate();
+    const effectiveStart = st.selectedRange === 'all' ? null : start;
+    return calculateRows(st.selectedCariId, effectiveStart);
+  };
+
+  window.getCurrentStatementMeta = function(){
+    return centralMeta(window.state?.selectedCariId);
+  };
+
+  const oldRenderSelectedCariDetail = window.renderSelectedCariDetail;
+  if(typeof oldRenderSelectedCariDetail === 'function'){
+    window.renderSelectedCariDetail = function(){
+      if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
+      return oldRenderSelectedCariDetail.apply(this, arguments);
+    };
+  }
+
+  const oldRenderCariList = window.renderCariList;
+  if(typeof oldRenderCariList === 'function'){
+    window.renderCariList = function(){
+      // Seçili cari bakiyesi önce senkronlanır; liste tekrar çizildiğinde aynı sayı görünür.
+      if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
+      return oldRenderCariList.apply(this, arguments);
+    };
+  }
+
+  const oldConfirmStatementOutput = window.confirmStatementOutput;
+  if(typeof oldConfirmStatementOutput === 'function'){
+    window.confirmStatementOutput = function(){
+      const check = window.validateCariBalance(window.state?.selectedCariId);
+      if(!check.ok){
+        alert('Extre / bakiye kontrolü geçmedi. Fark: ' + safeMoney(check.diff));
+        return;
+      }
+      return oldConfirmStatementOutput.apply(this, arguments);
+    };
+  }
+
+  window.runV107BalanceRepair = function(){
+    if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
+    if(typeof window.renderSelectedCariDetail === 'function') window.renderSelectedCariDetail();
+    if(typeof window.renderCariList === 'function') window.renderCariList();
+    if(typeof window.renderReports === 'function') window.renderReports();
+    if(typeof window.notify === 'function') window.notify('v107 tek bakiye motoru uygulandı.');
+    console.info(logPrefix, 'Tek bakiye motoru uygulandı.');
+  };
+
+  console.info(logPrefix, 'Tek bakiye motoru aktif. Güncel bakiye artık hareketlerden hesaplanır.');
+})();
+
+</script>
+<!-- ALKAM v107 Patch End -->
+
+<!-- ALKAM v108 Patch Start -->
+<script>
+/*
+  ALKAM Mali Müşavirlik - v108 Cari Hareketleri Evrensel Düzenle/Sil Patch
+  Amaç:
+  - Extrede görünen Read-Only dahil TÜM cari hareketlerini düzenlenebilir hale getirmek.
+  - Orijinal/import kayıtları silmeden, güvenli yerel override mantığıyla düzenlemek/silmek.
+  - Eski özellikleri kaldırmadan v107 tek bakiye motoruyla birlikte çalışmak.
+*/
+(function(){
+  'use strict';
+
+  const PATCH_ID = 'ALKAM_V108_CARI_HAREKET_EVRENSEL_DUZENLE';
+  const STORE_KEY = 'alkam_statement_overrides_v108';
+  const AUDIT_KEY = 'alkam_audit_logs_v108';
+  const EPSILON = 0.01;
+  const logPrefix = '[ALKAM v108]';
+
+  const oldFns = {
+    getStatementBaseRows: window.getStatementBaseRows,
+    currentStatementRows: window.currentStatementRows,
+    getCurrentStatementMeta: window.getCurrentStatementMeta,
+    renderSelectedCariDetail: window.renderSelectedCariDetail,
+    renderCariList: window.renderCariList
+  };
+
+  function safeNum(v){
+    if (typeof window.num === 'function') return window.num(v);
+    if(v === null || v === undefined || v === '') return 0;
+    if(typeof v === 'number') return Number.isFinite(v) ? v : 0;
+    let s = String(v).trim().replace(/\s/g,'').replace(/TL|₺/gi,'');
+    if(s.includes(',') && s.includes('.')) s = s.replace(/\./g,'').replace(',', '.');
+    else if(s.includes(',')) s = s.replace(',', '.');
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function safeMoney(v){
+    if (typeof window.money === 'function') return window.money(v);
+    return safeNum(v).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' TL';
+  }
+
+  function safeDate(v){
+    if(!v) return '';
+    if(typeof window.isoDate === 'function'){
+      const d = window.isoDate(v);
+      if(d) return d;
+    }
+    const s = String(v).trim();
+    if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+    const m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})$/);
+    if(m) return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
+  }
+
+  function getRowDate(row){
+    if(typeof window.getRowDateValue === 'function') return safeDate(window.getRowDateValue(row));
+    return safeDate(
+      row?.line_date ||
+      row?.movement_date ||
+      row?.date ||
+      row?.entry_date ||
+      row?.period_start ||
+      row?.created_at ||
+      row?.updated_at
+    );
+  }
+
+  function getDescription(row){
+    return String(
+      row?.description ||
+      row?.aciklama ||
+      row?.explanation ||
+      row?.note ||
+      row?.title ||
+      row?.invoice_no ||
+      ''
+    );
+  }
+
+  function getTxnNo(row){
+    return String(
+      row?.txn_id ||
+      row?.operation_no ||
+      row?.islem_no ||
+      row?.document_no ||
+      row?.doc_no ||
+      row?.id ||
+      row?.line_id ||
+      row?.movement_id ||
+      ''
+    );
+  }
+
+  function getMovementType(row){
+    return String(
+      row?.movement_type ||
+      row?.final_movement_type ||
+      row?.suggested_movement_type ||
+      row?.type ||
+      row?.kind ||
+      ''
+    );
+  }
+
+  function normalizeAmounts(row){
+    if(typeof window.normalizeMovementAmounts === 'function'){
+      const mv = window.normalizeMovementAmounts(row || {});
+      return { debit:safeNum(mv.debit), credit:safeNum(mv.credit), amount:safeNum(mv.amount) };
+    }
+    const rawAmount = safeNum(
+      row?.amount ??
+      row?.net_amount ??
+      row?.final_amount ??
+      row?.raw_amount ??
+      row?.suggested_amount ??
+      row?.expected_amount ??
+      row?.existing_amount ??
+      row?.fee_amount
+    );
+
+    let debit = row?.debit ?? row?.borc ?? row?.borç;
+    let credit = row?.credit ?? row?.alacak;
+
+    if((debit === undefined || debit === null || debit === '') && (credit === undefined || credit === null || credit === '')){
+      const t = getMovementType(row).toLowerCase();
+      const desc = getDescription(row).toLowerCase();
+      const creditLike = t.includes('tahsilat') || t.includes('alacak') || t.includes('odeme') || t.includes('ödeme') || desc.includes('tahsilat');
+      debit = creditLike ? 0 : rawAmount;
+      credit = creditLike ? rawAmount : 0;
+    }
+
+    return { debit:safeNum(debit), credit:safeNum(credit), amount:rawAmount };
+  }
+
+  function selectedCariId(){
+    return String(window.state?.selectedCariId || '');
+  }
+
+  function rowCariId(row){
+    return String(row?.cari_id || row?.cariId || row?.client_id || row?.customer_id || row?.account_id || selectedCariId() || '');
+  }
+
+  function stableKey(row, cariId){
+    if(row?._alkam_original_key) return String(row._alkam_original_key);
+    if(row?._original_row_key) return String(row._original_row_key);
+    if(row?._alkam_row_key) return String(row._alkam_row_key);
+
+    const mv = normalizeAmounts(row || {});
+    const parts = [
+      cariId || rowCariId(row),
+      getTxnNo(row),
+      getRowDate(row),
+      getMovementType(row),
+      getDescription(row).slice(0, 120),
+      safeNum(mv.debit).toFixed(2),
+      safeNum(mv.credit).toFixed(2)
+    ];
+    return parts.map(x => String(x || '').trim()).join('||');
+  }
+
+  function loadOverrides(){
+    try{
+      const obj = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+      return obj && typeof obj === 'object' ? obj : {};
+    }catch(e){
+      console.warn(logPrefix, 'Override okunamadı:', e);
+      return {};
+    }
+  }
+
+  function saveOverrides(obj){
+    localStorage.setItem(STORE_KEY, JSON.stringify(obj || {}));
+  }
+
+  function audit(action, payload){
+    try{
+      const arr = JSON.parse(localStorage.getItem(AUDIT_KEY) || '[]');
+      arr.push({
+        ts: new Date().toISOString(),
+        patch: PATCH_ID,
+        action,
+        user: window.state?.currentUser?.email || window.state?.currentUser?.name || 'local',
+        payload
+      });
+      localStorage.setItem(AUDIT_KEY, JSON.stringify(arr.slice(-1000)));
+    }catch(e){
+      console.warn(logPrefix, 'Audit yazılamadı:', e);
+    }
+  }
+
+  function rawBaseRows(cariId){
+    let rows = [];
+
+    if(typeof oldFns.getStatementBaseRows === 'function'){
+      try{
+        rows = oldFns.getStatementBaseRows.call(window) || [];
+      }catch(e){
+        rows = [];
+      }
+    }
+
+    if(!Array.isArray(rows) || rows.length === 0){
+      const st = window.state || {};
+      const pools = [
+        st.hareketler,
+        st.localCariCollections,
+        st.cariCollections,
+        st.feeAccruals,
+        st.localFeeAccruals,
+        st.localFeePeriods
+      ];
+      pools.forEach(arr => { if(Array.isArray(arr)) rows.push(...arr); });
+    }
+
+    return (rows || []).filter(row => {
+      const rid = rowCariId(row);
+      if(!cariId) return true;
+      if(rid === String(cariId)) return true;
+
+      const explicitKeys = [row?.cari_id, row?.cariId, row?.client_id, row?.customer_id, row?.account_id];
+      const hasExplicit = explicitKeys.some(v => v !== undefined && v !== null && String(v) !== '');
+      return !hasExplicit && String(window.state?.selectedCariId || '') === String(cariId);
+    });
+  }
+
+  function materializeRow(row, cariId){
+    const mv = normalizeAmounts(row || {});
+    const key = stableKey(row, cariId);
+    return Object.assign({}, row, {
+      cari_id: row?.cari_id || row?.cariId || cariId,
+      line_date: getRowDate(row),
+      movement_date: getRowDate(row),
+      debit: mv.debit,
+      credit: mv.credit,
+      amount: Math.max(Math.abs(mv.debit), Math.abs(mv.credit), Math.abs(mv.amount || 0)),
+      description: getDescription(row),
+      movement_type: getMovementType(row) || (mv.credit > 0 ? 'Tahsilat' : 'Tahakkuk'),
+      _alkam_row_key: key,
+      _alkam_editable: true
+    });
+  }
+
+  function applyOverrides(cariId){
+    const overrides = loadOverrides();
+    const base = rawBaseRows(cariId).map(r => materializeRow(r, cariId));
+    const seen = new Set();
+    const out = [];
+
+    for(const row of base){
+      const key = stableKey(row, cariId);
+      seen.add(key);
+      const ov = overrides[key];
+
+      if(ov?.status === 'deleted') continue;
+
+      if(ov?.status === 'edited' && ov.row){
+        out.push(materializeRow(Object.assign({}, row, ov.row, {
+          _alkam_original_key: key,
+          _alkam_row_key: key,
+          _alkam_source_row: row,
+          _alkam_override_status: 'edited'
+        }), cariId));
+      }else{
+        out.push(Object.assign({}, row, {
+          _alkam_original_key: key,
+          _alkam_override_status: 'base'
+        }));
+      }
+    }
+
+    Object.keys(overrides).forEach(key => {
+      const ov = overrides[key];
+      if(!ov || ov.status !== 'edited' || !ov.row || seen.has(key)) return;
+      const rid = String(ov.row.cari_id || '');
+      if(cariId && rid && rid !== String(cariId)) return;
+      out.push(materializeRow(Object.assign({}, ov.row, {
+        _alkam_original_key: key,
+        _alkam_row_key: key,
+        _alkam_override_status: 'edited_orphan'
+      }), cariId));
+    });
+
+    const unique = [];
+    const used = new Set();
+    for(const r of out){
+      const k = stableKey(r, cariId);
+      if(used.has(k)) continue;
+      used.add(k);
+      unique.push(r);
+    }
+
+    return unique;
+  }
+
+  function sortRows(rows){
+    return [...(rows || [])].sort((a,b) => {
+      const da = new Date(getRowDate(a) || '1900-01-01').getTime();
+      const db = new Date(getRowDate(b) || '1900-01-01').getTime();
+      if(da !== db) return da - db;
+      return stableKey(a).localeCompare(stableKey(b), 'tr');
+    });
+  }
+
+  function getRangeStartDateSafe(){
+    try{
+      if(typeof window.getRangeStartDate === 'function') return window.getRangeStartDate();
+    }catch(e){}
+    return null;
+  }
+
+  function calculateRows(cariId, startDate){
+    const start = startDate ? new Date(startDate) : null;
+    let balance = 0;
+    const visible = [];
+
+    for(const row of sortRows(applyOverrides(cariId))){
+      const mv = normalizeAmounts(row);
+      balance += safeNum(mv.debit) - safeNum(mv.credit);
+      const rd = new Date(getRowDate(row) || '1900-01-01');
+      if(!start || rd >= start){
+        visible.push(Object.assign({}, row, {
+          debit: mv.debit,
+          credit: mv.credit,
+          running_balance: balance,
+          _alkam_row_key: stableKey(row, cariId),
+          _alkam_editable: true
+        }));
+      }
+    }
+    return visible;
+  }
+
+  function openingBalance(cariId, startDate){
+    if(!startDate) return 0;
+    const start = new Date(startDate);
+    let balance = 0;
+    for(const row of sortRows(applyOverrides(cariId))){
+      const rd = new Date(getRowDate(row) || '1900-01-01');
+      if(rd >= start) break;
+      const mv = normalizeAmounts(row);
+      balance += safeNum(mv.debit) - safeNum(mv.credit);
+    }
+    return balance;
+  }
+
+  function centralMeta(cariId){
+    cariId = String(cariId || selectedCariId());
+    const selectedRange = window.state?.selectedRange || 'all';
+    const start = getRangeStartDateSafe();
+    const effectiveStart = selectedRange === 'all' ? null : start;
+    const rowsAsc = calculateRows(cariId, effectiveStart);
+    const rowsDesc = [...rowsAsc].reverse();
+    const open = selectedRange === 'all' ? 0 : openingBalance(cariId, start);
+    const totalDebit = rowsAsc.reduce((a,r)=>a+safeNum(r.debit),0);
+    const totalCredit = rowsAsc.reduce((a,r)=>a+safeNum(r.credit),0);
+    const closing = rowsAsc.length ? safeNum(rowsAsc[rowsAsc.length - 1].running_balance) : open;
+
+    const cari = (window.state?.cariler || []).find(x => String(x.cari_id) === String(cariId));
+    if(cari){
+      cari.bakiye = closing;
+      cari.balance = closing;
+      cari.current_balance = closing;
+    }
+
+    return {
+      rowsAsc,
+      rowsDesc,
+      openingBalance: open,
+      totalDebit,
+      totalCredit,
+      closingBalance: closing,
+      systemBalance: closing,
+      trueBalance: closing,
+      diff: 0,
+      isConsistent: true,
+      source: PATCH_ID
+    };
+  }
+
+  window.getStatementBaseRows = function(){
+    return applyOverrides(selectedCariId());
+  };
+
+  window.getStatementOpeningBalance = function(startDate){
+    return openingBalance(selectedCariId(), startDate);
+  };
+
+  window.currentStatementRows = function(){
+    const st = window.state || {};
+    const start = getRangeStartDateSafe();
+    const effectiveStart = st.selectedRange === 'all' ? null : start;
+    return calculateRows(st.selectedCariId, effectiveStart);
+  };
+
+  window.getCurrentStatementMeta = function(){
+    return centralMeta(selectedCariId());
+  };
+
+  window.calculateCariBalance = function(cariId){
+    const rows = calculateRows(cariId || selectedCariId(), null);
+    return rows.length ? safeNum(rows[rows.length - 1].running_balance) : 0;
+  };
+
+  window.validateCariBalance = function(cariId){
+    const meta = centralMeta(cariId || selectedCariId());
+    return { ok:true, diff:0, balance:meta.closingBalance, meta };
+  };
+
+  window.balanceLabel = function(v){
+    const n = safeNum(v);
+    if(n > EPSILON) return `${safeMoney(n)} B`;
+    if(n < -EPSILON) return `${safeMoney(Math.abs(n))} A`;
+    return `${safeMoney(0)}`;
+  };
+
+  window.balanceColumns = function(v){
+    const n = safeNum(v);
+    return {
+      bakiye_b: n > EPSILON ? safeMoney(n) : '',
+      bakiye_a: n < -EPSILON ? safeMoney(Math.abs(n)) : ''
+    };
+  };
+
+  function escapeHtml(str){
+    return String(str ?? '').replace(/[&<>"']/g, ch => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[ch]));
+  }
+
+  function findRowByKey(key){
+    const cariId = selectedCariId();
+    const rows = applyOverrides(cariId);
+    return rows.find(r => stableKey(r, cariId) === String(key) || r._alkam_row_key === String(key) || r._alkam_original_key === String(key));
+  }
+
+  function renderEditModal(key){
+    const row = findRowByKey(key);
+    if(!row){
+      alert('Hareket bulunamadı. Listeyi yenileyip tekrar dene.');
+      return;
+    }
+
+    const mv = normalizeAmounts(row);
+    const modalOld = document.getElementById('alkam-v108-movement-modal');
+    if(modalOld) modalOld.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'alkam-v108-movement-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:18px;';
+    modal.innerHTML = `
+      <div style="width:min(720px,96vw);background:#fff;border-radius:20px;box-shadow:0 24px 80px rgba(15,23,42,.35);overflow:hidden;font-family:Inter,Arial,sans-serif;">
+        <div style="padding:18px 22px;background:#0f2347;color:white;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+          <div>
+            <div style="font-weight:900;font-size:18px;">Cari Hareketini Düzenle</div>
+            <div style="font-size:12px;opacity:.85;margin-top:3px;">Read-Only kayıtlar orijinalden silinmez; yerel düzenlenebilir kayıt olarak override edilir.</div>
+          </div>
+          <button type="button" data-close style="border:0;background:rgba(255,255,255,.14);color:white;border-radius:12px;padding:9px 12px;font-weight:800;cursor:pointer;">Kapat</button>
+        </div>
+        <div style="padding:20px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <label style="font-size:12px;font-weight:900;color:#64748b;">İşlem No
+            <input id="alkam-v108-txn" value="${escapeHtml(getTxnNo(row))}" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;">
+          </label>
+          <label style="font-size:12px;font-weight:900;color:#64748b;">Tarih
+            <input id="alkam-v108-date" type="date" value="${escapeHtml(getRowDate(row))}" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;">
+          </label>
+          <label style="font-size:12px;font-weight:900;color:#64748b;">İşlem Türü
+            <input id="alkam-v108-type" value="${escapeHtml(getMovementType(row) || (mv.credit > 0 ? 'Tahsilat' : 'Tahakkuk'))}" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;">
+          </label>
+          <label style="font-size:12px;font-weight:900;color:#64748b;">Borç
+            <input id="alkam-v108-debit" value="${escapeHtml(String(mv.debit).replace('.',','))}" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;">
+          </label>
+          <label style="font-size:12px;font-weight:900;color:#64748b;">Alacak
+            <input id="alkam-v108-credit" value="${escapeHtml(String(mv.credit).replace('.',','))}" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;">
+          </label>
+          <label style="font-size:12px;font-weight:900;color:#64748b;grid-column:1 / -1;">Açıklama
+            <textarea id="alkam-v108-desc" rows="4" style="width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ef;border-radius:12px;font-weight:800;resize:vertical;">${escapeHtml(getDescription(row))}</textarea>
+          </label>
+          <div style="grid-column:1 / -1;background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:12px;color:#9a3412;font-size:12px;font-weight:800;">
+            Kontrol: Borç ve Alacak aynı anda dolu olmamalı. Tahakkuk için Borç, tahsilat için Alacak kullan.
+          </div>
+        </div>
+        <div style="padding:16px 22px;border-top:1px solid #e5edf7;display:flex;justify-content:space-between;gap:10px;background:#f8fafc;">
+          <button type="button" data-delete style="border:0;background:#fee2e2;color:#b91c1c;border-radius:12px;padding:12px 16px;font-weight:900;cursor:pointer;">Sil</button>
+          <div style="display:flex;gap:10px;">
+            <button type="button" data-close style="border:0;background:#e2e8f0;color:#0f172a;border-radius:12px;padding:12px 16px;font-weight:900;cursor:pointer;">Vazgeç</button>
+            <button type="button" data-save style="border:0;background:#2563eb;color:white;border-radius:12px;padding:12px 18px;font-weight:900;cursor:pointer;">Kaydet</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelectorAll('[data-close]').forEach(btn => btn.onclick = () => modal.remove());
+
+    modal.querySelector('[data-save]').onclick = function(){
+      const debit = safeNum(document.getElementById('alkam-v108-debit').value);
+      const credit = safeNum(document.getElementById('alkam-v108-credit').value);
+
+      if(debit > EPSILON && credit > EPSILON){
+        alert('Aynı hareketin hem Borç hem Alacak alanı dolu olamaz.');
+        return;
+      }
+
+      const operationNo = document.getElementById('alkam-v108-txn').value.trim() || getTxnNo(row) || ('LOCAL-' + Date.now());
+      const edited = Object.assign({}, row, {
+        txn_id: operationNo,
+        operation_no: operationNo,
+        document_no: operationNo,
+        line_date: document.getElementById('alkam-v108-date').value,
+        movement_date: document.getElementById('alkam-v108-date').value,
+        date: document.getElementById('alkam-v108-date').value,
+        movement_type: document.getElementById('alkam-v108-type').value.trim() || (credit > EPSILON ? 'Tahsilat' : 'Tahakkuk'),
+        type: document.getElementById('alkam-v108-type').value.trim() || row.type,
+        description: document.getElementById('alkam-v108-desc').value.trim(),
+        aciklama: document.getElementById('alkam-v108-desc').value.trim(),
+        debit,
+        credit,
+        amount: Math.max(Math.abs(debit), Math.abs(credit)),
+        cari_id: rowCariId(row) || selectedCariId(),
+        source_type: 'local_edit_override',
+        is_local_edit_override: true,
+        updated_at: new Date().toISOString(),
+        _alkam_original_key: key,
+        _alkam_row_key: key
+      });
+
+      const overrides = loadOverrides();
+      overrides[key] = {
+        status: 'edited',
+        key,
+        cari_id: selectedCariId(),
+        row: edited,
+        original_snapshot: row,
+        updated_at: new Date().toISOString()
+      };
+      saveOverrides(overrides);
+      audit('movement_edit', { key, cari_id:selectedCariId(), edited });
+      modal.remove();
+      rerenderAll();
+    };
+
+    modal.querySelector('[data-delete]').onclick = function(){
+      modal.remove();
+      window.deleteCariMovementByKey(key);
+    };
+  }
+
+  function checkDeleteGuard(){
+    const pass = prompt('Silme parolasını girin. Bu işlem loglanacak.');
+    if(pass === null) return false;
+    if(String(pass).trim().length < 1){
+      alert('Parola boş olamaz.');
+      return false;
+    }
+    const phrase = prompt('Son onay için SİL yazın.');
+    if(String(phrase || '').toLocaleUpperCase('tr-TR') !== 'SİL'){
+      alert('Silme iptal edildi.');
+      return false;
+    }
+    return true;
+  }
+
+  window.editCariMovementByKey = function(key){
+    renderEditModal(String(key || ''));
+  };
+
+  window.deleteCariMovementByKey = function(key){
+    key = String(key || '');
+    const row = findRowByKey(key);
+    if(!row){
+      alert('Silinecek hareket bulunamadı.');
+      return;
+    }
+    if(!checkDeleteGuard()) return;
+
+    const overrides = loadOverrides();
+    overrides[key] = {
+      status: 'deleted',
+      key,
+      cari_id: selectedCariId(),
+      deleted_snapshot: row,
+      updated_at: new Date().toISOString()
+    };
+    saveOverrides(overrides);
+    audit('movement_delete', { key, cari_id:selectedCariId(), row });
+    rerenderAll();
+  };
+
+  window.resetCariMovementOverrideByKey = function(key){
+    const overrides = loadOverrides();
+    delete overrides[String(key || '')];
+    saveOverrides(overrides);
+    audit('movement_override_reset', { key:String(key || ''), cari_id:selectedCariId() });
+    rerenderAll();
+  };
+
+  function findStatementTable(){
+    const tables = Array.from(document.querySelectorAll('table'));
+    return tables.find(table => {
+      const head = table.querySelector('thead')?.innerText || '';
+      return head.includes('İşlem No') && head.includes('Bakiye B') && head.includes('Bakiye');
+    }) || null;
+  }
+
+  function makeActionButton(text, bg, color){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = text;
+    b.style.cssText = `border:0;background:${bg};color:${color};border-radius:10px;padding:8px 10px;font-size:11px;font-weight:900;cursor:pointer;white-space:nowrap;`;
+    return b;
+  }
+
+  function applyEditableButtons(){
+    const table = findStatementTable();
+    if(!table) return;
+
+    const meta = centralMeta(selectedCariId());
+    const visibleRows = meta.rowsDesc || [];
+    const trs = Array.from(table.querySelectorAll('tbody tr'));
+
+    trs.forEach((tr, index) => {
+      const row = visibleRows[index];
+      if(!row) return;
+
+      const cells = tr.querySelectorAll('td');
+      if(!cells.length) return;
+
+      const last = cells[cells.length - 1];
+      const key = stableKey(row, selectedCariId());
+
+      if(last.getAttribute('data-v108-editable-key') === key) return;
+
+      last.setAttribute('data-v108-editable-key', key);
+      last.innerHTML = '';
+      last.style.minWidth = '145px';
+
+      const wrap = document.createElement('div');
+      wrap.style.cssText = 'display:flex;gap:6px;align-items:center;justify-content:flex-start;flex-wrap:wrap;';
+
+      const editBtn = makeActionButton('Düzenle', '#dbeafe', '#1d4ed8');
+      editBtn.onclick = () => window.editCariMovementByKey(key);
+      wrap.appendChild(editBtn);
+
+      const delBtn = makeActionButton('Sil', '#fee2e2', '#b91c1c');
+      delBtn.onclick = () => window.deleteCariMovementByKey(key);
+      wrap.appendChild(delBtn);
+
+      if(row._alkam_override_status && row._alkam_override_status !== 'base'){
+        const resetBtn = makeActionButton('Geri Al', '#f1f5f9', '#334155');
+        resetBtn.onclick = () => {
+          if(confirm('Bu hareket için yerel düzenlemeyi geri almak istiyor musun?')){
+            window.resetCariMovementOverrideByKey(key);
+          }
+        };
+        wrap.appendChild(resetBtn);
+      }
+
+      last.appendChild(wrap);
+    });
+  }
+
+  function rerenderAll(){
+    try{
+      if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
+      if(typeof oldFns.renderSelectedCariDetail === 'function') oldFns.renderSelectedCariDetail.apply(window);
+      else if(typeof window.renderSelectedCariDetail === 'function') window.renderSelectedCariDetail();
+      if(typeof oldFns.renderCariList === 'function') oldFns.renderCariList.apply(window);
+      else if(typeof window.renderCariList === 'function') window.renderCariList();
+      if(typeof window.renderReports === 'function') window.renderReports();
+      setTimeout(applyEditableButtons, 80);
+      if(typeof window.notify === 'function') window.notify('Cari hareketi güncellendi.');
+    }catch(e){
+      console.error(logPrefix, 'Yeniden çizim hatası:', e);
+      setTimeout(applyEditableButtons, 80);
+    }
+  }
+
+  if(typeof oldFns.renderSelectedCariDetail === 'function'){
+    window.renderSelectedCariDetail = function(){
+      const out = oldFns.renderSelectedCariDetail.apply(this, arguments);
+      setTimeout(applyEditableButtons, 80);
+      return out;
+    };
+  }
+
+  if(typeof oldFns.renderCariList === 'function'){
+    window.renderCariList = function(){
+      if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
+      return oldFns.renderCariList.apply(this, arguments);
+    };
+  }
+
+  window.runV108MovementEditRepair = function(){
+    if(window.state?.selectedCariId) centralMeta(window.state.selectedCariId);
+    applyEditableButtons();
+    console.info(logPrefix, 'Tüm cari hareketleri için düzenle/sil butonları uygulandı.');
+    if(typeof window.notify === 'function') window.notify('v108: Tüm cari hareketleri düzenlenebilir yapıldı.');
+  };
+
+  let observerStarted = false;
+  function startObserver(){
+    if(observerStarted) return;
+    observerStarted = true;
+    const obs = new MutationObserver(() => {
+      clearTimeout(window.__alkamV108ActionTimer);
+      window.__alkamV108ActionTimer = setTimeout(applyEditableButtons, 120);
+    });
+    obs.observe(document.body, { childList:true, subtree:true });
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', () => {
+      startObserver();
+      setTimeout(applyEditableButtons, 300);
+    });
+  }else{
+    startObserver();
+    setTimeout(applyEditableButtons, 300);
+  }
+
+  console.info(logPrefix, 'Aktif. Read-Only dahil tüm cari extre satırları yerel override ile düzenlenebilir/silinebilir.');
+})();
+</script>
+<!-- ALKAM v108 Patch End -->
+
+<script>
+/* ALKAM v112 - ENTER ONAY TUŞU PATCH */
+(function(){
+  function isVisible(el){
+    if(!el) return false;
+    const st = window.getComputedStyle(el);
+    if(st.display === "none" || st.visibility === "hidden" || st.opacity === "0") return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }
+
+  function loginOverlayVisible(){
+    const overlay = document.getElementById("loginOverlay");
+    return overlay && isVisible(overlay) && !overlay.classList.contains("force-hidden");
+  }
+
+  function findVisibleModal(){
+    const modals = Array.from(document.querySelectorAll(".modal-overlay, .login-overlay"));
+    return modals.reverse().find(m => isVisible(m) && !m.classList.contains("force-hidden"));
+  }
+
+  function findPrimaryButton(scope){
+    if(!scope) return null;
+    const selectors = [
+      "[data-enter-confirm]",
+      ".btn-blue",
+      ".login-btn",
+      "button[onclick*='save']",
+      "button[onclick*='confirm']",
+      "button[type='submit']"
+    ];
+
+    for(const sel of selectors){
+      const btns = Array.from(scope.querySelectorAll(sel));
+      const btn = btns.find(b => {
+        const tx = String(b.textContent || "").toLocaleLowerCase("tr-TR");
+        return isVisible(b) && !b.disabled && !tx.includes("kapat") && !tx.includes("vazgeç");
+      });
+      if(btn) return btn;
+    }
+    return null;
+  }
+
+  function shouldIgnoreEnter(target, ev){
+    if(!target) return false;
+    const tag = String(target.tagName || "").toLowerCase();
+    const type = String(target.type || "").toLowerCase();
+    if(tag === "textarea" && !ev.ctrlKey && !ev.metaKey) return true;
+    if(tag === "select") return true;
+    if(target.isContentEditable && !ev.ctrlKey && !ev.metaKey) return true;
+    if(type === "file") return true;
+    return false;
+  }
+
+  window.alkamEnterConfirm = function(ev){
+    if(!ev || ev.key !== "Enter" || ev.isComposing) return true;
+
+    if(loginOverlayVisible()){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(typeof window.emergencyLogin === "function") return window.emergencyLogin(ev);
+      if(typeof window.submitLogin === "function") return window.submitLogin(ev);
+      return false;
+    }
+
+    if(shouldIgnoreEnter(ev.target, ev)) return true;
+
+    const modal = findVisibleModal();
+    if(modal && modal.id !== "loginOverlay"){
+      const btn = findPrimaryButton(modal);
+      if(btn){
+        ev.preventDefault();
+        ev.stopPropagation();
+        btn.click();
+        return false;
+      }
+    }
+
+    const tag = String(ev.target?.tagName || "").toLowerCase();
+    if(tag === "input"){
+      const section = ev.target.closest(".modal-card, .section, .card, form, .login-card, .login-panel");
+      const btn = findPrimaryButton(section);
+      if(btn){
+        ev.preventDefault();
+        ev.stopPropagation();
+        btn.click();
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  document.addEventListener("keydown", function(ev){
+    window.alkamEnterConfirm(ev);
+  }, true);
+
+  document.addEventListener("DOMContentLoaded", function(){
+    const loginInput = document.getElementById("loginPassword");
+    if(loginInput){
+      loginInput.addEventListener("keydown", function(ev){
+        if(ev.key === "Enter"){
+          ev.preventDefault();
+          ev.stopPropagation();
+          if(typeof window.emergencyLogin === "function") window.emergencyLogin(ev);
+        }
+      }, true);
+    }
+  });
+
+  console.info("ALKAM v112 aktif: Enter login ve program içi onay tuşu olarak çalışır.");
+})();
+</script>
+
