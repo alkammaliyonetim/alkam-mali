@@ -181,6 +181,14 @@
       <div class="field"><label>Kanal</label><input id="cariCollectionChannel" placeholder="Nakit / Havale / EFT / POS" /></div>
       <div class="field"><label>Açıklama</label><input id="cariCollectionDescription" placeholder="Cari tahsilat" /></div>
     </div>
+    <div class="form-grid" style="margin-top:12px;">
+      <div class="field"><label>Tahsilat Akışı</label><select id="cariCollectionFlowType" class="select-input" onchange="toggleCariCollectionFlowFields()"><option value="direct">Anında Nakit / Banka</option><option value="moka_pos">Moka / POS</option><option value="cek">Çek</option><option value="senet">Senet</option></select></div>
+      <div class="field"><label>Nihai Giriş Hesabı</label><select id="cariCollectionSettlementAccount" class="select-input"></select></div>
+    </div>
+    <div class="form-grid" id="cariCollectionInstallmentWrap" style="margin-top:12px;display:none;">
+      <div class="field"><label>Taksit Sayısı</label><input id="cariCollectionInstallmentCount" type="number" min="1" step="1" value="1" /></div>
+      <div class="field"><label>İlk Hesaba Geçiş</label><input id="cariCollectionExpectedDate" type="date" /></div>
+    </div>
     <div class="field" style="margin-top:12px;"><label>Not</label><textarea id="cariCollectionNote" rows="4" class="select-input"></textarea></div>
     <div class="btn-row" style="margin-top:16px;"><button class="btn btn-blue" onclick="saveCariCollection()">Tahsilatı Kaydet</button></div>
   </div>
@@ -248,7 +256,7 @@
 </div>
 
 <div id="approvalDetailModal" class="modal-overlay" style="display:none;">
-  <div class="modal-card" style="max-width:1520px;width:95vw;">
+  <div class="modal-card" style="max-width:1800px;width:98vw;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;">
       <h2 style="margin:0;font-size:24px;font-weight:900;">Onay Kaydı Detayı</h2>
       <button class="btn btn-red" onclick="closeApprovalDetailModal()">Kapat</button>
@@ -752,7 +760,7 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_BANK_LEARN_KEY="alkam_local_bank_learn_v1"; const LOCAL_EMPLOYEES_KEY="alkam_local_employees_v1"; const LOCAL_EMPLOYEE_ACCRUALS_KEY="alkam_local_employee_accruals_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_CARI_FEE_SETUP_KEY="alkam_local_cari_fee_setup_v1"; const LOCAL_FEE_PERIODS_KEY="alkam_local_fee_periods_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_BANK_LEARN_KEY="alkam_local_bank_learn_v1"; const LOCAL_EMPLOYEES_KEY="alkam_local_employees_v1"; const LOCAL_EMPLOYEE_ACCRUALS_KEY="alkam_local_employee_accruals_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_CARI_FEE_SETUP_KEY="alkam_local_cari_fee_setup_v1"; const LOCAL_FEE_PERIODS_KEY="alkam_local_fee_periods_v1"; const LOCAL_EXPECTED_CASHFLOWS_KEY="alkam_local_expected_cashflows_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
 const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],employees:[],employeeAccruals:[],selectedEmployeeId:null,cariFeeSetups:[],localFeePeriods:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
 
 const LIVE_SYNC_TABLES={
@@ -4222,7 +4230,7 @@ async function renderBankActionCariPreview(){
     const sonTahakkuk = rowsDesc.find(r=>String(r.movement_type||'').toLowerCase().includes('tahakkuk'));
     const sonTahsilat = rowsDesc.find(r=>String(r.movement_type||'').toLowerCase().includes('tahsilat'));
     target.innerHTML = `
-      <div class="section" style="box-shadow:none;margin:0;padding:0;border:none;background:transparent;">
+      <div class="section" style="box-shadow:none;margin:0;padding:0;border:none;background:transparent;font-size:14px;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px;">
           <div>
             <div style="font-size:15px;font-weight:900;color:#64748b;">Canlı Cari Ekstre Önizlemesi</div>
@@ -4249,7 +4257,7 @@ async function renderBankActionCariPreview(){
           <div class="metric-mini"><div class="k">Toplam Alacak</div><div class="v">${money(totalCredit)}</div></div>
           <div class="metric-mini"><div class="k">Satır</div><div class="v">${rowsAsc.length}</div></div>
         </div>
-        <div style="max-height:540px;overflow:auto;border:1px solid #d7dfef;border-radius:16px;background:#fff;">
+        <div style="max-height:640px;overflow:auto;border:1px solid #d7dfef;border-radius:16px;background:#fff;font-size:14px;">
           ${buildStandardStatementTable(rowsDesc.slice(0,20))}
         </div>
       </div>`;
@@ -4273,7 +4281,7 @@ async function openBankActionModal(bucket,key){
   const recommended=bucket==='moka' ? mokaRecommendedAction(r) : (bankNeedsApproval(r) ? 'Önce onay merkezine gönder' : 'Doğrudan işlenebilir');
   const matchedCari = state.cariler.find(c=>String(c.cari_name||'')===String(defs.targetName||'')) || null;
   const content=`
-    <div class="grid-2" style="align-items:start;gap:18px;">
+    <div class="grid-2" style="grid-template-columns:minmax(430px,0.9fr) minmax(860px,1.7fr);align-items:start;gap:22px;">
       <div>
         <div class="grid-4" style="margin-bottom:14px;">
           <div class="metric-mini"><div class="k">İşlem ID</div><div class="v">${escapeHtml(txnId(r,bucket==='moka' ? 'MOK' : 'BNK'))}</div></div>
@@ -4304,7 +4312,7 @@ async function openBankActionModal(bucket,key){
         </div>
       </div>
       <div>
-        <div id="bankActionCariPreview" class="empty">Cari ekstre önizlemesi hazırlanıyor...</div>
+        <div id="bankActionCariPreview" class="empty" style="font-size:14px;line-height:1.45;">Cari ekstre önizlemesi hazırlanıyor...</div>
       </div>
     </div>`;
   document.getElementById('bankActionContent').innerHTML=content;
@@ -4488,11 +4496,18 @@ function renderAccounts(){
     processed: state.mokaPanel.filter(r=>bankStatusCode(r,'moka')==='processed').length,
     ignored: state.mokaPanel.filter(r=>['ignored','rejected'].includes(bankStatusCode(r,'moka'))).length,
   };
+  const cashForecast=getCashForecastSummary();
   document.getElementById("accountSummaryWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
     <div class="metric-mini"><div class="k">Toplam Hesap</div><div class="v">${combinedAccounts.length}</div></div>
     <div class="metric-mini"><div class="k">Yerel Hesap İşlemi</div><div class="v">${manualRows.length}</div></div>
     <div class="metric-mini"><div class="k">Banka Onay Kuyruğu</div><div class="v">${bankStats.queued}</div></div>
     <div class="metric-mini"><div class="k">Net Toplam</div><div class="v">${money(combinedAccounts.reduce((a,b)=>a+num(b.net_bakiye),0))}</div></div>
+  </div>
+  <div class="grid-4" style="margin-bottom:14px">
+    <div class="metric-mini"><div class="k">Bu Ay Kasaya Gelen</div><div class="v">${money(cashForecast.actualKasa)}</div></div>
+    <div class="metric-mini"><div class="k">Bu Ay Kasaya Beklenen</div><div class="v">${money(cashForecast.expectedKasa)}</div></div>
+    <div class="metric-mini"><div class="k">Moka Bekleyen</div><div class="v">${money(cashForecast.pendingMoka)}</div></div>
+    <div class="metric-mini"><div class="k">Çek / Senet Bekleyen</div><div class="v">${money(cashForecast.pendingPaper)}</div></div>
   </div>
   <div class="account-actions">
     <button class="btn btn-blue" onclick="openManualFinanceModal('create')">Yeni Hesap Tanımla</button>
@@ -5586,11 +5601,18 @@ async function saveCariCard(){
     }
   }
   ensureFeeAccrualsForAllCariler();
+  const openingYear = String(opening_date || '').slice(0,4);
+  if(openingYear) ensureFeeAccrualsForCariYear(state.selectedCariId, openingYear);
+  const currentYear = String(new Date().getFullYear());
+  ensureFeeAccrualsForCariYear(state.selectedCariId, currentYear);
   addAuditEvent('cari_card_updated',{source_module:'cari_cards', target_name:payload.cari_name || state.selectedCariId, note:'Cari kartı güncellendi.', summary:`Cari kartı güncellendi · ${payload.cari_name || state.selectedCariId}`});
-  notify("Cari kartı güncellendi.");
+  notify("Cari kartı güncellendi ve sözleşmeye göre ücret tahakkukları güncellendi.");
   closeCariEditModal();
   await loadCariler();
+  await loadSelectedCariHareketler();
   renderDashboard();
+  renderCariList();
+  renderSelectedCariDetail();
   renderReports();
 }
 
@@ -5702,17 +5724,169 @@ async function saveManualFinanceAction(){
   renderAccounts();
   notify('Hesap işlemi kaydedildi ve canlı yazım denendi.');
 }
+async function purgeCariTahsilatlarFromDate(dateFrom='2026-01-01'){
+  if(!state.selectedCariId){ notify('Cari seçili değil.'); return; }
+  const cari=state.cariler.find(x=>x.cari_id===state.selectedCariId);
+  const cariName=String(cari?.cari_name || '').trim();
+  if(!cariName){ notify('Cari bilgisi bulunamadı.'); return; }
+  if(!confirm(`${cariName} için ${dateFrom} ve sonrası tahsilatlar silinecek. Devam edilsin mi?`)) return;
+
+  const collections=getLocalCariCollections();
+  const targetCollections=collections.filter(x=>String(x.cari_id)===String(state.selectedCariId) && String(x.line_date||x.created_at||'').slice(0,10) >= dateFrom);
+  const targetCollectionIds=new Set(targetCollections.map(x=>String(x.id)));
+  setLocalCariCollections(collections.filter(x=>!targetCollectionIds.has(String(x.id))));
+
+  const localOps=getLocalAccountOps();
+  const targetOps=localOps.filter(x=>String(x.type)==='cari_collection' && String(x.entry_date||x.created_at||'').slice(0,10) >= dateFrom && String(x.description||'').includes(cariName));
+  const targetOpIds=new Set(targetOps.map(x=>String(x.id)));
+  setLocalAccountOps(localOps.filter(x=>!targetOpIds.has(String(x.id))));
+
+  state.operationalLedger=(state.operationalLedger||[]).filter(x=>!(String(x.source_module||'')==='local_cari_collection' && String(x.cari_id)===String(state.selectedCariId) && String(x.line_date||x.entry_date||x.created_at||'').slice(0,10) >= dateFrom));
+  persistLedger();
+
+  const docs=readLocalJson(LOCAL_DOCS_KEY);
+  writeLocalJson(LOCAL_DOCS_KEY, docs.filter(x=>!(String(x.cari_id)===String(state.selectedCariId) && String(x.source_type||'')==='local_collection' && String(x.document_date||x.created_at||'').slice(0,10) >= dateFrom)));
+
+  for(const row of targetCollections){ try{ await deleteLiveRow('cari_collections', row.id); }catch(_){} }
+  for(const row of targetOps){ try{ await deleteLiveRow('account_ops', row.id); }catch(_){} }
+
+  addAuditEvent('cari_collection_purged',{
+    source_module:'cari_cleanup',
+    target_name:cariName,
+    amount:targetCollections.reduce((a,b)=>a+num(b.amount||0),0),
+    note:`${dateFrom} ve sonrası tahsilatlar temizlendi`,
+    summary:`Cari tahsilat temizliği · ${cariName}`
+  });
+
+  await Promise.all([loadDocuments(), loadAccounts(), loadCariler()]);
+  await loadSelectedCariHareketler();
+  renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderDocuments(); renderReports();
+  notify(`${targetCollections.length} tahsilat satırı temizlendi. Bankadan yeniden oluşturma için hazır.`);
+}
+
+
+function getExpectedCashflows(){ return readLocalJson(LOCAL_EXPECTED_CASHFLOWS_KEY); }
+function setExpectedCashflows(rows){ writeLocalJson(LOCAL_EXPECTED_CASHFLOWS_KEY, rows || []); }
+function addMonthsIso(iso, months){
+  const d = new Date(iso);
+  if(Number.isNaN(d.getTime())) return iso;
+  const baseDay = d.getDate();
+  const n = new Date(d.getFullYear(), d.getMonth() + months, 1);
+  const lastDay = new Date(n.getFullYear(), n.getMonth()+1, 0).getDate();
+  n.setDate(Math.min(baseDay, lastDay));
+  return n.toISOString().slice(0,10);
+}
+function splitInstallments(total, count){
+  const c = Math.max(1, Number(count || 1));
+  const base = Math.floor((num(total) / c) * 100) / 100;
+  const rows = Array(c).fill(base);
+  const sum = rows.reduce((a,b)=>a+b,0);
+  rows[c-1] = Math.round((num(total) - sum + base) * 100) / 100;
+  return rows;
+}
+function currentMonthRange(){
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+  const end = new Date(now.getFullYear(), now.getMonth()+1, 0).toISOString().slice(0,10);
+  return { start, end };
+}
+function getCashForecastSummary(){
+  const flows = getExpectedCashflows();
+  const { start, end } = currentMonthRange();
+  const monthFlows = flows.filter(x=>String(x.expected_date||'').slice(0,10) >= start && String(x.expected_date||'').slice(0,10) <= end);
+  const actualKasa = getLocalAccountOps().filter(x=>String(x.account_type||'')==='kasa' && String(x.direction||'')==='giris' && String(x.entry_date||'').slice(0,10) >= start && String(x.entry_date||'').slice(0,10) <= end).reduce((a,b)=>a+num(b.amount),0);
+  const expectedKasa = monthFlows.filter(x=>String(x.settlement_account_type||'')==='kasa').reduce((a,b)=>a+num(b.expected_amount),0);
+  const pendingMoka = flows.filter(x=>String(x.flow_type)==='moka_pos' && !x.settled_at).reduce((a,b)=>a+num(b.expected_amount),0);
+  const pendingPaper = flows.filter(x=>['cek','senet'].includes(String(x.flow_type)) && !x.settled_at).reduce((a,b)=>a+num(b.expected_amount),0);
+  return { actualKasa, expectedKasa, pendingMoka, pendingPaper, thisMonthCount: monthFlows.length };
+}
+function toggleCariCollectionFlowFields(){
+  const flow = document.getElementById('cariCollectionFlowType')?.value || 'direct';
+  const wrap = document.getElementById('cariCollectionInstallmentWrap');
+  if(wrap) wrap.style.display = flow === 'moka_pos' ? 'grid' : (flow === 'cek' || flow === 'senet' ? 'grid' : 'none');
+  const cnt = document.getElementById('cariCollectionInstallmentCount');
+  const date = document.getElementById('cariCollectionExpectedDate');
+  if(flow === 'moka_pos'){
+    if(cnt) cnt.value = cnt.value || '1';
+    if(date && !date.value){
+      const d = new Date();
+      d.setDate(d.getDate() + 40);
+      date.value = d.toISOString().slice(0,10);
+    }
+  }
+}
+function buildExpectedCashflowRows({ cari, amount, lineDate, flowType, installmentCount, expectedDate, settlementAccount, sourceAccount, description, note, documentNo }){
+  const rows = [];
+  if(flowType === 'direct') return rows;
+  if(flowType === 'moka_pos'){
+    const pieces = splitInstallments(amount, installmentCount || 1);
+    pieces.forEach((part, idx)=>{
+      const dt = idx === 0 ? expectedDate : addMonthsIso(expectedDate, idx);
+      rows.push(stampRecordIds({
+        flow_type:'moka_pos',
+        cari_id:cari?.cari_id || null,
+        cari_name:cari?.cari_name || '-',
+        source_account_key:sourceAccount?.account_key || null,
+        source_account_name:sourceAccount?.account_name || null,
+        source_account_type:sourceAccount?.account_type || null,
+        settlement_account_key:settlementAccount?.account_key || null,
+        settlement_account_name:settlementAccount?.account_name || null,
+        settlement_account_type:settlementAccount?.account_type || null,
+        source_date:lineDate,
+        expected_date:dt,
+        expected_amount:part,
+        installment_no:idx+1,
+        installment_count:Number(installmentCount || 1),
+        description: description || `Moka tahsilat beklenen giriş · ${cari?.cari_name || '-'}`,
+        note: note || documentNo || null,
+        settled_at:null,
+        created_at:new Date().toISOString()
+      }, 'ECF'));
+    });
+  } else if(flowType === 'cek' || flowType === 'senet'){
+    rows.push(stampRecordIds({
+      flow_type:flowType,
+      cari_id:cari?.cari_id || null,
+      cari_name:cari?.cari_name || '-',
+      source_account_key:sourceAccount?.account_key || null,
+      source_account_name:sourceAccount?.account_name || null,
+      source_account_type:sourceAccount?.account_type || null,
+      settlement_account_key:settlementAccount?.account_key || null,
+      settlement_account_name:settlementAccount?.account_name || null,
+      settlement_account_type:settlementAccount?.account_type || null,
+      source_date:lineDate,
+      expected_date:expectedDate,
+      expected_amount:num(amount),
+      installment_no:1,
+      installment_count:1,
+      description: description || `${flowType==='cek' ? 'Çek' : 'Senet'} tahsilat beklenen giriş · ${cari?.cari_name || '-'}`,
+      note: note || documentNo || null,
+      settled_at:null,
+      created_at:new Date().toISOString()
+    }, 'ECF'));
+  }
+  return rows;
+}
+
 function openCariCollectionModal(){
   if(!state.selectedCariId){ notify('Cari seçili değil.'); return; }
   const cari=state.cariler.find(x=>x.cari_id===state.selectedCariId);
   fillAccountSelect('cariCollectionAccount');
+  fillAccountSelect('cariCollectionSettlementAccount');
   document.getElementById('cariCollectionDate').value=new Date().toISOString().slice(0,10);
   document.getElementById('cariCollectionAmount').value='';
   document.getElementById('cariCollectionDocNo').value='';
   document.getElementById('cariCollectionChannel').value='';
   document.getElementById('cariCollectionDescription').value='';
   document.getElementById('cariCollectionNote').value='';
-  document.getElementById('cariCollectionInfo').innerHTML=`<strong>${escapeHtml(cari?.cari_name || 'Cari')}</strong> için tahsilat gireceksin. Seçtiğin hesaba giriş hareketi de otomatik oluşur.`;
+  document.getElementById('cariCollectionFlowType').value='direct';
+  document.getElementById('cariCollectionInstallmentCount').value='1';
+  document.getElementById('cariCollectionExpectedDate').value='';
+  const settlementEl = document.getElementById('cariCollectionSettlementAccount');
+  const defaultSettlement = ensureVisibleAccounts().find(x=>String(x.account_type)==='banka') || ensureVisibleAccounts()[0];
+  if(defaultSettlement && settlementEl?.querySelector(`option[value="${defaultSettlement.account_key}"]`)) settlementEl.value = defaultSettlement.account_key;
+  document.getElementById('cariCollectionInfo').innerHTML=`<strong>${escapeHtml(cari?.cari_name || 'Cari')}</strong> için tahsilat gireceksin. Moka/POS seçersen ilk taksit 40 gün sonra, kalanlar aylık taksitlerle hesaba geçiş bekleyen olarak planlanır. Çek ve senet için vade tarihi bazlı beklenen nakit giriş oluşturulur.`;
+  toggleCariCollectionFlowFields();
   document.getElementById('cariCollectionModal').style.display='flex';
 }
 function closeCariCollectionModal(){ document.getElementById('cariCollectionModal').style.display='none'; }
@@ -5721,26 +5895,45 @@ async function saveCariCollection(){
   const cari=state.cariler.find(x=>x.cari_id===state.selectedCariId);
   const accountKey=document.getElementById('cariCollectionAccount').value;
   const account=getAccountByKey(accountKey);
+  const settlementKey=document.getElementById('cariCollectionSettlementAccount').value;
+  const settlementAccount=getAccountByKey(settlementKey);
+  const flowType=document.getElementById('cariCollectionFlowType').value || 'direct';
+  const installmentCount=Math.max(1, Number(document.getElementById('cariCollectionInstallmentCount').value || 1));
   const amount=num(document.getElementById('cariCollectionAmount').value||0);
   const lineDate=document.getElementById('cariCollectionDate').value || new Date().toISOString().slice(0,10);
+  let expectedDate=document.getElementById('cariCollectionExpectedDate').value || '';
   const documentNo=(document.getElementById('cariCollectionDocNo').value||'').trim();
   const channel=(document.getElementById('cariCollectionChannel').value||'').trim();
   const description=(document.getElementById('cariCollectionDescription').value||'').trim() || `Müşteriden Tahsilat | ${cari?.cari_name || ''}`;
   const note=(document.getElementById('cariCollectionNote').value||'').trim();
   if(!account || !accountKey){ notify('Tahsilat hesabı seç.'); return; }
   if(!amount){ notify('Tahsilat tutarı zorunlu.'); return; }
+  if((flowType==='moka_pos' || flowType==='cek' || flowType==='senet') && !settlementAccount){ notify('Nihai giriş hesabı seç.'); return; }
+  if(flowType==='moka_pos' && !expectedDate){
+    const d = new Date(lineDate); d.setDate(d.getDate()+40); expectedDate = d.toISOString().slice(0,10);
+  }
+  if((flowType==='cek' || flowType==='senet') && !expectedDate){ notify('Vade / beklenen giriş tarihi zorunlu.'); return; }
   if(hasSimilarTahsilat(state.selectedCariId, lineDate, amount)){ notify('Benzer tahsilat kaydı var. Önce kontrol et.'); return; }
-  const collection=stampRecordIds({ cari_id:state.selectedCariId, cari_name:cari?.cari_name || '-', account_key:account.account_key, account_name:account.account_name, account_type:account.account_type, amount, line_date:lineDate, channel, description, note, document_no:documentNo, created_at:new Date().toISOString(), updated_at:new Date().toISOString() }, 'LCT');
+
+  const collection=stampRecordIds({ cari_id:state.selectedCariId, cari_name:cari?.cari_name || '-', account_key:account.account_key, account_name:account.account_name, account_type:account.account_type, amount, line_date:lineDate, channel, description, note, document_no:documentNo, flow_type:flowType, installment_count:installmentCount, settlement_account_key:settlementAccount?.account_key || null, settlement_account_name:settlementAccount?.account_name || null, expected_date:expectedDate || null, created_at:new Date().toISOString(), updated_at:new Date().toISOString() }, 'LCT');
   const collections=getLocalCariCollections().filter(x=>String(x.id)!==String(collection.id)); collections.unshift(collection); setLocalCariCollections(collections); await upsertLiveRow('cari_collections', collection);
-  const op=stampRecordIds({ type:'cari_collection', expense_id:null, account_key:account.account_key, account_name:account.account_name, account_type:account.account_type, direction:'giris', amount, entry_date:lineDate, description:`Cari tahsilat · ${cari?.cari_name || '-'}`, note:note || documentNo || channel || null, created_at:new Date().toISOString(), updated_at:new Date().toISOString() }, 'LAC');
+
+  const op=stampRecordIds({ type:'cari_collection', expense_id:null, account_key:account.account_key, account_name:account.account_name, account_type:account.account_type, direction:'giris', amount, entry_date:lineDate, description:`Cari tahsilat · ${cari?.cari_name || '-'}`, note:note || documentNo || channel || null, flow_type:flowType, created_at:new Date().toISOString(), updated_at:new Date().toISOString() }, 'LAC');
   const ops=getLocalAccountOps().filter(x=>String(x.id)!==String(op.id)); ops.unshift(op); setLocalAccountOps(ops); await upsertLiveRow('account_ops', op);
+
+  const expectedRows = buildExpectedCashflowRows({ cari, amount, lineDate, flowType, installmentCount, expectedDate, settlementAccount, sourceAccount:account, description, note, documentNo });
+  if(expectedRows.length){
+    const currentRows=getExpectedCashflows().filter(x=>!expectedRows.some(n=>String(n.id)===String(x.id)));
+    setExpectedCashflows([...expectedRows, ...currentRows]);
+  }
+
   const docs=readLocalJson(LOCAL_DOCS_KEY); docs.unshift(stampRecordIds({ cari_id:state.selectedCariId, document_type: channel && /nakit/i.test(channel) ? 'makbuz' : 'dekont', document_title: documentNo || `Tahsilat ${shortDate(lineDate)}`, document_no: documentNo || null, document_date: lineDate, amount, note: note || description, source_type:'local_collection', created_at:new Date().toISOString() }, 'DOC')); writeLocalJson(LOCAL_DOCS_KEY, docs);
   addAuditEvent('cari_collection_saved',{source_module:'live_cari_collection', target_name:cari?.cari_name || '-', amount, note:note || description, summary:`Cari tahsilat işlendi · ${money(amount)}`});
   closeCariCollectionModal();
   await Promise.all([loadDocuments(), loadAccounts(), loadCariler()]);
   await loadSelectedCariHareketler();
   renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderDocuments(); renderReports();
-  notify('Cari tahsilatı kaydedildi ve canlı yazım denendi.');
+  notify(expectedRows.length ? 'Cari tahsilatı kaydedildi. Beklenen nakit giriş planı oluşturuldu.' : 'Cari tahsilatı kaydedildi ve canlı yazım denendi.');
 }
 
 
