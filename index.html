@@ -224,7 +224,7 @@
       </div>
       <div>
         <div class="section" style="box-shadow:none;margin-bottom:12px;">
-          <h3 class="section-title" style="font-size:20px;">Yeni Dönem / Güncelleme</h3><div class="rule-box" style="margin-bottom:12px;">Sistem mantığı: Açılış tarihiyle girilen ilk ücret sadece o yılın sonuna kadar geçerlidir. Sonraki yıllar için yeni ücret dönemi açılır. Bir yılı kaydettiğinde sistem o yılın bugüne kadar gelmiş bütün aylarını tarar; eksik tahakkukları otomatik tamamlar, var olanı tekrar üretmez, mükerrer ay oluşturmaz.</div>
+          <h3 class="section-title" style="font-size:20px;">Yeni Dönem / Güncelleme</h3><div class="rule-box" style="margin-bottom:12px;">Sistem mantığı: 01.12.2025 milat kabul edilir. Sözleşme / ücret dönemi tanımlanınca bu tarihten bugüne kadar gelmiş ilgili ayların her birinin 1'ine eksik tahakkuklar otomatik tamamlanır; var olan tekrar üretilmez. Uygulama açıldıkça sonraki aylarda da ayın 1'i tahakkuku otomatik tamamlanır.</div>
           <div class="form-grid-3">
             <div class="field"><label>Yıl</label><select id="feeYearSelect" class="select-input"></select></div>
             <div class="field"><label>Geçerlilik Başlangıcı</label><input id="feeValidFrom" type="date" /></div>
@@ -239,6 +239,8 @@
             <button class="btn btn-soft" onclick="saveFeePeriod()">Manuel Dönem Ekle</button>
             <button class="btn btn-soft" onclick="closeActiveFeePeriodToday()">Açık Dönemi Bugün Kapat</button>
             <button class="btn btn-soft" onclick="runControlledAccrualForSelectedCari()">Kontrollü Tahakkuk Tara</button>
+            <button class="btn btn-soft" onclick="runBackfillAccrualForSelectedCari()">01.12.2025 → Bugün Seçili Cari</button>
+            <button class="btn btn-soft" onclick="runBackfillAccrualForAllCariler()">01.12.2025 → Bugün Tüm Cariler</button>
           </div>
         </div>
         <div class="section" style="box-shadow:none;margin-bottom:12px;">
@@ -760,7 +762,7 @@ const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
-const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_BANK_LEARN_KEY="alkam_local_bank_learn_v1"; const LOCAL_EMPLOYEES_KEY="alkam_local_employees_v1"; const LOCAL_EMPLOYEE_ACCRUALS_KEY="alkam_local_employee_accruals_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_CARI_FEE_SETUP_KEY="alkam_local_cari_fee_setup_v1"; const LOCAL_FEE_PERIODS_KEY="alkam_local_fee_periods_v1"; const LOCAL_EXPECTED_CASHFLOWS_KEY="alkam_local_expected_cashflows_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1";
+const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_BANK_LEARN_KEY="alkam_local_bank_learn_v1"; const LOCAL_EMPLOYEES_KEY="alkam_local_employees_v1"; const LOCAL_EMPLOYEE_ACCRUALS_KEY="alkam_local_employee_accruals_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_CARI_FEE_SETUP_KEY="alkam_local_cari_fee_setup_v1"; const LOCAL_FEE_PERIODS_KEY="alkam_local_fee_periods_v1"; const LOCAL_EXPECTED_CASHFLOWS_KEY="alkam_local_expected_cashflows_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1"; const FEE_MILESTONE_START="2025-12-01";
 const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],employees:[],employeeAccruals:[],selectedEmployeeId:null,cariFeeSetups:[],localFeePeriods:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
 
 const LIVE_SYNC_TABLES={
@@ -3278,25 +3280,36 @@ function feeAccrualSummaryForCari(id){
     allCount: rows.length
   };
 }
+function feeMilestoneDate(){ return FEE_MILESTONE_START; }
+function firstMonthlyAccrualDate(validFrom){
+  const d=new Date(validFrom);
+  if(Number.isNaN(d.getTime())) return '';
+  if(d.getDate()===1) return d.toISOString().slice(0,10);
+  return new Date(d.getFullYear(), d.getMonth()+1, 1).toISOString().slice(0,10);
+}
+function laterIso(a,b){
+  if(!a) return b || '';
+  if(!b) return a || '';
+  return String(a) >= String(b) ? a : b;
+}
 function feeExpectedScheduleRows(id){
   const periods = feePeriodsForCari(id);
   const today = new Date();
   const rows = [];
   periods.forEach(period=>{
-    const start = new Date(period.valid_from);
+    const naturalStart = firstMonthlyAccrualDate(period.valid_from);
+    const startIso = laterIso(naturalStart, feeMilestoneDate());
+    if(!startIso) return;
+    const start = new Date(startIso);
     if(Number.isNaN(start.getTime())) return;
     const end = period.valid_to ? new Date(period.valid_to) : today;
-    if(Number.isNaN(end.getTime())) return;
-    const dates=[String(period.valid_from).slice(0,10)];
-    let cursor=new Date(start.getFullYear(), start.getMonth()+1, 1);
-    while(cursor<=today && cursor<=end){
-      dates.push(cursor.toISOString().slice(0,10));
-      cursor=new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
-    }
-    dates.forEach(dt=>{
-      if(new Date(dt)>end || new Date(dt)>today) return;
+    if(Number.isNaN(end.getTime()) || end < start) return;
+    let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    while(cursor <= today && cursor <= end){
+      const dt = cursor.toISOString().slice(0,10);
       rows.push({cari_id:id, period_id:period.id, line_date:dt, period_key:String(dt).slice(0,7), amount:period.amount, description:feeDescriptionFromDate(dt)});
-    });
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
+    }
   });
   return rows;
 }
@@ -3430,13 +3443,13 @@ async function saveAnnualFeePeriod(){
   }
 
   await loadFeeData();
-  ensureFeeAccrualsForCariYear(state.selectedCariId, year);
+  backfillFeeAccrualsForCari(state.selectedCariId, FEE_MILESTONE_START);
   ensureFeeAccrualsForAllCariler();
   await loadSelectedCariHareketler();
   renderSelectedCariDetail();
   renderReports();
   renderFeeModal();
-  notify(`${year} yılı kaydedildi. ${syncMessage}`);
+  notify(`${year} yılı kaydedildi. ${syncMessage} ${FEE_MILESTONE_START} itibariyle eksik ay tahakkukları dolduruldu.`);
 }
 
 function buildExpectedFeeRowsForYear(cariId, year){
@@ -3446,50 +3459,27 @@ function buildExpectedFeeRowsForYear(cariId, year){
     return vf===String(year) || vt===String(year) || (!p.valid_to && Number(vf)<=Number(year));
   });
   const today = new Date();
-  const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const rows = [];
   periods.forEach(period=>{
-    const start = new Date(period.valid_from);
+    const naturalStart = firstMonthlyAccrualDate(period.valid_from);
+    const startIso = laterIso(naturalStart, feeMilestoneDate());
+    if(!startIso || String(startIso).slice(0,4) > String(year)) return;
+    const start = new Date(startIso);
     if(Number.isNaN(start.getTime())) return;
-    const naturalEnd = period.valid_to ? new Date(period.valid_to) : endOfToday;
+    const naturalEnd = period.valid_to ? new Date(period.valid_to) : today;
     const yearEnd = new Date(Number(year), 11, 31);
     const end = naturalEnd < yearEnd ? naturalEnd : yearEnd;
     if(end < start) return;
-
-    const firstDate = String(period.valid_from).slice(0,10);
-    if(firstDate.slice(0,4)===String(year) && new Date(firstDate) <= endOfToday){
-      rows.push({
-        cari_id:cariId,
-        period_id:period.id,
-        line_date:firstDate,
-        period_key:String(firstDate).slice(0,7),
-        amount:period.amount,
-        description:feeDescriptionFromDate(firstDate)
-      });
-    }
-
-    let cursor = new Date(Number(year), 0, 1);
-    if(cursor < start) cursor = new Date(start.getFullYear(), start.getMonth()+1, 1);
-    while(cursor <= end && cursor <= endOfToday){
+    let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    while(cursor <= today && cursor <= end){
       const dt = cursor.toISOString().slice(0,10);
-      rows.push({
-        cari_id:cariId,
-        period_id:period.id,
-        line_date:dt,
-        period_key:String(dt).slice(0,7),
-        amount:period.amount,
-        description:feeDescriptionFromDate(dt)
-      });
+      if(String(dt).slice(0,4)===String(year)){
+        rows.push({ cari_id:cariId, period_id:period.id, line_date:dt, period_key:String(dt).slice(0,7), amount:period.amount, description:feeDescriptionFromDate(dt) });
+      }
       cursor = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
     }
   });
-
-  const uniq = new Map()
-  rows.forEach(r=>{
-    const k = `${r.cari_id}|${r.period_key}|${Number(r.amount||0).toFixed(2)}|${r.description}`;
-    if(!uniq.has(k)) uniq.set(k, r);
-  });
-  return [...uniq.values()].sort((a,b)=>String(a.line_date).localeCompare(String(b.line_date)));
+  return rows;
 }
 
 function ensureFeeAccrualsForCariYear(cariId, year){
@@ -3556,6 +3546,34 @@ function getGlobalOpsSummary(){
     thisYearExpensePay:expensePay.filter(x=>String(x.payment_date||x.created_at||'').slice(0,4)===y).reduce((a,b)=>a+num(b.amount),0)
   };
 }
+function backfillFeeAccrualsForCari(cariId, dateFrom=FEE_MILESTONE_START){
+  const startYear = Number(String(dateFrom).slice(0,4) || new Date().getFullYear());
+  const endYear = new Date().getFullYear();
+  for(let y=startYear; y<=endYear; y++) ensureFeeAccrualsForCariYear(cariId, String(y));
+}
+async function runBackfillAccrualForSelectedCari(){
+  if(!state.selectedCariId){ notify('Cari seçili değil.'); return; }
+  backfillFeeAccrualsForCari(state.selectedCariId, FEE_MILESTONE_START);
+  await loadSelectedCariHareketler();
+  renderSelectedCariDetail();
+  renderReports();
+  renderFeeModal();
+  notify(`Seçili cari için ${FEE_MILESTONE_START} itibariyle eksik aylık tahakkuklar dolduruldu.`);
+}
+async function runBackfillAccrualForAllCariler(){
+  const allCaris=[...new Set([...(state.cariler||[]).map(x=>x.cari_id), ...(state.cariFeeSetups||[]).map(x=>x.cari_id), ...(state.feeTimeline||[]).map(x=>x.cari_id), ...(state.localFeePeriods||[]).map(x=>x.cari_id)].filter(Boolean))];
+  if(!allCaris.length){ notify('Toplu tahakkuk için cari bulunamadı.'); return; }
+  allCaris.forEach(id=>backfillFeeAccrualsForCari(id, FEE_MILESTONE_START));
+  await loadCariler();
+  await loadSelectedCariHareketler();
+  renderDashboard();
+  renderCariList();
+  renderSelectedCariDetail();
+  renderReports();
+  if(document.getElementById('feeModal')?.style.display==='flex') renderFeeModal();
+  notify(`Tüm cariler için ${FEE_MILESTONE_START} itibariyle eksik aylık tahakkuklar dolduruldu.`);
+}
+
 async function runControlledAccrualForSelectedCari(){
   const c=state.cariler.find(x=>x.cari_id===state.selectedCariId);
   if(!c){ notify("Cari seçili değil."); return; }
@@ -3985,7 +4003,7 @@ function renderFeeModal(){
   const periods = [...getFeeTimeline(state.selectedCariId)].sort((a,b)=>String(b.valid_from||"").localeCompare(String(a.valid_from||"")));
   const controls = [...getFeeControl(state.selectedCariId)].sort((a,b)=>String(b.period_start||"").localeCompare(String(a.period_start||"")));
   document.getElementById("feeTimelineWrap").innerHTML = periods.length ? `<table><thead><tr><th>Başlangıç</th><th>Bitiş</th><th class="text-right">Ücret</th><th>Durum</th><th>Kaynak</th><th>Not</th></tr></thead><tbody>${periods.map(r=>`<tr><td>${shortDate(r.valid_from)}</td><td>${r.valid_to ? shortDate(r.valid_to) : '<span class="tag green">Açık</span>'}</td><td class="text-right">${money(r.fee_amount || r.current_fee || r.amount || 0)}</td><td>${!r.valid_to ? '<span class="tag blue">Aktif Dönem</span>' : '<span class="tag gray">Kapalı</span>'}</td><td>${String(r.source||'')==='local_first' || String(r.sync_status||'')==='local_only' ? '<span class="tag amber">Yerel Kayıt</span>' : '<span class="tag green">Canlı</span>'}</td><td>${escapeHtml(r.note || r.change_reason || '-')}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Bu caride ücret geçmişi yok.</div>`;
-  document.getElementById("feeControlWrap").innerHTML = controls.length ? `<table><thead><tr><th>Dönem</th><th>Durum</th><th class="text-right">Beklenen</th><th class="text-right">Bulunan</th><th>Açıklama</th></tr></thead><tbody>${controls.map(r=>`<tr><td>${shortDate(r.period_start)}${r.period_end ? ' - ' + shortDate(r.period_end) : ''}</td><td>${renderTag(r.control_status || r.issue_type || (num(r.diff_amount) !== 0 ? 'farkli_tutar' : 'tamam'))}</td><td class="text-right">${money(r.expected_amount || r.expected_fee_amount || r.current_fee || 0)}</td><td class="text-right">${money(r.existing_amount || r.actual_amount || r.posted_amount || 0)}</td><td>${escapeHtml(r.note || r.issue_reason || r.status_note || '-')}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Bu cari için kontrol sorunu görünmüyor.</div>`; renderFeeYearSuggestWrap();
+  document.getElementById("feeControlWrap").innerHTML = `<div class="rule-box" style="margin-bottom:10px;">Milat: <strong>${FEE_MILESTONE_START}</strong>. Bu tarihten itibaren her ayın 1\'i tahakkuk olarak taranır.</div>` + (controls.length ? `<table><thead><tr><th>Dönem</th><th>Durum</th><th class="text-right">Beklenen</th><th class="text-right">Bulunan</th><th>Açıklama</th></tr></thead><tbody>${controls.map(r=>`<tr><td>${shortDate(r.period_start)}${r.period_end ? ' - ' + shortDate(r.period_end) : ''}</td><td>${renderTag(r.control_status || r.issue_type || (num(r.diff_amount) !== 0 ? 'farkli_tutar' : 'tamam'))}</td><td class="text-right">${money(r.expected_amount || r.expected_fee_amount || r.current_fee || 0)}</td><td class="text-right">${money(r.existing_amount || r.actual_amount || r.posted_amount || 0)}</td><td>${escapeHtml(r.note || r.issue_reason || r.status_note || '-')}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Bu cari için kontrol sorunu görünmüyor.</div>`); renderFeeYearSuggestWrap();
 }
 function openFeeModal(){
   if(!state.selectedCariId){ notify("Cari seçili değil."); return; }
@@ -5601,12 +5619,9 @@ async function saveCariCard(){
     }
   }
   ensureFeeAccrualsForAllCariler();
-  const openingYear = String(opening_date || '').slice(0,4);
-  if(openingYear) ensureFeeAccrualsForCariYear(state.selectedCariId, openingYear);
-  const currentYear = String(new Date().getFullYear());
-  ensureFeeAccrualsForCariYear(state.selectedCariId, currentYear);
+  backfillFeeAccrualsForCari(state.selectedCariId, FEE_MILESTONE_START);
   addAuditEvent('cari_card_updated',{source_module:'cari_cards', target_name:payload.cari_name || state.selectedCariId, note:'Cari kartı güncellendi.', summary:`Cari kartı güncellendi · ${payload.cari_name || state.selectedCariId}`});
-  notify("Cari kartı güncellendi ve sözleşmeye göre ücret tahakkukları güncellendi.");
+  notify(`Cari kartı güncellendi ve ${FEE_MILESTONE_START} itibariyle sözleşmeye göre ücret tahakkukları güncellendi.`);
   closeCariEditModal();
   await loadCariler();
   await loadSelectedCariHareketler();
