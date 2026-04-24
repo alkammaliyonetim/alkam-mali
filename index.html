@@ -42,7 +42,92 @@
     @media (max-width:860px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.main{padding:16px}.page-head h1{font-size:32px}}
     @media (max-width:640px){.cards,.grid-4,.expense-mini-grid{grid-template-columns:1fr}}
   
-    /* ALKAM v113 - GÜVENLİ LOGIN + ENTER + GÖRSEL İYİLEŞTİRME */
+    /* ALKAM v114 - ONAYLI CARILER GORUNUMU + GUVENLI LOGIN */
+    :root{
+      --bg:#f4f7fb!important;
+      --panel:#ffffff!important;
+      --line:#e2e8f0!important;
+      --text:#0f1f3d!important;
+      --muted:#64748b!important;
+      --nav1:#061d3f!important;
+      --nav2:#082b5d!important;
+      --blue:#1769e8!important;
+      --red:#e11d2e!important;
+      --green:#10b981!important;
+      --shadow:0 14px 34px rgba(15,23,42,.06)!important;
+      --radius:16px!important;
+    }
+    body{font-family:Inter,Arial,Helvetica,sans-serif!important;background:#f4f7fb!important;color:#0f1f3d!important}
+    .layout{grid-template-columns:224px 1fr!important;background:#f4f7fb!important}
+    .sidebar{padding:14px 12px!important;background:linear-gradient(180deg,#061d3f 0%,#082b5d 100%)!important;border-right:1px solid rgba(255,255,255,.08)!important}
+    .sidebar img{max-width:96px!important}
+    .brand-title{font-size:22px!important;letter-spacing:-.02em!important;margin:10px 0 4px!important}
+    .brand-sub{font-size:11px!important;line-height:1.35!important;margin-bottom:18px!important}
+    .nav{gap:7px!important;margin-top:10px!important}
+    .nav:before{content:"ANA MENÜ";display:block;color:rgba(255,255,255,.55);font-size:11px;font-weight:900;letter-spacing:.08em;margin:8px 6px 4px}
+    .nav-btn{height:42px!important;border-radius:9px!important;background:transparent!important;color:#dbeafe!important;padding:0 12px!important;display:flex!important;align-items:center!important;gap:10px!important;font-size:13px!important;font-weight:800!important;transition:.14s ease!important}
+    .nav-btn:hover{background:rgba(255,255,255,.08)!important}
+    .nav-btn.active{background:#1769e8!important;color:#fff!important;box-shadow:0 10px 24px rgba(23,105,232,.28)!important}
+    .nav-btn .nav-ico{width:18px;text-align:center;opacity:.95}
+    .sidebar-box{background:rgba(255,255,255,.06)!important;border-color:rgba(255,255,255,.10)!important;border-radius:10px!important;margin-top:14px!important;padding:12px!important}
+    .sidebar-box .mini{font-size:10px!important;color:rgba(255,255,255,.6)!important}
+    .sidebar-box .big{font-size:13px!important}
+    .main{padding:0 22px 22px!important;min-width:0!important}
+    .erp-modulebar{height:66px;display:flex;align-items:center;justify-content:space-between;gap:18px;background:#061d3f;color:#dbeafe;margin:0 -22px 20px;padding:0 22px;border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:90}
+    .erp-module-left{display:flex;align-items:center;gap:8px;min-width:0;overflow:auto}
+    .erp-module-btn{border:0;background:transparent;color:#dbeafe;border-radius:10px;height:42px;padding:0 13px;font-size:13px;font-weight:800;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;cursor:pointer}
+    .erp-module-btn.active{background:#1769e8;color:#fff}
+    .erp-module-btn:hover{background:rgba(255,255,255,.08)}
+    .erp-module-right{display:flex;align-items:center;gap:12px;white-space:nowrap}
+    .erp-icon-pill{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08);font-weight:900}
+    .topbar{margin-bottom:14px!important;align-items:center!important}
+    .page-head h1{font-size:30px!important;font-weight:900!important;letter-spacing:-.03em!important}
+    .page-head p{font-size:13px!important;margin-top:6px!important;color:#64748b!important}
+    .version-badge{height:38px!important;border-radius:8px!important;background:#061d3f!important;color:#fff!important;font-size:11px!important}
+    .logout-btn{height:38px!important;border-radius:8px!important;background:#e11d2e!important}
+    .card,.section{border:1px solid #e2e8f0!important;border-radius:14px!important;box-shadow:0 10px 28px rgba(15,23,42,.045)!important;background:#fff!important}
+    .section{padding:16px!important;margin-bottom:14px!important}
+    .section-title{font-size:20px!important;margin-bottom:14px!important;letter-spacing:-.02em!important}
+    #tab-cariler>.grid-2{grid-template-columns:minmax(480px,.94fr) minmax(620px,1.06fr)!important;gap:16px!important;align-items:start!important}
+    #tab-cariler .section:first-child{overflow:hidden!important}
+    #tab-cariler .section:nth-child(2){overflow:hidden!important}
+    .toolbar{grid-template-columns:1.2fr .75fr .75fr!important;gap:10px!important}
+    .search-input,.select-input,.field input,.field select,.field textarea{min-height:42px!important;border:1px solid #d8e1ef!important;border-radius:9px!important;font-size:13px!important;background:#fff!important}
+    .grid-4{gap:9px!important}
+    .metric-mini{border:1px solid #e2e8f0!important;background:#fbfdff!important;border-radius:10px!important;padding:11px!important}
+    .metric-mini .k{font-size:10px!important;color:#64748b!important}
+    .metric-mini .v{font-size:16px!important;color:#071a3d!important;line-height:1.18!important}
+    .cari-list-scroll{max-height:calc(100vh - 345px)!important}
+    .cari-detail-scroll{max-height:calc(100vh - 238px)!important}
+    .list{gap:8px!important}
+    .list-item{border-radius:11px!important;padding:12px!important;background:#fff!important;border:1px solid #e5edf7!important;transition:.14s ease!important}
+    .list-item:hover{transform:translateY(-1px);box-shadow:0 10px 20px rgba(15,23,42,.05)!important}
+    .list-item.active{background:#f4f8ff!important;border-color:#1769e8!important;box-shadow:0 0 0 2px rgba(23,105,232,.16)!important}
+    .list-item.risk{background:#fff7f7!important;border-color:#fecaca!important}
+    .list-title{font-size:13px!important;letter-spacing:-.01em!important;color:#0f1f3d!important}
+    .list-meta{font-size:11px!important;line-height:1.55!important;color:#475569!important}
+    .tag{min-height:24px!important;border-radius:999px!important;font-size:10px!important;padding:0 8px!important}
+    .tag.red{background:#fff0f1!important;color:#e11d2e!important}
+    .tag.blue{background:#eaf2ff!important;color:#1769e8!important}
+    .tag.green{background:#e8fff4!important;color:#059669!important}
+    .tag.amber{background:#fff7ed!important;color:#c2410c!important}
+    .hero-name{font-size:23px!important;letter-spacing:-.03em!important}
+    .hero-sub{font-size:12px!important;margin-bottom:10px!important}
+    .filter-chips{gap:7px!important;margin-bottom:10px!important}
+    .chip{height:30px!important;border-radius:8px!important;padding:0 10px!important;font-size:11px!important}
+    table{font-size:12px!important}
+    th,td{padding:10px 8px!important;font-size:12px!important;border-bottom:1px solid #e8eef6!important}
+    th{background:#f8fbff!important;color:#243b64!important;font-size:11px!important}
+    .btn{min-height:38px!important;border-radius:9px!important;font-size:12px!important;padding:8px 13px!important}
+    .btn-blue{background:#1769e8!important;color:#fff!important}
+    .btn-soft{background:#f1f5fb!important;color:#12213f!important;border:1px solid #e2e8f0!important}
+    .btn-red{background:#e11d2e!important}
+    .btn-row,.account-actions{gap:8px!important}
+    .alkam-cari-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px 0}
+    .alkam-cari-toolbar .btn{height:34px!important;min-height:34px!important}
+    .empty{border-color:#d8e1ef!important;background:#fbfdff!important;border-radius:12px!important;font-size:13px!important}
+    @media(max-width:1300px){#tab-cariler>.grid-2{grid-template-columns:1fr!important}.cari-list-scroll,.cari-detail-scroll{max-height:none!important}.erp-modulebar{position:relative}.layout{grid-template-columns:1fr!important}.sidebar{position:relative!important;height:auto!important}}
+
     .login-overlay-modern{background:rgba(15,23,42,.42)!important;backdrop-filter:blur(10px)!important;padding:28px!important}
     .login-overlay.force-hidden{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
     body.alkam-unlocked .login-overlay{display:none!important}
@@ -74,122 +159,70 @@
     .login-features-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid #e2e8f0}
     .login-feature{text-align:center}.lf-title{font-size:12px;font-weight:900;color:#334155}.lf-sub{font-size:11px;color:#64748b;font-weight:700;margin-top:4px}
     .login-hint{margin-top:12px;text-align:center;font-size:12px;color:#64748b;font-weight:800}
-    @media (max-width: 900px){.login-shell{grid-template-columns:1fr}.login-side-brand{min-height:320px}.login-side-title{font-size:34px}.login-panel{padding:28px 20px 24px}.login-title.modern{font-size:32px}.login-features-row{grid-template-columns:1fr}}
-
-    /* Sadece görsel katman: veri fonksiyonlarına dokunmaz */
-    body{font-family:Inter,Arial,Helvetica,sans-serif!important;background:#f4f7fb!important}
-    .section,.card{border-color:#dfe7f2!important;box-shadow:0 14px 34px rgba(15,23,42,.06)!important}
-    .nav-btn{display:flex;align-items:center;gap:8px}
-    .nav-btn.active{background:#2f67e8!important;box-shadow:0 10px 20px rgba(47,103,232,.22)}
-    .list-item{transition:.15s ease;border-radius:16px!important}
-    .list-item:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(15,23,42,.06)}
-    .list-item.active{background:#f2f7ff!important;border-color:#2f67e8!important}
-    .btn-blue{background:#2563eb!important}
-    .search-input,.select-input,.field input,.field select,.field textarea{border-color:#d5dfed!important}
+    @media(max-width:900px){.login-shell{grid-template-columns:1fr}.login-side-brand{min-height:320px}.login-side-title{font-size:34px}.login-panel{padding:28px 20px 24px}.login-title.modern{font-size:32px}.login-features-row{grid-template-columns:1fr}}
 
   </style>
 </head>
 <body>
 
 <script>
-/* ALKAM v113 - ACİL BAĞIMSIZ GİRİŞ MOTORU */
+/* ALKAM v114 - ACİL BAĞIMSIZ GİRİŞ MOTORU */
 (function(){
   window.ALKAM_LOCAL_PASSWORD = "2909";
   window.ALKAM_SESSION_KEY = "alkam_local_session_v2";
 
-  function alkamSetText(id, text){
-    var el = document.getElementById(id);
-    if(el) el.textContent = text;
-  }
+  function alkamSetText(id, text){ var el=document.getElementById(id); if(el) el.textContent=text; }
 
   function alkamOpenApp(){
-    try { localStorage.setItem(window.ALKAM_SESSION_KEY, "ok"); } catch(e) {}
-    try { localStorage.setItem("alkam_force_login_ok", "1"); } catch(e) {}
-
-    var overlay = document.getElementById("loginOverlay");
-    if(overlay){
-      overlay.style.display = "none";
-      overlay.classList.add("force-hidden");
-    }
-
+    try{ localStorage.setItem(window.ALKAM_SESSION_KEY,"ok"); localStorage.setItem("alkam_force_login_ok","1"); }catch(e){}
+    var overlay=document.getElementById("loginOverlay");
+    if(overlay){ overlay.style.display="none"; overlay.classList.add("force-hidden"); }
     document.body.classList.add("alkam-unlocked");
-    alkamSetText("currentUserBox", "Yerel Giriş");
-    alkamSetText("connState", "Canlı bağlantı aktif");
-
-    try { if(typeof openApp === "function") openApp(); } catch(e) {}
-    try { if(typeof refreshAll === "function") refreshAll(); } catch(e) { console.warn("ALKAM refreshAll uyarısı:", e); }
-
+    alkamSetText("currentUserBox","Yerel Giriş");
+    alkamSetText("connState","Canlı bağlantı aktif");
+    try{ if(typeof openApp==="function") openApp(); }catch(e){}
+    try{ if(typeof refreshAll==="function") refreshAll(); }catch(e){ console.warn("ALKAM refreshAll uyarısı:",e); }
+    try{ if(typeof switchTab==="function") switchTab("cariler"); }catch(e){}
     return false;
   }
 
-  window.emergencyLogin = function(e){
-    if(e){
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-    var input = document.getElementById("loginPassword");
-    var err = document.getElementById("loginError");
-    var v = (input && input.value ? input.value : "").trim();
-
-    if(err){
-      err.style.color = "#dc2626";
-      err.textContent = "";
-    }
-
-    var valid = ["2909", "ALKAM2909", "alkam2909"];
-    if(valid.indexOf(v) === -1){
-      if(err) err.textContent = "Şifre hatalı. Doğru şifre: 2909";
-      if(input){
-        input.focus();
-        input.select();
-      }
+  window.emergencyLogin=function(e){
+    if(e){ e.preventDefault(); e.stopPropagation(); }
+    var input=document.getElementById("loginPassword");
+    var err=document.getElementById("loginError");
+    var v=(input&&input.value?input.value:"").trim();
+    if(err){ err.style.color="#dc2626"; err.textContent=""; }
+    if(["2909","ALKAM2909","alkam2909"].indexOf(v)===-1){
+      if(err) err.textContent="Şifre hatalı. Doğru şifre: 2909";
+      if(input){ input.focus(); input.select(); }
       return false;
     }
-
-    if(err){
-      err.style.color = "#059669";
-      err.textContent = "Giriş başarılı.";
-    }
-
+    if(err){ err.style.color="#059669"; err.textContent="Giriş başarılı."; }
     return alkamOpenApp();
   };
 
-  window.forceAlkamLogin = function(){ return alkamOpenApp(); };
-
-  window.showLoginHint = function(){
-    var err = document.getElementById("loginError");
-    if(err){
-      err.style.color = "#2563eb";
-      err.textContent = "Yerel giriş şifresi: 2909";
-    }
-    try { if(typeof notify === "function") notify("Yerel giriş şifresi: 2909"); } catch(e) {}
+  window.forceAlkamLogin=function(){ return alkamOpenApp(); };
+  window.showLoginHint=function(){
+    var err=document.getElementById("loginError");
+    if(err){ err.style.color="#2563eb"; err.textContent="Yerel giriş şifresi: 2909"; }
+    try{ if(typeof notify==="function") notify("Yerel giriş şifresi: 2909"); }catch(e){}
     return false;
   };
 
-  document.addEventListener("DOMContentLoaded", function(){
-    var input = document.getElementById("loginPassword");
-    var form = document.getElementById("loginForm");
-
-    if(form) form.onsubmit = window.emergencyLogin;
-
-    var btns = document.querySelectorAll(".login-btn");
-    btns.forEach(function(btn){
-      btn.addEventListener("click", window.emergencyLogin, true);
-    });
-
+  document.addEventListener("DOMContentLoaded",function(){
+    var form=document.getElementById("loginForm");
+    var input=document.getElementById("loginPassword");
+    if(form) form.onsubmit=window.emergencyLogin;
+    document.querySelectorAll(".login-btn").forEach(function(btn){ btn.addEventListener("click",window.emergencyLogin,true); });
     if(input){
-      input.addEventListener("keydown", function(ev){
-        if(ev.key === "Enter") window.emergencyLogin(ev);
-      }, true);
-      setTimeout(function(){ try{ input.focus(); }catch(e){} }, 150);
+      input.addEventListener("keydown",function(ev){ if(ev.key==="Enter") window.emergencyLogin(ev); },true);
+      setTimeout(function(){ try{ input.focus(); }catch(e){} },150);
     }
-
-    try {
-      if(localStorage.getItem(window.ALKAM_SESSION_KEY) === "ok" || localStorage.getItem("alkam_force_login_ok") === "1"){
+    try{
+      if(localStorage.getItem(window.ALKAM_SESSION_KEY)==="ok" || localStorage.getItem("alkam_force_login_ok")==="1"){
         alkamOpenApp();
       }
-    } catch(e) {}
+    }catch(e){}
   });
 })();
 </script>
@@ -721,6 +754,28 @@
   </aside>
 
   <main class="main">
+    <div class="erp-modulebar" id="erpModulebar">
+      <div class="erp-module-left">
+        <button class="erp-module-btn active" data-goto-tab="cariler">👥 Cariler</button>
+        <button class="erp-module-btn" data-goto-tab="hesaplar">🧾 Kasa</button>
+        <button class="erp-module-btn" data-goto-tab="hesaplar">🏦 Banka</button>
+        <button class="erp-module-btn" data-goto-tab="belgeler">📦 Stok</button>
+        <button class="erp-module-btn" data-goto-tab="belgeler">📄 Fatura</button>
+        <button class="erp-module-btn" data-goto-tab="hesaplar">💳 Çek / Senet</button>
+        <button class="erp-module-btn" data-goto-tab="raporlar">📚 Muhasebe</button>
+        <button class="erp-module-btn" data-goto-tab="raporlar">📊 Raporlar</button>
+        <button class="erp-module-btn" data-goto-tab="onay">⚙️ Araçlar</button>
+        <button class="erp-module-btn" data-goto-tab="yedekleme">⚙️ Ayarlar</button>
+      </div>
+      <div class="erp-module-right">
+        <span class="erp-icon-pill">⌕</span>
+        <span class="erp-icon-pill">🔔</span>
+        <span class="erp-icon-pill">?</span>
+        <span class="erp-icon-pill">A</span>
+        <strong>ALKAM MALİ MÜŞAVİRLİK</strong>
+      </div>
+    </div>
+
     <div class="topbar">
       <div class="page-head"><h1 id="pageTitle">Dashboard</h1><p id="pageDesc">Canlı veritabanı üzerinden güncel özet</p></div>
       <div class="topbar-right"><div id="versionBadge" class="version-badge">V-</div><button class="logout-btn" onclick="logout()">Çıkış Yap</button></div>
@@ -6744,103 +6799,134 @@ if(localStorage.getItem(SESSION_KEY)==="ok"){openApp(); refreshAll()}else{setCon
 </html>
 
 <script>
-/* ALKAM v113 - ENTER ONAY TUŞU PATCH */
+/* ALKAM v114 - ONAYLI CARILER GORUNUMU RUNTIME */
 (function(){
+  const navIcons = {
+    dashboard:"🏠", cariler:"👥", cari_toplu_tahakkuk:"🧾", hesaplar:"🏦", giderler:"📋",
+    calisanlar:"👤", raporlar:"📊", belgeler:"📁", onay:"✅", yedekleme:"🗄️"
+  };
+
+  function decorateNav(){
+    document.querySelectorAll(".nav-btn").forEach(btn=>{
+      if(btn.querySelector(".nav-ico")) return;
+      const tab=btn.dataset.tab || "";
+      const txt=btn.textContent.trim();
+      btn.innerHTML = `<span class="nav-ico">${navIcons[tab]||"•"}</span><span>${txt}</span>`;
+    });
+  }
+
+  function bindModulebar(){
+    document.querySelectorAll(".erp-module-btn").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const tab=btn.dataset.gotoTab;
+        if(tab && typeof switchTab==="function") switchTab(tab);
+        document.querySelectorAll(".erp-module-btn").forEach(b=>b.classList.remove("active"));
+        btn.classList.add("active");
+      });
+    });
+  }
+
+  function addCariToolbar(){
+    const cariler = document.getElementById("tab-cariler");
+    if(!cariler || cariler.querySelector(".alkam-cari-toolbar")) return;
+    const grid = cariler.querySelector(".grid-2");
+    if(!grid) return;
+    const toolbar = document.createElement("div");
+    toolbar.className = "alkam-cari-toolbar";
+    toolbar.innerHTML = `
+      <button class="btn btn-blue" type="button" onclick="openCariEditModal && openCariEditModal()">+ Cari Ekle</button>
+      <button class="btn btn-soft" type="button" onclick="openCariEditModal && openCariEditModal()">Düzenle</button>
+      <button class="btn btn-soft" type="button">Sil</button>
+      <button class="btn btn-soft" type="button">İşlemler ▾</button>
+      <button class="btn btn-soft" type="button">Aktar</button>
+      <button class="btn btn-soft" type="button" onclick="window.print()">Yazdır</button>
+      <button class="btn btn-soft" type="button" onclick="switchTab && switchTab('cari_toplu_tahakkuk')">Toplu Tahsilat</button>
+    `;
+    cariler.insertBefore(toolbar, grid);
+  }
+
+  function keepCarilerModuleActive(){
+    const current = document.getElementById("pageTitle")?.textContent || "";
+    document.querySelectorAll(".erp-module-btn").forEach(b=>b.classList.remove("active"));
+    const active = current.includes("Cari") ? document.querySelector(".erp-module-btn[data-goto-tab='cariler']") : null;
+    if(active) active.classList.add("active");
+  }
+
+  function applyUi(){
+    decorateNav();
+    bindModulebar();
+    addCariToolbar();
+    keepCarilerModuleActive();
+  }
+
+  document.addEventListener("DOMContentLoaded", ()=>{
+    applyUi();
+    setTimeout(applyUi, 500);
+    setTimeout(()=>{ try{ if(typeof switchTab==="function") switchTab("cariler"); }catch(e){} }, 900);
+  });
+
+  const obs = new MutationObserver(()=>{ clearTimeout(window.__alkamV114UiTimer); window.__alkamV114UiTimer=setTimeout(applyUi,120); });
+  document.addEventListener("DOMContentLoaded", ()=>obs.observe(document.body,{childList:true,subtree:true}));
+
+  // Enter = onay
   function isVisible(el){
     if(!el) return false;
-    const st = window.getComputedStyle(el);
-    if(st.display === "none" || st.visibility === "hidden" || st.opacity === "0") return false;
-    const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
+    const st=window.getComputedStyle(el);
+    if(st.display==="none"||st.visibility==="hidden"||st.opacity==="0") return false;
+    const r=el.getBoundingClientRect();
+    return r.width>0 && r.height>0;
   }
-
   function loginOverlayVisible(){
-    const overlay = document.getElementById("loginOverlay");
+    const overlay=document.getElementById("loginOverlay");
     return overlay && isVisible(overlay) && !overlay.classList.contains("force-hidden");
   }
-
   function findVisibleModal(){
-    const modals = Array.from(document.querySelectorAll(".modal-overlay, .login-overlay"));
-    return modals.reverse().find(m => isVisible(m) && !m.classList.contains("force-hidden"));
+    const modals=Array.from(document.querySelectorAll(".modal-overlay,.login-overlay"));
+    return modals.reverse().find(m=>isVisible(m)&&!m.classList.contains("force-hidden"));
   }
-
   function findPrimaryButton(scope){
     if(!scope) return null;
-    const selectors = [
-      "[data-enter-confirm]",
-      ".btn-blue",
-      ".login-btn",
-      "button[onclick*='save']",
-      "button[onclick*='confirm']",
-      "button[type='submit']"
-    ];
-
+    const selectors=["[data-enter-confirm]",".btn-blue",".login-btn","button[onclick*='save']","button[onclick*='confirm']","button[type='submit']"];
     for(const sel of selectors){
-      const btns = Array.from(scope.querySelectorAll(sel));
-      const btn = btns.find(b => {
-        const tx = String(b.textContent || "").toLocaleLowerCase("tr-TR");
-        return isVisible(b) && !b.disabled && !tx.includes("kapat") && !tx.includes("vazgeç");
+      const btn=Array.from(scope.querySelectorAll(sel)).find(b=>{
+        const tx=String(b.textContent||"").toLocaleLowerCase("tr-TR");
+        return isVisible(b)&&!b.disabled&&!tx.includes("kapat")&&!tx.includes("vazgeç");
       });
       if(btn) return btn;
     }
     return null;
   }
-
   function shouldIgnoreEnter(target, ev){
-    if(!target) return false;
-    const tag = String(target.tagName || "").toLowerCase();
-    const type = String(target.type || "").toLowerCase();
-    if(tag === "textarea" && !ev.ctrlKey && !ev.metaKey) return true;
-    if(tag === "select") return true;
-    if(target.isContentEditable && !ev.ctrlKey && !ev.metaKey) return true;
-    if(type === "file") return true;
+    const tag=String(target?.tagName||"").toLowerCase();
+    const type=String(target?.type||"").toLowerCase();
+    if(tag==="textarea"&&!ev.ctrlKey&&!ev.metaKey) return true;
+    if(tag==="select") return true;
+    if(target?.isContentEditable&&!ev.ctrlKey&&!ev.metaKey) return true;
+    if(type==="file") return true;
     return false;
   }
-
-  window.alkamEnterConfirm = function(ev){
-    if(!ev || ev.key !== "Enter" || ev.isComposing) return true;
-
-    if(loginOverlayVisible()){
-      ev.preventDefault();
-      ev.stopPropagation();
-      if(typeof window.emergencyLogin === "function") return window.emergencyLogin(ev);
-      if(typeof window.submitLogin === "function") return window.submitLogin(ev);
-      return false;
-    }
-
-    if(shouldIgnoreEnter(ev.target, ev)) return true;
-
-    const modal = findVisibleModal();
-    if(modal && modal.id !== "loginOverlay"){
-      const btn = findPrimaryButton(modal);
-      if(btn){
-        ev.preventDefault();
-        ev.stopPropagation();
-        btn.click();
-        return false;
-      }
-    }
-
-    const tag = String(ev.target?.tagName || "").toLowerCase();
-    if(tag === "input"){
-      const section = ev.target.closest(".modal-card, .section, .card, form, .login-card, .login-panel");
-      const btn = findPrimaryButton(section);
-      if(btn){
-        ev.preventDefault();
-        ev.stopPropagation();
-        btn.click();
-        return false;
-      }
-    }
-
-    return true;
-  };
-
   document.addEventListener("keydown", function(ev){
-    window.alkamEnterConfirm(ev);
+    if(ev.key!=="Enter" || ev.isComposing) return;
+    if(loginOverlayVisible()){
+      ev.preventDefault(); ev.stopPropagation();
+      if(typeof emergencyLogin==="function") emergencyLogin(ev);
+      return;
+    }
+    if(shouldIgnoreEnter(ev.target, ev)) return;
+    const modal=findVisibleModal();
+    if(modal && modal.id!=="loginOverlay"){
+      const btn=findPrimaryButton(modal);
+      if(btn){ ev.preventDefault(); ev.stopPropagation(); btn.click(); return; }
+    }
+    const tag=String(ev.target?.tagName||"").toLowerCase();
+    if(tag==="input"){
+      const section=ev.target.closest(".modal-card,.section,.card,form,.login-card,.login-panel");
+      const btn=findPrimaryButton(section);
+      if(btn){ ev.preventDefault(); ev.stopPropagation(); btn.click(); }
+    }
   }, true);
 
-  console.info("ALKAM v113 aktif: Enter login ve program içi onay tuşu olarak çalışır.");
+  console.info("ALKAM v114 aktif: onaylı Cariler görünümü + login + Enter.");
 })();
 </script>
 
