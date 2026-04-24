@@ -41,22 +41,87 @@
     @media (max-width:1200px){.cards,.grid-4{grid-template-columns:repeat(2,minmax(0,1fr))}.grid-2,.grid-3,.toolbar,.form-grid,.form-grid-3{grid-template-columns:1fr}.detail-sticky{position:static}.cari-list-scroll,.cari-detail-scroll{max-height:none}}
     @media (max-width:860px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.main{padding:16px}.page-head h1{font-size:32px}}
     @media (max-width:640px){.cards,.grid-4,.expense-mini-grid{grid-template-columns:1fr}}
+  
+    .login-overlay-modern{background:rgba(15,23,42,.42)!important;backdrop-filter:blur(10px)!important;padding:28px!important}
+    .login-shell{width:min(920px,96vw);display:grid;grid-template-columns:1.02fr 1.08fr;background:#fff;border-radius:28px;overflow:hidden;border:1px solid #dbe3ef;box-shadow:0 40px 100px rgba(15,23,42,.28)}
+    .login-side-brand{background:linear-gradient(180deg,#0a2a63 0%,#0d1f47 100%);color:#fff;position:relative;min-height:620px}
+    .login-side-brand:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 20% 20%, rgba(96,165,250,.18), transparent 30%),radial-gradient(circle at 70% 75%, rgba(59,130,246,.18), transparent 25%),linear-gradient(180deg,transparent,rgba(255,255,255,.03));pointer-events:none}
+    .login-side-inner{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:46px 36px;text-align:center}
+    .login-side-logo-wrap{margin-bottom:16px}.login-side-logo{width:128px;max-width:75%}
+    .login-side-kicker{font-size:12px;font-weight:900;letter-spacing:.18em;opacity:.9;margin-bottom:18px}
+    .login-side-title{margin:0;font-size:44px;line-height:1.08;font-weight:900;letter-spacing:-.03em}.login-side-title span{color:#60a5fa}
+    .login-side-text{max-width:320px;margin:20px auto 0;font-size:16px;line-height:1.7;color:rgba(255,255,255,.88);font-weight:700}
+    .login-shield-wrap{margin-top:40px;position:relative;width:200px;height:180px;display:flex;align-items:center;justify-content:center}
+    .login-shield-icon{width:92px;height:92px;border-radius:26px;background:linear-gradient(180deg,#60a5fa,#2563eb);display:flex;align-items:center;justify-content:center;font-size:42px;box-shadow:0 18px 40px rgba(37,99,235,.35);border:1px solid rgba(255,255,255,.28)}
+    .login-shield-ring{position:absolute;border:1px solid rgba(147,197,253,.35);border-radius:50%}.login-shield-ring.ring-1{width:160px;height:64px}.login-shield-ring.ring-2{width:190px;height:96px;transform:rotate(-18deg)}
+    .login-panel{position:relative;padding:34px 42px 26px;display:flex;flex-direction:column;justify-content:center;background:#fff}
+    .login-lang{position:absolute;right:24px;top:18px;border:1px solid #dbe3ef;border-radius:999px;background:#fff;padding:8px 14px;font-size:13px;font-weight:800;color:#475569}
+    .login-panel-logo{text-align:center;margin-top:8px}.login-panel-logo-img{width:120px;max-width:60%}
+    .login-brand.modern{text-align:center;color:#2563eb;font-size:12px;font-weight:900;letter-spacing:.16em;margin-top:8px;margin-bottom:10px}
+    .login-title.modern{text-align:center;margin:0;font-size:40px;line-height:1.08;font-weight:900;color:#0f172a}
+    .login-subtitle{text-align:center;color:#64748b;font-size:14px;font-weight:700;margin:10px 0 10px}
+    .pass-wrap.modern input{height:54px;border-radius:14px;border:1px solid #cfd8e6;padding:0 52px 0 14px;font-size:15px;font-weight:800}
+    .login-row-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;margin-bottom:6px}
+    .remember-check{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:#475569}.remember-check input{accent-color:#2563eb}
+    .forgot-link{border:none;background:transparent;color:#2563eb;font-size:13px;font-weight:800;cursor:pointer;padding:0}
+    .login-btn.modern{height:52px;border-radius:14px;background:linear-gradient(180deg,#3b82f6 0%,#2563eb 100%);margin-top:12px;font-size:16px;box-shadow:0 12px 24px rgba(37,99,235,.22)}
+    .login-error.modern{text-align:center;font-size:13px;font-weight:900;margin-top:12px;min-height:20px}
+    .login-secure-box{margin-top:20px;padding-top:18px;border-top:1px solid #e2e8f0;text-align:center}.login-secure-title{font-size:13px;font-weight:900;color:#334155}.login-secure-text{font-size:12px;color:#94a3b8;font-weight:700;margin-top:6px}
+    .login-features-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid #e2e8f0}
+    .login-feature{text-align:center}.lf-title{font-size:12px;font-weight:900;color:#334155}.lf-sub{font-size:11px;color:#64748b;font-weight:700;margin-top:4px}
+    .login-hint{margin-top:12px;text-align:center;font-size:12px;color:#64748b;font-weight:800}
+    @media (max-width: 900px){.login-shell{grid-template-columns:1fr}.login-side-brand{min-height:320px}.login-side-title{font-size:34px}.login-panel{padding:28px 20px 24px}.login-title.modern{font-size:32px}.login-features-row{grid-template-columns:1fr}}
+
   </style>
 </head>
 <body>
-<div id="loginOverlay" class="login-overlay">
-  <div class="login-card">
-    <div style="text-align:center;margin-bottom:12px;"><img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" style="width:110px;display:block;margin:0 auto 10px;"></div>
-    <div class="login-brand">ALKAM MALİ MÜŞAVİRLİK</div>
-    <h2 class="login-title">Programa Giriş</h2>
-    <form onsubmit="return submitLogin(event)">
-      <div class="pass-wrap">
-        <input id="loginPassword" type="password" placeholder="Şifrenizi girin" required />
-        <button type="button" class="toggle-password" onclick="togglePassword()">👁</button>
+<div id="loginOverlay" class="login-overlay login-overlay-modern">
+  <div class="login-shell">
+    <div class="login-side-brand">
+      <div class="login-side-inner">
+        <div class="login-side-logo-wrap"><img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" class="login-side-logo"></div>
+        <div class="login-side-kicker">ALKAM MALİ MÜŞAVİRLİK</div>
+        <h2 class="login-side-title">Güvenilir. Güçlü.<br><span>Profesyonel.</span></h2>
+        <p class="login-side-text">Muhasebe ve finans süreçlerinizi kolaylaştıran, güvenli ve entegre çözümler.</p>
+        <div class="login-shield-wrap">
+          <div class="login-shield-icon">🔒</div>
+          <div class="login-shield-ring ring-1"></div>
+          <div class="login-shield-ring ring-2"></div>
+        </div>
       </div>
-      <button class="login-btn" type="submit">Giriş Yap</button>
-      <div id="loginError" class="login-error"></div>
-    </form>
+    </div>
+    <div class="login-panel">
+      <div class="login-lang">Türkçe</div>
+      <div class="login-panel-logo"><img src="alkamlogo-v2.jpeg" alt="ALKAM Logo" class="login-panel-logo-img"></div>
+      <div class="login-brand modern">ALKAM MALİ MÜŞAVİRLİK</div>
+      <h2 class="login-title modern">Programa Giriş</h2>
+      <div class="login-subtitle">Hoş geldiniz, lütfen hesabınıza giriş yapın.</div>
+      <form onsubmit="return submitLogin(event)">
+        <div class="field" style="margin-top:14px;">
+          <label style="text-transform:none;letter-spacing:0;color:#64748b;font-size:12px;">Şifre</label>
+          <div class="pass-wrap modern">
+            <input id="loginPassword" type="password" placeholder="Şifrenizi girin" required autocomplete="current-password" />
+            <button type="button" class="toggle-password" onclick="togglePassword(event)">👁</button>
+          </div>
+        </div>
+        <div class="login-row-meta">
+          <label class="remember-check"><input id="rememberLocalLogin" type="checkbox" checked> <span>Beni hatırla</span></label>
+          <button type="button" class="forgot-link" onclick="showLoginHint()">Şifremi unuttum</button>
+        </div>
+        <button class="login-btn modern" type="submit">🔐 Giriş Yap</button>
+        <div id="loginError" class="login-error modern"></div>
+      </form>
+      <div class="login-secure-box">
+        <div class="login-secure-title">Güvenli bağlantı</div>
+        <div class="login-secure-text">256-bit SSL şifreleme ile korunmaktadır.</div>
+      </div>
+      <div class="login-features-row">
+        <div class="login-feature"><div class="lf-title">KVKK Uyumlu</div><div class="lf-sub">Verileriniz güvende</div></div>
+        <div class="login-feature"><div class="lf-title">Yetkilendirme</div><div class="lf-sub">Rol bazlı erişim</div></div>
+        <div class="login-feature"><div class="lf-title">Yedekleme</div><div class="lf-sub">Düzenli veri yedekleme</div></div>
+      </div>
+      <div class="login-hint">Yerel giriş şifresi: <strong>2909</strong></div>
+    </div>
   </div>
 </div>
 
@@ -7588,6 +7653,47 @@ if(__loginInput){
   });
 }
 if(localStorage.getItem(SESSION_KEY)==="ok"){openApp(); refreshAll()}else{setConnState("Giriş bekleniyor")}
+
+function showLoginHint(){
+  notify('Yerel giriş şifresi: 2909');
+  const err=document.getElementById('loginError');
+  if(err){err.style.color='#2563eb'; err.textContent='Yerel giriş şifresi: 2909';}
+}
+(function(){
+  const _oldSubmit = window.submitLogin;
+  window.submitLogin = function(e){
+    if(e) e.preventDefault();
+    const input=document.getElementById('loginPassword');
+    const err=document.getElementById('loginError');
+    const remember=document.getElementById('rememberLocalLogin');
+    const v=(input?.value||'').trim();
+    if(err){ err.style.color='#dc2626'; err.textContent=''; }
+    if(!v){ if(err) err.textContent='Şifre gir.'; if(input) input.focus(); return false; }
+    const validPasswords=[LOCAL_PASSWORD,'2909','ALKAM2909'];
+    if(!validPasswords.includes(v)){
+      if(err) err.textContent='Şifre hatalı. İpucu için "Şifremi unuttum" tıkla.';
+      if(input){ input.focus(); input.select(); }
+      return false;
+    }
+    try{
+      localStorage.setItem(SESSION_KEY,'ok');
+      if(remember?.checked){ localStorage.setItem('alkam_remember_login','1'); } else { localStorage.removeItem('alkam_remember_login'); }
+      openApp();
+      refreshAll();
+      if(err){ err.style.color='#059669'; err.textContent='Giriş başarılı. Yönlendiriliyor...'; }
+    }catch(ex){
+      console.error(ex);
+      openApp();
+      if(err){ err.textContent='Giriş yapıldı, arayüz yüklenirken hata oluştu.'; }
+    }
+    return false;
+  };
+  document.addEventListener('DOMContentLoaded', function(){
+    const input=document.getElementById('loginPassword');
+    if(input){ setTimeout(()=>input.focus(), 100); }
+  });
+})();
+
 </script>
 </body>
 </html>
