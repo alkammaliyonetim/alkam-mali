@@ -7864,29 +7864,85 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 </script>
 
 
+
 <style>
-/* ALKAM SELECTED CARI DETAIL FIX V1 */
-#selectedCariDetail .alkam-hide-detail-metric{display:none!important}
-#selectedCariDetail .metric-mini{min-width:0!important}
-#selectedCariDetail .grid-4{grid-template-columns:repeat(3,minmax(0,1fr))!important}
-#selectedCariDetail .alkam-period-card .k{
-  color:#1769e8!important;
+/* ALKAM CARI DETAIL ERGONOMI V2 */
+#selectedCariDetail .alkam-remove-metric{display:none!important}
+#selectedCariDetail .alkam-detail-metric-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(220px,1fr))!important;
+  gap:12px!important;
+  align-items:stretch!important;
+}
+#selectedCariDetail .alkam-detail-metric-grid .metric-mini{
+  min-height:92px!important;
+  padding:16px 18px!important;
+  border-radius:16px!important;
+  background:linear-gradient(180deg,#fff 0%,#f8fbff 100%)!important;
+  border:1px solid #e2e8f0!important;
+  box-shadow:0 10px 24px rgba(15,23,42,.04)!important;
+}
+#selectedCariDetail .alkam-detail-metric-grid .metric-mini .k,
+#selectedCariDetail .alkam-detail-metric-grid .metric-mini .card-label{
+  font-size:11px!important;
+  letter-spacing:.05em!important;
+  color:#64748b!important;
+  text-transform:uppercase!important;
+}
+#selectedCariDetail .alkam-detail-metric-grid .metric-mini .v,
+#selectedCariDetail .alkam-detail-metric-grid .metric-mini .card-value{
+  font-size:20px!important;
+  line-height:1.2!important;
+  color:#0f172a!important;
 }
 #selectedCariDetail .alkam-period-card{
-  border-color:#bfdbfe!important;
-  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%)!important;
+  background:linear-gradient(180deg,#eff6ff 0%,#ffffff 100%)!important;
+  border-color:#93c5fd!important;
+  box-shadow:0 14px 30px rgba(37,99,235,.08)!important;
+}
+#selectedCariDetail .alkam-period-card .k,
+#selectedCariDetail .alkam-period-card .card-label{
+  color:#1769e8!important;
+}
+#selectedCariDetail .alkam-period-card .v,
+#selectedCariDetail .alkam-period-card .card-value{
+  color:#0f172a!important;
+}
+#selectedCariDetail .alkam-period-split{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:10px!important;
+  margin-top:6px!important;
+}
+#selectedCariDetail .alkam-period-split span{
+  display:block!important;
+  padding:8px 10px!important;
+  border-radius:12px!important;
+  font-size:13px!important;
+  font-weight:900!important;
+  white-space:nowrap!important;
+}
+#selectedCariDetail .alkam-period-split .deb{
+  background:#fef2f2!important;
+  color:#991b1b!important;
+  border:1px solid #fecaca!important;
+}
+#selectedCariDetail .alkam-period-split .cre{
+  background:#ecfdf5!important;
+  color:#065f46!important;
+  border:1px solid #a7f3d0!important;
 }
 @media(max-width:1200px){
-  #selectedCariDetail .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #selectedCariDetail .alkam-detail-metric-grid{grid-template-columns:repeat(2,minmax(180px,1fr))!important}
 }
-@media(max-width:720px){
-  #selectedCariDetail .grid-4{grid-template-columns:1fr!important}
+@media(max-width:760px){
+  #selectedCariDetail .alkam-detail-metric-grid{grid-template-columns:1fr!important}
 }
 </style>
 <script>
-/* ALKAM SELECTED CARI DETAIL FIX V1 */
+/* ALKAM CARI DETAIL ERGONOMI V2 */
 (function(){
-  const PATCH_ID = "ALKAM_SELECTED_CARI_DETAIL_FIX_V1_20260425";
+  const PATCH_ID = "ALKAM_CARI_DETAIL_ERGONOMI_V2_20260425";
 
   function appState(){
     try{ if(typeof state !== "undefined" && state) return state; }catch(e){}
@@ -7894,10 +7950,7 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
   }
 
   function norm(v){
-    return String(v || "")
-      .toLocaleLowerCase("tr-TR")
-      .replace(/\s+/g," ")
-      .trim();
+    return String(v || "").toLocaleLowerCase("tr-TR").replace(/\s+/g," ").trim();
   }
 
   function num(v){
@@ -7916,25 +7969,27 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
     return Number(v || 0).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}) + " TL";
   }
 
-  function monthNameTR(ym){
-    const m = Number(String(ym || "").slice(5,7));
-    return ["","OCAK","ŞUBAT","MART","NİSAN","MAYIS","HAZİRAN","TEMMUZ","AĞUSTOS","EYLÜL","EKİM","KASIM","ARALIK"][m] || "BU AY";
-  }
-
   function activePeriodKey(){
-    // Kullanıcı şu an Nisan 2026 üzerinde çalışıyor. Sistem tarihinden de Nisan 2026 gelir.
-    const d = new Date();
-    const y = d.getFullYear();
-    const m = String(d.getMonth()+1).padStart(2,"0");
-    if(y === 2026) return `${y}-${m}`;
+    // Sistemde şu an Nisan 2026 çalışılıyor; bilgisayar tarihi farklı olsa bile 2026 dönemi için Nisan göster.
     return "2026-04";
   }
 
+  function periodTitle(ym){
+    const year = String(ym).slice(0,4);
+    const m = Number(String(ym).slice(5,7));
+    const names = ["","OCAK","ŞUBAT","MART","NİSAN","MAYIS","HAZİRAN","TEMMUZ","AĞUSTOS","EYLÜL","EKİM","KASIM","ARALIK"];
+    return `${names[m] || "BU AY"} ${year} AYI`;
+  }
+
   function rowType(row){
-    const t = norm((row?.movement_type || "") + " " + (row?.description || row?.content_summary || ""));
-    if(t.includes("tahsilat") || Number(row?.credit || 0) > 0) return "tahsilat";
-    if(t.includes("tahakkuk") || t.includes("satış faturası") || t.includes("satis faturasi") || Number(row?.debit || row?.amount || 0) > 0) return "tahakkuk";
+    const text = norm((row?.movement_type || "") + " " + (row?.description || row?.content_summary || ""));
+    if(text.includes("tahsilat") || num(row?.credit) > 0) return "tahsilat";
+    if(text.includes("tahakkuk") || text.includes("satış faturası") || text.includes("satis faturasi") || num(row?.debit || row?.amount) > 0) return "tahakkuk";
     return "";
+  }
+
+  function parseLocalLedger(){
+    try{ return JSON.parse(localStorage.getItem("alkam_local_ledger_v1") || "[]"); }catch(e){ return []; }
   }
 
   function allRowsForSelectedCari(){
@@ -7943,7 +7998,8 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
     const rows = [
       ...(st.hareketler || []),
       ...(st.operationalLedger || []),
-      ...(window.__liveCaches?.account_ops || [])
+      ...(window.__liveCaches?.account_ops || []),
+      ...parseLocalLedger()
     ];
     const seen = new Set();
     return rows.filter(r => {
@@ -7961,7 +8017,8 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
   }
 
   function monthTotals(ym){
-    let tahakkuk = 0, tahsilat = 0;
+    let tahakkuk = 0;
+    let tahsilat = 0;
     allRowsForSelectedCari().forEach(r => {
       const rowYm = String(r.line_date || r.entry_date || r.created_at || "").slice(0,7);
       if(rowYm !== ym) return;
@@ -7972,73 +8029,107 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
     return {tahakkuk, tahsilat};
   }
 
-  function fixSelectedCariCards(){
-    const root = document.getElementById("selectedCariDetail");
-    if(!root) return;
+  function findLabel(card){
+    return card.querySelector(".k,.card-label,[class*='label']");
+  }
 
-    // Cari kodu / yetkili / e-posta kartları bu ekranda yer kaplıyor, gizle.
-    root.querySelectorAll(".metric-mini").forEach(card => {
-      const k = norm(card.querySelector(".k,.card-label")?.textContent || "");
-      if(["cari kodu","yetkili","e-posta","e posta"].includes(k)){
-        card.classList.add("alkam-hide-detail-metric");
+  function findValue(card){
+    return card.querySelector(".v,.card-value,[class*='value']");
+  }
+
+  function labelText(card){
+    return norm(findLabel(card)?.textContent || "");
+  }
+
+  function isInfoToRemove(label){
+    return label === "cari kodu" || label === "yetkili" || label === "e-posta" || label === "e posta";
+  }
+
+  function ensureMetricGrid(root){
+    const cards = Array.from(root.querySelectorAll(".metric-mini"));
+    cards.forEach(card => {
+      const label = labelText(card);
+      if(isInfoToRemove(label)){
+        card.classList.add("alkam-remove-metric");
       }
     });
 
-    const ym = activePeriodKey();
-    const label = `${monthNameTR(ym)} ${String(ym).slice(0,4)} AYI`;
-    const totals = monthTotals(ym);
-
-    root.querySelectorAll(".metric-mini").forEach(card => {
-      const text = norm(card.textContent || "");
-      const kEl = card.querySelector(".k,.card-label");
-      const vEl = card.querySelector(".v,.card-value");
-      if(!kEl || !vEl) return;
-
-      const key = norm(kEl.textContent || "");
-      if(key === "bu ay" || text.includes("tahakkuk") && text.includes("tahsilat") && key.includes("bu ay")){
-        card.classList.add("alkam-period-card");
-        kEl.textContent = label;
-        vEl.innerHTML = `Tahakkuk ${moneyTR(totals.tahakkuk)}<br>Tahsilat ${moneyTR(totals.tahsilat)}`;
+    // Kartları kendi parent gridlerinde yeniden akıt: boşluk bırakmasın.
+    const parents = new Set(cards.map(c => c.parentElement).filter(Boolean));
+    parents.forEach(parent => {
+      if(parent.querySelectorAll(".metric-mini").length >= 2){
+        parent.classList.add("alkam-detail-metric-grid");
       }
     });
   }
 
-  function wrapRender(){
-    if(window.__alkamSelectedCariDetailFixWrapped) return;
+  function updatePeriodCard(root){
+    const ym = activePeriodKey();
+    const totals = monthTotals(ym);
+    const title = periodTitle(ym);
 
-    const tryWrap = (name) => {
-      try{
-        const fn = window[name] || eval(name);
-        if(typeof fn !== "function") return false;
-        const wrapped = function(){
-          const out = fn.apply(this, arguments);
-          setTimeout(fixSelectedCariCards, 0);
-          setTimeout(fixSelectedCariCards, 250);
-          return out;
-        };
-        window[name] = wrapped;
-        try{ eval(name + " = window[name]"); }catch(e){}
-        return true;
-      }catch(e){ return false; }
-    };
+    let candidates = Array.from(root.querySelectorAll(".metric-mini")).filter(card => {
+      const label = labelText(card);
+      const text = norm(card.textContent || "");
+      return label === "bu ay" ||
+             label.includes("bu ay") ||
+             text.includes("tahakkuk") && text.includes("tahsilat");
+    });
 
-    tryWrap("renderSelectedCariDetail");
-    tryWrap("loadSelectedCariHareketler");
+    // Sadece en uygun BU AY kartını değiştir.
+    let card = candidates.find(c => labelText(c).includes("bu ay")) || candidates[0];
+    if(!card) return;
 
-    window.__alkamSelectedCariDetailFixWrapped = true;
+    const l = findLabel(card);
+    const v = findValue(card);
+    if(!l || !v) return;
+
+    card.classList.add("alkam-period-card");
+    l.textContent = title;
+    v.innerHTML = `
+      <div class="alkam-period-split">
+        <span class="deb">Tahakkuk ${moneyTR(totals.tahakkuk)}</span>
+        <span class="cre">Tahsilat ${moneyTR(totals.tahsilat)}</span>
+      </div>
+    `;
+  }
+
+  function fix(){
+    const root = document.getElementById("selectedCariDetail");
+    if(!root) return;
+    ensureMetricGrid(root);
+    updatePeriodCard(root);
+  }
+
+  function wrap(name){
+    try{
+      const fn = window[name] || eval(name);
+      if(typeof fn !== "function" || fn.__alkamWrappedV2) return;
+      const wrapped = function(){
+        const out = fn.apply(this, arguments);
+        setTimeout(fix, 0);
+        setTimeout(fix, 200);
+        setTimeout(fix, 700);
+        return out;
+      };
+      wrapped.__alkamWrappedV2 = true;
+      window[name] = wrapped;
+      try{ eval(name + " = window[name]"); }catch(e){}
+    }catch(e){}
   }
 
   document.addEventListener("DOMContentLoaded", function(){
-    wrapRender();
-    fixSelectedCariCards();
-    setTimeout(fixSelectedCariCards, 400);
-    setTimeout(fixSelectedCariCards, 1200);
-    setTimeout(fixSelectedCariCards, 2600);
+    wrap("renderSelectedCariDetail");
+    wrap("loadSelectedCariHareketler");
+    fix();
+    setTimeout(fix, 400);
+    setTimeout(fix, 1200);
+    setTimeout(fix, 2600);
   });
 
   const obs = new MutationObserver(function(){
-    clearTimeout(window.__alkamSelectedCariDetailFixTimer);
-    window.__alkamSelectedCariDetailFixTimer = setTimeout(fixSelectedCariCards, 120);
+    clearTimeout(window.__alkamCariDetailErgonomiV2Timer);
+    window.__alkamCariDetailErgonomiV2Timer = setTimeout(fix, 120);
   });
 
   document.addEventListener("DOMContentLoaded", function(){
