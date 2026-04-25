@@ -7719,5 +7719,468 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 })();
 </script>
 
+
+<script>
+/* ALKAM MAIN STABLE - DUPLICATE BUTTON + AUTO ACCRUAL GUARD */
+(function(){
+  const PATCH_ID = "ALKAM_MAIN_STABLE_DUP_FIX_20260425";
+
+  function text(el){ return String(el?.textContent || "").replace(/\s+/g," ").trim(); }
+
+  function dedupeToolbarButtons(){
+    document.querySelectorAll(".alkam-cari-toolbar").forEach(toolbar => {
+      const seen = new Set();
+      Array.from(toolbar.querySelectorAll("button")).forEach(btn => {
+        const key = text(btn);
+        if(!key) return;
+        if(seen.has(key)) btn.remove();
+        else seen.add(key);
+      });
+    });
+  }
+
+  window.ALKAM_AUTO_ACCRUAL_ENABLED = false;
+
+  if(typeof window.ensureFeeAccrualsForAllCariler === "function"){
+    window.__oldEnsureFeeAccrualsForAllCariler = window.ensureFeeAccrualsForAllCariler;
+    window.ensureFeeAccrualsForAllCariler = function(){
+      if(!window.ALKAM_AUTO_ACCRUAL_ENABLED){
+        console.info(PATCH_ID + ": Otomatik tahakkuk üretimi pasif. Yeni kayıt üretilmedi.");
+        return;
+      }
+      return window.__oldEnsureFeeAccrualsForAllCariler.apply(this, arguments);
+    };
+    try { ensureFeeAccrualsForAllCariler = window.ensureFeeAccrualsForAllCariler; } catch(e){}
+  }
+
+  if(typeof window.ensureFeeAccrualsForCariYear === "function"){
+    window.__oldEnsureFeeAccrualsForCariYear = window.ensureFeeAccrualsForCariYear;
+    window.ensureFeeAccrualsForCariYear = function(){
+      if(!window.ALKAM_AUTO_ACCRUAL_ENABLED){
+        console.info(PATCH_ID + ": Cari/yıl otomatik tahakkuk üretimi pasif. Yeni kayıt üretilmedi.");
+        return;
+      }
+      return window.__oldEnsureFeeAccrualsForCariYear.apply(this, arguments);
+    };
+    try { ensureFeeAccrualsForCariYear = window.ensureFeeAccrualsForCariYear; } catch(e){}
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(dedupeToolbarButtons, 300);
+    setTimeout(dedupeToolbarButtons, 900);
+    setTimeout(dedupeToolbarButtons, 1600);
+  });
+
+  const obs = new MutationObserver(function(){
+    clearTimeout(window.__alkamDupFixTimer);
+    window.__alkamDupFixTimer = setTimeout(dedupeToolbarButtons, 120);
+  });
+  document.addEventListener("DOMContentLoaded", function(){
+    try{ obs.observe(document.body, {childList:true, subtree:true}); }catch(e){}
+  });
+
+  console.info(PATCH_ID + " aktif.");
+})();
+</script>
+
+
+<script>
+/* ALKAM MAIN STABLE - AUTO ACCRUAL DISABLE + PURGE */
+(function(){
+  const PATCH_ID = "ALKAM_MAIN_STABLE_AUTO_ACCRUAL_PURGE_20260425";
+  const AUTO_SOURCES = new Set(["fee_auto", "fee_bulk_manual"]);
+
+  window.ALKAM_AUTO_ACCRUAL_ENABLED = false;
+
+  function isAutoAccrual(row){
+    return AUTO_SOURCES.has(String(row?.source_module || ""));
+  }
+
+  function purgeAutoAccruals(){
+    let removed = 0;
+
+    if(window.state && Array.isArray(window.state.operationalLedger)){
+      const before = window.state.operationalLedger.length;
+      window.state.operationalLedger = window.state.operationalLedger.filter(row => !isAutoAccrual(row));
+      removed += before - window.state.operationalLedger.length;
+
+      try{
+        if(typeof persistLedger === "function") persistLedger();
+        else localStorage.setItem("alkam_local_ledger_v1", JSON.stringify(window.state.operationalLedger));
+      }catch(e){
+        console.warn(PATCH_ID, "ledger persist uyarısı", e);
+      }
+    }
+
+    // LocalStorage içinde farklı isimle kalmış eski otomatik tahakkukları da temizle.
+    try{
+      const keys = Object.keys(localStorage).filter(k => k.startsWith("alkam_"));
+      keys.forEach(key => {
+        const raw = localStorage.getItem(key);
+        if(!raw || raw[0] !== "[") return;
+        try{
+          const arr = JSON.parse(raw);
+          if(!Array.isArray(arr)) return;
+          const before = arr.length;
+          const next = arr.filter(row => !isAutoAccrual(row));
+          if(next.length !== before){
+            localStorage.setItem(key, JSON.stringify(next));
+            removed += before - next.length;
+          }
+        }catch(_){}
+      });
+    }catch(e){
+      console.warn(PATCH_ID, "localStorage tarama uyarısı", e);
+    }
+
+    try{
+      if(typeof renderDashboard === "function") renderDashboard();
+      if(typeof renderCariList === "function") renderCariList();
+      if(typeof renderSelectedCariDetail === "function") renderSelectedCariDetail();
+      if(typeof renderCleanupCenterV120 === "function") renderCleanupCenterV120();
+    }catch(e){
+      console.warn(PATCH_ID, "render uyarısı", e);
+    }
+
+    if(removed > 0){
+      console.info(PATCH_ID + ": " + removed + " otomatik/toplu tahakkuk kaydı temizlendi.");
+    }
+    return removed;
+  }
+
+  window.purgeAutoAccrualsMainStable = purgeAutoAccruals;
+
+  // Üretim fonksiyonlarını tamamen pasifleştir.
+  if(typeof window.ensureFeeAccrualsForAllCariler === "function"){
+    window.ensureFeeAccrualsForAllCariler = function(){
+      console.info(PATCH_ID + ": otomatik tahakkuk kuralı pasif.");
+      return;
+    };
+    try{ ensureFeeAccrualsForAllCariler = window.ensureFeeAccrualsForAllCariler; }catch(e){}
+  }
+
+  if(typeof window.ensureFeeAccrualsForCariYear === "function"){
+    window.ensureFeeAccrualsForCariYear = function(){
+      console.info(PATCH_ID + ": cari/yıl otomatik tahakkuk kuralı pasif.");
+      return;
+    };
+    try{ ensureFeeAccrualsForCariYear = window.ensureFeeAccrualsForCariYear; }catch(e){}
+  }
+
+  if(typeof window.feeExpectedScheduleRows === "function"){
+    window.feeExpectedScheduleRows = function(){ return []; };
+    try{ feeExpectedScheduleRows = window.feeExpectedScheduleRows; }catch(e){}
+  }
+
+  if(typeof window.buildExpectedFeeRowsForYear === "function"){
+    window.buildExpectedFeeRowsForYear = function(){ return []; };
+    try{ buildExpectedFeeRowsForYear = window.buildExpectedFeeRowsForYear; }catch(e){}
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(purgeAutoAccruals, 300);
+    setTimeout(purgeAutoAccruals, 1000);
+    setTimeout(purgeAutoAccruals, 2200);
+  });
+
+  console.info(PATCH_ID + " aktif: otomatik tahakkuk iptal, mevcut otomatik kayıtlar temizlenecek.");
+})();
+</script>
+
+
+<style>
+/* ALKAM MAIN STABLE - ALWAYS CURRENT SYNC */
+#alkamSyncStatusBadge{
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  z-index:9999;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 13px;
+  border-radius:999px;
+  background:#061d3f;
+  color:#fff;
+  font-size:12px;
+  font-weight:900;
+  box-shadow:0 14px 34px rgba(15,23,42,.22);
+  border:1px solid rgba(255,255,255,.18);
+}
+#alkamSyncStatusBadge.ok{background:#065f46}
+#alkamSyncStatusBadge.warn{background:#92400e}
+#alkamSyncStatusBadge.err{background:#991b1b}
+#alkamSyncStatusBadge .dot{
+  width:9px;height:9px;border-radius:50%;background:#22c55e;display:inline-block;
+}
+#alkamSyncStatusBadge.warn .dot{background:#f59e0b}
+#alkamSyncStatusBadge.err .dot{background:#ef4444}
+</style>
+
+<script>
+/* ALKAM MAIN STABLE - ALWAYS CURRENT SYNC */
+(function(){
+  const PATCH_ID = "ALKAM_MAIN_STABLE_ALWAYS_CURRENT_SYNC_20260425";
+  const OVERRIDE_KEY = "alkam_universal_movement_overrides_v115";
+  const SUPA_TABLE = "alkam_manual_account_ops";
+  const SUPA_TYPE = "cari_movement_correction_v116";
+  const LAST_SYNC_KEY = "alkam_last_successful_sync_at";
+
+  function nowIso(){ return new Date().toISOString(); }
+
+  function parseJson(key, fallback){
+    try{
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    }catch(e){
+      return fallback;
+    }
+  }
+
+  function saveJson(key, value){
+    localStorage.setItem(key, JSON.stringify(value || {}));
+  }
+
+  function notifySafe(msg){
+    try{ if(typeof notify === "function") notify(msg); else console.log(msg); }catch(e){ console.log(msg); }
+  }
+
+  function correctionId(key){
+    let hash = 0;
+    const s = String(key || "");
+    for(let i=0;i<s.length;i++) hash = ((hash << 5) - hash + s.charCodeAt(i)) | 0;
+    return "CORR-" + Math.abs(hash) + "-" + s.replace(/[^a-zA-Z0-9]/g,"").slice(0,32);
+  }
+
+  function ensureBadge(){
+    let b = document.getElementById("alkamSyncStatusBadge");
+    if(!b){
+      b = document.createElement("div");
+      b.id = "alkamSyncStatusBadge";
+      b.innerHTML = `<span class="dot"></span><span id="alkamSyncStatusText">Senkron hazırlanıyor</span>`;
+      document.body.appendChild(b);
+    }
+    return b;
+  }
+
+  function setSyncStatus(type, text){
+    const b = ensureBadge();
+    b.classList.remove("ok","warn","err");
+    if(type) b.classList.add(type);
+    const t = document.getElementById("alkamSyncStatusText");
+    if(t) t.textContent = text;
+  }
+
+  function buildPayload(key, r){
+    const main = r.row || r.deleted_snapshot || r.original_snapshot || {};
+    return {
+      type: SUPA_TYPE,
+      correction_key: key,
+      status: r.status,
+      cari_id: r.cari_id || main.cari_id || window.state?.selectedCariId || null,
+      source_module: r.source_module || main.source_module || null,
+      original_snapshot: r.original_snapshot || r.deleted_snapshot || null,
+      row: r.row || null,
+      deleted_snapshot: r.deleted_snapshot || null,
+      reason: r.reason || null,
+      local_updated_at: r.updated_at || nowIso(),
+      committed_at: nowIso(),
+      committed_by: window.state?.currentUser?.email || "Yerel Giriş",
+      patch: PATCH_ID
+    };
+  }
+
+  async function waitForSupabase(){
+    for(let i=0;i<40;i++){
+      if(window.supabaseClient && typeof window.supabaseClient.from === "function") return true;
+      await new Promise(r=>setTimeout(r,250));
+    }
+    return false;
+  }
+
+  async function pushPendingCorrections(){
+    const ready = await waitForSupabase();
+    if(!ready) return {ok:false, pushed:0, error:"Supabase bağlantısı yok"};
+
+    const ov = parseJson(OVERRIDE_KEY, {});
+    const keys = Object.keys(ov).filter(k => ov[k] && !(ov[k].supabase_saved || ov[k].committed_at));
+    if(!keys.length) return {ok:true, pushed:0};
+
+    let pushed = 0;
+    for(const key of keys){
+      const payload = buildPayload(key, ov[key]);
+      const id = correctionId(key);
+      const { error } = await window.supabaseClient
+        .from(SUPA_TABLE)
+        .upsert([{ id, payload, updated_at: payload.committed_at }], { onConflict:"id" });
+      if(error) throw new Error(error.message || String(error));
+
+      ov[key] = {
+        ...ov[key],
+        supabase_saved:true,
+        supabase_id:id,
+        committed_at:payload.committed_at,
+        committed_by:payload.committed_by
+      };
+      pushed++;
+    }
+    saveJson(OVERRIDE_KEY, ov);
+    return {ok:true, pushed};
+  }
+
+  async function pullRemoteCorrections(){
+    const ready = await waitForSupabase();
+    if(!ready) return {ok:false, pulled:0, error:"Supabase bağlantısı yok"};
+
+    const { data, error } = await window.supabaseClient
+      .from(SUPA_TABLE)
+      .select("id,payload,updated_at")
+      .order("updated_at", { ascending:false })
+      .limit(3000);
+
+    if(error) throw new Error(error.message || String(error));
+
+    const rows = (data || []).filter(x => x?.payload?.type === SUPA_TYPE);
+    const ov = parseJson(OVERRIDE_KEY, {});
+    let pulled = 0;
+
+    rows.forEach(item => {
+      const p = item.payload || {};
+      const key = p.correction_key;
+      if(!key) return;
+
+      const next = {
+        status:p.status,
+        key,
+        cari_id:p.cari_id,
+        source_module:p.source_module,
+        row:p.row || undefined,
+        original_snapshot:p.original_snapshot || undefined,
+        deleted_snapshot:p.deleted_snapshot || undefined,
+        reason:p.reason || undefined,
+        updated_at:p.local_updated_at || item.updated_at || p.committed_at,
+        committed_at:p.committed_at || item.updated_at,
+        supabase_saved:true,
+        supabase_id:item.id,
+        supabase_synced_at:nowIso()
+      };
+
+      const localTime = new Date(ov[key]?.updated_at || ov[key]?.committed_at || 0).getTime();
+      const remoteTime = new Date(next.updated_at || next.committed_at || 0).getTime();
+
+      if(!ov[key] || remoteTime >= localTime || !ov[key].supabase_saved){
+        ov[key] = { ...(ov[key] || {}), ...next };
+        pulled++;
+      }
+    });
+
+    saveJson(OVERRIDE_KEY, ov);
+    return {ok:true, pulled};
+  }
+
+  async function refreshScreens(){
+    try{ if(typeof loadCariler === "function") await loadCariler(); }catch(e){}
+    try{ if(typeof loadSelectedCariHareketler === "function" && window.state?.selectedCariId) await loadSelectedCariHareketler(); }catch(e){}
+    try{ if(typeof renderDashboard === "function") renderDashboard(); }catch(e){}
+    try{ if(typeof renderCariList === "function") renderCariList(); }catch(e){}
+    try{ if(typeof renderSelectedCariDetail === "function") renderSelectedCariDetail(); }catch(e){}
+    try{ if(typeof renderCorrectionCenterV116 === "function") renderCorrectionCenterV116(); }catch(e){}
+    try{ if(typeof renderCleanupCenterV120 === "function") renderCleanupCenterV120(); }catch(e){}
+  }
+
+  window.alkamSyncNow = async function(silent=false){
+    try{
+      setSyncStatus("warn", "Senkron yapılıyor...");
+      const push = await pushPendingCorrections();
+      const pull = await pullRemoteCorrections();
+      localStorage.setItem(LAST_SYNC_KEY, nowIso());
+      await refreshScreens();
+
+      const msg = `Güncel · gönderilen ${push.pushed || 0}, alınan ${pull.pulled || 0}`;
+      setSyncStatus("ok", msg);
+      if(!silent) notifySafe(msg);
+      return {ok:true, push, pull};
+    }catch(e){
+      console.error(PATCH_ID, e);
+      setSyncStatus("err", "Senkron hatası");
+      if(!silent) notifySafe("Senkron hatası: " + (e.message || e));
+      return {ok:false, error:String(e.message || e)};
+    }
+  };
+
+  // Düzenleme kaydedilince otomatik Supabase'e gönder.
+  function wrapSaveMovement(){
+    if(typeof window.saveCariMovementEdit !== "function" || window.__alkamSaveWrappedForSync) return;
+    const oldSave = window.saveCariMovementEdit;
+    window.saveCariMovementEdit = async function(){
+      const out = await oldSave.apply(this, arguments);
+      setTimeout(()=>window.alkamSyncNow(true), 350);
+      return out;
+    };
+    try{ saveCariMovementEdit = window.saveCariMovementEdit; }catch(e){}
+    window.__alkamSaveWrappedForSync = true;
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    ensureBadge();
+    setSyncStatus("warn", "Senkron hazırlanıyor...");
+    setTimeout(wrapSaveMovement, 800);
+    setTimeout(()=>window.alkamSyncNow(true), 1200);
+    setTimeout(()=>window.alkamSyncNow(true), 4000);
+
+    // Her 60 saniyede bir cihazlar arası güncel tut.
+    setInterval(()=>window.alkamSyncNow(true), 60000);
+  });
+
+  const obs = new MutationObserver(function(){
+    clearTimeout(window.__alkamSyncWrapTimer);
+    window.__alkamSyncWrapTimer = setTimeout(wrapSaveMovement, 150);
+  });
+  document.addEventListener("DOMContentLoaded", function(){
+    try{ obs.observe(document.body, { childList:true, subtree:true }); }catch(e){}
+  });
+
+  console.info(PATCH_ID + " aktif: açılışta ve düzenleme sonrası otomatik senkron.");
+})();
+</script>
+
+
+<style>
+/* ALKAM MAIN STABLE - 2026 CONTRACT CENTER */
+.contract-pill{display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;font-size:10px;font-weight:900;border:1px solid #e2e8f0}
+.contract-pill.ok{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
+.contract-pill.warn{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
+.contract-pill.miss{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+#contractCenter2026 .match-ok{background:#ecfdf5!important} #contractCenter2026 .match-warn{background:#fff7ed!important} #contractCenter2026 .match-miss{background:#fef2f2!important}
+</style>
+<script>
+/* ALKAM MAIN STABLE - 2026 CONTRACT CENTER */
+(function(){
+  const CONTRACTS_2026 = [{"name": "Ahmet Samanlı As Optik", "fee": 10000}, {"name": "Ali Başol", "fee": 4000}, {"name": "Alparslan", "fee": 5500}, {"name": "Artekol", "fee": 9000}, {"name": "Ayyıldız", "fee": 10000}, {"name": "Bayramoğulları", "fee": 20000}, {"name": "Cengaver", "fee": 12500}, {"name": "Class İn", "fee": 12500}, {"name": "Değişim Sofa", "fee": 6000}, {"name": "Dilem Mobilya", "fee": 20000}, {"name": "Elegance Furniture", "fee": 23000}, {"name": "Emre Şen", "fee": 8500}, {"name": "Ahmet Yasir Kılıç", "fee": 6500}, {"name": "Faruk Almas", "fee": 3500}, {"name": "Hacı Ahmet Tüfenk", "fee": 3000}, {"name": "Hilmi Göktürk", "fee": 7000}, {"name": "İnçev Geri Dönüşüm", "fee": 10000}, {"name": "İnegöl Elit Gıda", "fee": 12000}, {"name": "Recep Fılız", "fee": 4000}, {"name": "İsmail Beşer", "fee": 7500}, {"name": "İsmail Sakarya", "fee": 3500}, {"name": "Kare", "fee": 8500}, {"name": "Taner Maraşlı", "fee": 3000}, {"name": "Enzo Gıda Melih", "fee": 6000}, {"name": "Mert Sevil", "fee": 4500}, {"name": "Metin Pekmez", "fee": 8500}, {"name": "Mithat Tüfekçi", "fee": 6000}, {"name": "Mstyle", "fee": 6600}, {"name": "Muhsin Engin", "fee": 3250}, {"name": "Orhan Demir", "fee": 3500}, {"name": "Özdinler", "fee": 10000}, {"name": "Persa", "fee": 20000}, {"name": "Petsco", "fee": 15000}, {"name": "Reka", "fee": 10000}, {"name": "Royal", "fee": 10000}, {"name": "Sbl", "fee": 9000}, {"name": "Selçuk Evren", "fee": 5000}, {"name": "Ömer Faruk Boz", "fee": 4000}, {"name": "Muhammed Gazi", "fee": 9000}, {"name": "Solidcut", "fee": 10000}, {"name": "Suat Uyanbay", "fee": 10000}, {"name": "Tabby", "fee": 20000}, {"name": "Tekin Harun Tekin", "fee": 3000}, {"name": "Woodlent", "fee": 25000}, {"name": "Ungan", "fee": 20000}, {"name": "Yaşam", "fee": 25000}, {"name": "Yunus Emre Toptan", "fee": 4000}, {"name": "By Innovas", "fee": 7500}, {"name": "Şamil Çelik", "fee": 3500}, {"name": "Cihan Karaduman", "fee": 6000}, {"name": "Fatih Eren", "fee": 4500}, {"name": "Adem Kamacı Ozan Türk", "fee": 4000}, {"name": "Halil Esen", "fee": 3500}, {"name": "Soner Boz", "fee": 3250}, {"name": "Pınar Sevgi", "fee": 3500}, {"name": "Sedat Güzel", "fee": 6000}, {"name": "Ahmet Tamer", "fee": 3500}, {"name": "Erdinç Yokuş", "fee": 4000}, {"name": "Şule Aras", "fee": 3000}, {"name": "Vadi Döner", "fee": 4000}, {"name": "Berrak Optik Arzu Yordamlı", "fee": 4000}, {"name": "Yılmaz Kartal Hijyen Halı Yıkama", "fee": 3500}, {"name": "Çolkan Nakliyat", "fee": 10000}, {"name": "Ozan Bekke", "fee": 3500}];
+  const MONTHS_2026 = [
+    {date:"2026-01-01", label:"OCAK 2026 YILI AYLIK MUHASEBE ÜCRETİ"},
+    {date:"2026-02-01", label:"ŞUBAT 2026 YILI AYLIK MUHASEBE ÜCRETİ"},
+    {date:"2026-03-01", label:"MART 2026 YILI AYLIK MUHASEBE ÜCRETİ"},
+    {date:"2026-04-01", label:"NİSAN 2026 YILI AYLIK MUHASEBE ÜCRETİ"}
+  ];
+  function norm(v){return String(v||"").toLocaleLowerCase("tr-TR").replace(/[ıİ]/g,"i").replace(/[ş]/g,"s").replace(/[ğ]/g,"g").replace(/[ü]/g,"u").replace(/[ö]/g,"o").replace(/[ç]/g,"c").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ");}
+  function esc(v){try{if(typeof escapeHtml==="function")return escapeHtml(v)}catch(e){} return String(v??"").replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+  function moneySafe(v){try{return typeof money==="function"?money(v):String(v)}catch(e){return String(v||"")}}
+  function notifySafe(m){try{if(typeof notify==="function")notify(m);else console.log(m)}catch(e){console.log(m)}}
+  function findCari(c){const t=norm(c.name), rows=window.state?.cariler||[];let exact=rows.find(x=>norm(x.cari_name)===t||norm(x.cari_code)===t);if(exact)return{cari:exact,score:"exact"};let contains=rows.find(x=>{const n=norm(x.cari_name);return n.includes(t)||t.includes(n)});if(contains)return{cari:contains,score:"contains"};const tokens=t.split(" ").filter(x=>x.length>2);let scored=rows.map(x=>{const n=norm(x.cari_name);return{cari:x,hit:tokens.filter(y=>n.includes(y)).length}}).filter(x=>x.hit>=Math.max(1,Math.ceil(tokens.length*.6))).sort((a,b)=>b.hit-a.hit)[0];return scored?{cari:scored.cari,score:"similar"}:{cari:null,score:"missing"}}
+  function hasAccrual(cariId,date,amount){const ym=String(date).slice(0,7);const all=[...(window.state?.operationalLedger||[]),...(window.state?.hareketler||[])];return all.some(r=>{const sameCari=String(r.cari_id||"")===String(cariId);const sameMonth=String(r.line_date||r.entry_date||"").slice(0,7)===ym;const txt=String(r.description||r.content_summary||"").toLocaleUpperCase("tr-TR");const fee=txt.includes("MUHASEBE")||txt.includes("AYLIK")||txt.includes("ÜCRET")||txt.includes("UCRET");const val=Number(r.amount||r.debit||0);return sameCari&&sameMonth&&fee&&Math.abs(val-Number(amount))<1})}
+  function ensurePeriod(cariId,amount){if(typeof upsertLocalFeePeriod==="function")upsertLocalFeePeriod({cari_id:cariId,current_fee:Number(amount),fee_amount:Number(amount),amount:Number(amount),valid_from:"2026-01-01",valid_to:"2026-12-31",note:"2026 sözleşme ücreti",source:"manual_contract_2026",sync_status:"local_only"})}
+  function addAccrual(cari,contract,mon){const row={id:"MAN2026-"+String(cari.cari_id).replace(/[^a-zA-Z0-9]/g,"")+"-"+mon.date,cari_id:cari.cari_id,cari_name:cari.cari_name||contract.name,source_module:"manual_contract_2026",movement_type:"Tahakkuk",line_date:mon.date,entry_date:mon.date,period_key:mon.date.slice(0,7),description:mon.label,amount:Number(contract.fee),debit:Number(contract.fee),credit:0,target_type:"cari",created_at:new Date().toISOString(),updated_at:new Date().toISOString()};window.state.operationalLedger.unshift(typeof stampRecordIds==="function"?stampRecordIds(row,"LGR"):row)}
+  function analyze(){return CONTRACTS_2026.map(contract=>{const m=findCari(contract);const months=m.cari?MONTHS_2026.map(mon=>({...mon,ok:hasAccrual(m.cari.cari_id,mon.date,contract.fee)})):MONTHS_2026.map(mon=>({...mon,ok:false}));return{contract,cari:m.cari,score:m.score,months}})}
+  window.renderContractCenter2026=function(){const root=document.getElementById("contractRows2026"), stats=document.getElementById("contractStats2026");if(!root||!stats)return;const rows=analyze();const matched=rows.filter(x=>x.cari).length;const missing=rows.filter(x=>!x.cari).length;const missAcc=rows.reduce((a,b)=>a+(b.cari?b.months.filter(m=>!m.ok).length:0),0);const monthly=CONTRACTS_2026.reduce((a,b)=>a+Number(b.fee||0),0);stats.innerHTML=`<div class="metric-mini"><div class="k">Verilen Cari</div><div class="v">${rows.length}</div></div><div class="metric-mini"><div class="k">Eşleşen</div><div class="v">${matched}</div></div><div class="metric-mini"><div class="k">Eksik/Eşleşmeyen</div><div class="v">${missing}</div></div><div class="metric-mini"><div class="k">Eksik Tahakkuk</div><div class="v">${missAcc}</div></div><div class="metric-mini"><div class="k">Aylık Toplam</div><div class="v">${moneySafe(monthly)}</div></div>`;root.innerHTML=`<table><thead><tr><th>Cari</th><th>2026 Ücret</th><th>Eşleşme</th><th>Ocak</th><th>Şubat</th><th>Mart</th><th>Nisan</th></tr></thead><tbody>${rows.map(r=>`<tr class="${!r.cari?'match-miss':r.months.every(m=>m.ok)?'match-ok':'match-warn'}"><td><strong>${esc(r.contract.name)}</strong><div class="muted-note">${r.cari?esc(r.cari.cari_name):'Cari bulunamadı / isim farklı olabilir'}</div></td><td>${moneySafe(r.contract.fee)}</td><td>${r.cari?`<span class="contract-pill ok">${r.score}</span>`:'<span class="contract-pill miss">Eksik</span>'}</td>${r.months.map(m=>`<td>${m.ok?'<span class="contract-pill ok">OK</span>':'<span class="contract-pill warn">Eksik</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
+  window.applyContracts2026=async function(){const rows=analyze();const missing=rows.filter(x=>!x.cari);if(missing.length){notifySafe(missing.length+" cari eşleşmedi. Önce isimleri düzeltelim.");renderContractCenter2026();return}if(!confirm("64 cari için 2026 ücret kartı ve Ocak-Nisan eksik tahakkukları işlenecek. Devam?"))return;let created=0;rows.forEach(r=>{ensurePeriod(r.cari.cari_id,r.contract.fee);r.months.forEach(mon=>{if(!mon.ok){addAccrual(r.cari,r.contract,mon);created++}})});try{if(typeof persistLedger==="function")persistLedger();else localStorage.setItem("alkam_local_ledger_v1",JSON.stringify(window.state.operationalLedger||[]))}catch(e){}try{if(typeof loadSelectedCariHareketler==="function"&&window.state?.selectedCariId)await loadSelectedCariHareketler()}catch(e){}try{if(typeof renderDashboard==="function")renderDashboard()}catch(e){}try{if(typeof renderCariList==="function")renderCariList()}catch(e){}try{if(typeof renderSelectedCariDetail==="function")renderSelectedCariDetail()}catch(e){}renderContractCenter2026();notifySafe("2026 sözleşmeler işlendi. Oluşturulan eksik tahakkuk: "+created)}
+  window.openContractCenter2026=function(){ensureUi();document.getElementById("contractCenter2026").style.display="flex";renderContractCenter2026()}
+  window.closeContractCenter2026=function(){const m=document.getElementById("contractCenter2026");if(m)m.style.display="none"}
+  function ensureUi(){if(document.getElementById("contractCenter2026"))return;const modal=document.createElement("div");modal.id="contractCenter2026";modal.className="modal-overlay";modal.style.display="none";modal.innerHTML=`<div class="modal-card" style="max-width:1180px;"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;"><div><h2 style="margin:0;font-size:26px;font-weight:900;">2026 Sözleşme & Tahakkuk Kontrolü</h2><div class="muted-note">64 cari için cari eşleşmesi, 2026 ücret kartı ve Ocak-Nisan tahakkuk kontrolü.</div></div><button class="btn btn-red" onclick="closeContractCenter2026()">Kapat</button></div><div id="contractStats2026" class="grid-4" style="margin-bottom:14px;"></div><div class="btn-row" style="margin-bottom:14px;"><button class="btn btn-blue" onclick="applyContracts2026()">Eşleşenleri İşle / Eksik Tahakkukları Oluştur</button><button class="btn btn-soft" onclick="renderContractCenter2026()">Yenile</button></div><div class="rule-box" style="margin-bottom:14px;"><strong>Kural:</strong> 2026 yılı. Ocak-Nisan aylarının 1. günü kontrol edilir. Var olan OK; eksikse manuel sözleşme tahakkuku oluşturulur.</div><div id="contractRows2026"></div></div>`;document.body.appendChild(modal)}
+  function addBtn(){ensureUi();const toolbar=document.querySelector(".alkam-cari-toolbar")||document.querySelector(".topbar-right");if(toolbar&&!document.getElementById("contractBtn2026")){const b=document.createElement("button");b.id="contractBtn2026";b.className="btn btn-blue";b.type="button";b.textContent="2026 Sözleşme Kontrol";b.onclick=openContractCenter2026;toolbar.appendChild(b)}}
+  document.addEventListener("DOMContentLoaded",()=>{setTimeout(addBtn,600);setTimeout(addBtn,1500)});const obs=new MutationObserver(()=>{clearTimeout(window.__contract2026);window.__contract2026=setTimeout(addBtn,160)});document.addEventListener("DOMContentLoaded",()=>{try{obs.observe(document.body,{childList:true,subtree:true})}catch(e){}});
+})();
+</script>
+
 </body>
 </html>
