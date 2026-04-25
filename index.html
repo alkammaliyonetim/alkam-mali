@@ -8146,31 +8146,15 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 
 
 
+
 <style>
-/* ALKAM MAIN STABLE - 2026 AUTO MIGRATION */
-#auto2026Status {
-  position: fixed;
-  right: 18px;
-  bottom: 68px;
-  z-index: 10000;
-  max-width: 430px;
-  padding: 11px 14px;
-  border-radius: 14px;
-  background: #061d3f;
-  color: #fff;
-  font-size: 12px;
-  font-weight: 800;
-  box-shadow: 0 14px 34px rgba(15,23,42,.22);
-  border: 1px solid rgba(255,255,255,.18);
-}
-#auto2026Status.ok { background:#065f46; }
-#auto2026Status.warn { background:#92400e; }
-#auto2026Status.err { background:#991b1b; }
+/* ALKAM SADE 2026 DUZELTME */
+#auto2026Status,#alkamSyncStatusBadge{display:none!important}
+.alkam-hidden-duplicate-btn{display:none!important}
 </style>
 <script>
-/* ALKAM MAIN STABLE - 2026 AUTO MIGRATION */
+/* ALKAM SADE 2026 DUZELTME */
 (function(){
-  const PATCH_ID = "ALKAM_MAIN_STABLE_2026_AUTO_MIGRATION_20260425";
   const CONTRACTS_2026 = [{"name": "Ahmet Samanlı As Optik", "fee": 10000}, {"name": "Ali Başol", "fee": 4000}, {"name": "Alparslan", "fee": 5500}, {"name": "Artekol", "fee": 9000}, {"name": "Ayyıldız", "fee": 10000}, {"name": "Bayramoğulları", "fee": 20000}, {"name": "Cengaver", "fee": 12500}, {"name": "Class İn", "fee": 12500}, {"name": "Değişim Sofa", "fee": 6000}, {"name": "Dilem Mobilya", "fee": 20000}, {"name": "Elegance Furniture", "fee": 23000}, {"name": "Emre Şen", "fee": 8500}, {"name": "Ahmet Yasir Kılıç", "fee": 6500}, {"name": "Faruk Almas", "fee": 3500}, {"name": "Hacı Ahmet Tüfenk", "fee": 3000}, {"name": "Hilmi Göktürk", "fee": 7000}, {"name": "İnçev Geri Dönüşüm", "fee": 10000}, {"name": "İnegöl Elit Gıda", "fee": 12000}, {"name": "Recep Fılız", "fee": 4000}, {"name": "İsmail Beşer", "fee": 7500}, {"name": "İsmail Sakarya", "fee": 3500}, {"name": "Kare", "fee": 8500}, {"name": "Taner Maraşlı", "fee": 3000}, {"name": "Enzo Gıda Melih", "fee": 6000}, {"name": "Mert Sevil", "fee": 4500}, {"name": "Metin Pekmez", "fee": 8500}, {"name": "Mithat Tüfekçi", "fee": 6000}, {"name": "Mstyle", "fee": 6600}, {"name": "Muhsin Engin", "fee": 3250}, {"name": "Orhan Demir", "fee": 3500}, {"name": "Özdinler", "fee": 10000}, {"name": "Persa", "fee": 20000}, {"name": "Petsco", "fee": 15000}, {"name": "Reka", "fee": 10000}, {"name": "Royal", "fee": 10000}, {"name": "Sbl", "fee": 9000}, {"name": "Selçuk Evren", "fee": 5000}, {"name": "Ömer Faruk Boz", "fee": 4000}, {"name": "Muhammed Gazi", "fee": 9000}, {"name": "Solidcut", "fee": 10000}, {"name": "Suat Uyanbay", "fee": 10000}, {"name": "Tabby", "fee": 20000}, {"name": "Tekin Harun Tekin", "fee": 3000}, {"name": "Woodlent", "fee": 25000}, {"name": "Ungan", "fee": 20000}, {"name": "Yaşam", "fee": 25000}, {"name": "Yunus Emre Toptan", "fee": 4000}, {"name": "By Innovas", "fee": 7500}, {"name": "Şamil Çelik", "fee": 3500}, {"name": "Cihan Karaduman", "fee": 6000}, {"name": "Fatih Eren", "fee": 4500}, {"name": "Adem Kamacı Ozan Türk", "fee": 4000}, {"name": "Halil Esen", "fee": 3500}, {"name": "Soner Boz", "fee": 3250}, {"name": "Pınar Sevgi", "fee": 3500}, {"name": "Sedat Güzel", "fee": 6000}, {"name": "Ahmet Tamer", "fee": 3500}, {"name": "Erdinç Yokuş", "fee": 4000}, {"name": "Şule Aras", "fee": 3000}, {"name": "Vadi Döner", "fee": 4000}, {"name": "Berrak Optik Arzu Yordamlı", "fee": 4000}, {"name": "Yılmaz Kartal Hijyen Halı Yıkama", "fee": 3500}, {"name": "Çolkan Nakliyat", "fee": 10000}, {"name": "Ozan Bekke", "fee": 3500}];
   const MONTHS_2026 = [
     {date:"2026-01-01", ym:"2026-01", label:"OCAK 2026 YILI AYLIK MUHASEBE ÜCRETİ"},
@@ -8178,471 +8162,113 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
     {date:"2026-03-01", ym:"2026-03", label:"MART 2026 YILI AYLIK MUHASEBE ÜCRETİ"},
     {date:"2026-04-01", ym:"2026-04", label:"NİSAN 2026 YILI AYLIK MUHASEBE ÜCRETİ"}
   ];
-  const DONE_KEY = "alkam_2026_contracts_auto_done_v3";
-  const REPORT_KEY = "alkam_2026_contracts_auto_report_v3";
-  const AUTO_ROW_SOURCE = "manual_contract_2026";
+  const DONE_KEY = "alkam_2026_sozlesme_sade_done_v1";
 
-  function appState(){
-    try{ if(typeof state !== "undefined" && state) return state; }catch(e){}
-    if(window.state) return window.state;
-    return {};
-  }
+  function st(){ try{ if(typeof state!=="undefined") return state; }catch(e){} return window.state || {}; }
+  function norm(v){ return String(v||"").toLocaleLowerCase("tr-TR").replace(/[ıİ]/g,"i").replace(/[ş]/g,"s").replace(/[ğ]/g,"g").replace(/[ü]/g,"u").replace(/[ö]/g,"o").replace(/[ç]/g,"c").replace(/\b(as|anonim|sirketi|şirketi|ltd|limited|şti|sti|san|tic|ticaret|sanayi|mobilya|optik|gida|gıda|tekstil)\b/g," ").replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," "); }
+  function note(m){ try{ if(typeof notify==="function") notify(m); }catch(e){} console.log("[ALKAM 2026]", m); }
 
-  function norm(v){
-    return String(v||"").toLocaleLowerCase("tr-TR")
-      .replace(/[ıİ]/g,"i").replace(/[ş]/g,"s").replace(/[ğ]/g,"g")
-      .replace(/[ü]/g,"u").replace(/[ö]/g,"o").replace(/[ç]/g,"c")
-      .replace(/\b(as|a s|aş|anonim|sirketi|şirketi|ltd|limited|şti|sti|san|tic|ticaret|sanayi|mobilya|optik|gida|gıda|tekstil|san tic|san tic ltd sti)\b/g," ")
-      .replace(/[^a-z0-9]+/g," ").trim().replace(/\s+/g," ");
-  }
-
-  function notifySafe(msg){
-    try{ if(typeof notify === "function") notify(msg); else console.log(msg); }catch(e){ console.log(msg); }
-  }
-
-  function setStatus(type, msg){
-    let el = document.getElementById("auto2026Status");
-    if(!el){
-      el = document.createElement("div");
-      el.id = "auto2026Status";
-      document.body.appendChild(el);
-    }
-    el.className = type || "";
-    el.textContent = msg;
-    if(type === "ok") setTimeout(()=>{ try{ el.remove(); }catch(e){} }, 10000);
-  }
-
-  function stableRowId(cariId, ym, amount){
-    return "MC2026_" + String(cariId).replace(/[^a-zA-Z0-9]/g,"") + "_" + ym.replace("-","") + "_" + Number(amount).toFixed(0);
-  }
-
-  function moneySafe(v){
-    try{ return typeof money === "function" ? money(v) : String(v); }catch(e){ return String(v||""); }
-  }
-
-  function getLocalLedger(){
-    const st = appState();
-    if(!Array.isArray(st.operationalLedger)) st.operationalLedger = [];
-    return st.operationalLedger;
-  }
-
-  function liveRows(){
-    return Array.isArray(window.__liveCaches?.account_ops) ? window.__liveCaches.account_ops : [];
-  }
-
-  function mergeLiveAccountOpsIntoLedger(){
-    const st = appState();
-    if(!Array.isArray(st.operationalLedger)) st.operationalLedger = [];
-    const map = new Map();
-    [...st.operationalLedger, ...liveRows()].forEach(r => {
-      if(!r) return;
-      const id = String(r.id || r.txn_id || "");
-      if(!id) return;
-      map.set(id, r);
+  function tekilButonlar(){
+    const seen = new Set();
+    document.querySelectorAll(".alkam-cari-toolbar button,.topbar-right button").forEach(b=>{
+      const t = String(b.textContent||"").replace(/\s+/g," ").trim().toLocaleLowerCase("tr-TR");
+      if(!t) return;
+      if(t.includes("2026 sözleşme kontrol")) { b.remove(); return; }
+      if(seen.has(t)) b.remove(); else seen.add(t);
     });
-    st.operationalLedger = [...map.values()];
-    try{ if(typeof persistLedger === "function") persistLedger(); }catch(e){}
   }
 
-  function findCari(contract){
-    const rows = appState().cariler || [];
+  function cariBul(contract){
+    const rows = st().cariler || [];
     const target = norm(contract.name);
-    let exact = rows.find(c => norm(c.cari_name) === target || norm(c.cari_code) === target);
-    if(exact) return {cari:exact, score:"exact"};
-    let contains = rows.find(c => {
-      const n = norm(c.cari_name);
-      return n.includes(target) || target.includes(n);
-    });
-    if(contains) return {cari:contains, score:"contains"};
-    const tokens = target.split(" ").filter(x => x.length > 2);
+    let exact = rows.find(c => norm(c.cari_name) === target);
+    if(exact) return exact;
+    let contains = rows.find(c => { const n=norm(c.cari_name); return n.includes(target)||target.includes(n); });
+    if(contains) return contains;
+    const tokens = target.split(" ").filter(x=>x.length>2);
     let best = null;
-    rows.forEach(c => {
+    rows.forEach(c=>{
       const n = norm(c.cari_name);
-      const hit = tokens.filter(t => n.includes(t)).length;
-      const score = tokens.length ? hit / tokens.length : 0;
-      if(hit > 0 && (!best || score > best.score || (score === best.score && hit > best.hit))) best = {cari:c, hit, score};
+      const hit = tokens.filter(t=>n.includes(t)).length;
+      if(hit && (!best || hit>best.hit)) best={cari:c,hit};
     });
-    if(best && (best.score >= 0.45 || best.hit >= 2)) return {cari:best.cari, score:"similar"};
-    return {cari:null, score:"missing"};
+    return best && best.hit >= Math.max(1, Math.ceil(tokens.length*0.45)) ? best.cari : null;
   }
 
-  function isFeeRow(row, ym, amount){
-    const rowYm = String(row?.line_date || row?.entry_date || row?.created_at || "").slice(0,7);
-    if(rowYm !== ym) return false;
-    const text = String(row?.description || row?.content_summary || "").toLocaleUpperCase("tr-TR");
-    const looksFee = text.includes("MUHASEBE") || text.includes("AYLIK") || text.includes("ÜCRET") || text.includes("UCRET") || String(row?.movement_type||"").toLocaleLowerCase("tr-TR").includes("tahakkuk");
-    const val = Number(row?.amount || row?.debit || 0);
-    return looksFee && Math.abs(val - Number(amount)) < 1;
+  function mevcutMu(cariId, ym, amount){
+    const rows = [...(st().operationalLedger||[]), ...(st().hareketler||[]), ...(window.__liveCaches?.account_ops||[])];
+    return rows.some(r=>{
+      if(String(r.cari_id)!==String(cariId)) return false;
+      if(String(r.line_date||r.entry_date||r.created_at||"").slice(0,7)!==ym) return false;
+      const txt = String(r.description||r.content_summary||"").toLocaleUpperCase("tr-TR");
+      const fee = txt.includes("MUHASEBE") || txt.includes("AYLIK") || txt.includes("ÜCRET") || txt.includes("UCRET") || String(r.movement_type||"").toLocaleLowerCase("tr-TR").includes("tahakkuk");
+      const val = Number(r.amount || r.debit || 0);
+      return fee && Math.abs(val-Number(amount))<1;
+    });
   }
 
-  async function fetchExistingRowsForCari(cariId){
-    const rows = [];
+  async function ucretYaz(cari, amount){
     try{
-      if(window.supabaseClient){
-        const { data } = await window.supabaseClient
-          .from("v_cari_hareket_dokumu")
-          .select("*")
-          .eq("cari_id", cariId)
-          .gte("line_date", "2026-01-01")
-          .lte("line_date", "2026-04-30")
-          .limit(250);
-        if(Array.isArray(data)) rows.push(...data);
-      }
-    }catch(e){ console.warn(PATCH_ID, "view kontrol uyarısı", e); }
-
-    rows.push(...getLocalLedger().filter(r => String(r.cari_id) === String(cariId)));
-    rows.push(...liveRows().filter(r => String(r.cari_id) === String(cariId)));
-    return rows;
-  }
-
-  async function upsertFeeHistory(cari, amount){
-    try{
-      if(!window.supabaseClient) return false;
+      if(!window.supabaseClient) return;
       const cariId = cari.cari_id;
-      const { data:existing } = await window.supabaseClient
-        .from("cari_fee_history")
-        .select("id")
-        .eq("cari_id", cariId)
-        .eq("valid_from", "2026-01-01")
-        .limit(1);
-      if(existing && existing[0]?.id){
-        await window.supabaseClient.from("cari_fee_history")
-          .update({ fee_amount:Number(amount), valid_to:"2026-12-31", note:"2026 sözleşme ücreti", updated_at:new Date().toISOString() })
-          .eq("id", existing[0].id);
-      }else{
-        await window.supabaseClient.from("cari_fee_history").insert([{
-          cari_id:cariId,
-          fee_amount:Number(amount),
-          valid_from:"2026-01-01",
-          valid_to:"2026-12-31",
-          note:"2026 sözleşme ücreti",
-          created_at:new Date().toISOString(),
-          updated_at:new Date().toISOString()
-        }]);
+      const {data} = await supabaseClient.from("cari_fee_history").select("id").eq("cari_id",cariId).eq("valid_from","2026-01-01").limit(1);
+      if(data && data[0]) {
+        await supabaseClient.from("cari_fee_history").update({fee_amount:Number(amount),valid_to:"2026-12-31",note:"2026 sözleşme ücreti",updated_at:new Date().toISOString()}).eq("id",data[0].id);
+      } else {
+        await supabaseClient.from("cari_fee_history").insert([{cari_id:cariId,fee_amount:Number(amount),valid_from:"2026-01-01",valid_to:"2026-12-31",note:"2026 sözleşme ücreti",created_at:new Date().toISOString(),updated_at:new Date().toISOString()}]);
       }
-      await window.supabaseClient.from("cari_cards")
-        .update({ monthly_fee_amount:Number(amount), monthly_fee_enabled:true, updated_at:new Date().toISOString() })
-        .eq("id", cariId);
-      return true;
-    }catch(e){
-      console.warn(PATCH_ID, "cari kart/ücret geçmişi yazılamadı", e);
-      return false;
-    }
+      await supabaseClient.from("cari_cards").update({monthly_fee_amount:Number(amount),monthly_fee_enabled:true,updated_at:new Date().toISOString()}).eq("id",cariId);
+    }catch(e){ console.warn("Ücret yazılamadı", cari?.cari_name, e); }
   }
 
-  async function upsertAccrualRow(row){
-    let liveOk = false;
-    try{
-      if(typeof upsertLiveRow === "function") liveOk = await upsertLiveRow("account_ops", row);
-    }catch(e){ liveOk = false; }
-    const st = appState();
-    if(!Array.isArray(st.operationalLedger)) st.operationalLedger = [];
-    if(!st.operationalLedger.some(x => String(x.id) === String(row.id))) st.operationalLedger.unshift(row);
-    try{ if(typeof persistLedger === "function") persistLedger(); }catch(e){}
-    return liveOk;
+  async function tahakkukYaz(cari, contract, mon){
+    const id = "MC2026_" + String(cari.cari_id).replace(/[^a-zA-Z0-9]/g,"") + "_" + mon.ym.replace("-","") + "_" + Number(contract.fee).toFixed(0);
+    const row = {id,txn_id:id,operation_no:id,cari_id:cari.cari_id,cari_name:cari.cari_name||contract.name,source_module:"manual_contract_2026",movement_type:"Tahakkuk",line_date:mon.date,entry_date:mon.date,period_key:mon.ym,description:mon.label,amount:Number(contract.fee),debit:Number(contract.fee),credit:0,target_type:"cari",created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+    try{ if(typeof upsertLiveRow==="function") await upsertLiveRow("account_ops", row); }catch(e){}
+    if(!Array.isArray(st().operationalLedger)) st().operationalLedger=[];
+    if(!st().operationalLedger.some(x=>String(x.id)===id)) st().operationalLedger.unshift(row);
   }
 
-  async function waitUntilReady(){
-    for(let i=0;i<60;i++){
-      const st = appState();
-      if(Array.isArray(st.cariler) && st.cariler.length > 0 && window.supabaseClient) return true;
-      await new Promise(r => setTimeout(r, 500));
+  async function hazirBekle(){
+    for(let i=0;i<24;i++){
+      try{ if(typeof loadCariler==="function" && (!(st().cariler||[]).length)) await loadCariler(); }catch(e){}
+      if((st().cariler||[]).length && window.supabaseClient) return true;
+      await new Promise(r=>setTimeout(r,2500));
     }
     return false;
   }
 
-  async function runAutoMigration(force=false){
-    if(!force && localStorage.getItem(DONE_KEY) === "done") return;
+  async function calis(){
+    tekilButonlar();
+    if(localStorage.getItem(DONE_KEY)==="done") return;
+    const ready = await hazirBekle();
+    if(!ready) { note("2026 işlem yapılmadı: cari verisi hazır değil."); return; }
+    try{ if(typeof hydrateLiveSyncCaches==="function") await hydrateLiveSyncCaches(); }catch(e){}
 
-    const ready = await waitUntilReady();
-    if(!ready){
-      setStatus("err", "2026 sözleşme işlemi bekledi: cari/Supabase hazır değil.");
-      return;
-    }
-
-    try{ if(typeof hydrateLiveSyncCaches === "function") await hydrateLiveSyncCaches(); }catch(e){}
-    mergeLiveAccountOpsIntoLedger();
-
-    setStatus("warn", "2026 sözleşme ve Ocak-Nisan tahakkukları işleniyor...");
-
-    const report = {
-      started_at:new Date().toISOString(),
-      total:CONTRACTS_2026.length,
-      matched:0,
-      unmatched:[],
-      fee_history_ok:0,
-      created_accruals:0,
-      existing_accruals:0,
-      live_saved:0,
-      errors:[]
-    };
-
-    for(const contract of CONTRACTS_2026){
-      const match = findCari(contract);
-      if(!match.cari){
-        report.unmatched.push(contract.name);
-        continue;
-      }
-      report.matched++;
-      const cari = match.cari;
-
-      if(await upsertFeeHistory(cari, contract.fee)) report.fee_history_ok++;
-
-      const existingRows = await fetchExistingRowsForCari(cari.cari_id);
-      for(const mon of MONTHS_2026){
-        const exists = existingRows.some(r => isFeeRow(r, mon.ym, contract.fee));
-        if(exists){
-          report.existing_accruals++;
-          continue;
-        }
-
-        const id = stableRowId(cari.cari_id, mon.ym, contract.fee);
-        const row = {
-          id,
-          txn_id:id,
-          operation_no:id,
-          cari_id:cari.cari_id,
-          cari_name:cari.cari_name || contract.name,
-          source_module:AUTO_ROW_SOURCE,
-          movement_type:"Tahakkuk",
-          line_date:mon.date,
-          entry_date:mon.date,
-          period_key:mon.ym,
-          description:mon.label,
-          amount:Number(contract.fee),
-          debit:Number(contract.fee),
-          credit:0,
-          target_type:"cari",
-          created_at:new Date().toISOString(),
-          updated_at:new Date().toISOString()
-        };
-        if(await upsertAccrualRow(row)) report.live_saved++;
-        report.created_accruals++;
-        existingRows.push(row);
+    let matched=0, missing=[], created=0, ok=0;
+    for(const c of CONTRACTS_2026){
+      const cari = cariBul(c);
+      if(!cari) { missing.push(c.name); continue; }
+      matched++;
+      await ucretYaz(cari,c.fee);
+      for(const m of MONTHS_2026){
+        if(mevcutMu(cari.cari_id,m.ym,c.fee)) ok++;
+        else { await tahakkukYaz(cari,c,m); created++; }
       }
     }
-
-    report.finished_at = new Date().toISOString();
-    localStorage.setItem(REPORT_KEY, JSON.stringify(report));
-    if(report.matched > 0) localStorage.setItem(DONE_KEY, "done");
-
-    try{ if(typeof hydrateLiveSyncCaches === "function") await hydrateLiveSyncCaches(); }catch(e){}
-    mergeLiveAccountOpsIntoLedger();
-
-    try{ if(typeof loadFeeData === "function") await loadFeeData(); }catch(e){}
-    try{ if(typeof loadCariler === "function") await loadCariler(); }catch(e){}
-    try{ if(typeof loadSelectedCariHareketler === "function") await loadSelectedCariHareketler(); }catch(e){}
-    try{ if(typeof renderDashboard === "function") renderDashboard(); }catch(e){}
-    try{ if(typeof renderCariList === "function") renderCariList(); }catch(e){}
-    try{ if(typeof renderSelectedCariDetail === "function") renderSelectedCariDetail(); }catch(e){}
-
-    const msg = `2026 işlendi · eşleşen ${report.matched}/${report.total}, oluşturulan ${report.created_accruals}, mevcut OK ${report.existing_accruals}, eşleşmeyen ${report.unmatched.length}`;
-    setStatus(report.unmatched.length ? "warn" : "ok", msg);
-    notifySafe(msg);
+    try{ if(typeof persistLedger==="function") persistLedger(); }catch(e){}
+    localStorage.setItem(DONE_KEY,"done");
+    try{ if(typeof loadFeeData==="function") await loadFeeData(); }catch(e){}
+    try{ if(typeof loadCariler==="function") await loadCariler(); }catch(e){}
+    try{ if(typeof loadSelectedCariHareketler==="function") await loadSelectedCariHareketler(); }catch(e){}
+    try{ if(typeof renderCariList==="function") renderCariList(); }catch(e){}
+    try{ if(typeof renderSelectedCariDetail==="function") renderSelectedCariDetail(); }catch(e){}
+    note("2026 sözleşme işlendi. Eşleşen: "+matched+"/64, oluşturulan tahakkuk: "+created+", mevcut OK: "+ok+", eşleşmeyen: "+missing.length);
   }
 
-  window.alkamRun2026ContractsOnce = function(){ return runAutoMigration(true); };
-  window.alkamGet2026ContractsReport = function(){ try{ return JSON.parse(localStorage.getItem(REPORT_KEY) || "{}"); }catch(e){ return {}; } };
-
-  // Manuel butonu artık gerekmediği için gizle.
-  function removeContractButton(){
-    document.querySelectorAll("#contractBtn2026").forEach(x => x.remove());
-    document.querySelectorAll("button").forEach(b => {
-      if(String(b.textContent||"").includes("2026 Sözleşme Kontrol")) b.remove();
-    });
-  }
-
-  // Live account_ops kayıtları her cihazda operasyon defterine girsin.
-  const oldHydrate = window.hydrateLiveSyncCaches;
-  if(typeof oldHydrate === "function" && !window.__alkamHydrateMerged2026){
-    window.hydrateLiveSyncCaches = async function(){
-      const out = await oldHydrate.apply(this, arguments);
-      mergeLiveAccountOpsIntoLedger();
-      return out;
-    };
-    try{ hydrateLiveSyncCaches = window.hydrateLiveSyncCaches; }catch(e){}
-    window.__alkamHydrateMerged2026 = true;
-  }
-
-  // manual_contract_2026 tahakkukları ekstreye dahil olsun.
-  window.feeAccrualRowsForCari = function(id){
-    const st = appState();
-    const rows = [...(st.operationalLedger||[]), ...liveRows()];
-    const seen = new Set();
-    return rows.filter(x => {
-      const ok = String(x.cari_id) === String(id)
-        && ["fee_auto","fee_bulk_manual","manual_contract_2026"].includes(String(x.source_module||""))
-        && String(x.movement_type||"").toLocaleLowerCase("tr-TR") === "tahakkuk";
-      if(!ok) return false;
-      const key = String(x.id || x.txn_id || x.operation_no || "");
-      if(key && seen.has(key)) return false;
-      if(key) seen.add(key);
-      return true;
-    });
-  };
-  try{ feeAccrualRowsForCari = window.feeAccrualRowsForCari; }catch(e){}
-
-  document.addEventListener("DOMContentLoaded", function(){
-    removeContractButton();
-    setTimeout(removeContractButton, 800);
-    setTimeout(() => runAutoMigration(false), 1600);
-    setTimeout(() => runAutoMigration(false), 5000);
-  });
-
-  const obs = new MutationObserver(function(){
-    clearTimeout(window.__alkam2026AutoBtnCleaner);
-    window.__alkam2026AutoBtnCleaner = setTimeout(removeContractButton, 120);
-  });
-  document.addEventListener("DOMContentLoaded", function(){
-    try{ obs.observe(document.body, {childList:true, subtree:true}); }catch(e){}
-  });
-
-  console.info(PATCH_ID + " aktif. Tek seferlik otomatik çalışma yapılacak.");
-})();
-</script>
-
-
-<style>
-/* ALKAM MAIN STABLE - DUPLICATE BUTTON FINAL FIX */
-.alkam-hidden-duplicate-btn{display:none!important}
-</style>
-<script>
-/* ALKAM MAIN STABLE - DUPLICATE BUTTON FINAL FIX */
-(function(){
-  const PATCH_ID = "ALKAM_MAIN_STABLE_DUPLICATE_BUTTON_FINAL_FIX_20260425";
-
-  function normalizeButtonText(btn){
-    return String(btn?.textContent || "").replace(/\s+/g," ").trim().toLocaleLowerCase("tr-TR");
-  }
-
-  function dedupeButtonsIn(container){
-    if(!container) return;
-    const seen = new Set();
-    Array.from(container.querySelectorAll("button")).forEach(btn => {
-      const txt = normalizeButtonText(btn);
-      if(!txt) return;
-
-      // Sadece aynı container içindeki aynı isimli butonları teke indir.
-      // Özellikle "Düzeltme Merkezi" ikinci kez ekleniyordu.
-      if(seen.has(txt)){
-        btn.classList.add("alkam-hidden-duplicate-btn");
-        btn.remove();
-      }else{
-        seen.add(txt);
-      }
-    });
-  }
-
-  function fixDuplicateButtons(){
-    document.querySelectorAll(".alkam-cari-toolbar, .topbar-right, .btn-row").forEach(dedupeButtonsIn);
-
-    // Ek güvenlik: üstte görünen Düzeltme Merkezi butonlarından sadece ilkini bırak.
-    const correctionButtons = Array.from(document.querySelectorAll("button"))
-      .filter(b => normalizeButtonText(b) === "düzeltme merkezi");
-
-    correctionButtons.forEach((btn, idx) => {
-      if(idx > 0){
-        btn.classList.add("alkam-hidden-duplicate-btn");
-        btn.remove();
-      }
-    });
-
-    // Tek seferlik 2026 butonu artık kullanılmayacak.
-    Array.from(document.querySelectorAll("button")).forEach(btn => {
-      const t = normalizeButtonText(btn);
-      if(t.includes("2026 sözleşme kontrol")){
-        btn.classList.add("alkam-hidden-duplicate-btn");
-        btn.remove();
-      }
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", function(){
-    fixDuplicateButtons();
-    setTimeout(fixDuplicateButtons, 300);
-    setTimeout(fixDuplicateButtons, 1000);
-    setTimeout(fixDuplicateButtons, 2500);
-  });
-
-  const obs = new MutationObserver(function(){
-    clearTimeout(window.__alkamDuplicateFinalTimer);
-    window.__alkamDuplicateFinalTimer = setTimeout(fixDuplicateButtons, 120);
-  });
-
-  document.addEventListener("DOMContentLoaded", function(){
-    try{ obs.observe(document.body, {childList:true, subtree:true}); }catch(e){}
-  });
-
-  console.info(PATCH_ID + " aktif.");
-})();
-</script>
-
-
-<script>
-/* ALKAM MAIN STABLE - 2026 AUTO READY RETRY FIX */
-(function(){
-  const PATCH_ID = "ALKAM_MAIN_STABLE_2026_AUTO_READY_RETRY_FIX_20260425";
-  const DONE_KEY = "alkam_2026_contracts_auto_done_v3";
-
-  function appState(){
-    try{ if(typeof state !== "undefined" && state) return state; }catch(e){}
-    if(window.state) return window.state;
-    return {};
-  }
-
-  function setStatus(type, msg){
-    let el = document.getElementById("auto2026Status");
-    if(!el){
-      el = document.createElement("div");
-      el.id = "auto2026Status";
-      document.body.appendChild(el);
-    }
-    el.className = type || "";
-    el.textContent = msg;
-  }
-
-  async function ensureDataReady(){
-    const st = appState();
-
-    if((!Array.isArray(st.cariler) || !st.cariler.length) && typeof loadCariler === "function"){
-      try{ await loadCariler(); }catch(e){ console.warn(PATCH_ID, "loadCariler", e); }
-    }
-
-    if(typeof hydrateLiveSyncCaches === "function"){
-      try{ await hydrateLiveSyncCaches(); }catch(e){ console.warn(PATCH_ID, "hydrate", e); }
-    }
-
-    return Array.isArray(appState().cariler) && appState().cariler.length > 0 && !!window.supabaseClient;
-  }
-
-  async function runWhenReady(){
-    if(localStorage.getItem(DONE_KEY) === "done"){
-      setStatus("ok", "2026 sözleşme işlemi daha önce tamamlandı.");
-      setTimeout(()=>{ try{ document.getElementById("auto2026Status")?.remove(); }catch(e){} }, 7000);
-      return;
-    }
-
-    for(let i=1; i<=18; i++){
-      const ready = await ensureDataReady();
-
-      if(ready && typeof window.alkamRun2026ContractsOnce === "function"){
-        setStatus("warn", "2026 sözleşme işlemi başlatılıyor...");
-        await window.alkamRun2026ContractsOnce();
-        return;
-      }
-
-      setStatus("warn", "2026 sözleşme işlemi veri bekliyor... deneme " + i + "/18");
-      await new Promise(r => setTimeout(r, 5000));
-    }
-
-    setStatus("err", "2026 sözleşme işlemi başlatılamadı: cari/Supabase hazır değil. Sayfayı Ctrl+F5 yap.");
-  }
-
-  document.addEventListener("DOMContentLoaded", function(){
-    setTimeout(runWhenReady, 2500);
-  });
-
-  console.info(PATCH_ID + " aktif.");
+  document.addEventListener("DOMContentLoaded",()=>{tekilButonlar(); setTimeout(tekilButonlar,700); setTimeout(calis,2500);});
+  const obs = new MutationObserver(()=>{ clearTimeout(window.__alkamTekil); window.__alkamTekil=setTimeout(tekilButonlar,120); });
+  document.addEventListener("DOMContentLoaded",()=>{try{obs.observe(document.body,{childList:true,subtree:true})}catch(e){}});
 })();
 </script>
 
