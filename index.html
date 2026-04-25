@@ -8577,5 +8577,74 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 })();
 </script>
 
+
+<script>
+/* ALKAM MAIN STABLE - 2026 AUTO READY RETRY FIX */
+(function(){
+  const PATCH_ID = "ALKAM_MAIN_STABLE_2026_AUTO_READY_RETRY_FIX_20260425";
+  const DONE_KEY = "alkam_2026_contracts_auto_done_v3";
+
+  function appState(){
+    try{ if(typeof state !== "undefined" && state) return state; }catch(e){}
+    if(window.state) return window.state;
+    return {};
+  }
+
+  function setStatus(type, msg){
+    let el = document.getElementById("auto2026Status");
+    if(!el){
+      el = document.createElement("div");
+      el.id = "auto2026Status";
+      document.body.appendChild(el);
+    }
+    el.className = type || "";
+    el.textContent = msg;
+  }
+
+  async function ensureDataReady(){
+    const st = appState();
+
+    if((!Array.isArray(st.cariler) || !st.cariler.length) && typeof loadCariler === "function"){
+      try{ await loadCariler(); }catch(e){ console.warn(PATCH_ID, "loadCariler", e); }
+    }
+
+    if(typeof hydrateLiveSyncCaches === "function"){
+      try{ await hydrateLiveSyncCaches(); }catch(e){ console.warn(PATCH_ID, "hydrate", e); }
+    }
+
+    return Array.isArray(appState().cariler) && appState().cariler.length > 0 && !!window.supabaseClient;
+  }
+
+  async function runWhenReady(){
+    if(localStorage.getItem(DONE_KEY) === "done"){
+      setStatus("ok", "2026 sözleşme işlemi daha önce tamamlandı.");
+      setTimeout(()=>{ try{ document.getElementById("auto2026Status")?.remove(); }catch(e){} }, 7000);
+      return;
+    }
+
+    for(let i=1; i<=18; i++){
+      const ready = await ensureDataReady();
+
+      if(ready && typeof window.alkamRun2026ContractsOnce === "function"){
+        setStatus("warn", "2026 sözleşme işlemi başlatılıyor...");
+        await window.alkamRun2026ContractsOnce();
+        return;
+      }
+
+      setStatus("warn", "2026 sözleşme işlemi veri bekliyor... deneme " + i + "/18");
+      await new Promise(r => setTimeout(r, 5000));
+    }
+
+    setStatus("err", "2026 sözleşme işlemi başlatılamadı: cari/Supabase hazır değil. Sayfayı Ctrl+F5 yap.");
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(runWhenReady, 2500);
+  });
+
+  console.info(PATCH_ID + " aktif.");
+})();
+</script>
+
 </body>
 </html>
