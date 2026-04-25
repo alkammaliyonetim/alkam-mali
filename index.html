@@ -8271,5 +8271,518 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 })();
 </script>
 
+
+<style>
+/* ALKAM ALWAYS VISIBLE AUDIT TRAIL V1 */
+#alkamAuditTrailPanel{
+  position:fixed;
+  right:18px;
+  bottom:18px;
+  z-index:99999;
+  width:430px;
+  max-width:calc(100vw - 36px);
+  background:rgba(255,255,255,.96);
+  border:1px solid #dbe5f3;
+  border-radius:18px;
+  box-shadow:0 20px 50px rgba(15,23,42,.18);
+  overflow:hidden;
+  backdrop-filter:blur(12px);
+  font-family:Arial, Helvetica, sans-serif;
+}
+#alkamAuditTrailPanel.minimized .audit-body{display:none}
+#alkamAuditTrailPanel .audit-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 14px;
+  background:linear-gradient(135deg,#071a3a,#0f3674);
+  color:#fff;
+}
+#alkamAuditTrailPanel .audit-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:900;
+  font-size:14px;
+  letter-spacing:.01em;
+}
+#alkamAuditTrailPanel .audit-title span{
+  display:inline-flex;
+  width:10px;
+  height:10px;
+  border-radius:999px;
+  background:#22c55e;
+  box-shadow:0 0 0 4px rgba(34,197,94,.18);
+}
+#alkamAuditTrailPanel .audit-controls{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+#alkamAuditTrailPanel .audit-btn{
+  border:1px solid rgba(255,255,255,.24);
+  background:rgba(255,255,255,.12);
+  color:#fff;
+  border-radius:10px;
+  padding:5px 8px;
+  cursor:pointer;
+  font-size:11px;
+  font-weight:900;
+}
+#alkamAuditTrailPanel .audit-body{padding:12px 14px 14px}
+#alkamAuditTrailPanel .audit-last{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px;
+  align-items:center;
+  padding:10px 12px;
+  border:1px solid #e2e8f0;
+  background:#f8fbff;
+  border-radius:14px;
+  margin-bottom:10px;
+}
+#alkamAuditTrailPanel .audit-last .audit-main{
+  font-size:13px;
+  font-weight:900;
+  color:#0f172a;
+  line-height:1.25;
+}
+#alkamAuditTrailPanel .audit-last .audit-sub{
+  font-size:11px;
+  color:#64748b;
+  margin-top:3px;
+  font-weight:800;
+}
+#alkamAuditTrailPanel .audit-status{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  padding:6px 9px;
+  font-size:10px;
+  font-weight:900;
+  border:1px solid #dbeafe;
+  background:#eff6ff;
+  color:#1d4ed8;
+  white-space:nowrap;
+}
+#alkamAuditTrailPanel .audit-status.ok{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
+#alkamAuditTrailPanel .audit-status.warn{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
+#alkamAuditTrailPanel .audit-status.err{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+#alkamAuditTrailPanel .audit-list{
+  max-height:190px;
+  overflow:auto;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+#alkamAuditTrailPanel .audit-row{
+  display:grid;
+  grid-template-columns:84px 1fr auto;
+  gap:8px;
+  align-items:start;
+  padding:8px 9px;
+  border:1px solid #eef2f7;
+  border-radius:12px;
+  background:#fff;
+}
+#alkamAuditTrailPanel .audit-time{
+  font-size:10px;
+  color:#64748b;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+#alkamAuditTrailPanel .audit-action{
+  font-size:11px;
+  color:#172033;
+  font-weight:900;
+  line-height:1.25;
+}
+#alkamAuditTrailPanel .audit-detail{
+  font-size:10px;
+  color:#64748b;
+  margin-top:2px;
+  font-weight:700;
+  line-height:1.25;
+}
+#alkamAuditTrailPanel .audit-mini-status{
+  font-size:9px;
+  padding:4px 6px;
+  border-radius:999px;
+  font-weight:900;
+  white-space:nowrap;
+}
+#alkamAuditTrailPanel .audit-mini-status.ok{background:#dcfce7;color:#166534}
+#alkamAuditTrailPanel .audit-mini-status.warn{background:#ffedd5;color:#9a3412}
+#alkamAuditTrailPanel .audit-mini-status.err{background:#fee2e2;color:#991b1b}
+#alkamAuditTrailPanel .audit-foot{
+  margin-top:10px;
+  padding-top:9px;
+  border-top:1px dashed #dbe5f3;
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size:10px;
+  color:#64748b;
+  font-weight:800;
+}
+#alkamAuditTrailDashboardCard{
+  margin-top:16px;
+  border:1px solid #dbe5f3;
+  border-radius:18px;
+  background:linear-gradient(180deg,#ffffff,#f8fbff);
+  box-shadow:0 14px 34px rgba(15,23,42,.06);
+  padding:16px;
+}
+#alkamAuditTrailDashboardCard .audit-dash-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:12px;
+}
+#alkamAuditTrailDashboardCard h3{
+  margin:0;
+  font-size:18px;
+  font-weight:900;
+  color:#071a3a;
+}
+#alkamAuditTrailDashboardCard .audit-dash-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+#alkamAuditTrailDashboardCard .audit-dash-metric{
+  padding:11px 12px;
+  border:1px solid #e2e8f0;
+  border-radius:14px;
+  background:#fff;
+}
+#alkamAuditTrailDashboardCard .audit-dash-metric .k{
+  font-size:10px;
+  color:#64748b;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+#alkamAuditTrailDashboardCard .audit-dash-metric .v{
+  margin-top:5px;
+  font-size:15px;
+  color:#0f172a;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+@media(max-width:900px){
+  #alkamAuditTrailPanel{left:12px;right:12px;bottom:12px;width:auto}
+  #alkamAuditTrailDashboardCard .audit-dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+<script>
+/* ALKAM ALWAYS VISIBLE AUDIT TRAIL V1 */
+(function(){
+  const PATCH_ID = "ALKAM_ALWAYS_VISIBLE_AUDIT_TRAIL_V1_20260425";
+  const LOG_KEY = "alkam_audit_trail_v1";
+  const MAX_LOGS = 80;
+  let saveProbeTimer = null;
+
+  function nowTR(){
+    return new Date().toLocaleString("tr-TR", {
+      year:"numeric", month:"2-digit", day:"2-digit",
+      hour:"2-digit", minute:"2-digit", second:"2-digit"
+    });
+  }
+
+  function shortTime(iso){
+    try{
+      return new Date(iso).toLocaleString("tr-TR", {
+        day:"2-digit", month:"2-digit",
+        hour:"2-digit", minute:"2-digit", second:"2-digit"
+      });
+    }catch(e){ return "-"; }
+  }
+
+  function readLogs(){
+    try{
+      const arr = JSON.parse(localStorage.getItem(LOG_KEY) || "[]");
+      return Array.isArray(arr) ? arr : [];
+    }catch(e){ return []; }
+  }
+
+  function writeLogs(logs){
+    try{ localStorage.setItem(LOG_KEY, JSON.stringify((logs || []).slice(0, MAX_LOGS))); }catch(e){}
+  }
+
+  function statusClass(status){
+    const s = String(status || "").toLocaleLowerCase("tr-TR");
+    if(s.includes("hata") || s.includes("başarısız") || s.includes("failed") || s.includes("error")) return "err";
+    if(s.includes("bekliyor") || s.includes("lokal") || s.includes("local") || s.includes("pending")) return "warn";
+    return "ok";
+  }
+
+  function safeText(v){
+    return String(v ?? "").replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+
+  window.alkamAuditLog = function(action, status="Kaydedildi", detail="", payload={}){
+    const item = {
+      id: "AUD-" + Date.now() + "-" + Math.random().toString(16).slice(2),
+      at: new Date().toISOString(),
+      action: String(action || "İşlem"),
+      status: String(status || "Kaydedildi"),
+      detail: String(detail || ""),
+      payload: payload || {}
+    };
+    const logs = readLogs();
+    logs.unshift(item);
+    writeLogs(logs);
+    renderAuditTrail();
+    return item;
+  };
+
+  function lastLog(){
+    const logs = readLogs();
+    return logs[0] || null;
+  }
+
+  function summarize(){
+    const logs = readLogs();
+    const todayKey = new Date().toISOString().slice(0,10);
+    const today = logs.filter(x => String(x.at || "").slice(0,10) === todayKey);
+    const saved = logs.filter(x => statusClass(x.status) === "ok").length;
+    const warn = logs.filter(x => statusClass(x.status) === "warn").length;
+    const err = logs.filter(x => statusClass(x.status) === "err").length;
+    return { total:logs.length, today:today.length, saved, warn, err };
+  }
+
+  function ensurePanel(){
+    if(document.getElementById("alkamAuditTrailPanel")) return;
+    const panel = document.createElement("div");
+    panel.id = "alkamAuditTrailPanel";
+    panel.innerHTML = `
+      <div class="audit-head">
+        <div class="audit-title"><span></span> İşlem İzi</div>
+        <div class="audit-controls">
+          <button class="audit-btn" type="button" id="auditRefreshBtn">Yenile</button>
+          <button class="audit-btn" type="button" id="auditMinBtn">Küçült</button>
+        </div>
+      </div>
+      <div class="audit-body">
+        <div id="auditLastBox" class="audit-last"></div>
+        <div id="auditList" class="audit-list"></div>
+        <div class="audit-foot">
+          <div id="auditSummaryText">-</div>
+          <div>Son kayıt durumu</div>
+        </div>
+      </div>`;
+    document.body.appendChild(panel);
+
+    document.getElementById("auditRefreshBtn")?.addEventListener("click", renderAuditTrail);
+    document.getElementById("auditMinBtn")?.addEventListener("click", () => {
+      panel.classList.toggle("minimized");
+      const b = document.getElementById("auditMinBtn");
+      if(b) b.textContent = panel.classList.contains("minimized") ? "Aç" : "Küçült";
+    });
+  }
+
+  function renderAuditTrail(){
+    ensurePanel();
+    const logs = readLogs();
+    const last = logs[0];
+    const box = document.getElementById("auditLastBox");
+    const list = document.getElementById("auditList");
+    const summary = document.getElementById("auditSummaryText");
+
+    if(box){
+      if(last){
+        const cls = statusClass(last.status);
+        box.innerHTML = `
+          <div>
+            <div class="audit-main">${safeText(last.action)}</div>
+            <div class="audit-sub">${safeText(last.detail || "Detay yok")} · ${safeText(shortTime(last.at))}</div>
+          </div>
+          <div class="audit-status ${cls}">${safeText(last.status)}</div>`;
+      }else{
+        box.innerHTML = `
+          <div>
+            <div class="audit-main">Henüz işlem kaydı yok</div>
+            <div class="audit-sub">İlk kayıt yapıldığında burada görünecek.</div>
+          </div>
+          <div class="audit-status warn">Bekliyor</div>`;
+      }
+    }
+
+    if(list){
+      list.innerHTML = logs.slice(0, 10).map(x => {
+        const cls = statusClass(x.status);
+        return `<div class="audit-row">
+          <div class="audit-time">${safeText(shortTime(x.at))}</div>
+          <div>
+            <div class="audit-action">${safeText(x.action)}</div>
+            <div class="audit-detail">${safeText(x.detail || "-")}</div>
+          </div>
+          <div class="audit-mini-status ${cls}">${safeText(x.status)}</div>
+        </div>`;
+      }).join("") || `<div class="audit-row"><div class="audit-time">-</div><div><div class="audit-action">Kayıt bekleniyor</div><div class="audit-detail">İşlem yapılınca liste dolacak.</div></div><div class="audit-mini-status warn">Bekliyor</div></div>`;
+    }
+
+    if(summary){
+      const s = summarize();
+      summary.textContent = `Bugün ${s.today} işlem · Toplam ${s.total} · Hata ${s.err}`;
+    }
+
+    renderDashboardAuditCard();
+  }
+
+  function ensureDashboardCard(){
+    const pageTitle = document.getElementById("pageTitle");
+    if(!pageTitle) return null;
+    const currentTitle = String(pageTitle.textContent || "").toLocaleLowerCase("tr-TR");
+    if(!currentTitle.includes("dashboard")) return null;
+
+    const main = document.querySelector(".main") || document.querySelector("main") || document.body;
+    if(!main) return null;
+
+    let card = document.getElementById("alkamAuditTrailDashboardCard");
+    if(!card){
+      card = document.createElement("div");
+      card.id = "alkamAuditTrailDashboardCard";
+      const firstSection = main.querySelector(".section, .card, .panel");
+      if(firstSection && firstSection.parentElement){
+        firstSection.parentElement.insertBefore(card, firstSection.nextSibling);
+      }else{
+        main.appendChild(card);
+      }
+    }
+    return card;
+  }
+
+  function renderDashboardAuditCard(){
+    const card = ensureDashboardCard();
+    if(!card) return;
+    const logs = readLogs();
+    const last = logs[0];
+    const s = summarize();
+    card.innerHTML = `
+      <div class="audit-dash-head">
+        <div>
+          <h3>İşlem İzi</h3>
+          <div style="font-size:12px;color:#64748b;font-weight:800;margin-top:3px">Son kayıt, senkron ve işlem durumları burada kalıcı takip edilir.</div>
+        </div>
+        <button class="btn btn-soft" type="button" onclick="window.alkamAuditLog('Manuel Kontrol', 'Kaydedildi', 'İşlem izi manuel kontrol edildi')">Kontrol Kaydı At</button>
+      </div>
+      <div class="audit-dash-grid">
+        <div class="audit-dash-metric"><div class="k">Son İşlem</div><div class="v">${safeText(last?.action || "-")}</div></div>
+        <div class="audit-dash-metric"><div class="k">Durum</div><div class="v">${safeText(last?.status || "Bekliyor")}</div></div>
+        <div class="audit-dash-metric"><div class="k">Saat / Tarih</div><div class="v">${safeText(last ? shortTime(last.at) : "-")}</div></div>
+        <div class="audit-dash-metric"><div class="k">Bugünkü İşlem</div><div class="v">${s.today}</div></div>
+      </div>`;
+  }
+
+  function wrapFunction(name, beforeAction, afterAction){
+    try{
+      const fn = window[name] || eval(name);
+      if(typeof fn !== "function" || fn.__alkamAuditWrapped) return false;
+      const wrapped = async function(){
+        if(beforeAction) window.alkamAuditLog(beforeAction, "Bekliyor", "İşlem başlatıldı");
+        try{
+          const out = fn.apply(this, arguments);
+          const resolved = out && typeof out.then === "function" ? await out : out;
+          if(afterAction) window.alkamAuditLog(afterAction, "Kaydedildi", "İşlem tamamlandı");
+          return resolved;
+        }catch(e){
+          window.alkamAuditLog(afterAction || beforeAction || name, "Hata", e?.message || String(e));
+          throw e;
+        }
+      };
+      wrapped.__alkamAuditWrapped = true;
+      window[name] = wrapped;
+      try{ eval(name + " = window[name]"); }catch(e){}
+      return true;
+    }catch(e){ return false; }
+  }
+
+  function wrapPersistence(){
+    // Local defter kayıtları
+    wrapFunction("persistLedger", null, "Yerel Defter Kaydı");
+
+    // Supabase/live kayıt fonksiyonu
+    try{
+      const fn = window.upsertLiveRow || (typeof upsertLiveRow !== "undefined" ? upsertLiveRow : null);
+      if(typeof fn === "function" && !fn.__alkamAuditWrapped){
+        const wrapped = async function(table, row){
+          window.alkamAuditLog("Supabase Kayıt Gönderimi", "Bekliyor", `${table || "-"} tablosuna gönderiliyor`);
+          try{
+            const out = await fn.apply(this, arguments);
+            window.alkamAuditLog("Supabase Kayıt", "Kaydedildi", `${table || "-"} tablosuna yazıldı`);
+            return out;
+          }catch(e){
+            window.alkamAuditLog("Supabase Kayıt", "Hata", e?.message || String(e));
+            throw e;
+          }
+        };
+        wrapped.__alkamAuditWrapped = true;
+        window.upsertLiveRow = wrapped;
+        try{ upsertLiveRow = window.upsertLiveRow; }catch(e){}
+      }
+    }catch(e){}
+
+    // Önemli işlem fonksiyonları
+    wrapFunction("saveCariMovementEditModal", "Cari Hareket Düzenleme", "Cari Hareket Kaydı");
+    wrapFunction("saveSelectedCariBulkAccruals", "Toplu Tahakkuk", "Toplu Tahakkuk Kaydı");
+    wrapFunction("saveSelectedCariTahsilat", "Cari Tahsilat", "Cari Tahsilat Kaydı");
+    wrapFunction("alkam2026CiftKayitTemizle", "2026 Çift Kayıt Temizliği", "2026 Temizlik Kaydı");
+  }
+
+  function probeRecentSave(){
+    clearTimeout(saveProbeTimer);
+    saveProbeTimer = setTimeout(() => {
+      const last = lastLog();
+      const now = Date.now();
+      const lastTime = last ? new Date(last.at).getTime() : 0;
+      if(!last || now - lastTime > 120000){
+        // Ekran açık ve kayıt mekanizması hazır bilgisini çok sık basma.
+        const marker = sessionStorage.getItem("alkam_audit_ready_marker");
+        if(!marker){
+          sessionStorage.setItem("alkam_audit_ready_marker", "1");
+          window.alkamAuditLog("Sistem Hazır", "Kaydedildi", "İşlem izi aktif. Kayıtlar saat/tarih ile takip ediliyor.");
+        }
+      }
+    }, 1200);
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    ensurePanel();
+    renderAuditTrail();
+    wrapPersistence();
+    probeRecentSave();
+
+    setTimeout(wrapPersistence, 1000);
+    setTimeout(wrapPersistence, 3000);
+    setTimeout(renderAuditTrail, 600);
+    setTimeout(renderAuditTrail, 1800);
+  });
+
+  const obs = new MutationObserver(function(){
+    clearTimeout(window.__alkamAuditTrailRenderTimer);
+    window.__alkamAuditTrailRenderTimer = setTimeout(function(){
+      wrapPersistence();
+      renderAuditTrail();
+    }, 220);
+  });
+
+  document.addEventListener("DOMContentLoaded", function(){
+    try{ obs.observe(document.body, {childList:true, subtree:true}); }catch(e){}
+  });
+
+  window.alkamAuditClear = function(){
+    writeLogs([]);
+    window.alkamAuditLog("İşlem İzi Temizlendi", "Kaydedildi", "Eski loglar temizlendi.");
+  };
+
+  console.info(PATCH_ID + " aktif.");
+})();
+</script>
+
 </body>
 </html>
