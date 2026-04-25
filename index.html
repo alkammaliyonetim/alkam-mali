@@ -8239,548 +8239,250 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 
 
 
+
+<style>
+/* ALKAM BUSINESS AUDIT + STRICT APRIL ACCRUAL V2 */
+#alkamBusinessAuditPanel{
+  position:fixed;right:18px;bottom:18px;z-index:99999;width:470px;max-width:calc(100vw - 36px);
+  background:rgba(255,255,255,.97);border:1px solid #dbe5f3;border-radius:18px;
+  box-shadow:0 22px 55px rgba(15,23,42,.20);overflow:hidden;backdrop-filter:blur(12px);
+  font-family:Arial,Helvetica,sans-serif;
+}
+#alkamBusinessAuditPanel.minimized .audit-body{display:none}
+#alkamBusinessAuditPanel .audit-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;
+  background:linear-gradient(135deg,#071a3a,#0f3674);color:#fff;
+}
+#alkamBusinessAuditPanel .audit-title{display:flex;align-items:center;gap:8px;font-weight:900;font-size:14px}
+#alkamBusinessAuditPanel .audit-dot{width:10px;height:10px;border-radius:999px;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.18)}
+#alkamBusinessAuditPanel .audit-btn{
+  border:1px solid rgba(255,255,255,.24);background:rgba(255,255,255,.12);color:#fff;border-radius:10px;
+  padding:5px 8px;cursor:pointer;font-size:11px;font-weight:900;
+}
+#alkamBusinessAuditPanel .audit-body{padding:12px 14px 14px}
+#alkamBusinessAuditPanel .audit-last{
+  padding:11px 12px;border:1px solid #e2e8f0;background:#f8fbff;border-radius:14px;margin-bottom:10px;
+}
+#alkamBusinessAuditPanel .audit-last-title{font-size:13px;font-weight:900;color:#0f172a;line-height:1.25}
+#alkamBusinessAuditPanel .audit-last-sub{font-size:11px;color:#64748b;margin-top:5px;font-weight:800}
+#alkamBusinessAuditPanel .audit-list{max-height:235px;overflow:auto;display:flex;flex-direction:column;gap:7px}
+#alkamBusinessAuditPanel .audit-row{
+  display:grid;grid-template-columns:82px 1fr auto;gap:8px;align-items:start;padding:8px 9px;
+  border:1px solid #eef2f7;border-radius:12px;background:#fff;
+}
+#alkamBusinessAuditPanel .audit-time{font-size:10px;color:#64748b;font-weight:900;font-variant-numeric:tabular-nums}
+#alkamBusinessAuditPanel .audit-action{font-size:11px;color:#172033;font-weight:900;line-height:1.25}
+#alkamBusinessAuditPanel .audit-detail{font-size:10px;color:#64748b;margin-top:2px;font-weight:700;line-height:1.25}
+#alkamBusinessAuditPanel .audit-status{font-size:9px;padding:4px 6px;border-radius:999px;font-weight:900;white-space:nowrap}
+#alkamBusinessAuditPanel .audit-status.ok{background:#dcfce7;color:#166534}
+#alkamBusinessAuditPanel .audit-status.warn{background:#ffedd5;color:#9a3412}
+#alkamBusinessAuditPanel .audit-status.err{background:#fee2e2;color:#991b1b}
+#alkamBusinessAuditPanel .audit-foot{
+  margin-top:10px;padding-top:9px;border-top:1px dashed #dbe5f3;display:flex;justify-content:space-between;gap:8px;
+  font-size:10px;color:#64748b;font-weight:800;
+}
+#alkamAuditTrailDashboardCard{
+  margin-top:16px;border:1px solid #dbe5f3;border-radius:18px;background:linear-gradient(180deg,#ffffff,#f8fbff);
+  box-shadow:0 14px 34px rgba(15,23,42,.06);padding:16px;
+}
+#alkamAuditTrailDashboardCard .audit-dash-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+#alkamAuditTrailDashboardCard h3{margin:0;font-size:18px;font-weight:900;color:#071a3a}
+#alkamAuditTrailDashboardCard .audit-dash-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#alkamAuditTrailDashboardCard .audit-dash-metric{padding:11px 12px;border:1px solid #e2e8f0;border-radius:14px;background:#fff}
+#alkamAuditTrailDashboardCard .audit-dash-metric .k{font-size:10px;color:#64748b;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+#alkamAuditTrailDashboardCard .audit-dash-metric .v{margin-top:5px;font-size:15px;color:#0f172a;font-weight:900;font-variant-numeric:tabular-nums}
+@media(max-width:900px){
+  #alkamBusinessAuditPanel{left:12px;right:12px;bottom:12px;width:auto}
+  #alkamAuditTrailDashboardCard .audit-dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
 <script>
-/* ALKAM FINAL DEDUPE CONTRACT RUNTIME */
+/* ALKAM BUSINESS AUDIT + STRICT APRIL ACCRUAL V2 */
 (function(){
-  const CONTRACTS_2026=[{"name": "Ahmet Samanlı As Optik", "fee": 10000}, {"name": "Ali Başol", "fee": 4000}, {"name": "Alparslan", "fee": 5500}, {"name": "Artekol", "fee": 9000}, {"name": "Ayyıldız", "fee": 10000}, {"name": "Bayramoğulları", "fee": 20000}, {"name": "Cengaver", "fee": 12500}, {"name": "Class İn", "fee": 12500}, {"name": "Değişim Sofa", "fee": 6000}, {"name": "Dilem Mobilya", "fee": 20000}, {"name": "Elegance Furniture", "fee": 23000}, {"name": "Emre Şen", "fee": 8500}, {"name": "Ahmet Yasir Kılıç", "fee": 6500}, {"name": "Faruk Almas", "fee": 3500}, {"name": "Hacı Ahmet Tüfenk", "fee": 3000}, {"name": "Hilmi Göktürk", "fee": 7000}, {"name": "İnçev Geri Dönüşüm", "fee": 10000}, {"name": "İnegöl Elit Gıda", "fee": 12000}, {"name": "Recep Fılız", "fee": 4000}, {"name": "İsmail Beşer", "fee": 7500}, {"name": "İsmail Sakarya", "fee": 3500}, {"name": "Kare", "fee": 8500}, {"name": "Taner Maraşlı", "fee": 3000}, {"name": "Enzo Gıda Melih", "fee": 6000}, {"name": "Mert Sevil", "fee": 4500}, {"name": "Metin Pekmez", "fee": 8500}, {"name": "Mithat Tüfekçi", "fee": 6000}, {"name": "Mstyle", "fee": 6600}, {"name": "Muhsin Engin", "fee": 3250}, {"name": "Orhan Demir", "fee": 3500}, {"name": "Özdinler", "fee": 10000}, {"name": "Persa", "fee": 20000}, {"name": "Petsco", "fee": 15000}, {"name": "Reka", "fee": 10000}, {"name": "Royal", "fee": 10000}, {"name": "Sbl", "fee": 9000}, {"name": "Selçuk Evren", "fee": 5000}, {"name": "Ömer Faruk Boz", "fee": 4000}, {"name": "Muhammed Gazi", "fee": 9000}, {"name": "Solidcut", "fee": 10000}, {"name": "Suat Uyanbay", "fee": 10000}, {"name": "Tabby", "fee": 20000}, {"name": "Tekin Harun Tekin", "fee": 3000}, {"name": "Woodlent", "fee": 25000}, {"name": "Ungan", "fee": 20000}, {"name": "Yaşam", "fee": 25000}, {"name": "Yunus Emre Toptan", "fee": 4000}, {"name": "By Innovas", "fee": 7500}, {"name": "Şamil Çelik", "fee": 3500}, {"name": "Cihan Karaduman", "fee": 6000}, {"name": "Fatih Eren", "fee": 4500}, {"name": "Adem Kamacı Ozan Türk", "fee": 4000}, {"name": "Halil Esen", "fee": 3500}, {"name": "Soner Boz", "fee": 3250}, {"name": "Pınar Sevgi", "fee": 3500}, {"name": "Sedat Güzel", "fee": 6000}, {"name": "Ahmet Tamer", "fee": 3500}, {"name": "Erdinç Yokuş", "fee": 4000}, {"name": "Şule Aras", "fee": 3000}, {"name": "Vadi Döner", "fee": 4000}, {"name": "Berrak Optik Arzu Yordamlı", "fee": 4000}, {"name": "Yılmaz Kartal Hijyen Halı Yıkama", "fee": 3500}, {"name": "Çolkan Nakliyat", "fee": 10000}, {"name": "Ozan Bekke", "fee": 3500}];
-  const MONTHS_2026=[{date:"2026-01-01",ym:"2026-01",label:"OCAK 2026 YILI AYLIK MUHASEBE ÜCRETİ"},{date:"2026-02-01",ym:"2026-02",label:"ŞUBAT 2026 YILI AYLIK MUHASEBE ÜCRETİ"},{date:"2026-03-01",ym:"2026-03",label:"MART 2026 YILI AYLIK MUHASEBE ÜCRETİ"},{date:"2026-04-01",ym:"2026-04",label:"NİSAN 2026 YILI AYLIK MUHASEBE ÜCRETİ"}];
+  const AUDIT_KEY='alkam_business_audit_trail_v2';
   const LEDGER_KEY='alkam_local_ledger_v1';
+  const CONTRACTS_2026=[{"name": "Ahmet Samanlı As Optik", "fee": 10000}, {"name": "Ali Başol", "fee": 4000}, {"name": "Alparslan", "fee": 5500}, {"name": "Artekol", "fee": 9000}, {"name": "Ayyıldız", "fee": 10000}, {"name": "Bayramoğulları", "fee": 20000}, {"name": "Cengaver", "fee": 12500}, {"name": "Class İn", "fee": 12500}, {"name": "Değişim Sofa", "fee": 6000}, {"name": "Dilem Mobilya", "fee": 20000}, {"name": "Elegance Furniture", "fee": 23000}, {"name": "Emre Şen", "fee": 8500}, {"name": "Ahmet Yasir Kılıç", "fee": 6500}, {"name": "Faruk Almas", "fee": 3500}, {"name": "Hacı Ahmet Tüfenk", "fee": 3000}, {"name": "Hilmi Göktürk", "fee": 7000}, {"name": "İnçev Geri Dönüşüm", "fee": 10000}, {"name": "İnegöl Elit Gıda", "fee": 12000}, {"name": "Recep Fılız", "fee": 4000}, {"name": "İsmail Beşer", "fee": 7500}, {"name": "İsmail Sakarya", "fee": 3500}, {"name": "Kare", "fee": 8500}, {"name": "Taner Maraşlı", "fee": 3000}, {"name": "Enzo Gıda Melih", "fee": 6000}, {"name": "Mert Sevil", "fee": 4500}, {"name": "Metin Pekmez", "fee": 8500}, {"name": "Mithat Tüfekçi", "fee": 6000}, {"name": "Mstyle", "fee": 6600}, {"name": "Muhsin Engin", "fee": 3250}, {"name": "Orhan Demir", "fee": 3500}, {"name": "Özdinler", "fee": 10000}, {"name": "Persa", "fee": 20000}, {"name": "Petsco", "fee": 15000}, {"name": "Reka", "fee": 10000}, {"name": "Royal", "fee": 10000}, {"name": "Sbl", "fee": 9000}, {"name": "Selçuk Evren", "fee": 5000}, {"name": "Ömer Faruk Boz", "fee": 4000}, {"name": "Muhammed Gazi", "fee": 9000}, {"name": "Solidcut", "fee": 10000}, {"name": "Suat Uyanbay", "fee": 10000}, {"name": "Tabby", "fee": 20000}, {"name": "Tekin Harun Tekin", "fee": 3000}, {"name": "Woodlent", "fee": 25000}, {"name": "Ungan", "fee": 20000}, {"name": "Yaşam", "fee": 25000}, {"name": "Yunus Emre Toptan", "fee": 4000}, {"name": "By Innovas", "fee": 7500}, {"name": "Şamil Çelik", "fee": 3500}, {"name": "Cihan Karaduman", "fee": 6000}, {"name": "Fatih Eren", "fee": 4500}, {"name": "Adem Kamacı Ozan Türk", "fee": 4000}, {"name": "Halil Esen", "fee": 3500}, {"name": "Soner Boz", "fee": 3250}, {"name": "Pınar Sevgi", "fee": 3500}, {"name": "Sedat Güzel", "fee": 6000}, {"name": "Ahmet Tamer", "fee": 3500}, {"name": "Erdinç Yokuş", "fee": 4000}, {"name": "Şule Aras", "fee": 3000}, {"name": "Vadi Döner", "fee": 4000}, {"name": "Berrak Optik Arzu Yordamlı", "fee": 4000}, {"name": "Yılmaz Kartal Hijyen Halı Yıkama", "fee": 3500}, {"name": "Çolkan Nakliyat", "fee": 10000}, {"name": "Ozan Bekke", "fee": 3500}];
+  const MONTHS_2026=[
+    {date:"2026-01-01",ym:"2026-01",label:"OCAK 2026 YILI AYLIK MUHASEBE ÜCRETİ"},
+    {date:"2026-02-01",ym:"2026-02",label:"ŞUBAT 2026 YILI AYLIK MUHASEBE ÜCRETİ"},
+    {date:"2026-03-01",ym:"2026-03",label:"MART 2026 YILI AYLIK MUHASEBE ÜCRETİ"},
+    {date:"2026-04-01",ym:"2026-04",label:"NİSAN 2026 YILI AYLIK MUHASEBE ÜCRETİ"}
+  ];
+
   function S(){try{if(typeof state!=='undefined')return state;}catch(e){}return window.state||{};}
   function nrm(v){return String(v||'').toLocaleLowerCase('tr-TR').replace(/[ıİ]/g,'i').replace(/[ş]/g,'s').replace(/[ğ]/g,'g').replace(/[ü]/g,'u').replace(/[ö]/g,'o').replace(/[ç]/g,'c').replace(/\b(as|anonim|sirketi|şirketi|ltd|limited|şti|sti|san|tic|ticaret|sanayi|mobilya|optik|gida|gıda|tekstil|hukuk|bürosu|burosu)\b/g,' ').replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');}
-  function ledger(){try{return JSON.parse(localStorage.getItem(LEDGER_KEY)||'[]');}catch(e){return[];}}
-  function saveLedger(rows){try{localStorage.setItem(LEDGER_KEY,JSON.stringify(rows||[]));}catch(e){}}
-  function notifySafe(m){try{if(typeof notify==='function')notify(m);}catch(e){}console.log('[ALKAM 2026 DEDUPE]',m);}
+  function moneyTR(v){try{if(typeof money==='function')return money(v);}catch(e){}return Number(v||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL';}
+  function dateTR(v){try{return new Date(v).toLocaleDateString('tr-TR');}catch(e){return String(v||'-');}}
+  function stampTR(v){try{return new Date(v).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});}catch(e){return '-';}}
+  function readJson(k,def=[]){try{const x=JSON.parse(localStorage.getItem(k)||JSON.stringify(def));return Array.isArray(def)?(Array.isArray(x)?x:def):x;}catch(e){return def;}}
+  function writeJson(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+  function ledger(){return readJson(LEDGER_KEY,[]);}
+  function saveLedger(rows){writeJson(LEDGER_KEY,rows||[]);}
+  function logs(){return readJson(AUDIT_KEY,[]);}
+  function saveLogs(rows){writeJson(AUDIT_KEY,(rows||[]).slice(0,120));}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+  function statClass(s){s=String(s||'').toLowerCase();if(s.includes('hata')||s.includes('silinemedi'))return'err';if(s.includes('bekliyor'))return'warn';return'ok';}
+
+  function rowType(r){
+    const text=String((r?.movement_type||'')+' '+(r?.description||r?.content_summary||'')).toLocaleLowerCase('tr-TR');
+    if(text.includes('tahsilat')||Number(r?.credit||0)>0)return'Tahsilat';
+    if(text.includes('tahakkuk')||text.includes('muhasebe')||text.includes('satış faturası')||text.includes('satis faturasi')||Number(r?.debit||0)>0)return'Tahakkuk';
+    return String(r?.movement_type||'İşlem');
+  }
+  function sourceLabel(r){
+    const sm=String(r?.source_module||'');
+    if(sm==='manual_contract_2026')return'2026 Sözleşme Tahakkuku';
+    if(sm==='manual_tahsilat'||sm==='manual_collection')return'Manuel Tahsilat';
+    if(sm==='manual_tahakkuk'||sm==='fee_bulk_manual')return'Manuel Tahakkuk';
+    if(sm.includes('bank')||String(r?.description||'').toLocaleLowerCase('tr-TR').includes('banka'))return'Banka/Tahsilat';
+    if(sm.includes('correction'))return'Düzeltme';
+    if(sm.includes('auto')||sm==='fee_auto')return'Otomatik';
+    return 'Ana Veri';
+  }
+  function amountOf(r){
+    const t=rowType(r);
+    if(t==='Tahsilat')return Math.abs(Number(r?.credit||r?.amount||0));
+    return Math.abs(Number(r?.debit||r?.amount||0));
+  }
+  function businessSentence(r,verb='kaydedildi'){
+    const cari=String(r?.cari_name||S().cariler?.find?.(c=>String(c.cari_id)===String(r?.cari_id))?.cari_name||'Cari');
+    const amount=moneyTR(amountOf(r));
+    const date=dateTR(r?.line_date||r?.entry_date||r?.created_at||new Date());
+    const typ=rowType(r);
+    const src=sourceLabel(r);
+    return `${cari} hesabına ${amount} ${date} tarihinde ${src} / ${typ} ${verb}.`;
+  }
+  window.alkamAuditBusiness=function(action,status='Kaydedildi',detail=''){
+    const item={id:'BAUD-'+Date.now()+'-'+Math.random().toString(16).slice(2),at:new Date().toISOString(),action:String(action||'İşlem'),status:String(status||'Kaydedildi'),detail:String(detail||'')};
+    const arr=logs();arr.unshift(item);saveLogs(arr);renderAudit();return item;
+  };
+
+  function renderAudit(){
+    ensurePanel();
+    const arr=logs();
+    const last=arr[0];
+    const lastBox=document.getElementById('businessAuditLast');
+    const list=document.getElementById('businessAuditList');
+    const sum=document.getElementById('businessAuditSummary');
+    if(lastBox){
+      lastBox.innerHTML=last?`<div class="audit-last-title">${esc(last.action)}</div><div class="audit-last-sub">${esc(last.detail||'')} · ${esc(stampTR(last.at))} · <b>${esc(last.status)}</b></div>`:`<div class="audit-last-title">İşlem bekleniyor</div><div class="audit-last-sub">Tahsilat, tahakkuk, düzeltme veya silme işleminden sonra burada görünecek.</div>`;
+    }
+    if(list){
+      list.innerHTML=arr.slice(0,12).map(x=>`<div class="audit-row"><div class="audit-time">${esc(stampTR(x.at))}</div><div><div class="audit-action">${esc(x.action)}</div><div class="audit-detail">${esc(x.detail||'-')}</div></div><div class="audit-status ${statClass(x.status)}">${esc(x.status)}</div></div>`).join('')||`<div class="audit-row"><div class="audit-time">-</div><div><div class="audit-action">Kayıt yok</div><div class="audit-detail">İlk işlemde dolacak.</div></div><div class="audit-status warn">Bekliyor</div></div>`;
+    }
+    if(sum)sum.textContent=`Bugün ${arr.filter(x=>String(x.at).slice(0,10)===new Date().toISOString().slice(0,10)).length} işlem · Toplam ${arr.length} kayıt`;
+    renderDashboardAudit();
+  }
+  function ensurePanel(){
+    if(document.getElementById('alkamBusinessAuditPanel'))return;
+    const p=document.createElement('div');p.id='alkamBusinessAuditPanel';
+    p.innerHTML=`<div class="audit-head"><div class="audit-title"><span class="audit-dot"></span> İşlem İzi</div><div><button class="audit-btn" id="businessAuditRefresh" type="button">Yenile</button> <button class="audit-btn" id="businessAuditMin" type="button">Küçült</button></div></div><div class="audit-body"><div id="businessAuditLast" class="audit-last"></div><div id="businessAuditList" class="audit-list"></div><div class="audit-foot"><div id="businessAuditSummary">-</div><div>Kayıt durumu</div></div></div>`;
+    document.body.appendChild(p);
+    document.getElementById('businessAuditRefresh')?.addEventListener('click',renderAudit);
+    document.getElementById('businessAuditMin')?.addEventListener('click',()=>{p.classList.toggle('minimized');document.getElementById('businessAuditMin').textContent=p.classList.contains('minimized')?'Aç':'Küçült';});
+  }
+  function renderDashboardAudit(){
+    const pageTitle=document.getElementById('pageTitle');
+    if(!pageTitle||!String(pageTitle.textContent||'').toLocaleLowerCase('tr-TR').includes('dashboard'))return;
+    const main=document.querySelector('.main')||document.querySelector('main')||document.body;
+    let card=document.getElementById('alkamAuditTrailDashboardCard');
+    if(!card){card=document.createElement('div');card.id='alkamAuditTrailDashboardCard';main.appendChild(card);}
+    const arr=logs(),last=arr[0];
+    card.innerHTML=`<div class="audit-dash-head"><div><h3>İşlem İzi</h3><div style="font-size:12px;color:#64748b;font-weight:800;margin-top:3px">Son kaydedilen, silinen veya düzeltilen işlem burada izlenir.</div></div></div><div class="audit-dash-grid"><div class="audit-dash-metric"><div class="k">Son İşlem</div><div class="v">${esc(last?.action||'-')}</div></div><div class="audit-dash-metric"><div class="k">Durum</div><div class="v">${esc(last?.status||'Bekliyor')}</div></div><div class="audit-dash-metric"><div class="k">Saat / Tarih</div><div class="v">${esc(last?stampTR(last.at):'-')}</div></div><div class="audit-dash-metric"><div class="k">Toplam Kayıt</div><div class="v">${arr.length}</div></div></div>`;
+  }
+
   function cleanButtons(){const seen=new Set();document.querySelectorAll('.alkam-cari-toolbar button,.topbar-right button').forEach(b=>{const t=String(b.textContent||'').replace(/\s+/g,' ').trim().toLocaleLowerCase('tr-TR');if(!t)return;if(t.includes('2026 sözleşme kontrol')){b.remove();return;}if(seen.has(t))b.remove();else seen.add(t);});}
   function cariBul(c){const rows=S().cariler||[];const target=nrm(c.name);let exact=rows.find(x=>nrm(x.cari_name)===target);if(exact)return exact;let contains=rows.find(x=>{const n=nrm(x.cari_name);return n.includes(target)||target.includes(n);});if(contains)return contains;const tokens=target.split(' ').filter(x=>x.length>2);let best=null;rows.forEach(x=>{const nn=nrm(x.cari_name);const hit=tokens.filter(t=>nn.includes(t)).length;if(hit&&(!best||hit>best.hit))best={cari:x,hit};});return best&&best.hit>=Math.max(1,Math.ceil(tokens.length*.45))?best.cari:null;}
   function ymOf(r){return String(r.line_date||r.entry_date||r.created_at||'').slice(0,7);}
-  function isAccrual(r){const txt=String((r.description||r.content_summary||'')+' '+(r.movement_type||'')).toLocaleLowerCase('tr-TR');return txt.includes('tahakkuk')||txt.includes('muhasebe')||txt.includes('satış faturası')||txt.includes('satis faturasi')||Number(r.debit||r.amount||0)>0;}
   function isContract(r){return String(r.source_module||'')==='manual_contract_2026'||String(r.id||r.txn_id||r.operation_no||'').startsWith('MC2026_');}
+  function isAccrual(r){return rowType(r)==='Tahakkuk';}
   function allRowsRaw(){return[...(S().operationalLedger||[]),...(S().hareketler||[]),...(window.__liveCaches?.account_ops||[]),...ledger()];}
   function rowsFor(cariId,ym){return allRowsRaw().filter(r=>String(r.cari_id||'')===String(cariId)&&ymOf(r)===ym&&isAccrual(r));}
   function hasNonContractAccrual(cariId,ym){return rowsFor(cariId,ym).some(r=>!isContract(r));}
   function hasContractAccrual(cariId,ym){return rowsFor(cariId,ym).some(r=>isContract(r));}
   function rowId(cariId,ym,amount){return 'MC2026_'+String(cariId).replace(/[^a-zA-Z0-9]/g,'')+'_'+ym.replace('-','')+'_'+Number(amount).toFixed(0);}
-  function removeContractDuplicates(){let removed=0;const removeIds=new Set();for(const c of CONTRACTS_2026){const cari=cariBul(c);if(!cari)continue;for(const m of MONTHS_2026){const rows=rowsFor(cari.cari_id,m.ym);const non=rows.filter(r=>!isContract(r));const con=rows.filter(r=>isContract(r));if(non.length&&con.length)con.forEach(r=>removeIds.add(String(r.id||r.txn_id||r.operation_no||'')));else if(!non.length&&con.length>1)con.slice(1).forEach(r=>removeIds.add(String(r.id||r.txn_id||r.operation_no||'')));}}if(!removeIds.size)return 0;const filterFn=r=>{const id=String(r.id||r.txn_id||r.operation_no||'');return !id||!removeIds.has(id);};if(Array.isArray(S().operationalLedger)){const before=S().operationalLedger.length;S().operationalLedger=S().operationalLedger.filter(filterFn);removed+=before-S().operationalLedger.length;}const l=ledger();const nl=l.filter(filterFn);removed+=l.length-nl.length;saveLedger(nl);try{if(typeof persistLedger==='function')persistLedger();}catch(e){}return removed;}
-  async function writeAccrual(cari,c,m){if(hasNonContractAccrual(cari.cari_id,m.ym)||hasContractAccrual(cari.cari_id,m.ym))return false;const id=rowId(cari.cari_id,m.ym,c.fee);const row={id,txn_id:id,operation_no:id,cari_id:cari.cari_id,cari_name:cari.cari_name||c.name,source_module:'manual_contract_2026',movement_type:'Tahakkuk',line_date:m.date,entry_date:m.date,period_key:m.ym,description:m.label,amount:Number(c.fee),debit:Number(c.fee),credit:0,target_type:'cari',created_at:new Date().toISOString(),updated_at:new Date().toISOString()};if(!Array.isArray(S().operationalLedger))S().operationalLedger=[];S().operationalLedger.unshift(row);const l=ledger();if(!l.some(x=>String(x.id)===id))l.unshift(row);saveLedger(l);try{if(typeof upsertLiveRow==='function')await upsertLiveRow('account_ops',row);}catch(e){}return true;}
+
+  async function deleteLiveRows(ids){
+    if(!ids.length||!window.supabaseClient)return;
+    try{await supabaseClient.from('account_ops').delete().in('id',ids);}catch(e){}
+    try{await supabaseClient.from('account_ops').delete().in('txn_id',ids);}catch(e){}
+  }
+  async function removeContractDuplicates(){
+    let ids=[];let removed=0;
+    for(const c of CONTRACTS_2026){
+      const cari=cariBul(c);if(!cari)continue;
+      for(const m of MONTHS_2026){
+        const rows=rowsFor(cari.cari_id,m.ym);
+        const non=rows.filter(r=>!isContract(r));
+        const con=rows.filter(r=>isContract(r));
+        if(non.length&&con.length)con.forEach(r=>ids.push(String(r.id||r.txn_id||r.operation_no||'')));
+        else if(!non.length&&con.length>1)con.slice(1).forEach(r=>ids.push(String(r.id||r.txn_id||r.operation_no||'')));
+      }
+    }
+    ids=[...new Set(ids)].filter(Boolean);
+    if(!ids.length)return 0;
+    const filterFn=r=>!ids.includes(String(r.id||r.txn_id||r.operation_no||''));
+    if(Array.isArray(S().operationalLedger)){const b=S().operationalLedger.length;S().operationalLedger=S().operationalLedger.filter(filterFn);removed+=b-S().operationalLedger.length;}
+    if(Array.isArray(S().hareketler)){const b=S().hareketler.length;S().hareketler=S().hareketler.filter(filterFn);removed+=b-S().hareketler.length;}
+    if(Array.isArray(window.__liveCaches?.account_ops))window.__liveCaches.account_ops=window.__liveCaches.account_ops.filter(filterFn);
+    const l=ledger();const nl=l.filter(filterFn);removed+=l.length-nl.length;saveLedger(nl);
+    await deleteLiveRows(ids);
+    if(removed||ids.length)alkamAuditBusiness('2026 sözleşme çift kayıtları silindi','Kaydedildi',`${ids.length} adet çift/yanlış sözleşme tahakkuku temizlendi.`);
+    return removed||ids.length;
+  }
+
+  async function writeAccrual(cari,c,m){
+    if(hasNonContractAccrual(cari.cari_id,m.ym)||hasContractAccrual(cari.cari_id,m.ym))return false;
+    const id=rowId(cari.cari_id,m.ym,c.fee);
+    const row={id,txn_id:id,operation_no:id,cari_id:cari.cari_id,cari_name:cari.cari_name||c.name,source_module:'manual_contract_2026',movement_type:'Tahakkuk',line_date:m.date,entry_date:m.date,period_key:m.ym,description:m.label,amount:Number(c.fee),debit:Number(c.fee),credit:0,target_type:'cari',created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+    if(!Array.isArray(S().operationalLedger))S().operationalLedger=[];S().operationalLedger.unshift(row);
+    const l=ledger();if(!l.some(x=>String(x.id)===id))l.unshift(row);saveLedger(l);
+    try{if(typeof upsertLiveRow==='function')await upsertLiveRow('account_ops',row);}catch(e){}
+    alkamAuditBusiness(businessSentence(row,'kaydedildi'),'Kaydedildi','Eksik ay için otomatik oluşturuldu.');
+    return true;
+  }
+
   async function ready(){for(let i=0;i<18;i++){try{if(typeof loadCariler==='function'&&!(S().cariler||[]).length)await loadCariler();}catch(e){}try{if(typeof hydrateLiveSyncCaches==='function')await hydrateLiveSyncCaches();}catch(e){}if((S().cariler||[]).length)return true;await new Promise(r=>setTimeout(r,1000));}return false;}
-  async function run(){cleanButtons();if(!(await ready()))return;let removed=removeContractDuplicates();let matched=0,created=0,ok=0,missing=[];for(const c of CONTRACTS_2026){const cari=cariBul(c);if(!cari){missing.push(c.name);continue;}matched++;for(const m of MONTHS_2026){if(hasNonContractAccrual(cari.cari_id,m.ym)||hasContractAccrual(cari.cari_id,m.ym))ok++;else if(await writeAccrual(cari,c,m))created++;}}removed+=removeContractDuplicates();try{if(typeof persistLedger==='function')persistLedger();}catch(e){}try{if(typeof loadSelectedCariHareketler==='function')await loadSelectedCariHareketler();}catch(e){}try{if(typeof renderCariList==='function')renderCariList();}catch(e){}try{if(typeof renderSelectedCariDetail==='function')renderSelectedCariDetail();}catch(e){}notifySafe('Çift 2026 tahakkuk temizliği tamam: silinen '+removed+', oluşturulan '+created+', mevcut OK '+ok+', eşleşen '+matched+'/64');}
-  window.alkam2026CiftKayitTemizle=run;
-  document.addEventListener('DOMContentLoaded',()=>{cleanButtons();setTimeout(cleanButtons,600);setTimeout(run,1500);setTimeout(run,4500);});
-  const obs=new MutationObserver(()=>{clearTimeout(window.__alkamCleanButtons);window.__alkamCleanButtons=setTimeout(cleanButtons,100);});
-  document.addEventListener('DOMContentLoaded',()=>{try{obs.observe(document.body,{childList:true,subtree:true});}catch(e){}});
-})();
-</script>
-
-
-<style>
-/* ALKAM ALWAYS VISIBLE AUDIT TRAIL V1 */
-#alkamAuditTrailPanel{
-  position:fixed;
-  right:18px;
-  bottom:18px;
-  z-index:99999;
-  width:430px;
-  max-width:calc(100vw - 36px);
-  background:rgba(255,255,255,.96);
-  border:1px solid #dbe5f3;
-  border-radius:18px;
-  box-shadow:0 20px 50px rgba(15,23,42,.18);
-  overflow:hidden;
-  backdrop-filter:blur(12px);
-  font-family:Arial, Helvetica, sans-serif;
-}
-#alkamAuditTrailPanel.minimized .audit-body{display:none}
-#alkamAuditTrailPanel .audit-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:12px 14px;
-  background:linear-gradient(135deg,#071a3a,#0f3674);
-  color:#fff;
-}
-#alkamAuditTrailPanel .audit-title{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  font-weight:900;
-  font-size:14px;
-  letter-spacing:.01em;
-}
-#alkamAuditTrailPanel .audit-title span{
-  display:inline-flex;
-  width:10px;
-  height:10px;
-  border-radius:999px;
-  background:#22c55e;
-  box-shadow:0 0 0 4px rgba(34,197,94,.18);
-}
-#alkamAuditTrailPanel .audit-controls{
-  display:flex;
-  align-items:center;
-  gap:6px;
-}
-#alkamAuditTrailPanel .audit-btn{
-  border:1px solid rgba(255,255,255,.24);
-  background:rgba(255,255,255,.12);
-  color:#fff;
-  border-radius:10px;
-  padding:5px 8px;
-  cursor:pointer;
-  font-size:11px;
-  font-weight:900;
-}
-#alkamAuditTrailPanel .audit-body{padding:12px 14px 14px}
-#alkamAuditTrailPanel .audit-last{
-  display:grid;
-  grid-template-columns:1fr auto;
-  gap:8px;
-  align-items:center;
-  padding:10px 12px;
-  border:1px solid #e2e8f0;
-  background:#f8fbff;
-  border-radius:14px;
-  margin-bottom:10px;
-}
-#alkamAuditTrailPanel .audit-last .audit-main{
-  font-size:13px;
-  font-weight:900;
-  color:#0f172a;
-  line-height:1.25;
-}
-#alkamAuditTrailPanel .audit-last .audit-sub{
-  font-size:11px;
-  color:#64748b;
-  margin-top:3px;
-  font-weight:800;
-}
-#alkamAuditTrailPanel .audit-status{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:999px;
-  padding:6px 9px;
-  font-size:10px;
-  font-weight:900;
-  border:1px solid #dbeafe;
-  background:#eff6ff;
-  color:#1d4ed8;
-  white-space:nowrap;
-}
-#alkamAuditTrailPanel .audit-status.ok{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
-#alkamAuditTrailPanel .audit-status.warn{background:#fff7ed;color:#c2410c;border-color:#fed7aa}
-#alkamAuditTrailPanel .audit-status.err{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
-#alkamAuditTrailPanel .audit-list{
-  max-height:190px;
-  overflow:auto;
-  display:flex;
-  flex-direction:column;
-  gap:7px;
-}
-#alkamAuditTrailPanel .audit-row{
-  display:grid;
-  grid-template-columns:84px 1fr auto;
-  gap:8px;
-  align-items:start;
-  padding:8px 9px;
-  border:1px solid #eef2f7;
-  border-radius:12px;
-  background:#fff;
-}
-#alkamAuditTrailPanel .audit-time{
-  font-size:10px;
-  color:#64748b;
-  font-weight:900;
-  font-variant-numeric:tabular-nums;
-}
-#alkamAuditTrailPanel .audit-action{
-  font-size:11px;
-  color:#172033;
-  font-weight:900;
-  line-height:1.25;
-}
-#alkamAuditTrailPanel .audit-detail{
-  font-size:10px;
-  color:#64748b;
-  margin-top:2px;
-  font-weight:700;
-  line-height:1.25;
-}
-#alkamAuditTrailPanel .audit-mini-status{
-  font-size:9px;
-  padding:4px 6px;
-  border-radius:999px;
-  font-weight:900;
-  white-space:nowrap;
-}
-#alkamAuditTrailPanel .audit-mini-status.ok{background:#dcfce7;color:#166534}
-#alkamAuditTrailPanel .audit-mini-status.warn{background:#ffedd5;color:#9a3412}
-#alkamAuditTrailPanel .audit-mini-status.err{background:#fee2e2;color:#991b1b}
-#alkamAuditTrailPanel .audit-foot{
-  margin-top:10px;
-  padding-top:9px;
-  border-top:1px dashed #dbe5f3;
-  display:flex;
-  justify-content:space-between;
-  gap:8px;
-  font-size:10px;
-  color:#64748b;
-  font-weight:800;
-}
-#alkamAuditTrailDashboardCard{
-  margin-top:16px;
-  border:1px solid #dbe5f3;
-  border-radius:18px;
-  background:linear-gradient(180deg,#ffffff,#f8fbff);
-  box-shadow:0 14px 34px rgba(15,23,42,.06);
-  padding:16px;
-}
-#alkamAuditTrailDashboardCard .audit-dash-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  margin-bottom:12px;
-}
-#alkamAuditTrailDashboardCard h3{
-  margin:0;
-  font-size:18px;
-  font-weight:900;
-  color:#071a3a;
-}
-#alkamAuditTrailDashboardCard .audit-dash-grid{
-  display:grid;
-  grid-template-columns:repeat(4,minmax(0,1fr));
-  gap:10px;
-}
-#alkamAuditTrailDashboardCard .audit-dash-metric{
-  padding:11px 12px;
-  border:1px solid #e2e8f0;
-  border-radius:14px;
-  background:#fff;
-}
-#alkamAuditTrailDashboardCard .audit-dash-metric .k{
-  font-size:10px;
-  color:#64748b;
-  font-weight:900;
-  text-transform:uppercase;
-  letter-spacing:.04em;
-}
-#alkamAuditTrailDashboardCard .audit-dash-metric .v{
-  margin-top:5px;
-  font-size:15px;
-  color:#0f172a;
-  font-weight:900;
-  font-variant-numeric:tabular-nums;
-}
-@media(max-width:900px){
-  #alkamAuditTrailPanel{left:12px;right:12px;bottom:12px;width:auto}
-  #alkamAuditTrailDashboardCard .audit-dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-</style>
-<script>
-/* ALKAM ALWAYS VISIBLE AUDIT TRAIL V1 */
-(function(){
-  const PATCH_ID = "ALKAM_ALWAYS_VISIBLE_AUDIT_TRAIL_V1_20260425";
-  const LOG_KEY = "alkam_audit_trail_v1";
-  const MAX_LOGS = 80;
-  let saveProbeTimer = null;
-
-  function nowTR(){
-    return new Date().toLocaleString("tr-TR", {
-      year:"numeric", month:"2-digit", day:"2-digit",
-      hour:"2-digit", minute:"2-digit", second:"2-digit"
-    });
+  async function runContracts(){
+    cleanButtons();if(!(await ready()))return;
+    let removed=await removeContractDuplicates();let matched=0,created=0,ok=0,missing=[];
+    for(const c of CONTRACTS_2026){const cari=cariBul(c);if(!cari){missing.push(c.name);continue;}matched++;for(const m of MONTHS_2026){if(hasNonContractAccrual(cari.cari_id,m.ym)||hasContractAccrual(cari.cari_id,m.ym))ok++;else if(await writeAccrual(cari,c,m))created++;}}
+    removed+=await removeContractDuplicates();
+    try{if(typeof persistLedger==='function')persistLedger();}catch(e){}
+    try{if(typeof loadSelectedCariHareketler==='function')await loadSelectedCariHareketler();}catch(e){}
+    try{if(typeof renderCariList==='function')renderCariList();}catch(e){}
+    try{if(typeof renderSelectedCariDetail==='function')renderSelectedCariDetail();}catch(e){}
+    if(created||removed)alkamAuditBusiness('Ocak-Nisan 2026 tahakkuk kontrolü tamamlandı','Kaydedildi',`Oluşturulan ${created}, silinen ${removed}, mevcut OK ${ok}, eşleşen ${matched}/64.`);
   }
 
-  function shortTime(iso){
+  function wrapUpsert(){
     try{
-      return new Date(iso).toLocaleString("tr-TR", {
-        day:"2-digit", month:"2-digit",
-        hour:"2-digit", minute:"2-digit", second:"2-digit"
-      });
-    }catch(e){ return "-"; }
-  }
-
-  function readLogs(){
-    try{
-      const arr = JSON.parse(localStorage.getItem(LOG_KEY) || "[]");
-      return Array.isArray(arr) ? arr : [];
-    }catch(e){ return []; }
-  }
-
-  function writeLogs(logs){
-    try{ localStorage.setItem(LOG_KEY, JSON.stringify((logs || []).slice(0, MAX_LOGS))); }catch(e){}
-  }
-
-  function statusClass(status){
-    const s = String(status || "").toLocaleLowerCase("tr-TR");
-    if(s.includes("hata") || s.includes("başarısız") || s.includes("failed") || s.includes("error")) return "err";
-    if(s.includes("bekliyor") || s.includes("lokal") || s.includes("local") || s.includes("pending")) return "warn";
-    return "ok";
-  }
-
-  function safeText(v){
-    return String(v ?? "").replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  }
-
-  window.alkamAuditLog = function(action, status="Kaydedildi", detail="", payload={}){
-    const item = {
-      id: "AUD-" + Date.now() + "-" + Math.random().toString(16).slice(2),
-      at: new Date().toISOString(),
-      action: String(action || "İşlem"),
-      status: String(status || "Kaydedildi"),
-      detail: String(detail || ""),
-      payload: payload || {}
-    };
-    const logs = readLogs();
-    logs.unshift(item);
-    writeLogs(logs);
-    renderAuditTrail();
-    return item;
-  };
-
-  function lastLog(){
-    const logs = readLogs();
-    return logs[0] || null;
-  }
-
-  function summarize(){
-    const logs = readLogs();
-    const todayKey = new Date().toISOString().slice(0,10);
-    const today = logs.filter(x => String(x.at || "").slice(0,10) === todayKey);
-    const saved = logs.filter(x => statusClass(x.status) === "ok").length;
-    const warn = logs.filter(x => statusClass(x.status) === "warn").length;
-    const err = logs.filter(x => statusClass(x.status) === "err").length;
-    return { total:logs.length, today:today.length, saved, warn, err };
-  }
-
-  function ensurePanel(){
-    if(document.getElementById("alkamAuditTrailPanel")) return;
-    const panel = document.createElement("div");
-    panel.id = "alkamAuditTrailPanel";
-    panel.innerHTML = `
-      <div class="audit-head">
-        <div class="audit-title"><span></span> İşlem İzi</div>
-        <div class="audit-controls">
-          <button class="audit-btn" type="button" id="auditRefreshBtn">Yenile</button>
-          <button class="audit-btn" type="button" id="auditMinBtn">Küçült</button>
-        </div>
-      </div>
-      <div class="audit-body">
-        <div id="auditLastBox" class="audit-last"></div>
-        <div id="auditList" class="audit-list"></div>
-        <div class="audit-foot">
-          <div id="auditSummaryText">-</div>
-          <div>Son kayıt durumu</div>
-        </div>
-      </div>`;
-    document.body.appendChild(panel);
-
-    document.getElementById("auditRefreshBtn")?.addEventListener("click", renderAuditTrail);
-    document.getElementById("auditMinBtn")?.addEventListener("click", () => {
-      panel.classList.toggle("minimized");
-      const b = document.getElementById("auditMinBtn");
-      if(b) b.textContent = panel.classList.contains("minimized") ? "Aç" : "Küçült";
-    });
-  }
-
-  function renderAuditTrail(){
-    ensurePanel();
-    const logs = readLogs();
-    const last = logs[0];
-    const box = document.getElementById("auditLastBox");
-    const list = document.getElementById("auditList");
-    const summary = document.getElementById("auditSummaryText");
-
-    if(box){
-      if(last){
-        const cls = statusClass(last.status);
-        box.innerHTML = `
-          <div>
-            <div class="audit-main">${safeText(last.action)}</div>
-            <div class="audit-sub">${safeText(last.detail || "Detay yok")} · ${safeText(shortTime(last.at))}</div>
-          </div>
-          <div class="audit-status ${cls}">${safeText(last.status)}</div>`;
-      }else{
-        box.innerHTML = `
-          <div>
-            <div class="audit-main">Henüz işlem kaydı yok</div>
-            <div class="audit-sub">İlk kayıt yapıldığında burada görünecek.</div>
-          </div>
-          <div class="audit-status warn">Bekliyor</div>`;
-      }
-    }
-
-    if(list){
-      list.innerHTML = logs.slice(0, 10).map(x => {
-        const cls = statusClass(x.status);
-        return `<div class="audit-row">
-          <div class="audit-time">${safeText(shortTime(x.at))}</div>
-          <div>
-            <div class="audit-action">${safeText(x.action)}</div>
-            <div class="audit-detail">${safeText(x.detail || "-")}</div>
-          </div>
-          <div class="audit-mini-status ${cls}">${safeText(x.status)}</div>
-        </div>`;
-      }).join("") || `<div class="audit-row"><div class="audit-time">-</div><div><div class="audit-action">Kayıt bekleniyor</div><div class="audit-detail">İşlem yapılınca liste dolacak.</div></div><div class="audit-mini-status warn">Bekliyor</div></div>`;
-    }
-
-    if(summary){
-      const s = summarize();
-      summary.textContent = `Bugün ${s.today} işlem · Toplam ${s.total} · Hata ${s.err}`;
-    }
-
-    renderDashboardAuditCard();
-  }
-
-  function ensureDashboardCard(){
-    const pageTitle = document.getElementById("pageTitle");
-    if(!pageTitle) return null;
-    const currentTitle = String(pageTitle.textContent || "").toLocaleLowerCase("tr-TR");
-    if(!currentTitle.includes("dashboard")) return null;
-
-    const main = document.querySelector(".main") || document.querySelector("main") || document.body;
-    if(!main) return null;
-
-    let card = document.getElementById("alkamAuditTrailDashboardCard");
-    if(!card){
-      card = document.createElement("div");
-      card.id = "alkamAuditTrailDashboardCard";
-      const firstSection = main.querySelector(".section, .card, .panel");
-      if(firstSection && firstSection.parentElement){
-        firstSection.parentElement.insertBefore(card, firstSection.nextSibling);
-      }else{
-        main.appendChild(card);
-      }
-    }
-    return card;
-  }
-
-  function renderDashboardAuditCard(){
-    const card = ensureDashboardCard();
-    if(!card) return;
-    const logs = readLogs();
-    const last = logs[0];
-    const s = summarize();
-    card.innerHTML = `
-      <div class="audit-dash-head">
-        <div>
-          <h3>İşlem İzi</h3>
-          <div style="font-size:12px;color:#64748b;font-weight:800;margin-top:3px">Son kayıt, senkron ve işlem durumları burada kalıcı takip edilir.</div>
-        </div>
-        <button class="btn btn-soft" type="button" onclick="window.alkamAuditLog('Manuel Kontrol', 'Kaydedildi', 'İşlem izi manuel kontrol edildi')">Kontrol Kaydı At</button>
-      </div>
-      <div class="audit-dash-grid">
-        <div class="audit-dash-metric"><div class="k">Son İşlem</div><div class="v">${safeText(last?.action || "-")}</div></div>
-        <div class="audit-dash-metric"><div class="k">Durum</div><div class="v">${safeText(last?.status || "Bekliyor")}</div></div>
-        <div class="audit-dash-metric"><div class="k">Saat / Tarih</div><div class="v">${safeText(last ? shortTime(last.at) : "-")}</div></div>
-        <div class="audit-dash-metric"><div class="k">Bugünkü İşlem</div><div class="v">${s.today}</div></div>
-      </div>`;
-  }
-
-  function wrapFunction(name, beforeAction, afterAction){
-    try{
-      const fn = window[name] || eval(name);
-      if(typeof fn !== "function" || fn.__alkamAuditWrapped) return false;
-      const wrapped = async function(){
-        if(beforeAction) window.alkamAuditLog(beforeAction, "Bekliyor", "İşlem başlatıldı");
+      const fn=window.upsertLiveRow||(typeof upsertLiveRow!=='undefined'?upsertLiveRow:null);
+      if(typeof fn!=='function'||fn.__businessAuditWrapped)return;
+      const wrapped=async function(table,row){
         try{
-          const out = fn.apply(this, arguments);
-          const resolved = out && typeof out.then === "function" ? await out : out;
-          if(afterAction) window.alkamAuditLog(afterAction, "Kaydedildi", "İşlem tamamlandı");
-          return resolved;
+          const out=await fn.apply(this,arguments);
+          if(String(table)==='account_ops'&&row&&row.cari_id){
+            alkamAuditBusiness(businessSentence(row,'kaydedildi'),'Kaydedildi',sourceLabel(row));
+          }
+          return out;
         }catch(e){
-          window.alkamAuditLog(afterAction || beforeAction || name, "Hata", e?.message || String(e));
+          if(row&&row.cari_id)alkamAuditBusiness(businessSentence(row,'kaydedilemedi'),'Hata',e?.message||String(e));
           throw e;
         }
       };
-      wrapped.__alkamAuditWrapped = true;
-      window[name] = wrapped;
-      try{ eval(name + " = window[name]"); }catch(e){}
-      return true;
-    }catch(e){ return false; }
-  }
-
-  function wrapPersistence(){
-    // Local defter kayıtları
-    wrapFunction("persistLedger", null, "Yerel Defter Kaydı");
-
-    // Supabase/live kayıt fonksiyonu
-    try{
-      const fn = window.upsertLiveRow || (typeof upsertLiveRow !== "undefined" ? upsertLiveRow : null);
-      if(typeof fn === "function" && !fn.__alkamAuditWrapped){
-        const wrapped = async function(table, row){
-          window.alkamAuditLog("Supabase Kayıt Gönderimi", "Bekliyor", `${table || "-"} tablosuna gönderiliyor`);
-          try{
-            const out = await fn.apply(this, arguments);
-            window.alkamAuditLog("Supabase Kayıt", "Kaydedildi", `${table || "-"} tablosuna yazıldı`);
-            return out;
-          }catch(e){
-            window.alkamAuditLog("Supabase Kayıt", "Hata", e?.message || String(e));
-            throw e;
-          }
-        };
-        wrapped.__alkamAuditWrapped = true;
-        window.upsertLiveRow = wrapped;
-        try{ upsertLiveRow = window.upsertLiveRow; }catch(e){}
-      }
+      wrapped.__businessAuditWrapped=true;window.upsertLiveRow=wrapped;try{upsertLiveRow=window.upsertLiveRow;}catch(e){}
     }catch(e){}
-
-    // Önemli işlem fonksiyonları
-    wrapFunction("saveCariMovementEditModal", "Cari Hareket Düzenleme", "Cari Hareket Kaydı");
-    wrapFunction("saveSelectedCariBulkAccruals", "Toplu Tahakkuk", "Toplu Tahakkuk Kaydı");
-    wrapFunction("saveSelectedCariTahsilat", "Cari Tahsilat", "Cari Tahsilat Kaydı");
-    wrapFunction("alkam2026CiftKayitTemizle", "2026 Çift Kayıt Temizliği", "2026 Temizlik Kaydı");
   }
 
-  function probeRecentSave(){
-    clearTimeout(saveProbeTimer);
-    saveProbeTimer = setTimeout(() => {
-      const last = lastLog();
-      const now = Date.now();
-      const lastTime = last ? new Date(last.at).getTime() : 0;
-      if(!last || now - lastTime > 120000){
-        // Ekran açık ve kayıt mekanizması hazır bilgisini çok sık basma.
-        const marker = sessionStorage.getItem("alkam_audit_ready_marker");
-        if(!marker){
-          sessionStorage.setItem("alkam_audit_ready_marker", "1");
-          window.alkamAuditLog("Sistem Hazır", "Kaydedildi", "İşlem izi aktif. Kayıtlar saat/tarih ile takip ediliyor.");
-        }
-      }
-    }, 1200);
-  }
-
-  document.addEventListener("DOMContentLoaded", function(){
-    ensurePanel();
-    renderAuditTrail();
-    wrapPersistence();
-    probeRecentSave();
-
-    setTimeout(wrapPersistence, 1000);
-    setTimeout(wrapPersistence, 3000);
-    setTimeout(renderAuditTrail, 600);
-    setTimeout(renderAuditTrail, 1800);
+  document.addEventListener('DOMContentLoaded',()=>{
+    ensurePanel();renderAudit();wrapUpsert();cleanButtons();
+    if(!sessionStorage.getItem('alkam_business_audit_ready')){sessionStorage.setItem('alkam_business_audit_ready','1');alkamAuditBusiness('İşlem izi aktif','Kaydedildi','Bundan sonra kayıt, silme ve düzeltmeler cari/ad/tutar/tarih ile izlenecek.');}
+    setTimeout(wrapUpsert,1000);setTimeout(runContracts,1600);setTimeout(runContracts,5000);setTimeout(renderAudit,1800);
   });
-
-  const obs = new MutationObserver(function(){
-    clearTimeout(window.__alkamAuditTrailRenderTimer);
-    window.__alkamAuditTrailRenderTimer = setTimeout(function(){
-      wrapPersistence();
-      renderAuditTrail();
-    }, 220);
-  });
-
-  document.addEventListener("DOMContentLoaded", function(){
-    try{ obs.observe(document.body, {childList:true, subtree:true}); }catch(e){}
-  });
-
-  window.alkamAuditClear = function(){
-    writeLogs([]);
-    window.alkamAuditLog("İşlem İzi Temizlendi", "Kaydedildi", "Eski loglar temizlendi.");
-  };
-
-  console.info(PATCH_ID + " aktif.");
+  const obs=new MutationObserver(()=>{clearTimeout(window.__alkamBizAuditTimer);window.__alkamBizAuditTimer=setTimeout(()=>{wrapUpsert();cleanButtons();renderAudit();},220);});
+  document.addEventListener('DOMContentLoaded',()=>{try{obs.observe(document.body,{childList:true,subtree:true});}catch(e){}});
+  window.alkam2026CiftKayitTemizle=runContracts;
 })();
 </script>
 
