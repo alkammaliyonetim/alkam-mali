@@ -7863,5 +7863,191 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 })();
 </script>
 
+
+<style>
+/* ALKAM SELECTED CARI DETAIL FIX V1 */
+#selectedCariDetail .alkam-hide-detail-metric{display:none!important}
+#selectedCariDetail .metric-mini{min-width:0!important}
+#selectedCariDetail .grid-4{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+#selectedCariDetail .alkam-period-card .k{
+  color:#1769e8!important;
+}
+#selectedCariDetail .alkam-period-card{
+  border-color:#bfdbfe!important;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%)!important;
+}
+@media(max-width:1200px){
+  #selectedCariDetail .grid-4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:720px){
+  #selectedCariDetail .grid-4{grid-template-columns:1fr!important}
+}
+</style>
+<script>
+/* ALKAM SELECTED CARI DETAIL FIX V1 */
+(function(){
+  const PATCH_ID = "ALKAM_SELECTED_CARI_DETAIL_FIX_V1_20260425";
+
+  function appState(){
+    try{ if(typeof state !== "undefined" && state) return state; }catch(e){}
+    return window.state || {};
+  }
+
+  function norm(v){
+    return String(v || "")
+      .toLocaleLowerCase("tr-TR")
+      .replace(/\s+/g," ")
+      .trim();
+  }
+
+  function num(v){
+    if(typeof v === "number") return Number.isFinite(v) ? v : 0;
+    let s = String(v ?? "").trim();
+    if(!s) return 0;
+    s = s.replace(/[^\d,.-]/g,"");
+    if(s.includes(",") && s.includes(".")) s = s.replace(/\./g,"").replace(",",".");
+    else if(s.includes(",")) s = s.replace(",",".");
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function moneyTR(v){
+    try{ if(typeof money === "function") return money(v); }catch(e){}
+    return Number(v || 0).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}) + " TL";
+  }
+
+  function monthNameTR(ym){
+    const m = Number(String(ym || "").slice(5,7));
+    return ["","OCAK","ŞUBAT","MART","NİSAN","MAYIS","HAZİRAN","TEMMUZ","AĞUSTOS","EYLÜL","EKİM","KASIM","ARALIK"][m] || "BU AY";
+  }
+
+  function activePeriodKey(){
+    // Kullanıcı şu an Nisan 2026 üzerinde çalışıyor. Sistem tarihinden de Nisan 2026 gelir.
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    if(y === 2026) return `${y}-${m}`;
+    return "2026-04";
+  }
+
+  function rowType(row){
+    const t = norm((row?.movement_type || "") + " " + (row?.description || row?.content_summary || ""));
+    if(t.includes("tahsilat") || Number(row?.credit || 0) > 0) return "tahsilat";
+    if(t.includes("tahakkuk") || t.includes("satış faturası") || t.includes("satis faturasi") || Number(row?.debit || row?.amount || 0) > 0) return "tahakkuk";
+    return "";
+  }
+
+  function allRowsForSelectedCari(){
+    const st = appState();
+    const id = st.selectedCariId;
+    const rows = [
+      ...(st.hareketler || []),
+      ...(st.operationalLedger || []),
+      ...(window.__liveCaches?.account_ops || [])
+    ];
+    const seen = new Set();
+    return rows.filter(r => {
+      if(id && String(r.cari_id || "") !== String(id)) return false;
+      const key = String(r.id || r.txn_id || r.operation_no || r.movement_id || [
+        r.cari_id,
+        r.line_date || r.entry_date,
+        r.description || r.content_summary,
+        r.amount || r.debit || r.credit
+      ].join("|"));
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  function monthTotals(ym){
+    let tahakkuk = 0, tahsilat = 0;
+    allRowsForSelectedCari().forEach(r => {
+      const rowYm = String(r.line_date || r.entry_date || r.created_at || "").slice(0,7);
+      if(rowYm !== ym) return;
+      const typ = rowType(r);
+      if(typ === "tahsilat") tahsilat += Math.abs(num(r.credit || r.amount || r.net_amount));
+      if(typ === "tahakkuk") tahakkuk += Math.abs(num(r.debit || r.amount));
+    });
+    return {tahakkuk, tahsilat};
+  }
+
+  function fixSelectedCariCards(){
+    const root = document.getElementById("selectedCariDetail");
+    if(!root) return;
+
+    // Cari kodu / yetkili / e-posta kartları bu ekranda yer kaplıyor, gizle.
+    root.querySelectorAll(".metric-mini").forEach(card => {
+      const k = norm(card.querySelector(".k,.card-label")?.textContent || "");
+      if(["cari kodu","yetkili","e-posta","e posta"].includes(k)){
+        card.classList.add("alkam-hide-detail-metric");
+      }
+    });
+
+    const ym = activePeriodKey();
+    const label = `${monthNameTR(ym)} ${String(ym).slice(0,4)} AYI`;
+    const totals = monthTotals(ym);
+
+    root.querySelectorAll(".metric-mini").forEach(card => {
+      const text = norm(card.textContent || "");
+      const kEl = card.querySelector(".k,.card-label");
+      const vEl = card.querySelector(".v,.card-value");
+      if(!kEl || !vEl) return;
+
+      const key = norm(kEl.textContent || "");
+      if(key === "bu ay" || text.includes("tahakkuk") && text.includes("tahsilat") && key.includes("bu ay")){
+        card.classList.add("alkam-period-card");
+        kEl.textContent = label;
+        vEl.innerHTML = `Tahakkuk ${moneyTR(totals.tahakkuk)}<br>Tahsilat ${moneyTR(totals.tahsilat)}`;
+      }
+    });
+  }
+
+  function wrapRender(){
+    if(window.__alkamSelectedCariDetailFixWrapped) return;
+
+    const tryWrap = (name) => {
+      try{
+        const fn = window[name] || eval(name);
+        if(typeof fn !== "function") return false;
+        const wrapped = function(){
+          const out = fn.apply(this, arguments);
+          setTimeout(fixSelectedCariCards, 0);
+          setTimeout(fixSelectedCariCards, 250);
+          return out;
+        };
+        window[name] = wrapped;
+        try{ eval(name + " = window[name]"); }catch(e){}
+        return true;
+      }catch(e){ return false; }
+    };
+
+    tryWrap("renderSelectedCariDetail");
+    tryWrap("loadSelectedCariHareketler");
+
+    window.__alkamSelectedCariDetailFixWrapped = true;
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    wrapRender();
+    fixSelectedCariCards();
+    setTimeout(fixSelectedCariCards, 400);
+    setTimeout(fixSelectedCariCards, 1200);
+    setTimeout(fixSelectedCariCards, 2600);
+  });
+
+  const obs = new MutationObserver(function(){
+    clearTimeout(window.__alkamSelectedCariDetailFixTimer);
+    window.__alkamSelectedCariDetailFixTimer = setTimeout(fixSelectedCariCards, 120);
+  });
+
+  document.addEventListener("DOMContentLoaded", function(){
+    try{ obs.observe(document.body, {childList:true, subtree:true}); }catch(e){}
+  });
+
+  console.info(PATCH_ID + " aktif.");
+})();
+</script>
+
 </body>
 </html>
