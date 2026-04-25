@@ -8501,5 +8501,81 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 })();
 </script>
 
+
+<style>
+/* ALKAM MAIN STABLE - DUPLICATE BUTTON FINAL FIX */
+.alkam-hidden-duplicate-btn{display:none!important}
+</style>
+<script>
+/* ALKAM MAIN STABLE - DUPLICATE BUTTON FINAL FIX */
+(function(){
+  const PATCH_ID = "ALKAM_MAIN_STABLE_DUPLICATE_BUTTON_FINAL_FIX_20260425";
+
+  function normalizeButtonText(btn){
+    return String(btn?.textContent || "").replace(/\s+/g," ").trim().toLocaleLowerCase("tr-TR");
+  }
+
+  function dedupeButtonsIn(container){
+    if(!container) return;
+    const seen = new Set();
+    Array.from(container.querySelectorAll("button")).forEach(btn => {
+      const txt = normalizeButtonText(btn);
+      if(!txt) return;
+
+      // Sadece aynı container içindeki aynı isimli butonları teke indir.
+      // Özellikle "Düzeltme Merkezi" ikinci kez ekleniyordu.
+      if(seen.has(txt)){
+        btn.classList.add("alkam-hidden-duplicate-btn");
+        btn.remove();
+      }else{
+        seen.add(txt);
+      }
+    });
+  }
+
+  function fixDuplicateButtons(){
+    document.querySelectorAll(".alkam-cari-toolbar, .topbar-right, .btn-row").forEach(dedupeButtonsIn);
+
+    // Ek güvenlik: üstte görünen Düzeltme Merkezi butonlarından sadece ilkini bırak.
+    const correctionButtons = Array.from(document.querySelectorAll("button"))
+      .filter(b => normalizeButtonText(b) === "düzeltme merkezi");
+
+    correctionButtons.forEach((btn, idx) => {
+      if(idx > 0){
+        btn.classList.add("alkam-hidden-duplicate-btn");
+        btn.remove();
+      }
+    });
+
+    // Tek seferlik 2026 butonu artık kullanılmayacak.
+    Array.from(document.querySelectorAll("button")).forEach(btn => {
+      const t = normalizeButtonText(btn);
+      if(t.includes("2026 sözleşme kontrol")){
+        btn.classList.add("alkam-hidden-duplicate-btn");
+        btn.remove();
+      }
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    fixDuplicateButtons();
+    setTimeout(fixDuplicateButtons, 300);
+    setTimeout(fixDuplicateButtons, 1000);
+    setTimeout(fixDuplicateButtons, 2500);
+  });
+
+  const obs = new MutationObserver(function(){
+    clearTimeout(window.__alkamDuplicateFinalTimer);
+    window.__alkamDuplicateFinalTimer = setTimeout(fixDuplicateButtons, 120);
+  });
+
+  document.addEventListener("DOMContentLoaded", function(){
+    try{ obs.observe(document.body, {childList:true, subtree:true}); }catch(e){}
+  });
+
+  console.info(PATCH_ID + " aktif.");
+})();
+</script>
+
 </body>
 </html>
