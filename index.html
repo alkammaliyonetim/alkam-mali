@@ -6803,6 +6803,690 @@ if(localStorage.getItem(SESSION_KEY)==="ok"){openApp(); refreshAll()}else{setCon
 (function(){
   const navIcons = {
     dashboard:"🏠", cariler:"👥", cari_toplu_tahakkuk:"🧾", hesaplar:"🏦
+<style>
+/* ALKAM v118 - SAĞ PANEL SEKME + PREMIUM CARİ DETAY */
+#selectedCariDetail{
+  background:#fff !important;
+}
+.alkam-v118-tabs{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px;
+  margin:12px 0 14px;
+  border:1px solid #e2e8f0;
+  background:#f8fbff;
+  border-radius:14px;
+  position:sticky;
+  top:0;
+  z-index:12;
+}
+.alkam-v118-tab{
+  border:0;
+  background:transparent;
+  color:#475569;
+  height:36px;
+  padding:0 14px;
+  border-radius:10px;
+  font-weight:900;
+  font-size:12px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+}
+.alkam-v118-tab.active{
+  background:#1769e8;
+  color:#fff;
+  box-shadow:0 8px 18px rgba(23,105,232,.20);
+}
+.alkam-v118-panel{
+  display:none;
+}
+.alkam-v118-panel.active{
+  display:block;
+}
+.alkam-v118-summary{
+  display:grid;
+  gap:12px;
+}
+.alkam-v118-ledger{
+  min-width:0;
+  overflow:hidden;
+}
+.alkam-v118-ledger-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  margin:0 0 12px;
+  padding:12px;
+  border:1px solid #e2e8f0;
+  background:linear-gradient(180deg,#fbfdff,#f8fbff);
+  border-radius:14px;
+}
+.alkam-v118-ledger-title{
+  font-size:15px;
+  font-weight:900;
+  color:#0f1f3d;
+}
+.alkam-v118-legend{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.alkam-v118-legend-item{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  font-size:11px;
+  font-weight:900;
+  color:#475569;
+  padding:7px 9px;
+  border-radius:999px;
+  border:1px solid #e2e8f0;
+  background:#fff;
+}
+.alkam-v118-dot{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+}
+.alkam-v118-dot.red{background:#ef4444}
+.alkam-v118-dot.green{background:#10b981}
+.alkam-v118-dot.blue{background:#3b82f6}
+
+.alkam-v118-balance-grid{
+  display:grid !important;
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  gap:12px !important;
+}
+.alkam-v118-balance-card{
+  position:relative;
+  border-radius:16px !important;
+  border:1px solid #dbeafe !important;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbff 100%) !important;
+  box-shadow:0 10px 26px rgba(15,23,42,.055) !important;
+  min-height:116px;
+  padding:18px !important;
+}
+.alkam-v118-balance-card:before{
+  content:"";
+  position:absolute;
+  inset:0 auto 0 0;
+  width:5px;
+  border-radius:16px 0 0 16px;
+  background:#1769e8;
+}
+.alkam-v118-balance-card.bakiye:before{background:#1769e8}
+.alkam-v118-balance-card.acilis:before{background:#64748b}
+.alkam-v118-balance-card.kapanis:before{background:#7c3aed}
+.alkam-v118-balance-card.buay:before{background:#f59e0b}
+.alkam-v118-balance-card .card-label{
+  font-size:11px !important;
+  letter-spacing:.08em !important;
+  color:#64748b !important;
+}
+.alkam-v118-balance-card .card-value{
+  font-size:22px !important;
+  color:#071a3d !important;
+  line-height:1.22 !important;
+}
+.alkam-v118-status-grid{
+  display:grid !important;
+  grid-template-columns:1fr 1fr 1fr !important;
+  gap:12px !important;
+}
+.alkam-v118-status-grid .card{
+  border-radius:16px !important;
+  min-height:112px;
+}
+.alkam-v118-actions{
+  padding:12px;
+  border:1px solid #e2e8f0;
+  background:#fbfdff;
+  border-radius:14px;
+  margin-bottom:12px !important;
+}
+.alkam-v118-actions .btn{
+  min-height:36px !important;
+}
+.alkam-v118-contact-card{
+  border:1px solid #e2e8f0;
+  background:#fbfdff;
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:12px;
+}
+.alkam-v118-contact-title{
+  font-size:13px;
+  font-weight:900;
+  color:#0f1f3d;
+  margin-bottom:8px;
+}
+.alkam-v118-contact-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:8px;
+}
+.alkam-v118-contact-item{
+  border:1px solid #e8eef6;
+  background:#fff;
+  border-radius:10px;
+  padding:10px;
+  min-height:62px;
+}
+.alkam-v118-contact-item .k{
+  font-size:10px;
+  font-weight:900;
+  color:#64748b;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  margin-bottom:5px;
+}
+.alkam-v118-contact-item .v{
+  font-size:12px;
+  font-weight:900;
+  color:#0f1f3d;
+  line-height:1.35;
+}
+.alkam-v118-ledger table{
+  font-size:12px !important;
+}
+.alkam-v118-ledger table th:nth-child(1){width:112px}
+.alkam-v118-ledger table th:nth-child(2){width:86px}
+.alkam-v118-ledger table th:nth-child(3){width:92px}
+.alkam-v118-ledger table th:nth-child(5),
+.alkam-v118-ledger table th:nth-child(6),
+.alkam-v118-ledger table th:nth-child(7),
+.alkam-v118-ledger table th:nth-child(8){width:104px}
+.alkam-v118-ledger table th:nth-child(9){width:98px}
+.alkam-v118-ledger table td:nth-child(5),
+.alkam-v118-ledger table td:nth-child(6),
+.alkam-v118-ledger table td:nth-child(7),
+.alkam-v118-ledger table td:nth-child(8){
+  white-space:nowrap !important;
+  font-variant-numeric:tabular-nums;
+}
+.alkam-v118-ledger table td:nth-child(4){
+  max-width:280px;
+}
+.alkam-v118-row-action .btn,
+.alkam-v118-ledger table .btn{
+  min-height:30px !important;
+  height:30px !important;
+  padding:5px 10px !important;
+  border-radius:8px !important;
+}
+@media(max-width:1450px){
+  .alkam-v118-balance-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  .alkam-v118-status-grid{grid-template-columns:1fr !important}
+  .alkam-v118-contact-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  .alkam-v118-contact-grid{grid-template-columns:1fr}
+  .alkam-v118-balance-grid{grid-template-columns:1fr !important}
+}
+</style>
+
+<script>
+/* ALKAM v118 - SAĞ PANEL SEKME + PREMIUM CARİ DETAY */
+(function(){
+  const PATCH_ID = "ALKAM_V118_SAG_PANEL_PREMIUM";
+
+  const oldRender = window.renderSelectedCariDetail;
+
+  function textOf(el){
+    return String(el?.textContent || "").trim();
+  }
+
+  function isStatementTable(table){
+    if(!table) return false;
+    const h = textOf(table.querySelector("thead") || table).toLocaleLowerCase("tr-TR");
+    return h.includes("işlem no") && h.includes("borç") && h.includes("alacak");
+  }
+
+  function setActiveTab(root, tab){
+    root.querySelectorAll(".alkam-v118-tab").forEach(b => b.classList.toggle("active", b.dataset.v118Tab === tab));
+    root.querySelectorAll(".alkam-v118-panel").forEach(p => p.classList.toggle("active", p.dataset.v118Panel === tab));
+    try{ localStorage.setItem("alkam_v118_detail_tab", tab); }catch(e){}
+  }
+
+  function classifyRows(root){
+    root.querySelectorAll("table tbody tr").forEach(tr => {
+      tr.classList.remove("row-tahakkuk","row-tahsilat","row-neutral");
+      const tx = textOf(tr).toLocaleLowerCase("tr-TR");
+      if(tx.includes("tahsilat") || tx.includes("ödeme") || tx.includes("odeme") || tx.includes("alacak")){
+        tr.classList.add("row-tahsilat");
+      }else if(tx.includes("tahakkuk") || tx.includes("borç") || tx.includes("borc")){
+        tr.classList.add("row-tahakkuk");
+      }else{
+        tr.classList.add("row-neutral");
+      }
+    });
+  }
+
+  function enhanceCards(summary){
+    const grids = Array.from(summary.querySelectorAll(":scope > .grid-4"));
+    const balanceGrid = grids.find(g => textOf(g).includes("Güncel Bakiye") && textOf(g).includes("Filtre Kapanış"));
+    if(balanceGrid){
+      balanceGrid.classList.add("alkam-v118-balance-grid");
+      balanceGrid.querySelectorAll(".card").forEach(card => {
+        const label = textOf(card.querySelector(".card-label")).toLocaleLowerCase("tr-TR");
+        card.classList.add("alkam-v118-balance-card");
+        if(label.includes("güncel")) card.classList.add("bakiye");
+        if(label.includes("açılış")) card.classList.add("acilis");
+        if(label.includes("filtre")) card.classList.add("kapanis");
+        if(label.includes("bu ay")) card.classList.add("buay");
+      });
+    }
+
+    const statusGrid = grids.find(g => textOf(g).includes("Tahsilat İstihbaratı") || textOf(g).includes("Standart Kontrol"));
+    if(statusGrid) statusGrid.classList.add("alkam-v118-status-grid");
+
+    summary.querySelectorAll(".btn-row").forEach(row => {
+      if(textOf(row).includes("Cari Tahsilat") || textOf(row).includes("Cariyi Düzenle")){
+        row.classList.add("alkam-v118-actions");
+      }
+    });
+  }
+
+  function buildContactCard(root){
+    if(root.querySelector(".alkam-v118-contact-card")) return;
+    const metrics = Array.from(root.querySelectorAll(".metric-mini"));
+    const wanted = ["Cari Kodu","Mükellef Tipi","Aktif Ücret","Son Tahakkuk","Son Tahsilat","Yetkili","E-posta"];
+    const picked = [];
+    wanted.forEach(w => {
+      const m = metrics.find(x => textOf(x.querySelector(".k")).toLocaleLowerCase("tr-TR").includes(w.toLocaleLowerCase("tr-TR")));
+      if(m && !picked.includes(m)) picked.push(m);
+    });
+    if(!picked.length) return;
+
+    const card = document.createElement("div");
+    card.className = "alkam-v118-contact-card";
+    card.innerHTML = `
+      <div class="alkam-v118-contact-title">Cari Kart Özeti</div>
+      <div class="alkam-v118-contact-grid">
+        ${picked.slice(0,8).map(m => `
+          <div class="alkam-v118-contact-item">
+            <div class="k">${(m.querySelector(".k")?.innerHTML || "")}</div>
+            <div class="v">${(m.querySelector(".v")?.innerHTML || "")}</div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+
+    const heroSub = root.querySelector(".hero-sub");
+    if(heroSub) heroSub.insertAdjacentElement("afterend", card);
+  }
+
+  function applyDetailTabs(){
+    const root = document.getElementById("selectedCariDetail");
+    if(!root || root.classList.contains("empty")) return;
+    if(root.querySelector(".alkam-v118-tabs")) {
+      classifyRows(root);
+      return;
+    }
+
+    const children = Array.from(root.children);
+    const heroName = root.querySelector(".hero-name");
+    const heroSub = root.querySelector(".hero-sub");
+
+    buildContactCard(root);
+
+    const tabs = document.createElement("div");
+    tabs.className = "alkam-v118-tabs";
+    tabs.innerHTML = `
+      <button class="alkam-v118-tab" data-v118-tab="summary">📌 Özet</button>
+      <button class="alkam-v118-tab active" data-v118-tab="ledger">📒 Cari Hareketleri</button>
+    `;
+
+    const summaryPanel = document.createElement("div");
+    summaryPanel.className = "alkam-v118-panel alkam-v118-summary";
+    summaryPanel.dataset.v118Panel = "summary";
+
+    const ledgerPanel = document.createElement("div");
+    ledgerPanel.className = "alkam-v118-panel alkam-v118-ledger active";
+    ledgerPanel.dataset.v118Panel = "ledger";
+
+    const ledgerHead = document.createElement("div");
+    ledgerHead.className = "alkam-v118-ledger-head";
+    ledgerHead.innerHTML = `
+      <div class="alkam-v118-ledger-title">Cari Hareketleri</div>
+      <div class="alkam-v118-legend">
+        <span class="alkam-v118-legend-item"><i class="alkam-v118-dot red"></i>Tahakkuk / Borç</span>
+        <span class="alkam-v118-legend-item"><i class="alkam-v118-dot green"></i>Tahsilat / Alacak</span>
+        <span class="alkam-v118-legend-item"><i class="alkam-v118-dot blue"></i>Diğer</span>
+      </div>
+    `;
+    ledgerPanel.appendChild(ledgerHead);
+
+    const keepTop = new Set([heroName, heroSub, tabs]);
+    const all = Array.from(root.children);
+    const contactCard = root.querySelector(".alkam-v118-contact-card");
+
+    // Insert tabs after contact/hero area.
+    const insertAfter = contactCard || heroSub || heroName;
+    if(insertAfter) insertAfter.insertAdjacentElement("afterend", tabs);
+    else root.prepend(tabs);
+
+    // Move nodes into panels without destroying existing event handlers.
+    Array.from(root.children).forEach(node => {
+      if(keepTop.has(node) || node.classList?.contains("alkam-v118-contact-card")) return;
+      if(node === summaryPanel || node === ledgerPanel) return;
+
+      const isLedgerFilter = node.id === "detailLedgerViewChips" || node.id === "detailDateChips";
+      const isLedgerNote = textOf(node).includes("Canlı görünüm") || textOf(node).includes("Geçmiş kayıtlar");
+      const hasStatementTable = node.matches?.("table") ? isStatementTable(node) : !!Array.from(node.querySelectorAll?.("table") || []).find(isStatementTable);
+
+      if(isLedgerFilter || isLedgerNote || hasStatementTable || node.matches?.("table")){
+        ledgerPanel.appendChild(node);
+      }else{
+        summaryPanel.appendChild(node);
+      }
+    });
+
+    root.appendChild(summaryPanel);
+    root.appendChild(ledgerPanel);
+
+    enhanceCards(summaryPanel);
+    classifyRows(ledgerPanel);
+
+    tabs.querySelectorAll(".alkam-v118-tab").forEach(btn => {
+      btn.addEventListener("click", () => setActiveTab(root, btn.dataset.v118Tab));
+    });
+
+    let tab = "ledger";
+    try{ tab = localStorage.getItem("alkam_v118_detail_tab") || "ledger"; }catch(e){}
+    setActiveTab(root, tab);
+  }
+
+  window.applyAlkamV118DetailLayout = applyDetailTabs;
+
+  if(typeof oldRender === "function"){
+    window.renderSelectedCariDetail = function(){
+      const out = oldRender.apply(this, arguments);
+      setTimeout(applyDetailTabs, 80);
+      setTimeout(applyDetailTabs, 250);
+      return out;
+    };
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(applyDetailTabs, 600);
+    setTimeout(applyDetailTabs, 1400);
+  });
+
+  const obs = new MutationObserver(function(){
+    clearTimeout(window.__alkamV118Timer);
+    window.__alkamV118Timer = setTimeout(applyDetailTabs, 160);
+  });
+
+  document.addEventListener("DOMContentLoaded", function(){
+    try{ obs.observe(document.body, {childList:true, subtree:true}); }catch(e){}
+  });
+
+  console.info(PATCH_ID + " aktif: sağ panel özet/hareket sekmeleri ve premium cari kartı.");
+})();
+</script>
+
+
+<style>
+/* ALKAM v117 - PROFESYONEL CARILER YERLEŞİM + GÖRSEL İYİLEŞTİRME */
+:root{
+  --alkam-left-col: 360px;
+  --alkam-soft-blue: #eef5ff;
+  --alkam-soft-green: #ecfdf5;
+  --alkam-soft-red: #fef2f2;
+  --alkam-soft-amber: #fff7ed;
+  --alkam-border-blue: #bfdbfe;
+  --alkam-border-green: #a7f3d0;
+  --alkam-border-red: #fecaca;
+  --alkam-shadow-soft: 0 8px 24px rgba(15,23,42,.05);
+  --alkam-shadow-card: 0 12px 32px rgba(15,23,42,.06);
+}
+
+.layout{
+  grid-template-columns: 188px 1fr !important;
+}
+.sidebar{
+  width: 188px !important;
+  min-width: 188px !important;
+  padding: 12px 10px !important;
+}
+.sidebar img{
+  max-width: 84px !important;
+}
+.brand-title{
+  font-size: 18px !important;
+}
+.brand-sub{
+  font-size: 10px !important;
+}
+.nav-btn{
+  font-size: 12px !important;
+  height: 40px !important;
+  padding: 0 10px !important;
+}
+.main{
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+}
+
+#tab-cariler > .grid-2{
+  grid-template-columns: minmax(340px, var(--alkam-left-col)) minmax(0,1fr) !important;
+  gap: 18px !important;
+  align-items: start !important;
+}
+#tab-cariler .section{
+  overflow: hidden !important;
+  border-radius: 16px !important;
+  box-shadow: var(--alkam-shadow-card) !important;
+}
+#tab-cariler .section:first-child{
+  position: sticky !important;
+  top: 84px !important;
+}
+.cari-list-scroll{
+  max-height: calc(100vh - 315px) !important;
+  padding-right: 4px !important;
+}
+.cari-detail-scroll{
+  max-height: calc(100vh - 215px) !important;
+  overflow-x: hidden !important;
+  padding-right: 2px !important;
+}
+.list-item{
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease !important;
+}
+.list-item:hover{
+  transform: none !important;
+  box-shadow: 0 8px 20px rgba(15,23,42,.05) !important;
+  border-color: #cbd5e1 !important;
+}
+.list-item.active{
+  box-shadow: 0 0 0 2px rgba(23,105,232,.16), 0 10px 24px rgba(23,105,232,.10) !important;
+}
+.card,.section,.metric-mini,.rule-box,.empty{
+  overflow: hidden !important;
+}
+.rule-box{
+  border-radius: 12px !important;
+  background: #fbfdff !important;
+}
+
+#selectedCariDetail{
+  overflow: hidden !important;
+}
+#selectedCariDetail .hero-name{
+  font-size: 24px !important;
+  line-height: 1.15 !important;
+}
+#selectedCariDetail .hero-sub{
+  color: #64748b !important;
+}
+#selectedCariDetail .grid-4{
+  gap: 10px !important;
+}
+#selectedCariDetail .metric-mini{
+  min-height: 86px !important;
+  box-shadow: none !important;
+}
+#selectedCariDetail table{
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+#selectedCariDetail table th,
+#selectedCariDetail table td{
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+  vertical-align: top !important;
+}
+#selectedCariDetail table thead th{
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1 !important;
+}
+#selectedCariDetail table tbody tr{
+  transition: background-color .15s ease, box-shadow .15s ease !important;
+}
+#selectedCariDetail table tbody tr:hover{
+  box-shadow: inset 0 0 0 9999px rgba(2,6,23,.02) !important;
+}
+#selectedCariDetail table tbody tr.row-tahakkuk{
+  background: linear-gradient(0deg, rgba(254,242,242,.72), rgba(254,242,242,.72)) !important;
+}
+#selectedCariDetail table tbody tr.row-tahsilat{
+  background: linear-gradient(0deg, rgba(236,253,245,.82), rgba(236,253,245,.82)) !important;
+}
+#selectedCariDetail table tbody tr.row-neutral{
+  background: linear-gradient(0deg, rgba(238,245,255,.50), rgba(238,245,255,.50)) !important;
+}
+#selectedCariDetail table tbody tr.row-tahakkuk td:first-child{
+  box-shadow: inset 4px 0 0 #ef4444 !important;
+}
+#selectedCariDetail table tbody tr.row-tahsilat td:first-child{
+  box-shadow: inset 4px 0 0 #10b981 !important;
+}
+#selectedCariDetail table tbody tr.row-neutral td:first-child{
+  box-shadow: inset 4px 0 0 #3b82f6 !important;
+}
+#selectedCariDetail table tbody tr.row-tahakkuk td:nth-child(5){
+  color: #b91c1c !important;
+  font-weight: 800 !important;
+}
+#selectedCariDetail table tbody tr.row-tahsilat td:nth-child(6){
+  color: #047857 !important;
+  font-weight: 800 !important;
+}
+#selectedCariDetail .btn-row,
+#selectedCariDetail .account-actions{
+  flex-wrap: wrap !important;
+}
+#selectedCariDetail .btn,
+.alkam-cari-toolbar .btn{
+  box-shadow: none !important;
+}
+#selectedCariDetail .btn:hover,
+.alkam-cari-toolbar .btn:hover{
+  transform: none !important;
+  box-shadow: 0 6px 16px rgba(15,23,42,.08) !important;
+}
+#selectedCariDetail .tag{
+  font-weight: 800 !important;
+}
+.erp-modulebar{
+  box-shadow: 0 8px 20px rgba(2,6,23,.08) !important;
+}
+.alkam-cari-toolbar{
+  margin-bottom: 14px !important;
+}
+.alkam-cari-toolbar .btn{
+  min-height: 36px !important;
+  height: 36px !important;
+}
+@media (max-width: 1280px){
+  #tab-cariler > .grid-2{
+    grid-template-columns: 1fr !important;
+  }
+  #tab-cariler .section:first-child{
+    position: relative !important;
+    top: 0 !important;
+  }
+  .layout{
+    grid-template-columns: 1fr !important;
+  }
+  .sidebar{
+    width: auto !important;
+    min-width: 0 !important;
+  }
+}
+</style>
+
+<script>
+/* ALKAM v117 - PROFESYONEL SAĞ PANEL İŞLEM RENKLENDİRME */
+(function(){
+  const PATCH_ID = "ALKAM_V117_PROFESYONEL_GORUNUM";
+
+  function classifyRows(){
+    const root = document.getElementById("selectedCariDetail");
+    if(!root) return;
+
+    const rows = root.querySelectorAll("table tbody tr");
+    rows.forEach(tr => {
+      tr.classList.remove("row-tahakkuk","row-tahsilat","row-neutral");
+      const cells = tr.querySelectorAll("td");
+      if(!cells.length) return;
+
+      const text = Array.from(cells).map(td => (td.textContent || "")).join(" ").toLocaleLowerCase("tr-TR");
+
+      if(text.includes("tahsilat") || text.includes("ödeme") || text.includes("odeme") || text.includes("collection") || text.includes("alacak")){
+        tr.classList.add("row-tahsilat");
+      }else if(text.includes("tahakkuk") || text.includes("borç") || text.includes("borc") || text.includes("accrual")){
+        tr.classList.add("row-tahakkuk");
+      }else{
+        tr.classList.add("row-neutral");
+      }
+    });
+  }
+
+  function stabilizeCards(){
+    document.querySelectorAll(".list-item,.section,.card,.metric-mini,.btn").forEach(el=>{
+      el.style.transform = "none";
+    });
+  }
+
+  function applyProfessionalLayout(){
+    classifyRows();
+    stabilizeCards();
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    setTimeout(applyProfessionalLayout, 500);
+    setTimeout(applyProfessionalLayout, 1200);
+  });
+
+  const obs = new MutationObserver(function(){
+    clearTimeout(window.__alkamV117UiTimer);
+    window.__alkamV117UiTimer = setTimeout(applyProfessionalLayout, 120);
+  });
+
+  document.addEventListener("DOMContentLoaded", function(){
+    try{ obs.observe(document.body, {childList:true, subtree:true}); }catch(e){}
+  });
+
+  console.info(PATCH_ID + " aktif: sol dar, sağ geniş, tahakkuk/tahsilat renkli profesyonel görünüm.");
+})();
+</script>
+
+
 <script>
 /* ALKAM v116 - KALICI KAYIT MERKEZI
    - Local düzenleme/silme override kayıtlarını listeler.
