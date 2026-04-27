@@ -23,6 +23,8 @@ jobs:
           LOWER=$(echo "$TEXT" | tr '[:upper:]' '[:lower:]')
           if echo "$LOWER" | grep -q "v4 kapat"; then
             echo "task=v4_kapat" >> "$GITHUB_OUTPUT"
+          elif echo "$LOWER" | grep -q "muhasebe" || echo "$LOWER" | grep -q "çekirdeği" || echo "$LOWER" | grep -q "cekirdegi" || echo "$LOWER" | grep -q "bütünlüğünü" || echo "$LOWER" | grep -q "butunlugunu"; then
+            echo "task=v5_core" >> "$GITHUB_OUTPUT"
           else
             echo "task=unknown" >> "$GITHUB_OUTPUT"
           fi
@@ -34,38 +36,126 @@ jobs:
           from pathlib import Path
           p=Path("index.html")
           txt=p.read_text(encoding="utf-8")
-          old=txt
+          for s in [
+            '<script src="alkam-v4-guard.js?v=hard-dedupe-v4"></script>\n',
+            '<script src="alkam-v4-guard.js?v=hard-dedupe-v4"></script>\r\n',
+            '<script src="alkam-v4-guard.js?v=hard-dedupe-v4"></script>'
+          ]:
+            txt=txt.replace(s,"")
+          p.write_text(txt,encoding="utf-8")
+
+      - name: Install V5 Ledger Integrity Core
+        if: steps.task.outputs.task == 'v5_core'
+        shell: python
+        run: |
+          from pathlib import Path
+
+          js = r'''
+          /* ALKAM V5 LEDGER INTEGRITY CORE - SAFE MODE */
+          (function(){
+            window.ALKAM_V5_LEDGER_INTEGRITY_ACTIVE=true;
+
+            function readJson(k,fb){try{return JSON.parse(localStorage.getItem(k)||"")||fb}catch(e){return fb}}
+            function nrm(v){return String(v||"").toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim()}
+
+            function collectAudit(){
+              var out=[];
+              Object.keys(localStorage).forEach(function(k){
+                if(k.indexOf("audit")>-1 || k.indexOf("trail")>-1 || k.indexOf("log")>-1){
+                  var v=readJson(k,[]);
+                  if(Array.isArray(v)) out=out.concat(v);
+                }
+              });
+              return out;
+            }
+
+            function scan(){
+              var findings=[];
+              var detail=document.getElementById("selectedCariDetail");
+              var text=detail?detail.innerText:"";
+              var rows=[].slice.call(document.querySelectorAll("#selectedCariDetail table tbody tr"));
+
+              collectAudit().forEach(function(a){
+                var msg=String(a.message||a.text||a.desc||a.description||a||"");
+                if(msg.toLocaleLowerCase("tr-TR").indexOf("kaydedildi")>-1){
+                  var amount=(msg.match(/[0-9\.\,]+ ?TL/i)||[""])[0].replace(" TL","");
+                  if(amount && text.indexOf(amount)===-1){
+                    findings.push("İşlem izi kaydedildi diyor ama tutar seçili cari hareketinde görünmüyor olabilir: "+msg);
+                  }
+                }
+              });
+
+              rows.forEach(function(r){
+                var t=r.innerText||"";
+                if(t && !/Ana Veri|Banka\/Tahsilat|Manuel Tahakkuk|Manuel Tahsilat|2026 Sözleşme Tahakkuku|Düzeltme|Otomatik/i.test(t)){
+                  findings.push("Kaynak sınıfı eksik/standart dışı satır: "+t.slice(0,160));
+                }
+              });
+
+              window.ALKAM_V5_FINDINGS=findings;
+              render(findings);
+              return findings;
+            }
+
+            function render(findings){
+              var box=document.getElementById("alkamV5IntegrityBox");
+              if(!box){
+                box=document.createElement("div");
+                box.id="alkamV5IntegrityBox";
+                box.style.cssText="position:fixed;right:16px;bottom:16px;z-index:99999;width:380px;max-width:calc(100vw - 32px);background:#fff;border:1px solid #dbe3ef;border-radius:16px;box-shadow:0 18px 50px rgba(15,23,42,.18);font-family:Arial,sans-serif;overflow:hidden";
+                document.body.appendChild(box);
+              }
+              box.innerHTML='<div style="padding:12px 14px;background:#071a3a;color:white;font-weight:900;font-size:13px">ALKAM V5 Muhasebe Çekirdeği</div>'+
+              '<div style="padding:12px 14px;font-size:12px;line-height:1.45;color:#334155"><b>Durum:</b> '+(findings.length?findings.length+" kontrol gerekli":"kritik uyarı yok")+'<br><b>Kural:</b> Ana Defter → Cari Hareket → Bakiye → İşlem İzi aynı kaynaktan doğrulanır.</div>'+
+              (findings.length?'<div style="max-height:170px;overflow:auto;border-top:1px solid #e2e8f0">'+findings.slice(0,6).map(function(f){return '<div style="padding:10px 14px;border-bottom:1px solid #eef2f7;font-size:11px">'+f+'</div>'}).join("")+'</div>':'')+
+              '<div style="display:flex;gap:8px;padding:10px 14px;border-top:1px solid #e2e8f0"><button onclick="window.ALKAM_V5_SCAN&&window.ALKAM_V5_SCAN()" style="border:0;background:#1769e8;color:white;border-radius:9px;padding:8px 10px;font-weight:900;cursor:pointer">Kontrol Et</button><button onclick="document.getElementById(\'alkamV5IntegrityBox\').style.display=\'none\'" style="border:0;background:#e8eef9;color:#0f172a;border-radius:9px;padding:8px 10px;font-weight:900;cursor:pointer">Gizle</button></div>';
+            }
+
+            window.ALKAM_V5_SCAN=scan;
+            function boot(){setTimeout(scan,1500);document.addEventListener("click",function(){setTimeout(scan,700)},true)}
+            if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
+          })();
+          '''
+
+          Path("alkam-v5-ledger-integrity.js").write_text(js,encoding="utf-8")
+
+          p=Path("index.html")
+          txt=p.read_text(encoding="utf-8")
           txt=txt.replace('<script src="alkam-v4-guard.js?v=hard-dedupe-v4"></script>\n','')
           txt=txt.replace('<script src="alkam-v4-guard.js?v=hard-dedupe-v4"></script>\r\n','')
           txt=txt.replace('<script src="alkam-v4-guard.js?v=hard-dedupe-v4"></script>','')
-          if txt!=old:
-            p.write_text(txt,encoding="utf-8")
+
+          tag='<script src="alkam-v5-ledger-integrity.js?v=v5-core"></script>'
+          if "alkam-v5-ledger-integrity.js" not in txt:
+            txt=txt.replace("</body>",tag+"\n</body>") if "</body>" in txt else txt+"\n"+tag
+
+          p.write_text(txt,encoding="utf-8")
 
       - name: Commit changes
-        if: steps.task.outputs.task == 'v4_kapat'
+        if: steps.task.outputs.task == 'v4_kapat' || steps.task.outputs.task == 'v5_core'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git commit -m "Disable ALKAM V4 guard from phone task" || echo "No changes to commit"
+          git add index.html alkam-v5-ledger-integrity.js
+          git commit -m "Update ALKAM phone agent task result" || echo "No changes to commit"
           git push
 
-      - name: Close issue
-        if: steps.task.outputs.task == 'v4_kapat'
+      - name: Close issue success
+        if: steps.task.outputs.task == 'v4_kapat' || steps.task.outputs.task == 'v5_core'
         uses: actions/github-script@v7
         with:
           script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: '✅ ALKAM ajan görevi tamamlandı. V4 guard kapatıldı.'
-            });
-            await github.rest.issues.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              state: 'closed',
-              state_reason: 'completed'
-            });
+            const task='${{ steps.task.outputs.task }}';
+            const msg=task==='v5_core'
+              ? '✅ ALKAM V5 Muhasebe Çekirdeği Bütünlük Katmanı eklendi. Siteyi Ctrl+F5 ile yenileyin.'
+              : '✅ ALKAM ajan görevi tamamlandı. V4 guard kapatıldı.';
+            await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:context.issue.number,body:msg});
+            await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:context.issue.number,state:'closed',state_reason:'completed'});
+
+      - name: Unknown task comment
+        if: steps.task.outputs.task == 'unknown'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:context.issue.number,body:'⚠️ Komut tanınmadı. Örnek: ALKAM-GOREV: Muhasebe çekirdeği bütünlüğünü düzelt'});
