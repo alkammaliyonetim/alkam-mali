@@ -1,0 +1,71 @@
+name: ALKAM Phone Agent
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  handle-task:
+    if: contains(github.event.issue.title, 'ALKAM-GOREV') || contains(github.event.issue.title, 'ALKAM-GÖREV')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect task
+        id: task
+        shell: bash
+        run: |
+          TEXT="${{ github.event.issue.title }} ${{ github.event.issue.body }}"
+          LOWER=$(echo "$TEXT" | tr '[:upper:]' '[:lower:]')
+          if echo "$LOWER" | grep -q "v4 kapat"; then
+            echo "task=v4_kapat" >> "$GITHUB_OUTPUT"
+          else
+            echo "task=unknown" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Disable V4 guard
+        if: steps.task.outputs.task == 'v4_kapat'
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path("index.html")
+          txt=p.read_text(encoding="utf-8")
+          old=txt
+          txt=txt.replace('<script src="alkam-v4-guard.js?v=hard-dedupe-v4"></script>\n','')
+          txt=txt.replace('<script src="alkam-v4-guard.js?v=hard-dedupe-v4"></script>\r\n','')
+          txt=txt.replace('<script src="alkam-v4-guard.js?v=hard-dedupe-v4"></script>','')
+          if txt!=old:
+            p.write_text(txt,encoding="utf-8")
+
+      - name: Commit changes
+        if: steps.task.outputs.task == 'v4_kapat'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Disable ALKAM V4 guard from phone task" || echo "No changes to commit"
+          git push
+
+      - name: Close issue
+        if: steps.task.outputs.task == 'v4_kapat'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '✅ ALKAM ajan görevi tamamlandı. V4 guard kapatıldı.'
+            });
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed',
+              state_reason: 'completed'
+            });
