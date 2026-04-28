@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALKAM Cari Temizleme</title>
+<style>
+body{margin:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a}
+.wrap{max-width:780px;margin:40px auto;padding:22px}
+.card{background:white;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 20px 60px rgba(15,23,42,.12);overflow:hidden}
+.head{background:#071a3a;color:white;padding:20px}
+h1{margin:0;font-size:24px}
+p{line-height:1.55}
+.body{padding:20px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.box{border:1px solid #e2e8f0;background:#fbfdff;border-radius:14px;padding:14px}
+.k{font-size:11px;color:#64748b;font-weight:900;text-transform:uppercase}
+.v{font-size:24px;font-weight:900;margin-top:6px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+button{border:0;border-radius:12px;padding:12px 14px;font-weight:900;cursor:pointer}
+.dark{background:#071a3a;color:white}.red{background:#dc2626;color:white}.blue{background:#1769e8;color:white}
+.list{max-height:240px;overflow:auto;border:1px solid #e2e8f0;border-radius:14px;background:white;margin-top:12px}
+.row{padding:9px 12px;border-bottom:1px solid #eef2f7;font-size:13px;font-weight:800;color:#475569}
+.warn{background:#fff7f7;border:1px solid #fecaca;color:#991b1b;padding:13px;border-radius:14px;font-weight:800}
+.ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:13px;border-radius:14px;font-weight:800;margin-top:12px;display:none}
+@media(max-width:720px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="head">
+      <h1>ALKAM Cari Temizleme Merkezi</h1>
+      <p>Bu sayfa index.html dosyasına dokunmaz. Sadece aynı domain içindeki yerel cari/hareket verilerini temizler.</p>
+    </div>
+    <div class="body">
+      <div class="warn">
+        Önce yedek indir. Sonra sadece carileri temizle. Hesaplar boşsa zaten etkilenmeyecek.
+      </div>
+
+      <div class="grid">
+        <div class="box"><div class="k">Toplam local anahtar</div><div class="v" id="totalKeys">0</div></div>
+        <div class="box"><div class="k">Cari aday anahtar</div><div class="v" id="cariKeys">0</div></div>
+        <div class="box"><div class="k">Durum</div><div class="v" id="status">Hazır</div></div>
+      </div>
+
+      <b>Temizlenecek aday anahtarlar:</b>
+      <div class="list" id="keyList"></div>
+
+      <div class="btns">
+        <button class="dark" onclick="downloadBackup()">Yedeği İndir</button>
+        <button class="red" onclick="resetCariOnly()">Sadece Carileri Temizle</button>
+        <button class="blue" onclick="goHome()">Programa Dön</button>
+      </div>
+
+      <div class="ok" id="okBox"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const exactKeys = [
+  "alkam_local_cari_collections_v1",
+  "alkam_local_ledger_v1",
+  "alkam_local_movement_test_v1"
+];
+
+const candidateWords = [
+  "cari","cariler","mukellef","mükellef","customer","client",
+  "ledger","statement","hareket","movement","collection","collections"
+];
+
+const keepWords = [
+  "session","login","auth","password","token","theme","setting",
+  "ALKAM_YEDEK","backup","archive"
+];
+
+function low(x){return String(x||"").toLocaleLowerCase("tr-TR")}
+function isKeep(k){return keepWords.some(w=>low(k).includes(low(w)))}
+function isCandidate(k){
+  if(isKeep(k)) return false;
+  return exactKeys.includes(k) || candidateWords.some(w=>low(k).includes(low(w)));
+}
+function keys(){return Object.keys(localStorage).filter(isCandidate).sort()}
+
+function render(){
+  const ks=keys();
+  document.getElementById("totalKeys").textContent=Object.keys(localStorage).length;
+  document.getElementById("cariKeys").textContent=ks.length;
+  document.getElementById("keyList").innerHTML = ks.length
+    ? ks.map(k=>"<div class='row'>"+k+"</div>").join("")
+    : "<div class='row'>Aday anahtar bulunamadı.</div>";
+}
+function stamp(){return new Date().toISOString().replace(/[:.]/g,"-")}
+function makeBackup(){
+  const all={created_at:new Date().toISOString(),reason:"ALKAM sadece cari temizleme öncesi yedek",localStorage:{}};
+  Object.keys(localStorage).forEach(k=>all.localStorage[k]=localStorage.getItem(k));
+  return all;
+}
+function downloadBackup(){
+  const data=makeBackup();
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="ALKAM_YEDEK_CARI_TEMIZLEME_"+stamp()+".json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+function resetCariOnly(){
+  const ks=keys();
+  const ok=confirm("Sadece cari/cari hareket yerel verisi boş dizi yapılacak. Devam?");
+  if(!ok) return;
+
+  const typed=prompt("Son onay için CARI yaz:");
+  if(String(typed||"").trim().toUpperCase()!=="CARI"){
+    alert("İptal edildi.");
+    return;
+  }
+
+  const backupKey="ALKAM_YEDEK_SADECE_CARI_"+stamp();
+  localStorage.setItem(backupKey, JSON.stringify(makeBackup()));
+
+  exactKeys.forEach(k=>localStorage.setItem(k,"[]"));
+  ks.forEach(k=>{
+    if(!exactKeys.includes(k)) localStorage.setItem(k,"[]");
+  });
+
+  localStorage.setItem("ALKAM_SADECE_CARI_RESET_STATUS", JSON.stringify({
+    at:new Date().toISOString(),
+    backup_key:backupKey,
+    reset_keys:[...new Set(exactKeys.concat(ks))]
+  }));
+
+  document.getElementById("status").textContent="Temizlendi";
+  document.getElementById("okBox").style.display="block";
+  document.getElementById("okBox").innerHTML="Cari verisi temizlendi. Şimdi Programa Dön butonuna bas.";
+  render();
+}
+function goHome(){
+  location.href="/";
+}
+render();
+</script>
+</body>
+</html>
