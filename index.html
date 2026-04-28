@@ -8242,7 +8242,7 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 
 
 <style>
-/* ALKAM BUSINESS AUDIT + HARD DEDUPE V4 */
+/* ALKAM BUSINESS AUDIT + TAHSILAT TAHAKKUK SEPARATE V3 */
 #alkamBusinessAuditPanel{
   position:fixed;right:18px;bottom:18px;z-index:99999;width:470px;max-width:calc(100vw - 36px);
   background:rgba(255,255,255,.97);border:1px solid #dbe5f3;border-radius:18px;
@@ -8298,9 +8298,9 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 }
 </style>
 <script>
-/* ALKAM BUSINESS AUDIT + HARD DEDUPE V4 */
+/* ALKAM BUSINESS AUDIT + TAHSILAT TAHAKKUK SEPARATE V3 */
 (function(){
-  const AUDIT_KEY='alkam_business_audit_trail_v4';
+  const AUDIT_KEY='alkam_business_audit_trail_v3';
   const LEDGER_KEY='alkam_local_ledger_v1';
   const CONTRACTS_2026=[{"name": "Ahmet Samanlı As Optik", "fee": 10000}, {"name": "Ali Başol", "fee": 4000}, {"name": "Alparslan", "fee": 5500}, {"name": "Artekol", "fee": 9000}, {"name": "Ayyıldız", "fee": 10000}, {"name": "Bayramoğulları", "fee": 20000}, {"name": "Cengaver", "fee": 12500}, {"name": "Class İn", "fee": 12500}, {"name": "Değişim Sofa", "fee": 6000}, {"name": "Dilem Mobilya", "fee": 20000}, {"name": "Elegance Furniture", "fee": 23000}, {"name": "Emre Şen", "fee": 8500}, {"name": "Ahmet Yasir Kılıç", "fee": 6500}, {"name": "Faruk Almas", "fee": 3500}, {"name": "Hacı Ahmet Tüfenk", "fee": 3000}, {"name": "Hilmi Göktürk", "fee": 7000}, {"name": "İnçev Geri Dönüşüm", "fee": 10000}, {"name": "İnegöl Elit Gıda", "fee": 12000}, {"name": "Recep Fılız", "fee": 4000}, {"name": "İsmail Beşer", "fee": 7500}, {"name": "İsmail Sakarya", "fee": 3500}, {"name": "Kare", "fee": 8500}, {"name": "Taner Maraşlı", "fee": 3000}, {"name": "Enzo Gıda Melih", "fee": 6000}, {"name": "Mert Sevil", "fee": 4500}, {"name": "Metin Pekmez", "fee": 8500}, {"name": "Mithat Tüfekçi", "fee": 6000}, {"name": "Mstyle", "fee": 6600}, {"name": "Muhsin Engin", "fee": 3250}, {"name": "Orhan Demir", "fee": 3500}, {"name": "Özdinler", "fee": 10000}, {"name": "Persa", "fee": 20000}, {"name": "Petsco", "fee": 15000}, {"name": "Reka", "fee": 10000}, {"name": "Royal", "fee": 10000}, {"name": "Sbl", "fee": 9000}, {"name": "Selçuk Evren", "fee": 5000}, {"name": "Ömer Faruk Boz", "fee": 4000}, {"name": "Muhammed Gazi", "fee": 9000}, {"name": "Solidcut", "fee": 10000}, {"name": "Suat Uyanbay", "fee": 10000}, {"name": "Tabby", "fee": 20000}, {"name": "Tekin Harun Tekin", "fee": 3000}, {"name": "Woodlent", "fee": 25000}, {"name": "Ungan", "fee": 20000}, {"name": "Yaşam", "fee": 25000}, {"name": "Yunus Emre Toptan", "fee": 4000}, {"name": "By Innovas", "fee": 7500}, {"name": "Şamil Çelik", "fee": 3500}, {"name": "Cihan Karaduman", "fee": 6000}, {"name": "Fatih Eren", "fee": 4500}, {"name": "Adem Kamacı Ozan Türk", "fee": 4000}, {"name": "Halil Esen", "fee": 3500}, {"name": "Soner Boz", "fee": 3250}, {"name": "Pınar Sevgi", "fee": 3500}, {"name": "Sedat Güzel", "fee": 6000}, {"name": "Ahmet Tamer", "fee": 3500}, {"name": "Erdinç Yokuş", "fee": 4000}, {"name": "Şule Aras", "fee": 3000}, {"name": "Vadi Döner", "fee": 4000}, {"name": "Berrak Optik Arzu Yordamlı", "fee": 4000}, {"name": "Yılmaz Kartal Hijyen Halı Yıkama", "fee": 3500}, {"name": "Çolkan Nakliyat", "fee": 10000}, {"name": "Ozan Bekke", "fee": 3500}];
   const MONTHS_2026=[
@@ -8470,7 +8470,7 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
   function wrapUpsert(){
     try{
       const fn=window.upsertLiveRow||(typeof upsertLiveRow!=='undefined'?upsertLiveRow:null);
-      if(typeof fn!=='function'||fn.__businessAuditWrappedV4)return;
+      if(typeof fn!=='function'||fn.__businessAuditWrappedV3)return;
       const wrapped=async function(table,row){
         try{
           const out=await fn.apply(this,arguments);
@@ -8483,13 +8483,13 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
           throw e;
         }
       };
-      wrapped.__businessAuditWrappedV4=true;window.upsertLiveRow=wrapped;try{upsertLiveRow=window.upsertLiveRow;}catch(e){}
+      wrapped.__businessAuditWrappedV3=true;window.upsertLiveRow=wrapped;try{upsertLiveRow=window.upsertLiveRow;}catch(e){}
     }catch(e){}
   }
 
   document.addEventListener('DOMContentLoaded',()=>{
     ensurePanel();renderAudit();wrapUpsert();cleanButtons();
-    if(!sessionStorage.getItem('alkam_business_audit_ready_v4')){sessionStorage.setItem('alkam_business_audit_ready_v4','1');alkamAuditBusiness('İşlem izi aktif','Kaydedildi','Tahsilat ve tahakkuk ayrı takip ediliyor. Kayıtlar cari/ad/tutar/tarih ile izlenecek.');}
+    if(!sessionStorage.getItem('alkam_business_audit_ready_v3')){sessionStorage.setItem('alkam_business_audit_ready_v3','1');alkamAuditBusiness('İşlem izi aktif','Kaydedildi','Tahsilat ve tahakkuk ayrı takip ediliyor. Kayıtlar cari/ad/tutar/tarih ile izlenecek.');}
     setTimeout(wrapUpsert,1000);setTimeout(runContracts,1600);setTimeout(runContracts,5000);setTimeout(renderAudit,1800);
   });
   const obs=new MutationObserver(()=>{clearTimeout(window.__alkamBizAuditTimer);window.__alkamBizAuditTimer=setTimeout(()=>{wrapUpsert();cleanButtons();renderAudit();},220);});
