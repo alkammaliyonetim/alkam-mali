@@ -1,7 +1,2 @@
-/* ALKAM V6 UI - DISABLED
-   Geçici olarak pasif. Veri silmez, DOM'a müdahale etmez.
-*/
-(function(){
-  window.ALKAM_V6_FINANS_UI_ACTIVE=false;
-  console.warn("ALKAM V6 UI disabled.");
-})();
+/* DISABLED BY 25 APR STABLE RESTORE - alkam-v6-finance-ui.js */
+(function(){ console.warn('alkam-v6-finance-ui.js disabled'); })();
