@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALKAM Temiz Başlangıç</title>
+<style>
+body{margin:0;background:#f4f7fb;font-family:Arial,Helvetica,sans-serif;color:#0f172a}
+.wrap{max-width:900px;margin:36px auto;padding:20px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:22px;box-shadow:0 20px 70px rgba(15,23,42,.14);overflow:hidden}
+.head{background:#071a3a;color:#fff;padding:22px}
+h1{margin:0;font-size:25px}
+p{line-height:1.55}
+.body{padding:20px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0}
+.box{border:1px solid #e2e8f0;background:#fbfdff;border-radius:14px;padding:14px}
+.k{font-size:11px;color:#64748b;font-weight:900;text-transform:uppercase}
+.v{font-size:24px;font-weight:900;margin-top:6px}
+.warn{background:#fff7f7;border:1px solid #fecaca;color:#991b1b;padding:13px;border-radius:14px;font-weight:900}
+.ok{display:none;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:13px;border-radius:14px;font-weight:900;margin-top:12px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+button{border:0;border-radius:12px;padding:12px 14px;font-weight:900;cursor:pointer}
+.dark{background:#071a3a;color:white}.red{background:#dc2626;color:white}.blue{background:#1769e8;color:white}
+.list{max-height:270px;overflow:auto;border:1px solid #e2e8f0;border-radius:14px;background:#fff;margin-top:12px}
+.row{padding:9px 12px;border-bottom:1px solid #eef2f7;font-size:13px;font-weight:800;color:#475569}
+.small{font-size:12px;color:#64748b;font-weight:800}
+@media(max-width:760px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+<div class="head">
+<h1>ALKAM Temiz Başlangıç Merkezi</h1>
+<p>Bu sayfa eski cari ekstresi kaynaklarını, extrelerden türeyen carileri ve cari hareketlerini yerelden temizler. Login ve program dosyalarına dokunmaz.</p>
+</div>
+<div class="body">
+<div class="warn">
+Bu işlemden önce yedek indir. Sonra “Cari Extre Kaynaklarını Temizle” butonuna bas. Hesaplar boşsa hesaplara dokunulmaz.
+</div>
+
+<div class="grid">
+<div class="box"><div class="k">Toplam local anahtar</div><div class="v" id="totalKeys">0</div></div>
+<div class="box"><div class="k">Temizlik adayı</div><div class="v" id="targetKeys">0</div></div>
+<div class="box"><div class="k">Durum</div><div class="v" id="status">Hazır</div></div>
+</div>
+
+<b>Temizlenecek / düzenlenecek aday anahtarlar:</b>
+<div class="list" id="keyList"></div>
+
+<div class="btns">
+<button class="dark" onclick="downloadBackup()">Yedeği İndir</button>
+<button class="red" onclick="cleanCariSources()">Cari Extre Kaynaklarını Temizle</button>
+<button class="blue" onclick="location.href='/'">Programa Dön</button>
+</div>
+
+<div class="ok" id="okBox"></div>
+<p class="small">Not: Bu sayfa sadece tarayıcıdaki yerel veriyi temizler. Eğer eski cariler Supabase veritabanından geliyorsa ikinci adımda Supabase kaynak tablosunu ayrıca arşivleyeceğiz.</p>
+</div>
+</div>
+</div>
+
+<script>
+const keepWords=[
+ "session","login","auth","password","token","theme","setting","settings",
+ "version","yedek","backup","archive","arsiv","arşiv","sb-","supabase.auth"
+];
+
+const targetWords=[
+ "cari","cariler","mukellef","mükellef","customer","customers","client","clients",
+ "ledger","statement","hareket","movement","collection","collections",
+ "document","documents","belge","belgeler","extre","ekstre","file","files",
+ "upload","uploaded","import","invoice","fatura","tahakkuk","tahsilat",
+ "approval","onay","pending","bridge","candidate","candidates"
+];
+
+const exactEmptyArrayKeys=[
+ "alkam_local_cari_collections_v1",
+ "alkam_local_ledger_v1",
+ "alkam_local_movement_test_v1",
+ "alkam_local_cari_documents_v1",
+ "alkam_local_documents_v1",
+ "alkam_local_uploaded_documents_v1",
+ "alkam_local_imports_v1",
+ "alkam_local_bridge_candidates_v1",
+ "alkam_local_pending_approvals_v1"
+];
+
+function low(x){return String(x||"").toLocaleLowerCase("tr-TR")}
+function isKeep(k){return keepWords.some(w=>low(k).includes(low(w)))}
+function isTargetKey(k){
+ if(isKeep(k)) return false;
+ const x=low(k);
+ return x.startsWith("alkam") || targetWords.some(w=>x.includes(low(w)));
+}
+function keys(){return Object.keys(localStorage).filter(isTargetKey).sort()}
+
+function stamp(){return new Date().toISOString().replace(/[:.]/g,"-")}
+function backupAll(){
+ const obj={created_at:new Date().toISOString(),reason:"ALKAM temiz başlangıç öncesi tam local yedek",localStorage:{}};
+ Object.keys(localStorage).forEach(k=>obj.localStorage[k]=localStorage.getItem(k));
+ return obj;
+}
+function downloadBackup(){
+ const data=backupAll();
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json;charset=utf-8"});
+ const a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="ALKAM_TAM_YEDEK_TEMIZ_BASLANGIC_"+stamp()+".json";
+ document.body.appendChild(a);
+ a.click();
+ a.remove();
+ URL.revokeObjectURL(a.href);
+}
+
+function fieldLooksData(name){
+ const x=low(name);
+ return targetWords.some(w=>x.includes(low(w)));
+}
+
+function sanitizeObject(obj){
+ if(Array.isArray(obj)) return obj;
+ if(!obj || typeof obj!=="object") return obj;
+
+ Object.keys(obj).forEach(k=>{
+   const v=obj[k];
+
+   if(fieldLooksData(k)){
+     if(Array.isArray(v)) obj[k]=[];
+     else if(v && typeof v==="object") obj[k]=Array.isArray(v)?[]:{};
+     else obj[k]=null;
+     return;
+   }
+
+   if(v && typeof v==="object"){
+     sanitizeObject(v);
+   }
+ });
+
+ return obj;
+}
+
+function cleanCariSources(){
+ const ok=confirm("Eski cari extre kaynakları ve onlardan türeyen cari/hareket verisi temizlenecek. Devam?");
+ if(!ok) return;
+
+ const typed=prompt("Son onay için CARI yaz:");
+ if(String(typed||"").trim().toUpperCase()!=="CARI"){
+   alert("İptal edildi.");
+   return;
+ }
+
+ const backupKey="ALKAM_TAM_YEDEK_ONCESI_CARI_EXTRE_TEMIZLIK_"+stamp();
+ localStorage.setItem(backupKey,JSON.stringify(backupAll()));
+
+ const target=keys();
+ const changed=[];
+
+ target.forEach(k=>{
+   try{
+     const raw=localStorage.getItem(k);
+     const parsed=JSON.parse(raw);
+
+     if(Array.isArray(parsed)){
+       localStorage.setItem(k,"[]");
+     }else if(parsed && typeof parsed==="object"){
+       const cleaned=sanitizeObject(parsed);
+       localStorage.setItem(k,JSON.stringify(cleaned));
+     }else{
+       localStorage.removeItem(k);
+     }
+   }catch(e){
+     localStorage.removeItem(k);
+   }
+   changed.push(k);
+ });
+
+ exactEmptyArrayKeys.forEach(k=>{
+   localStorage.setItem(k,"[]");
+   if(!changed.includes(k)) changed.push(k);
+ });
+
+ localStorage.setItem("ALKAM_TEMIZ_BASLANGIC_STATUS",JSON.stringify({
+   at:new Date().toISOString(),
+   backup_key:backupKey,
+   changed_keys:changed,
+   mode:"cari_extre_kaynaklari_temizlendi"
+ }));
+
+ document.getElementById("status").textContent="Temizlendi";
+ document.getElementById("okBox").style.display="block";
+ document.getElementById("okBox").innerHTML="Temizlik tamamlandı. Şimdi Programa Dön butonuna bas, sonra ana ekranda Ctrl+F5 yap.";
+ render();
+}
+
+function render(){
+ const ks=keys();
+ document.getElementById("totalKeys").textContent=Object.keys(localStorage).length;
+ document.getElementById("targetKeys").textContent=ks.length;
+ document.getElementById("keyList").innerHTML=ks.length
+   ? ks.map(k=>"<div class='row'>"+k+"</div>").join("")
+   : "<div class='row'>Temizlik adayı bulunamadı.</div>";
+}
+render();
+</script>
+</body>
+</html>
