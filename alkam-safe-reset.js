@@ -1,7 +1,2 @@
-/* ALKAM SAFE RESET MODULE - DISABLED
-   Geçici olarak pasif. Veri silmez, DOM'a müdahale etmez.
-*/
-(function(){
-  window.ALKAM_SAFE_RESET_MODULE_ACTIVE=false;
-  console.warn("ALKAM safe reset module disabled.");
-})();
+/* DISABLED BY 25 APR STABLE RESTORE - alkam-safe-reset.js */
+(function(){ console.warn('alkam-safe-reset.js disabled'); })();
