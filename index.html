@@ -8319,8 +8319,27 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
   function writeJson(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
   function ledger(){return readJson(LEDGER_KEY,[]);}
   function saveLedger(rows){writeJson(LEDGER_KEY,rows||[]);}
-  function logs(){return readJson(AUDIT_KEY,[]);}
-  function saveLogs(rows){writeJson(AUDIT_KEY,(rows||[]).slice(0,120));}
+  function fixAuditText(v){
+    if(typeof v!=='string') return v;
+    return v.replaceAll('Ä°','İ').replaceAll('Ä±','ı').replaceAll('ÅŸ','ş').replaceAll('Åž','Ş').replaceAll('ÄŸ','ğ').replaceAll('Äž','Ğ').replaceAll('Ã¼','ü').replaceAll('Ãœ','Ü').replaceAll('Ã¶','ö').replaceAll('Ã–','Ö').replaceAll('Ã§','ç').replaceAll('Ã‡','Ç').replaceAll('KayÄ±t','Kayıt').replaceAll('ayrÄ±','ayrı').replaceAll('Ä°ÅŸlem','İşlem').replaceAll('iÅŸlem','işlem');
+  }
+  function normalizeAuditRows(rows){
+    let changed=false;
+    const out=(rows||[]).map(row=>{
+      if(!row||typeof row!=='object') return row;
+      const next={...row};
+      ['action','status','detail','title','summary','note'].forEach(k=>{
+        const fixed=fixAuditText(next[k]);
+        if(fixed!==next[k]) changed=true;
+        next[k]=fixed;
+      });
+      return next;
+    });
+    if(changed) writeJson(AUDIT_KEY,out);
+    return out;
+  }
+  function logs(){return normalizeAuditRows(readJson(AUDIT_KEY,[]));}
+  function saveLogs(rows){writeJson(AUDIT_KEY,normalizeAuditRows((rows||[]).slice(0,120)));}
   function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
   function statClass(s){s=String(s||'').toLowerCase();if(s.includes('hata')||s.includes('silinemedi'))return'err';if(s.includes('bekliyor'))return'warn';return'ok';}
 
