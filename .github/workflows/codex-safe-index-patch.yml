@@ -1,0 +1,163 @@
+name: Codex Safe Index Patch
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  patch-index:
+    if: contains(github.event.issue.title, 'ALKAM-CODEX-SAFE-PATCH')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply safe index patch
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8-sig')
+
+          def rep(old, new):
+            global s
+            if old not in s:
+              raise SystemExit('Missing expected block:\n' + old[:300])
+            s = s.replace(old, new, 1)
+
+          css_marker = '</style>\n\n<style>\n/* ALKAM FINAL STABLE SOURCE + NISAN DETAIL + BALANCE */'
+          css_insert = ' .source-badge.bank{background:#eef2ff!important;border-color:#c7d2fe!important;color:#3730a3!important}.source-badge.approved{background:#ecfdf5!important;border-color:#a7f3d0!important;color:#047857!important}.source-badge.moka{background:#f5f3ff!important;border-color:#ddd6fe!important;color:#6d28d9!important}\n'
+          if css_insert.strip() not in s:
+            rep(css_marker, css_insert + css_marker)
+
+          rep("""      confidence_score:num(r.match_confidence||r.suggested_confidence||0),
+      created_at:new Date().toISOString(),""", """      confidence_score:num(r.match_confidence||r.suggested_confidence||0),
+      suggested_target_type:r.suggested_financial_account_type || (r.suggested_cari_name ? 'cari' : ''),
+      suggested_movement_type:r.suggested_movement_type || '',
+      suggested_cari_name:r.suggested_cari_name || '',
+      suggested_expense_name:r.suggested_expense_name || '',
+      suggested_financial_account_name:r.suggested_financial_account_name || '',
+      match_reason:r.match_reason || r.eslesme_sebebi || '',
+      created_at:new Date().toISOString(),""")
+
+          rep("""function balanceLabel(v){
+  const n=num(v);
+  if(n>0) return `${money(n)} B`;
+  if(n<0) return `${money(Math.abs(n))} A`;
+  return `${money(0)}`;
+}
+function balanceColumns(v){""", """function balanceLabel(v){
+  const n=num(v);
+  if(n>0) return `${money(n)} Bakiye B`;
+  if(n<0) return `${money(Math.abs(n))} Bakiye A`;
+  return `${money(0)}`;
+}
+function balanceSideLabel(v){
+  const n=num(v);
+  if(n>0) return 'Bakiye B';
+  if(n<0) return 'Bakiye A';
+  return 'Bakiye';
+}
+function balanceColumns(v){""")
+
+          old_source = """  if(sm === "manual_contract_2026") return {kind:"manual", label:"2026 Sözleşme Tahakkuku", detail:"2026 sözleşme listesinden oluşturulan tahakkuk"};
+  const correction = row?.is_universal_local_edit || row?._alkam_override_status === "edited" || row?._alkam_override_status === "edited_orphan";
+  if(correction) return {kind:"correction", label:"Düzeltme", detail:"Düzenlenmiş/override kayıt"};
+  if(sm === "fee_auto" || (id.startsWith("LGR-") && (desc.includes("muhasebe ücreti") || desc.includes("muhasebe ucreti")))) return {kind:"auto", label:"Otomatik Tahakkuk", detail:"Programın ürettiği muhasebe ücret tahakkuku"};
+  if(sm === "fee_bulk_manual") return {kind:"auto", label:"Toplu Tahakkuk", detail:"Cari Toplu Tahakkuk ekranından gelen kayıt"};
+  if(sm === "local_cari_collection") return {kind:"manual", label:"Manuel Tahsilat", detail:"Cari Tahsilat Gir ekranından elle girilen kayıt"};
+  if(sm.includes("manual")) return {kind:"manual", label:"Manuel", detail:sm};
+  if(sm.includes("bank") || sm.includes("banka") || desc.includes("müşteriden tahsilat") || desc.includes("musteriden tahsilat")) return {kind:"bank", label:"Banka/Tahsilat", detail:"Hesap hareketi veya tahsilat kaydı"};"""
+          new_source = """  if(sm === "moka_panel" || sm === "moka_united" || row?.target_type === "moka_united") return {kind:"moka", label:"Moka United", detail:"Moka United kasa/hesap akışı"};
+  if(sm === "approval_center" || row?.is_local_bank_queue || row?.final_target_type || row?.decision_ref) return {kind:"approved", label:"Onaylı Eşleşme", detail:"Onay merkezi kararıyla eşleşen kayıt"};
+  if(sm === "bank_panel" || sm === "movement_test" || sm === "movement_import" || sm.includes("bank") || sm.includes("banka")) return {kind:"bank", label:"Hesap Hareketi", detail:"Hesap hareketi doğrulama/eşleştirme katmanı"};
+  if(sm === "manual_contract_2026") return {kind:"manual", label:"Manuel", detail:"2026 sözleşme listesinden oluşturulan tahakkuk"};
+  const correction = row?.is_universal_local_edit || row?._alkam_override_status === "edited" || row?._alkam_override_status === "edited_orphan";
+  if(correction) return {kind:"manual", label:"Manuel", detail:"Düzenlenmiş/override kayıt"};
+  if(sm === "fee_auto" || (id.startsWith("LGR-") && (desc.includes("muhasebe ücreti") || desc.includes("muhasebe ucreti")))) return {kind:"manual", label:"Manuel", detail:"Programın ürettiği muhasebe ücret tahakkuku"};
+  if(sm === "fee_bulk_manual") return {kind:"manual", label:"Manuel", detail:"Cari Toplu Tahakkuk ekranından gelen kayıt"};
+  if(sm === "local_cari_collection") return {kind:"manual", label:"Manuel", detail:"Cari Tahsilat Gir ekranından elle girilen kayıt"};
+  if(sm.includes("manual")) return {kind:"manual", label:"Manuel", detail:sm};"""
+          rep(old_source, new_source)
+
+          rep("""    ['İşlem No','Tarih','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']""", """    ['İşlem No','Tarih','Kaynak','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']""")
+          rep("""    const b = balanceColumns(r.running_balance);
+    csvRows.push([
+      displayTxnNo(r,'HRK'),
+      shortDate(r.line_date),
+      r.movement_type || '',""", """    const b = balanceColumns(r.running_balance);
+    const src = alkamStatementSourceInfo(r);
+    csvRows.push([
+      displayTxnNo(r,'HRK'),
+      shortDate(r.line_date),
+      src.label,
+      r.movement_type || '',""")
+
+          for old,new in [
+            ('<div class="metric-mini"><div class="k">Açılış Bakiye</div><div class="v">${balanceLabel(meta.openingBalance)}</div></div>', '<div class="metric-mini"><div class="k">${balanceSideLabel(meta.openingBalance)}</div><div class="v">${balanceLabel(meta.openingBalance)}</div></div>'),
+            ('<div class="metric-mini"><div class="k">Extre Kapanış</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>', '<div class="metric-mini"><div class="k">${balanceSideLabel(meta.closingBalance)}</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>'),
+            ('<div class="metric-mini"><div class="k">Sistem Bakiye</div><div class="v">${balanceLabel(meta.systemBalance)}</div></div>', '<div class="metric-mini"><div class="k">${balanceSideLabel(meta.systemBalance)}</div><div class="v">${balanceLabel(meta.systemBalance)}</div></div>'),
+            ('<div class="box"><div class="k">Açılış Bakiye</div><div class="v">${balanceLabel(meta.openingBalance)}</div></div>', '<div class="box"><div class="k">${balanceSideLabel(meta.openingBalance)}</div><div class="v">${balanceLabel(meta.openingBalance)}</div></div>'),
+            ('<div class="box"><div class="k">Kapanış Bakiye</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>', '<div class="box"><div class="k">${balanceSideLabel(meta.closingBalance)}</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>'),
+            ('<div class="metric-mini"><div class="k">Extre Kapanış</div><div class="v">${balanceLabel(closingBalance)}<br>Fark: ${money(diff)}</div></div>', '<div class="metric-mini"><div class="k">${balanceSideLabel(closingBalance)}</div><div class="v">${balanceLabel(closingBalance)}<br>Fark: ${money(diff)}</div></div>'),
+            ('<div class="card"><div class="card-label">Güncel Bakiye</div><div class="card-value" style="font-size:24px">${balanceLabel(c.bakiye||0)}</div></div>', '<div class="card"><div class="card-label">${balanceSideLabel(c.bakiye||0)}</div><div class="card-value" style="font-size:24px">${balanceLabel(c.bakiye||0)}</div></div>'),
+            ('<div class="card"><div class="card-label">Açılış Bakiye</div><div class="card-value" style="font-size:20px">${balanceLabel(meta.openingBalance)}</div></div>', '<div class="card"><div class="card-label">${balanceSideLabel(meta.openingBalance)}</div><div class="card-value" style="font-size:20px">${balanceLabel(meta.openingBalance)}</div></div>'),
+            ('<div class="card"><div class="card-label">Filtre Kapanış</div><div class="card-value" style="font-size:20px">${balanceLabel(meta.closingBalance)}</div></div>', '<div class="card"><div class="card-label">${balanceSideLabel(meta.closingBalance)}</div><div class="card-value" style="font-size:20px">${balanceLabel(meta.closingBalance)}</div></div>'),
+          ]:
+            rep(old,new)
+
+          rep("""    suggested_financial_account_name: targetType==='hesap' || targetType==='moka_united' ? targetName : null,
+    suggested_amount: amount,""", """    suggested_financial_account_name: targetType==='hesap' || targetType==='moka_united' ? targetName : null,
+    suggested_target_type: targetType,
+    suggested_amount: amount,""")
+
+          rep("""  if(bankDuplicateCandidate(r,bucket)){ notify('Bu satır mükerrer adayı. Tek tık işlenmez.'); return; }
+  if(bankNeedsApproval(r) || bucket==='moka'){ openBankActionModal(bucket,key); notify('Bu satır tek tık için yeterince güvenli değil; detay ekranından kontrol et.'); return; }""", """  if(bankDuplicateCandidate(r,bucket)){ notify('Bu satır mükerrer adayı. Tek tık işlenmez.'); return; }
+  if((bankRowConfidence(r)||0) < 100){ openBankActionModal(bucket,key); notify('Yalnızca %100 emin olunan eşleşmeler tek tık işlenir; bu satır onay/detail kontrolü ister.'); return; }
+  if(bankNeedsApproval(r) || bucket==='moka'){ openBankActionModal(bucket,key); notify('Bu satır tek tık için yeterince güvenli değil; detay ekranından kontrol et.'); return; }""")
+
+          rep("""function sd(v){try{return typeof shortDate==='function'?shortDate(v)}catch(e){return String(v||'-').slice(0,10)||'-'}}""", """function sd(v){try{return typeof shortDate==='function'?shortDate(v):(String(v||'-').slice(0,10)||'-')}catch(e){return String(v||'-').slice(0,10)||'-'}}""")
+
+          old_srcinfo = """function srcInfo(r){const sm=String(r?.source_module||r?.source_type||r?.source||'');const d=String(r?.description||r?.content_summary||'').toLocaleLowerCase('tr-TR');const corr=r?.is_universal_local_edit||r?._alkam_override_status==='edited'||r?._alkam_override_status==='edited_orphan';if(corr)return{kind:'correction',label:'Düzeltme',detail:'Yerel/Kalıcı düzeltme'};if(sm==='fee_auto')return{kind:'auto',label:'Otomatik Tahakkuk',detail:'Programın ürettiği otomatik muhasebe ücret tahakkuku'};if(sm==='fee_bulk_manual')return{kind:'auto',label:'Toplu Tahakkuk',detail:'Cari Toplu Tahakkuk ekranı'};if(sm==='local_cari_collection')return{kind:'manual',label:'Manuel Tahsilat',detail:'Cari Tahsilat Gir ekranından'};if(sm.includes('manual'))return{kind:'manual',label:'Manuel',detail:sm};if(sm.includes('bank')||sm.includes('banka'))return{kind:'supabase',label:'Banka Extresi',detail:sm};if(d.includes('satış faturası')||d.includes('satis faturasi')||d.includes('muhasebe ücreti')||d.includes('muhasebe ucreti'))return{kind:'supabase',label:'Ana Veri',detail:'Yüklenen cari ekstresi / Supabase'};return{kind:'supabase',label:'Ana Veri',detail:sm||'Yüklenen cari ekstresi / Supabase'}}"""
+          new_srcinfo = """function srcInfo(r){const sm=String(r?.source_module||r?.source_type||r?.source||'');const d=String(r?.description||r?.content_summary||'').toLocaleLowerCase('tr-TR');const corr=r?.is_universal_local_edit||r?._alkam_override_status==='edited'||r?._alkam_override_status==='edited_orphan';if(sm==='moka_panel'||sm==='moka_united'||r?.target_type==='moka_united')return{kind:'moka',label:'Moka United',detail:'Moka United kasa/hesap akışı'};if(sm==='approval_center'||r?.is_local_bank_queue||r?.final_target_type||r?.decision_ref)return{kind:'approved',label:'Onaylı Eşleşme',detail:'Onay merkezi kararıyla eşleşen kayıt'};if(sm==='bank_panel'||sm==='movement_test'||sm==='movement_import'||sm.includes('bank')||sm.includes('banka'))return{kind:'bank',label:'Hesap Hareketi',detail:'Hesap hareketi doğrulama/eşleştirme katmanı'};if(corr)return{kind:'manual',label:'Manuel',detail:'Yerel/Kalıcı düzeltme'};if(sm==='fee_auto')return{kind:'manual',label:'Manuel',detail:'Programın ürettiği otomatik muhasebe ücret tahakkuku'};if(sm==='fee_bulk_manual')return{kind:'manual',label:'Manuel',detail:'Cari Toplu Tahakkuk ekranı'};if(sm==='local_cari_collection')return{kind:'manual',label:'Manuel',detail:'Cari Tahsilat Gir ekranından'};if(sm.includes('manual'))return{kind:'manual',label:'Manuel',detail:sm};if(d.includes('satış faturası')||d.includes('satis faturasi')||d.includes('muhasebe ücreti')||d.includes('muhasebe ucreti'))return{kind:'supabase',label:'Ana Veri',detail:'Yüklenen cari ekstresi / Supabase'};return{kind:'supabase',label:'Ana Veri',detail:sm||'Yüklenen cari ekstresi / Supabase'}}"""
+          rep(old_srcinfo, new_srcinfo)
+
+          s = s.replace('Kaynak kolonu açık: otomatik, manuel, banka/ana veri ve düzeltme kayıtları ayrı görünür.', 'Kaynak kolonu açık: Ana Veri, Hesap Hareketi, Onaylı Eşleşme, Moka United ve Manuel ayrı görünür.')
+
+          old_pending = """${escapeHtml(r.suggested_cari_name||r.suggested_expense_name||"-")} · ${escapeHtml(r.suggested_movement_type||"-")}<br><span style="font-size:12px;color:#64748b">Güven: ${approvalConfidence(r) ? approvalConfidence(r).toFixed(0) : '-'}</span>"""
+          new_pending = """${escapeHtml(r.suggested_cari_name||r.suggested_expense_name||r.suggested_financial_account_name||"-")} · ${escapeHtml(r.suggested_movement_type||"-")}<br><span style="font-size:12px;color:#64748b">Tip: ${escapeHtml(r.suggested_target_type||r.suggested_financial_account_type||(r.suggested_cari_name?'cari':'-'))} · Güven: ${approvalConfidence(r) ? approvalConfidence(r).toFixed(0) : '-'}</span><br><span class="muted-note">${escapeHtml(r.match_reason || r.eslesme_sebebi || 'Eşleşme sebebi yok')}</span>"""
+          if old_pending in s:
+            s = s.replace(old_pending, new_pending, 1)
+
+          p.write_text('\ufeff' + s, encoding='utf-8')
+
+      - name: Verify scripts
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const scripts=[...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
+          for (const s of scripts) new Function(s);
+          console.log('syntax_ok scripts=' + scripts.length);
+          NODE
+
+      - name: Commit patch
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Apply safe cari ledger source patch" || echo "No changes to commit"
+          git push
+
+      - name: Report success
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:context.issue.number,body:'✅ Codex güvenli index düzeltmesi uygulandı ve script kontrolü geçti.'});
+            await github.rest.issues.update({owner:context.repo.owner,repo:context.repo.repo,issue_number:context.issue.number,state:'closed',state_reason:'completed'});
