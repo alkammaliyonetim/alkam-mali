@@ -1,0 +1,137 @@
+/* ALKAM CARILER DATA LOADER
+   77 cari JSON dosyasını güvenli şekilde yükler.
+   Hem temiz dosya adını hem de GitHub'ın (1) eklediği dosya adını dener.
+*/
+
+(function () {
+  "use strict";
+
+  const CARI_JSON_FILES = [
+    "alkam-cariler-77-28-04-2026.json",
+    "alkam-cariler-77-28-04-2026 (1).json"
+  ];
+
+  window.ALKAM_CARILER = [];
+  window.ALKAM_CARILER_DATA = [];
+  window.alkamCariler = [];
+
+  function normalizeCari(cari, index) {
+    const debit = Number(cari.totalDebit || cari.borc || cari.debit || 0);
+    const credit = Number(cari.totalCredit || cari.alacak || cari.credit || 0);
+    const balance = Number(
+      cari.balance !== undefined
+        ? cari.balance
+        : debit - credit
+    );
+
+    return {
+      id: cari.id || `cari-${index + 1}`,
+      name: cari.name || cari.unvan || cari.cariAdi || `Cari ${index + 1}`,
+      vkn: cari.vkn || cari.vergiNo || "",
+      periodStart: cari.periodStart || "",
+      periodEnd: cari.periodEnd || "",
+      totalDebit: debit,
+      totalCredit: credit,
+      balance: balance,
+      raw: cari
+    };
+  }
+
+  async function tryLoadJson(fileName) {
+    const response = await fetch(fileName + "?v=" + Date.now(), {
+      cache: "no-store"
+    });
+
+    if (!response.ok) {
+      throw new Error(fileName + " bulunamadı.");
+    }
+
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+      throw new Error(fileName + " array formatında değil.");
+    }
+
+    return data;
+  }
+
+  async function loadAlkamCariler() {
+    let lastError = null;
+
+    for (const fileName of CARI_JSON_FILES) {
+      try {
+        const rawData = await tryLoadJson(fileName);
+        const normalized = rawData.map(normalizeCari);
+
+        window.ALKAM_CARILER = normalized;
+        window.ALKAM_CARILER_DATA = normalized;
+        window.alkamCariler = normalized;
+
+        localStorage.setItem("ALKAM_CARILER_BACKUP", JSON.stringify(normalized));
+
+        console.log("✅ ALKAM cariler yüklendi:", fileName, normalized.length);
+
+        document.dispatchEvent(
+          new CustomEvent("alkamCarilerLoaded", {
+            detail: {
+              fileName,
+              count: normalized.length,
+              data: normalized
+            }
+          })
+        );
+
+        return normalized;
+      } catch (err) {
+        console.warn("⚠️ Cari dosyası denenemedi:", fileName, err.message);
+        lastError = err;
+      }
+    }
+
+    try {
+      const backup = JSON.parse(localStorage.getItem("ALKAM_CARILER_BACKUP") || "[]");
+
+      if (Array.isArray(backup) && backup.length > 0) {
+        window.ALKAM_CARILER = backup;
+        window.ALKAM_CARILER_DATA = backup;
+        window.alkamCariler = backup;
+
+        console.warn("⚠️ Cariler localStorage yedeğinden yüklendi:", backup.length);
+
+        document.dispatchEvent(
+          new CustomEvent("alkamCarilerLoaded", {
+            detail: {
+              fileName: "localStorage backup",
+              count: backup.length,
+              data: backup
+            }
+          })
+        );
+
+        return backup;
+      }
+    } catch (backupError) {
+      console.error("❌ Cari yedeği okunamadı:", backupError);
+    }
+
+    console.error("❌ ALKAM cari dosyası yüklenemedi:", lastError);
+
+    document.dispatchEvent(
+      new CustomEvent("alkamCarilerLoadError", {
+        detail: {
+          error: lastError ? lastError.message : "Bilinmeyen hata"
+        }
+      })
+    );
+
+    return [];
+  }
+
+  window.loadAlkamCariler = loadAlkamCariler;
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", loadAlkamCariler);
+  } else {
+    loadAlkamCariler();
+  }
+})();
