@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -117,6 +117,7 @@ body{font-family:Inter,Arial,Helvetica,sans-serif!important;background:var(--alk
 #selectedCariDetail .source-badge.correction{background:#f5f3ff!important;border-color:#ddd6fe!important;color:#6d28d9!important}
 #selectedCariDetail .source-detail{display:block!important;margin-top:4px!important;font-size:10.5px!important;font-weight:700!important;color:#64748b!important;line-height:1.35!important}
 
+ .source-badge.bank{background:#eef2ff!important;border-color:#c7d2fe!important;color:#3730a3!important}.source-badge.approved{background:#ecfdf5!important;border-color:#a7f3d0!important;color:#047857!important}.source-badge.moka{background:#f5f3ff!important;border-color:#ddd6fe!important;color:#6d28d9!important}
 </style>
 
 <style>
@@ -2413,6 +2414,12 @@ function queueImportedMovementsForApproval(mode='locked'){
       raw_content:r.description || '',
       suggested_amount:num(r.net_amount||0),
       confidence_score:num(r.match_confidence||r.suggested_confidence||0),
+      suggested_target_type:r.suggested_financial_account_type || (r.suggested_cari_name ? 'cari' : ''),
+      suggested_movement_type:r.suggested_movement_type || '',
+      suggested_cari_name:r.suggested_cari_name || '',
+      suggested_expense_name:r.suggested_expense_name || '',
+      suggested_financial_account_name:r.suggested_financial_account_name || '',
+      match_reason:r.match_reason || r.eslesme_sebebi || '',
       created_at:new Date().toISOString(),
       queue_source:'movement_import_review',
       issue_type:r.is_duplicate_candidate ? 'muhtemel_duplicate' : 'onay_gerekli'
@@ -4014,9 +4021,15 @@ function getStatementOpeningBalance(startDate){
 }
 function balanceLabel(v){
   const n=num(v);
-  if(n>0) return `${money(n)} B`;
-  if(n<0) return `${money(Math.abs(n))} A`;
+  if(n>0) return `${money(n)} Bakiye B`;
+  if(n<0) return `${money(Math.abs(n))} Bakiye A`;
   return `${money(0)}`;
+}
+function balanceSideLabel(v){
+  const n=num(v);
+  if(n>0) return 'Bakiye B';
+  if(n<0) return 'Bakiye A';
+  return 'Bakiye';
 }
 function balanceColumns(v){
   const n=num(v);
@@ -4051,14 +4064,16 @@ function alkamStatementSourceInfo(row){
   const sm = String(row?.source_module || row?.source_type || row?.source || "");
   const desc = String(row?.description || row?.content_summary || "").toLocaleLowerCase("tr-TR");
   const id = String(row?.id || row?.operation_no || row?.txn_id || row?.document_no || "");
-  if(sm === "manual_contract_2026") return {kind:"manual", label:"2026 Sözleşme Tahakkuku", detail:"2026 sözleşme listesinden oluşturulan tahakkuk"};
+  if(sm === "moka_panel" || sm === "moka_united" || row?.target_type === "moka_united") return {kind:"moka", label:"Moka United", detail:"Moka United kasa/hesap akışı"};
+  if(sm === "approval_center" || row?.is_local_bank_queue || row?.final_target_type || row?.decision_ref) return {kind:"approved", label:"Onaylı Eşleşme", detail:"Onay merkezi kararıyla eşleşen kayıt"};
+  if(sm === "bank_panel" || sm === "movement_test" || sm === "movement_import" || sm.includes("bank") || sm.includes("banka")) return {kind:"bank", label:"Hesap Hareketi", detail:"Hesap hareketi doğrulama/eşleştirme katmanı"};
+  if(sm === "manual_contract_2026") return {kind:"manual", label:"Manuel", detail:"2026 sözleşme listesinden oluşturulan tahakkuk"};
   const correction = row?.is_universal_local_edit || row?._alkam_override_status === "edited" || row?._alkam_override_status === "edited_orphan";
-  if(correction) return {kind:"correction", label:"Düzeltme", detail:"Düzenlenmiş/override kayıt"};
-  if(sm === "fee_auto" || (id.startsWith("LGR-") && (desc.includes("muhasebe ücreti") || desc.includes("muhasebe ucreti")))) return {kind:"auto", label:"Otomatik Tahakkuk", detail:"Programın ürettiği muhasebe ücret tahakkuku"};
-  if(sm === "fee_bulk_manual") return {kind:"auto", label:"Toplu Tahakkuk", detail:"Cari Toplu Tahakkuk ekranından gelen kayıt"};
-  if(sm === "local_cari_collection") return {kind:"manual", label:"Manuel Tahsilat", detail:"Cari Tahsilat Gir ekranından elle girilen kayıt"};
+  if(correction) return {kind:"manual", label:"Manuel", detail:"Düzenlenmiş/override kayıt"};
+  if(sm === "fee_auto" || (id.startsWith("LGR-") && (desc.includes("muhasebe ücreti") || desc.includes("muhasebe ucreti")))) return {kind:"manual", label:"Manuel", detail:"Programın ürettiği muhasebe ücret tahakkuku"};
+  if(sm === "fee_bulk_manual") return {kind:"manual", label:"Manuel", detail:"Cari Toplu Tahakkuk ekranından gelen kayıt"};
+  if(sm === "local_cari_collection") return {kind:"manual", label:"Manuel", detail:"Cari Tahsilat Gir ekranından elle girilen kayıt"};
   if(sm.includes("manual")) return {kind:"manual", label:"Manuel", detail:sm};
-  if(sm.includes("bank") || sm.includes("banka") || desc.includes("müşteriden tahsilat") || desc.includes("musteriden tahsilat")) return {kind:"bank", label:"Banka/Tahsilat", detail:"Hesap hareketi veya tahsilat kaydı"};
   if(desc.includes("satış faturası") || desc.includes("satis faturasi")) return {kind:"supabase", label:"Ana Veri", detail:"Yüklenen cari ekstresi / satış faturası"};
   if(desc.includes("muhasebe ücreti") || desc.includes("muhasebe ucreti")) return {kind:"supabase", label:"Ana Veri", detail:"Yüklenen cari ekstresi / muhasebe ücreti"};
   if(sm) return {kind:"supabase", label:"Ana Veri", detail:sm};
@@ -4142,12 +4157,12 @@ function openStatementPrecheck(){
       <div class="metric-mini"><div class="k">Cari Kodu</div><div class="v">${escapeHtml(c.cari_code||'-')}</div></div>
       <div class="metric-mini"><div class="k">Vergi No / TC No</div><div class="v">${escapeHtml(card?.tax_no || card?.tc_no || '-')}</div></div>
       <div class="metric-mini"><div class="k">Dönem</div><div class="v">${escapeHtml(periodMap[state.selectedRange] || 'Özel')}</div></div>
-      <div class="metric-mini"><div class="k">Açılış Bakiye</div><div class="v">${balanceLabel(meta.openingBalance)}</div></div>
+      <div class="metric-mini"><div class="k">${balanceSideLabel(meta.openingBalance)}</div><div class="v">${balanceLabel(meta.openingBalance)}</div></div>
       <div class="metric-mini"><div class="k">Satır Sayısı</div><div class="v">${meta.rowsAsc.length}</div></div>
       <div class="metric-mini"><div class="k">Toplam Borç</div><div class="v">${money(meta.totalDebit)}</div></div>
       <div class="metric-mini"><div class="k">Toplam Alacak</div><div class="v">${money(meta.totalCredit)}</div></div>
-      <div class="metric-mini"><div class="k">Extre Kapanış</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>
-      <div class="metric-mini"><div class="k">Sistem Bakiye</div><div class="v">${balanceLabel(meta.systemBalance)}</div></div>
+      <div class="metric-mini"><div class="k">${balanceSideLabel(meta.closingBalance)}</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>
+      <div class="metric-mini"><div class="k">${balanceSideLabel(meta.systemBalance)}</div><div class="v">${balanceLabel(meta.systemBalance)}</div></div>
       <div class="metric-mini"><div class="k">Fark</div><div class="v">${money(meta.diff)}</div></div>
       <div class="metric-mini"><div class="k">Durum</div><div class="v">${meta.isConsistent ? '<span class="tag green">UYUMLU</span>' : '<span class="tag red">UYUMSUZ</span>'}</div></div>
     </div>
@@ -4171,13 +4186,15 @@ function exportStatementExcel(){
   const meta=getCurrentStatementMeta();
   if(!c || !meta.rowsAsc.length){ notify("Excel için extre satırı yok."); return; }
   const csvRows = [
-    ['İşlem No','Tarih','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']
+    ['İşlem No','Tarih','Kaynak','İşlem','Açıklama','Borç','Alacak','Bakiye B','Bakiye A']
   ];
   meta.rowsAsc.forEach(r=>{
     const b = balanceColumns(r.running_balance);
+    const src = alkamStatementSourceInfo(r);
     csvRows.push([
       displayTxnNo(r,'HRK'),
       shortDate(r.line_date),
+      src.label,
       r.movement_type || '',
       (r.description || '').replace(/"/g,'""'),
       num(r.debit).toFixed(2),
@@ -4265,10 +4282,10 @@ function openStatementOutput(){
       </div>
     </div>
     <div class="boxwrap">
-      <div class="box"><div class="k">Açılış Bakiye</div><div class="v">${balanceLabel(meta.openingBalance)}</div></div>
+      <div class="box"><div class="k">${balanceSideLabel(meta.openingBalance)}</div><div class="v">${balanceLabel(meta.openingBalance)}</div></div>
       <div class="box"><div class="k">Toplam Borç</div><div class="v">${money(meta.totalDebit)}</div></div>
       <div class="box"><div class="k">Toplam Alacak</div><div class="v">${money(meta.totalCredit)}</div></div>
-      <div class="box"><div class="k">Kapanış Bakiye</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>
+      <div class="box"><div class="k">${balanceSideLabel(meta.closingBalance)}</div><div class="v">${balanceLabel(meta.closingBalance)}</div></div>
     </div>
     <div style="margin:10px 0 14px;padding:10px 12px;border:1px solid #dbe3ef;border-radius:12px;font-size:12px;color:#475569;font-weight:700;">Bu sistemde her işlem görünürde tek bir <strong>İşlem No</strong> ile izlenir. Teknik kimlik sistem içinde korunur, ekranda tekrar edilmez.</div>
     ${buildStandardStatementTable(meta.rowsDesc).replaceAll('class="text-right"','class="r"')}
@@ -4739,9 +4756,9 @@ function renderSelectedCariDetail(){
     <div class="metric-mini"><div class="k">Son Tahsilat</div><div class="v">${shortDate(c.son_tahsilat_tarihi)}<br>${money(c.son_tahsilat_tutari||0)}</div></div>
   </div>
   <div class="grid-4" style="margin-bottom:14px">
-    <div class="card"><div class="card-label">Güncel Bakiye</div><div class="card-value" style="font-size:24px">${balanceLabel(c.bakiye||0)}</div></div>
-    <div class="card"><div class="card-label">Açılış Bakiye</div><div class="card-value" style="font-size:20px">${balanceLabel(meta.openingBalance)}</div></div>
-    <div class="card"><div class="card-label">Filtre Kapanış</div><div class="card-value" style="font-size:20px">${balanceLabel(meta.closingBalance)}</div></div>
+    <div class="card"><div class="card-label">${balanceSideLabel(c.bakiye||0)}</div><div class="card-value" style="font-size:24px">${balanceLabel(c.bakiye||0)}</div></div>
+    <div class="card"><div class="card-label">${balanceSideLabel(meta.openingBalance)}</div><div class="card-value" style="font-size:20px">${balanceLabel(meta.openingBalance)}</div></div>
+    <div class="card"><div class="card-label">${balanceSideLabel(meta.closingBalance)}</div><div class="card-value" style="font-size:20px">${balanceLabel(meta.closingBalance)}</div></div>
     <div class="card period-card"><div class="card-label">NİSAN 2026 AYI</div><div class="card-value" style="font-size:18px;line-height:1.45">
       <span class="period-pill debit">Tahakkuk ${alkamPeriodMoney(periodTotals.tahakkuk)}</span>
       <span class="period-pill credit">Tahsilat ${alkamPeriodMoney(periodTotals.tahsilat)}</span>
@@ -5052,7 +5069,7 @@ async function renderBankActionCariPreview(){
           <div class="metric-mini"><div class="k">Son Tahakkuk</div><div class="v">${shortDate(sonTahakkuk?.line_date)}<br>${money(sonTahakkuk?.debit || 0)}</div></div>
           <div class="metric-mini"><div class="k">Son Tahsilat</div><div class="v">${shortDate(sonTahsilat?.line_date)}<br>${money(sonTahsilat?.credit || 0)}</div></div>
           <div class="metric-mini"><div class="k">Güncel Bakiye</div><div class="v">${balanceLabel(systemBalance)}</div></div>
-          <div class="metric-mini"><div class="k">Extre Kapanış</div><div class="v">${balanceLabel(closingBalance)}<br>Fark: ${money(diff)}</div></div>
+      <div class="metric-mini"><div class="k">${balanceSideLabel(closingBalance)}</div><div class="v">${balanceLabel(closingBalance)}<br>Fark: ${money(diff)}</div></div>
         </div>
         <div class="grid-3" style="margin-bottom:12px;">
           <div class="metric-mini"><div class="k">Toplam Borç</div><div class="v">${money(totalDebit)}</div></div>
@@ -5152,6 +5169,7 @@ function queueSelectedBankRowToApproval(){
     suggested_cari_name: targetType==='cari' ? targetName : null,
     suggested_expense_name: targetType==='gider' ? targetName : null,
     suggested_financial_account_name: targetType==='hesap' || targetType==='moka_united' ? targetName : null,
+    suggested_target_type: targetType,
     suggested_amount: amount,
     raw_amount: amount,
     suggested_movement_type: movementType,
@@ -5242,6 +5260,7 @@ function processBankRowFast(bucket,key){
   const movementType = defs.movementType || r.suggested_movement_type || 'tahsilat';
   if(!targetName || targetName==='-'){ notify('Hedef belirsiz, detaydan işlemelisin.'); return; }
   if(bankDuplicateCandidate(r,bucket)){ notify('Bu satır mükerrer adayı. Tek tık işlenmez.'); return; }
+  if((bankRowConfidence(r)||0) < 100){ openBankActionModal(bucket,key); notify('Yalnızca %100 emin olunan eşleşmeler tek tık işlenir; bu satır onay/detail kontrolü ister.'); return; }
   if(bankNeedsApproval(r) || bucket==='moka'){ openBankActionModal(bucket,key); notify('Bu satır tek tık için yeterince güvenli değil; detay ekranından kontrol et.'); return; }
   const originKey = bankOriginKey(r,bucket);
   state.bankOps.pending = (state.bankOps.pending || []).filter(x=>String(x.bank_origin_key)!==String(originKey));
@@ -5653,7 +5672,7 @@ function renderApprovals(){
       <button class="chip ${state.approvalFilter==='duplicate'?'active':''}" data-afilter="duplicate">Muhtemel Çift</button>
       <button class="chip ${state.approvalFilter==='document'?'active':''}" data-afilter="document">WhatsApp / Telegram / Belge</button>
     </div>
-    <div class="rule-box" style="margin-bottom:14px;">Kural: güven puanı düşük, muhtemel çift, görselden okunan, kopyala-yapıştır gelen veya import incelemede kilitlenen kayıtlar otomatik işlenmez; önce onaya düşer. İşleme alınan kayıt karar izi ile işlenenlere taşınır.</div>` + (pendingRows.length?`<table><thead><tr><th>İşlem No</th><th>Kaynak</th><th>Özet</th><th>Öneri</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${pendingRows.map(({row:r,__i})=>`<tr class="click-row" data-approval-bucket="pending" data-approval-index="${__i}"><td>${escapeHtml(displayTxnNo(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.suggested_cari_name||r.suggested_expense_name||"-")} · ${escapeHtml(r.suggested_movement_type||"-")}<br><span style="font-size:12px;color:#64748b">Güven: ${approvalConfidence(r) ? approvalConfidence(r).toFixed(0) : '-'}</span></td><td>${approvalFlags(r)}<div class="muted-note">${escapeHtml(approvalLockReason(r))}</div></td><td class="text-right">${money(r.suggested_amount||r.raw_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Bu filtrede kayıt yok.</div>`);
+    <div class="rule-box" style="margin-bottom:14px;">Kural: güven puanı düşük, muhtemel çift, görselden okunan, kopyala-yapıştır gelen veya import incelemede kilitlenen kayıtlar otomatik işlenmez; önce onaya düşer. İşleme alınan kayıt karar izi ile işlenenlere taşınır.</div>` + (pendingRows.length?`<table><thead><tr><th>İşlem No</th><th>Kaynak</th><th>Özet</th><th>Öneri</th><th>Kontrol</th><th class="text-right">Tutar</th></tr></thead><tbody>${pendingRows.map(({row:r,__i})=>{const proposedName=r.suggested_cari_name||r.suggested_expense_name||r.suggested_financial_account_name||"-";const proposedType=r.suggested_target_type||r.suggested_financial_account_type||(r.suggested_cari_name?'cari':'-');return `<tr class="click-row" data-approval-bucket="pending" data-approval-index="${__i}"><td>${escapeHtml(displayTxnNo(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(proposedName)} · ${escapeHtml(r.suggested_movement_type||"-")}<br><span style="font-size:12px;color:#64748b">Tip: ${escapeHtml(proposedType)} · Güven: ${approvalConfidence(r) ? approvalConfidence(r).toFixed(0) : '-'}</span><br><span class="muted-note">${escapeHtml(r.match_reason || r.eslesme_sebebi || 'Eşleşme sebebi yok')}</span></td><td>${approvalFlags(r)}<div class="muted-note">${escapeHtml(approvalLockReason(r))}</div></td><td class="text-right">${money(r.suggested_amount||r.raw_amount||0)}</td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Bu filtrede kayıt yok.</div>`);
   document.getElementById("processedWrap").innerHTML=processedRows.length?`<table><thead><tr><th>İşlem No</th><th>Kaynak</th><th>Karar</th><th>İz</th><th class="text-right">Tutar</th></tr></thead><tbody>${processedRows.map((r,i)=>`<tr class="click-row" data-approval-bucket="processed" data-approval-index="${i}"><td>${escapeHtml(displayTxnNo(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.final_cari_name||r.final_expense_name||r.suggested_cari_name||"-")} · ${escapeHtml(r.final_movement_type||r.suggested_movement_type||"-")}</td><td>${escapeHtml(r.decision_note || r.match_reason || 'İşlendi')}</td><td class="text-right">${money(r.final_amount||r.suggested_amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">İşlenen kayıt yok.</div>`;
   document.getElementById("rejectedWrap").innerHTML=rejectedRows.length?`<table><thead><tr><th>İşlem No</th><th>Kaynak</th><th>Özet</th><th>Not</th></tr></thead><tbody>${rejectedRows.map((r,i)=>`<tr class="click-row" data-approval-bucket="rejected" data-approval-index="${i}"><td>${escapeHtml(displayTxnNo(r,'APR'))}</td><td>${escapeHtml(approvalSourceText(r))}</td><td>${escapeHtml(r.content_summary||r.raw_content||"-")}</td><td>${escapeHtml(r.decision_note||"-")}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Reddedilen kayıt yok.</div>`;
   document.querySelectorAll('#approvalFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.approvalFilter = btn.dataset.afilter; renderApprovals(); }));
@@ -7788,14 +7807,14 @@ const oldDetail=typeof renderSelectedCariDetail==='function'?renderSelectedCariD
 function esc(v){try{if(typeof escapeHtml==='function')return escapeHtml(v)}catch(e){}return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function nn(v){try{if(typeof num==='function')return num(v)}catch(e){}const n=Number(String(v??0).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''));return Number.isFinite(n)?n:0}
 function mon(v){try{return typeof money==='function'?money(v):String(v)}catch(e){return String(v??'')}}
-function sd(v){try{return typeof shortDate==='function'?shortDate(v)}catch(e){return String(v||'-').slice(0,10)||'-'}}
+function sd(v){try{return typeof shortDate==='function'?shortDate(v):(String(v||'-').slice(0,10)||'-')}catch(e){return String(v||'-').slice(0,10)||'-'}}
 function parse(k,f){try{const r=localStorage.getItem(k);return r?JSON.parse(r):f}catch(e){return f}}
 function toast(m){try{if(typeof notify==='function')notify(m);else console.log(m)}catch(e){console.log(m)}}
-function srcInfo(r){const sm=String(r?.source_module||r?.source_type||r?.source||'');const d=String(r?.description||r?.content_summary||'').toLocaleLowerCase('tr-TR');const corr=r?.is_universal_local_edit||r?._alkam_override_status==='edited'||r?._alkam_override_status==='edited_orphan';if(corr)return{kind:'correction',label:'Düzeltme',detail:'Yerel/Kalıcı düzeltme'};if(sm==='fee_auto')return{kind:'auto',label:'Otomatik Tahakkuk',detail:'Programın ürettiği otomatik muhasebe ücret tahakkuku'};if(sm==='fee_bulk_manual')return{kind:'auto',label:'Toplu Tahakkuk',detail:'Cari Toplu Tahakkuk ekranı'};if(sm==='local_cari_collection')return{kind:'manual',label:'Manuel Tahsilat',detail:'Cari Tahsilat Gir ekranından'};if(sm.includes('manual'))return{kind:'manual',label:'Manuel',detail:sm};if(sm.includes('bank')||sm.includes('banka'))return{kind:'supabase',label:'Banka Extresi',detail:sm};if(d.includes('satış faturası')||d.includes('satis faturasi')||d.includes('muhasebe ücreti')||d.includes('muhasebe ucreti'))return{kind:'supabase',label:'Ana Veri',detail:'Yüklenen cari ekstresi / Supabase'};return{kind:'supabase',label:'Ana Veri',detail:sm||'Yüklenen cari ekstresi / Supabase'}}
+function srcInfo(r){const sm=String(r?.source_module||r?.source_type||r?.source||'');const d=String(r?.description||r?.content_summary||'').toLocaleLowerCase('tr-TR');const corr=r?.is_universal_local_edit||r?._alkam_override_status==='edited'||r?._alkam_override_status==='edited_orphan';if(sm==='moka_panel'||sm==='moka_united'||r?.target_type==='moka_united')return{kind:'moka',label:'Moka United',detail:'Moka United kasa/hesap akışı'};if(sm==='approval_center'||r?.is_local_bank_queue||r?.final_target_type||r?.decision_ref)return{kind:'approved',label:'Onaylı Eşleşme',detail:'Onay merkezi kararıyla eşleşen kayıt'};if(sm==='bank_panel'||sm==='movement_test'||sm==='movement_import'||sm.includes('bank')||sm.includes('banka'))return{kind:'bank',label:'Hesap Hareketi',detail:'Hesap hareketi doğrulama/eşleştirme katmanı'};if(corr)return{kind:'manual',label:'Manuel',detail:'Yerel/Kalıcı düzeltme'};if(sm==='fee_auto')return{kind:'manual',label:'Manuel',detail:'Programın ürettiği otomatik muhasebe ücret tahakkuku'};if(sm==='fee_bulk_manual')return{kind:'manual',label:'Manuel',detail:'Cari Toplu Tahakkuk ekranı'};if(sm==='local_cari_collection')return{kind:'manual',label:'Manuel',detail:'Cari Tahsilat Gir ekranından'};if(sm.includes('manual'))return{kind:'manual',label:'Manuel',detail:sm};if(d.includes('satış faturası')||d.includes('satis faturasi')||d.includes('muhasebe ücreti')||d.includes('muhasebe ucreti'))return{kind:'supabase',label:'Ana Veri',detail:'Yüklenen cari ekstresi / Supabase'};return{kind:'supabase',label:'Ana Veri',detail:sm||'Yüklenen cari ekstresi / Supabase'}}
 function sb(r){const s=srcInfo(r);return `<span class="source-badge ${s.kind}" title="${esc(s.detail)}">${esc(s.label)}</span>`}
 function sc(label,lines){return `<div class="cari-summary-card"><div class="summary-label">${label}</div>${lines.map(x=>`<div class="summary-line"><div class="summary-key">${x.k}</div><div class="summary-val ${x.money?'money':''}">${x.v}</div></div>`).join('')}</div>`}
 window.renderCariList=function(){const list=document.getElementById('cariList'), rows=typeof filteredCariler==='function'?filteredCariler():[], s=typeof getGlobalOpsSummary==='function'?getGlobalOpsSummary():null, wrap=document.getElementById('cariSummaryWrap');if(wrap&&s)wrap.innerHTML=`<div class="cari-summary-grid">`+sc('Mükellef Dağılımı',[{k:'İşletme',v:String(s.taxpayer?.isletme_defteri??0)},{k:'Bilanço',v:String(s.taxpayer?.bilanco??0)}])+sc('Şirket Yapısı',[{k:'Ltd',v:String(s.taxpayer?.limited_sirket??0)},{k:'A.Ş.',v:String(s.taxpayer?.anonim_sirket??0)}])+sc('Bu Ay Tahakkuk / Tahsilat',[{k:'Tahakkuk',v:mon(s.thisMonthTahakkuk),money:true},{k:'Tahsilat',v:mon(s.thisMonthTahsilat),money:true}])+sc('Bu Yıl Tahakkuk / Tahsilat',[{k:'Tahakkuk',v:mon(s.thisYearTahakkuk),money:true},{k:'Tahsilat',v:mon(s.thisYearTahsilat),money:true}])+sc('Bu Ay Gider',[{k:'Tahakkuk',v:mon(s.thisMonthExpenseAcc),money:true},{k:'Ödeme',v:mon(s.thisMonthExpensePay),money:true}])+sc('Bu Yıl Gider',[{k:'Tahakkuk',v:mon(s.thisYearExpenseAcc),money:true},{k:'Ödeme',v:mon(s.thisYearExpensePay),money:true}])+`</div>`;if(!list)return;list.innerHTML=rows.length?rows.map(c=>`<div class="list-item ${state.selectedCariId===c.cari_id?'active':''} ${c.is_tahsilat_3_ay_gecikmis?'risk':''}" data-cari-id="${esc(c.cari_id)}"><div><div class="list-title">${esc(c.cari_name)} ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''} ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}</div><div class="list-meta">Tür: ${esc(c.taxpayer_type||'-')} · Defter Ücreti: ${mon(c.defter_ucreti||0)} · Skor: ${Number(c.score_total||0).toFixed(0)}<br>Son tahakkuk: ${sd(c.son_tahakkuk_tarihi)} · ${mon(c.son_tahakkuk_tutari||0)}<br>Son tahsilat: ${sd(c.son_tahsilat_tarihi)} · ${mon(c.son_tahsilat_tutari||0)}</div></div><div class="list-balance-pill ${Number(c.bakiye||0)>0?'red':'green'}">${mon(c.bakiye||0)}</div></div>`).join(''):'<div class="empty">Cari bulunamadı.</div>';list.querySelectorAll('[data-cari-id]').forEach(el=>el.addEventListener('click',async()=>{state.selectedCariId=el.dataset.cariId;if(typeof loadSelectedCariHareketler==='function')await loadSelectedCariHareketler();renderCariList();if(typeof renderSelectedCariDetail==='function')renderSelectedCariDetail()}))};renderCariList=window.renderCariList;
-window.buildStandardStatementTable=function(rowsDesc,options={}){if(!rowsDesc||!rowsDesc.length)return '<div class="empty">Seçili aralıkta hareket yok.</div>';const editable=!!options.editable;return `<div class="statement-shell"><div class="statement-shell-header"><div><div class="statement-title">Cari Hareket Ekstresi</div><div class="statement-caption">Kaynak kolonu açık: otomatik, manuel, banka/ana veri ve düzeltme kayıtları ayrı görünür.</div></div><div class="statement-badge">Kaynak Kontrollü</div></div><div class="statement-scroll"><table class="statement-table"><colgroup><col class="col-no"><col class="col-date"><col class="col-source"><col class="col-type"><col class="col-desc"><col class="col-money"><col class="col-money"><col class="col-money"><col class="col-money">${editable?'<col class="col-action">':''}</colgroup><thead><tr><th>İşlem No</th><th>Tarih</th><th>Kaynak</th><th>İşlem</th><th>Açıklama</th><th>Borç</th><th>Alacak</th><th>Bakiye B</th><th>Bakiye A</th>${editable?'<th>İşlem</th>':''}</tr></thead><tbody>${rowsDesc.map(r=>{const b=typeof balanceColumns==='function'?balanceColumns(r.running_balance):{bakiye_b:'-',bakiye_a:'-'};const rowNo=typeof displayTxnNo==='function'?displayTxnNo(r,'HRK'):(r.id||'-');const canEdit=editable&&state.selectedLedgerView!=='allhistory'&&(typeof cariMovementEditable!=='function'||cariMovementEditable(r));const act=editable?`<td>${canEdit?`<button class="btn btn-soft" data-cari-edit-id="${esc(r.id||r._alkam_universal_key||'')}" data-cari-edit-source="${esc(r.source_module||'')}">Düzenle</button>`:`<span class="tag gray">Read-Only</span>`}</td>`:'';return `<tr><td>${esc(rowNo)}</td><td>${sd(r.line_date||r.entry_date)}</td><td>${sb(r)}<div class="muted-note">${esc(srcInfo(r).detail)}</div></td><td>${typeof renderTag==='function'?renderTag(r.movement_type||r.final_movement_type||r.suggested_movement_type||'-'):esc(r.movement_type||'-')}</td><td class="statement-desc">${esc(r.description||r.content_summary||'-')}</td><td class="statement-num">${mon(r.debit||0)}</td><td class="statement-num">${mon(r.credit||0)}</td><td class="statement-balance">${b.bakiye_b||'-'}</td><td class="statement-balance">${b.bakiye_a||'-'}</td>${act}</tr>`}).join('')}</tbody></table></div></div>`};buildStandardStatementTable=window.buildStandardStatementTable;
+window.buildStandardStatementTable=function(rowsDesc,options={}){if(!rowsDesc||!rowsDesc.length)return '<div class="empty">Seçili aralıkta hareket yok.</div>';const editable=!!options.editable;return `<div class="statement-shell"><div class="statement-shell-header"><div><div class="statement-title">Cari Hareket Ekstresi</div><div class="statement-caption">Kaynak kolonu açık: Ana Veri, Hesap Hareketi, Onaylı Eşleşme, Moka United ve Manuel ayrı görünür.</div></div><div class="statement-badge">Kaynak Kontrollü</div></div><div class="statement-scroll"><table class="statement-table"><colgroup><col class="col-no"><col class="col-date"><col class="col-source"><col class="col-type"><col class="col-desc"><col class="col-money"><col class="col-money"><col class="col-money"><col class="col-money">${editable?'<col class="col-action">':''}</colgroup><thead><tr><th>İşlem No</th><th>Tarih</th><th>Kaynak</th><th>İşlem</th><th>Açıklama</th><th>Borç</th><th>Alacak</th><th>Bakiye B</th><th>Bakiye A</th>${editable?'<th>İşlem</th>':''}</tr></thead><tbody>${rowsDesc.map(r=>{const b=typeof balanceColumns==='function'?balanceColumns(r.running_balance):{bakiye_b:'-',bakiye_a:'-'};const rowNo=typeof displayTxnNo==='function'?displayTxnNo(r,'HRK'):(r.id||'-');const canEdit=editable&&state.selectedLedgerView!=='allhistory'&&(typeof cariMovementEditable!=='function'||cariMovementEditable(r));const act=editable?`<td>${canEdit?`<button class="btn btn-soft" data-cari-edit-id="${esc(r.id||r._alkam_universal_key||'')}" data-cari-edit-source="${esc(r.source_module||'')}">Düzenle</button>`:`<span class="tag gray">Read-Only</span>`}</td>`:'';return `<tr><td>${esc(rowNo)}</td><td>${sd(r.line_date||r.entry_date)}</td><td>${sb(r)}<div class="muted-note">${esc(srcInfo(r).detail)}</div></td><td>${typeof renderTag==='function'?renderTag(r.movement_type||r.final_movement_type||r.suggested_movement_type||'-'):esc(r.movement_type||'-')}</td><td class="statement-desc">${esc(r.description||r.content_summary||'-')}</td><td class="statement-num">${mon(r.debit||0)}</td><td class="statement-num">${mon(r.credit||0)}</td><td class="statement-balance">${b.bakiye_b||'-'}</td><td class="statement-balance">${b.bakiye_a||'-'}</td>${act}</tr>`}).join('')}</tbody></table></div></div>`};buildStandardStatementTable=window.buildStandardStatementTable;
 window.renderSelectedCariDetail=function(){if(typeof oldDetail==='function')oldDetail();const t=document.getElementById('selectedCariDetail');if(t&&!t.classList.contains('empty'))t.classList.add('vmain-cari-detail')};renderSelectedCariDetail=window.renderSelectedCariDetail;
 function localAuto(){return(window.state?.operationalLedger||[]).filter(x=>['fee_auto','fee_bulk_manual'].includes(String(x.source_module||'')))}function localColl(){if(typeof getLocalCariCollections==='function')return getLocalCariCollections();return parse('alkam_local_cari_collections_v1',[])}function over(){return parse(OV,{})}
 function backup(reason){try{const key='alkam_cleanup_backups_main';const hist=parse(key,[]);hist.unshift({created_at:new Date().toISOString(),reason,auto_count:localAuto().length,collection_count:localColl().length,override_count:Object.keys(over()).length,operationalLedger:window.state?.operationalLedger||[],localCariCollections:localColl(),correctionOverrides:over()});localStorage.setItem(key,JSON.stringify(hist.slice(0,20)))}catch(e){console.warn(e)}}
