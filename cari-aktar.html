@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALKAM Cari Aktarim ve Hareket Duzenleme</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f7fb;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--muted:#64748b;--blue:#1769e8;--red:#dc2626;--green:#059669;--amber:#d97706;--shadow:0 18px 45px rgba(15,23,42,.08)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}.wrap{max-width:1440px;margin:0 auto;padding:20px}.top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}.title h1{margin:0;font-size:28px}.title p{margin:7px 0 0;color:var(--muted);font-weight:700}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:16px}.grid{display:grid;grid-template-columns:360px 1fr;gap:16px}.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}.metric{background:#fbfdff;border:1px solid var(--line);border-radius:12px;padding:12px}.k{font-size:11px;color:var(--muted);font-weight:900;text-transform:uppercase}.v{font-size:20px;font-weight:900;margin-top:6px}button,.btn{border:0;border-radius:10px;min-height:38px;padding:9px 12px;font-weight:900;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:13px}.blue{background:var(--blue);color:white}.soft{background:#e8eef9;color:#0f172a}.red{background:var(--red);color:white}.green{background:var(--green);color:white}.amber{background:var(--amber);color:white}.btns{display:flex;gap:8px;flex-wrap:wrap}input,select,textarea{width:100%;border:1px solid #cfd8e6;border-radius:10px;min-height:38px;padding:8px 10px;font-weight:700;background:white}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:11px;font-weight:900;color:#334155;text-transform:uppercase}.form{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:12px 0}.list{max-height:calc(100vh - 320px);overflow:auto;display:grid;gap:8px;padding-right:4px}.item{border:1px solid var(--line);border-radius:12px;background:#fbfdff;padding:11px;cursor:pointer}.item.active{border-color:var(--blue);box-shadow:0 0 0 3px rgba(23,105,232,.12);background:#f7faff}.name{font-weight:900;font-size:13px;line-height:1.35}.meta{font-size:11px;color:var(--muted);font-weight:800;margin-top:5px;line-height:1.45}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;max-height:calc(100vh - 410px)}table{width:100%;border-collapse:collapse;min-width:1060px}th,td{padding:9px 8px;border-bottom:1px solid var(--line);font-size:12px;text-align:left;vertical-align:top}th{background:#f8fbff;font-weight:900;position:sticky;top:0;z-index:2}.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:900}.tag{display:inline-flex;align-items:center;min-height:24px;padding:0 8px;border-radius:999px;font-size:11px;font-weight:900}.tag.tahakkuk{background:#fee2e2;color:#991b1b}.tag.tahsilat{background:#dcfce7;color:#166534}.tag.other{background:#e0ecff;color:#1d4ed8}.empty{padding:20px;border:1px dashed #cbd5e1;border-radius:12px;text-align:center;color:var(--muted);font-weight:900}.danger-row td:first-child{box-shadow:inset 4px 0 0 #ef4444}.ok-row td:first-child{box-shadow:inset 4px 0 0 #10b981}.other-row td:first-child{box-shadow:inset 4px 0 0 #3b82f6}.notice{padding:11px 12px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:12px;font-size:13px;font-weight:800;line-height:1.45;margin-bottom:12px}.toast{position:fixed;right:16px;bottom:16px;background:#0f172a;color:white;padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);font-weight:900;display:none;max-width:420px}.small{font-size:12px;color:var(--muted);font-weight:800}.hidden{display:none!important}
+@media(max-width:1100px){.grid,.form,.cards{grid-template-columns:1fr}.list,.table-wrap{max-height:none}.top{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="title">
+      <h1>ALKAM Cari Aktarim ve Hareket Duzenleme</h1>
+      <p>PDF ekstrelerinden hazirlanan Excel/JSON dosyasini ice aktar, cari tahakkuk ve tahsilatlarini ekle, duzelt veya sil.</p>
+    </div>
+    <div class="btns">
+      <a class="btn soft" href="/">Programa Don</a>
+      <button class="blue" id="exportJsonBtn">JSON Yedek</button>
+      <button class="green" id="exportXlsxBtn">Excel Yedek</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="notice">Dosya olarak daha once hazirlanan <b>cariler_programa_aktarim.xlsx</b> veya <b>cariler_programa_aktarim.json</b> secilebilir. Aktarim tarayiciya kaydedilir; ayni bilgisayarda sayfa yenilense bile kalir.</div>
+    <div class="btns">
+      <input id="fileInput" type="file" accept=".json,.xlsx,.xls,.csv" style="max-width:430px">
+      <button class="blue" id="importBtn">Dosyayi Ice Aktar</button>
+      <button class="amber" id="saveMainBtn">Programa Yaz</button>
+      <button class="red" id="clearBtn">Bu Sayfadaki Veriyi Temizle</button>
+    </div>
+  </div>
+
+  <div class="cards" style="margin-top:14px">
+    <div class="metric"><div class="k">Cari</div><div class="v" id="mCari">0</div></div>
+    <div class="metric"><div class="k">Hareket</div><div class="v" id="mHareket">0</div></div>
+    <div class="metric"><div class="k">Toplam Tahakkuk</div><div class="v" id="mBorc">0,00 TL</div></div>
+    <div class="metric"><div class="k">Toplam Tahsilat</div><div class="v" id="mAlacak">0,00 TL</div></div>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <div class="field" style="margin-bottom:10px">
+        <label>Cari Ara</label>
+        <input id="searchInput" placeholder="Cari adi, kodu veya dosya adi">
+      </div>
+      <div class="list" id="cariList"></div>
+    </section>
+
+    <section class="panel">
+      <div id="detailEmpty" class="empty">Bir cari sec.</div>
+      <div id="detail" class="hidden">
+        <div class="top" style="margin-bottom:10px">
+          <div>
+            <h2 id="cariName" style="margin:0;font-size:22px"></h2>
+            <div class="small" id="cariMeta"></div>
+          </div>
+          <div class="btns">
+            <button class="green" id="newTahakkukBtn">Tahakkuk Ekle</button>
+            <button class="blue" id="newTahsilatBtn">Tahsilat Ekle</button>
+          </div>
+        </div>
+
+        <div class="cards">
+          <div class="metric"><div class="k">Tahakkuk</div><div class="v" id="dBorc">0,00 TL</div></div>
+          <div class="metric"><div class="k">Tahsilat</div><div class="v" id="dAlacak">0,00 TL</div></div>
+          <div class="metric"><div class="k">Bakiye</div><div class="v" id="dBakiye">0,00 TL</div></div>
+          <div class="metric"><div class="k">Hareket</div><div class="v" id="dCount">0</div></div>
+        </div>
+
+        <div class="form" id="movementForm">
+          <input type="hidden" id="fId">
+          <div class="field"><label>Tarih</label><input id="fTarih" type="date"></div>
+          <div class="field"><label>Tur</label><select id="fTur"><option>Tahakkuk</option><option>Tahsilat</option><option>Alinan Cek</option><option>Tedarikciye Odeme</option><option>Duzeltme</option></select></div>
+          <div class="field"><label>Aciklama</label><input id="fAciklama" placeholder="Aciklama"></div>
+          <div class="field"><label>Tahakkuk / Borc</label><input id="fBorc" type="number" step="0.01"></div>
+          <div class="field"><label>Tahsilat / Alacak</label><input id="fAlacak" type="number" step="0.01"></div>
+        </div>
+        <div class="btns" style="margin-bottom:12px">
+          <button class="blue" id="saveMoveBtn">Kaydet</button>
+          <button class="soft" id="cancelMoveBtn">Vazgec</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tarih</th><th>Tur</th><th>Aciklama</th><th class="num">Tahakkuk</th><th class="num">Tahsilat</th><th class="num">Bakiye</th><th>Kaynak</th><th>Islem</th></tr></thead>
+            <tbody id="movementRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const STORE='alkam_cari_import_editor_v1';
+const MAIN_LEDGER='alkam_local_ledger_v1';
+const MAIN_CARILER='alkam_imported_cariler_v1';
+let db={cariler:[],hareketler:[]};
+let selected=null;
+
+const $=id=>document.getElementById(id);
+const money=v=>Number(v||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL';
+const nrm=v=>String(v||'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\u0131\u0130]/g,'i');
+function toast(t){const el=$('toast');el.textContent=t;el.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>el.style.display='none',2600)}
+function save(){localStorage.setItem(STORE,JSON.stringify(db))}
+function load(){try{db=JSON.parse(localStorage.getItem(STORE)||'{}')}catch(e){db={}};db.cariler=db.cariler||[];db.hareketler=db.hareketler||[]}
+function uid(){return 'H'+Date.now()+Math.random().toString(16).slice(2,8)}
+function toNum(v){return Number(String(v||0).replace(',','.'))||0}
+function totals(rows){return rows.reduce((a,r)=>{a.b+=toNum(r.borc);a.a+=toNum(r.alacak);return a},{b:0,a:0})}
+
+async function readFile(file){
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='json') return JSON.parse(await file.text());
+  const buf=await file.arrayBuffer();
+  const wb=XLSX.read(buf,{type:'array'});
+  const cariler=XLSX.utils.sheet_to_json(wb.Sheets.Cariler||wb.Sheets[wb.SheetNames[0]],{defval:''});
+  const hareketler=XLSX.utils.sheet_to_json(wb.Sheets.Hareketler||wb.Sheets[wb.SheetNames[1]],{defval:''});
+  return {cariler,hareketler};
+}
+function normalizeImport(data){
+  const cariler=(data.cariler||data.Cariler||[]).map((c,i)=>({
+    cari_kodu:String(c.cari_kodu||c['cari_kodu']||c['Cari Kodu']||'C'+String(i+1).padStart(4,'0')),
+    cari_adi:String(c.cari_adi||c['cari_adi']||c['Cari Adi']||c.cari_name||'Cari'),
+    aktif:c.aktif||'Evet',
+    kaynak_dosya:c.kaynak_dosya||'',
+    not:c.not||''
+  }));
+  const hareketler=(data.hareketler||data.Hareketler||[]).map((h,i)=>({
+    hareket_id:String(h.hareket_id||h.id||uid()),
+    belge_sira:Number(h.belge_sira||i+1),
+    cari_kodu:String(h.cari_kodu||h['cari_kodu']||h['Cari Kodu']||''),
+    cari_adi:String(h.cari_adi||h['cari_adi']||h['Cari Adi']||''),
+    tarih:String(h.tarih||h['Tarih']||'').slice(0,10),
+    tur:String(h.tur||h['Tur']||'Tahakkuk'),
+    aciklama:String(h.aciklama||h['Aciklama']||''),
+    borc:toNum(h.borc||h['borc']||h['Borc']),
+    alacak:toNum(h.alacak||h['alacak']||h['Alacak']),
+    bakiye:h.bakiye==null||h.bakiye===''?null:toNum(h.bakiye),
+    kaynak_dosya:String(h.kaynak_dosya||h['Kaynak']||'')
+  }));
+  return {cariler,hareketler};
+}
+function render(){
+  const all=totals(db.hareketler);
+  $('mCari').textContent=db.cariler.length;$('mHareket').textContent=db.hareketler.length;$('mBorc').textContent=money(all.b);$('mAlacak').textContent=money(all.a);
+  const q=nrm($('searchInput').value);
+  const rows=db.cariler.filter(c=>!q||nrm(c.cari_adi+' '+c.cari_kodu+' '+c.kaynak_dosya).includes(q));
+  $('cariList').innerHTML=rows.length?rows.map(c=>{
+    const hs=db.hareketler.filter(h=>h.cari_kodu===c.cari_kodu);const t=totals(hs);
+    return `<div class="item ${selected===c.cari_kodu?'active':''}" onclick="selectCari('${c.cari_kodu}')"><div class="name">${esc(c.cari_adi)}</div><div class="meta">${esc(c.cari_kodu)} - ${hs.length} hareket - Bakiye ${money(t.b-t.a)}</div></div>`;
+  }).join(''):'<div class="empty">Cari bulunamadi.</div>';
+  renderDetail();
+}
+function renderDetail(){
+  const c=db.cariler.find(x=>x.cari_kodu===selected);
+  $('detailEmpty').classList.toggle('hidden',!!c);$('detail').classList.toggle('hidden',!c);
+  if(!c)return;
+  const hs=db.hareketler.filter(h=>h.cari_kodu===c.cari_kodu).sort((a,b)=>String(a.tarih).localeCompare(String(b.tarih))||Number(a.belge_sira||0)-Number(b.belge_sira||0));
+  let balance=0;const t=totals(hs);
+  $('cariName').textContent=c.cari_adi;$('cariMeta').textContent=`${c.cari_kodu} - ${c.kaynak_dosya||'kaynak yok'}`;
+  $('dBorc').textContent=money(t.b);$('dAlacak').textContent=money(t.a);$('dBakiye').textContent=money(t.b-t.a);$('dCount').textContent=hs.length;
+  $('movementRows').innerHTML=hs.map(h=>{balance+=toNum(h.borc)-toNum(h.alacak);const cls=h.tur==='Tahakkuk'?'danger-row':h.tur==='Tahsilat'?'ok-row':'other-row';const tag=h.tur==='Tahakkuk'?'tahakkuk':h.tur==='Tahsilat'?'tahsilat':'other';return `<tr class="${cls}"><td>${esc(h.tarih)}</td><td><span class="tag ${tag}">${esc(h.tur)}</span></td><td>${esc(h.aciklama)}</td><td class="num">${money(h.borc)}</td><td class="num">${money(h.alacak)}</td><td class="num">${money(balance)}</td><td>${esc(h.kaynak_dosya||'')}</td><td><button class="soft" onclick="editMove('${h.hareket_id}')">Duzelt</button> <button class="red" onclick="deleteMove('${h.hareket_id}')">Sil</button></td></tr>`}).join('')||'<tr><td colspan="8">Hareket yok.</td></tr>';
+}
+function esc(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}
+window.selectCari=code=>{selected=code;clearForm();render()}
+function setType(t){$('fId').value='';$('fTarih').value=new Date().toISOString().slice(0,10);$('fTur').value=t;$('fAciklama').value=t==='Tahakkuk'?'Manuel tahakkuk':'Musteriden Tahsilat';$('fBorc').value=t==='Tahakkuk'?'0':'';$('fAlacak').value=t==='Tahsilat'?'0':''}
+function clearForm(){$('fId').value='';$('fTarih').value='';$('fTur').value='Tahakkuk';$('fAciklama').value='';$('fBorc').value='';$('fAlacak').value=''}
+window.editMove=id=>{const h=db.hareketler.find(x=>x.hareket_id===id);if(!h)return;$('fId').value=h.hareket_id;$('fTarih').value=h.tarih;$('fTur').value=h.tur;$('fAciklama').value=h.aciklama;$('fBorc').value=h.borc;$('fAlacak').value=h.alacak;scrollTo({top:0,behavior:'smooth'})}
+window.deleteMove=id=>{if(!confirm('Bu hareket silinsin mi?'))return;db.hareketler=db.hareketler.filter(h=>h.hareket_id!==id);save();render();toast('Hareket silindi')}
+function saveMove(){const c=db.cariler.find(x=>x.cari_kodu===selected);if(!c)return toast('Once cari sec');const id=$('fId').value||uid();const tur=$('fTur').value;const row={hareket_id:id,belge_sira:Date.now(),cari_kodu:c.cari_kodu,cari_adi:c.cari_adi,tarih:$('fTarih').value||new Date().toISOString().slice(0,10),tur,aciklama:$('fAciklama').value||tur,borc:toNum($('fBorc').value),alacak:toNum($('fAlacak').value),kaynak_dosya:'Manuel'};if(tur==='Tahakkuk'&&row.borc===0)row.borc=toNum($('fAlacak').value);if(tur==='Tahsilat'&&row.alacak===0)row.alacak=toNum($('fBorc').value);db.hareketler=db.hareketler.filter(h=>h.hareket_id!==id);db.hareketler.push(row);save();clearForm();render();toast('Hareket kaydedildi')}
+function exportJson(){download('alkam_cari_yedek_'+stamp()+'.json',JSON.stringify(db,null,2),'application/json')}
+function exportXlsx(){const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(db.cariler),'Cariler');XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(db.hareketler),'Hareketler');XLSX.writeFile(wb,'alkam_cari_yedek_'+stamp()+'.xlsx')}
+function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();URL.revokeObjectURL(a.href)}
+function stamp(){return new Date().toISOString().replace(/[:.]/g,'-')}
+function saveMain(){const ledger=db.hareketler.map(h=>({id:h.hareket_id,txn_id:h.hareket_id,operation_no:h.hareket_id,cari_id:h.cari_kodu,cari_name:h.cari_adi,source_module:'pdf_import_editor',movement_type:h.tur,line_date:h.tarih,entry_date:h.tarih,description:h.aciklama,amount:h.borc||h.alacak,debit:h.borc,credit:h.alacak,target_type:'cari',created_at:new Date().toISOString(),updated_at:new Date().toISOString()}));localStorage.setItem(MAIN_LEDGER,JSON.stringify(ledger));localStorage.setItem(MAIN_CARILER,JSON.stringify(db.cariler));toast('Programa yazildi. Ana sayfayi acip Ctrl+F5 yap.')}
+document.addEventListener('DOMContentLoaded',()=>{load();render();$('searchInput').addEventListener('input',render);$('importBtn').onclick=async()=>{const f=$('fileInput').files[0];if(!f)return toast('Once dosya sec');db=normalizeImport(await readFile(f));selected=db.cariler[0]?.cari_kodu||null;save();render();toast('Ice aktarim tamam')};$('saveMoveBtn').onclick=saveMove;$('cancelMoveBtn').onclick=clearForm;$('newTahakkukBtn').onclick=()=>setType('Tahakkuk');$('newTahsilatBtn').onclick=()=>setType('Tahsilat');$('exportJsonBtn').onclick=exportJson;$('exportXlsxBtn').onclick=exportXlsx;$('saveMainBtn').onclick=saveMain;$('clearBtn').onclick=()=>{if(confirm('Bu sayfadaki ice aktarilan veri temizlensin mi?')){db={cariler:[],hareketler:[]};selected=null;save();render()}}});
+</script>
+</body>
+</html>
