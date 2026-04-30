@@ -1,0 +1,3 @@
+Cloudflare deployment trigger
+Date: 2026-04-30
+Purpose: refresh live deployment after dashboard audit trace removal.
