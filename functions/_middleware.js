@@ -42,6 +42,7 @@ export async function onRequest(context) {
 <script id="alkam-summary-card-fix-script">
 (function(){
   function cleanText(el){return (el && el.textContent || '').replace(/\s+/g,' ').trim();}
+  function isTraceText(text){return text === 'işlem izi' || text === 'denetim izi' || text === 'islem izi' || text.indexOf('işlem iz ') === 0 || text.indexOf('denetim iz ') === 0 || text.indexOf('islem iz ') === 0;}
   function specFor(label){
     if(/^İşletme\s*\/\s*Bilanço$|^Isletme\s*\/\s*Bilanco$/i.test(label)) return {title:'Cari Defter Türü', labels:['İşletme','Bilanço']};
     if(/^Ltd\s*\/\s*A\.Ş\.$|^Ltd\s*\/\s*A\.S\.$/i.test(label)) return {title:'Şirket Türü', labels:['Ltd','A.Ş.']};
@@ -79,11 +80,11 @@ export async function onRequest(context) {
     var targets = document.querySelectorAll('button,a,.nav-btn,.erp-module-btn,.tab');
     Array.prototype.slice.call(targets).forEach(function(el){
       var text = cleanText(el).toLocaleLowerCase('tr-TR');
-      if(text === 'işlem izi' || text === 'denetim izi' || text === 'islem izi') el.classList.add('alkam-visible-audit-trace');
+      if(isTraceText(text)) el.classList.add('alkam-visible-audit-trace');
     });
     Array.prototype.slice.call(document.querySelectorAll('h1,h2,h3,.section-title')).forEach(function(el){
       var text = cleanText(el).toLocaleLowerCase('tr-TR');
-      if(text === 'işlem izi' || text === 'denetim izi' || text === 'islem izi') {
+      if(isTraceText(text)) {
         var box = el.closest('.section,.panel,.card') || el;
         box.classList.add('alkam-visible-audit-trace');
       }
