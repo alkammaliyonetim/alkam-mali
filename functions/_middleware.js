@@ -36,6 +36,7 @@ export async function onRequest(context) {
   .alkam-report-guard b{font-weight:950!important}.alkam-report-guard ul{margin:7px 0 0 18px!important;padding:0!important}.alkam-report-guard li{margin:3px 0!important}
   .alkam-report-guard-ok{border-color:#bbf7d0!important;background:#f0fdf4!important;color:#166534!important}
   .alkam-report-uncertain .alkam-fin-card,.alkam-report-uncertain .alkam-fin-table-wrap{outline:2px solid rgba(220,38,38,.18)!important;outline-offset:0!important}
+  [data-tab="audit"],#tab-audit,.alkam-visible-audit-trace{display:none!important}
   @media(max-width:640px){.alkam-summary-fixed-grid{grid-template-columns:1fr!important}.alkam-summary-fixed-value{font-size:15px!important}}
 </style>
 <script id="alkam-summary-card-fix-script">
@@ -72,6 +73,20 @@ export async function onRequest(context) {
           '<div class="alkam-summary-fixed-cell"><span class="alkam-summary-fixed-label">'+spec.labels[0]+'</span><span class="alkam-summary-fixed-value">'+values[0]+'</span></div>'+
           '<div class="alkam-summary-fixed-cell"><span class="alkam-summary-fixed-label">'+spec.labels[1]+'</span><span class="alkam-summary-fixed-value">'+values[1]+'</span></div>'+
         '</div>';
+    });
+  }
+  function hideVisibleTrace(){
+    var targets = document.querySelectorAll('button,a,.nav-btn,.erp-module-btn,.tab');
+    Array.prototype.slice.call(targets).forEach(function(el){
+      var text = cleanText(el).toLocaleLowerCase('tr-TR');
+      if(text === 'işlem izi' || text === 'denetim izi' || text === 'islem izi') el.classList.add('alkam-visible-audit-trace');
+    });
+    Array.prototype.slice.call(document.querySelectorAll('h1,h2,h3,.section-title')).forEach(function(el){
+      var text = cleanText(el).toLocaleLowerCase('tr-TR');
+      if(text === 'işlem izi' || text === 'denetim izi' || text === 'islem izi') {
+        var box = el.closest('.section,.panel,.card') || el;
+        box.classList.add('alkam-visible-audit-trace');
+      }
     });
   }
   function arr(x){return Array.isArray(x)?x:[];}
@@ -121,7 +136,7 @@ export async function onRequest(context) {
       window.ALKAM_RENDER_FINANCE_REPORT=function(){var r=original.apply(this,arguments); setTimeout(installReportGuard,60); return r;};
     }
   }
-  function run(){fixCards(); patchReportRenderer(); installReportGuard();}
+  function run(){fixCards(); hideVisibleTrace(); patchReportRenderer(); installReportGuard();}
   document.addEventListener('DOMContentLoaded', function(){run(); setTimeout(run,300); setTimeout(run,1000); setTimeout(run,2200); setTimeout(run,3800);});
 })();
 </script>`;
