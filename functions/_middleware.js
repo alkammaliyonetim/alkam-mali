@@ -32,6 +32,10 @@ export async function onRequest(context) {
   .alkam-summary-fixed-cell{min-width:0!important;border:1px solid #e9eef6!important;background:#fbfdff!important;border-radius:9px!important;padding:8px 9px!important}
   .alkam-summary-fixed-label{display:block!important;font-size:10px!important;font-weight:950!important;color:#64748b!important;line-height:1.15!important;margin-bottom:4px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
   .alkam-summary-fixed-value{display:block!important;font-size:16px!important;font-weight:950!important;color:#0f172a!important;line-height:1.1!important;font-variant-numeric:tabular-nums!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .alkam-report-guard{border:1px solid #fecaca!important;background:#fff7f7!important;color:#991b1b!important;border-radius:12px!important;padding:10px 12px!important;margin:0 0 12px!important;font-size:12px!important;font-weight:850!important;line-height:1.45!important}
+  .alkam-report-guard b{font-weight:950!important}.alkam-report-guard ul{margin:7px 0 0 18px!important;padding:0!important}.alkam-report-guard li{margin:3px 0!important}
+  .alkam-report-guard-ok{border-color:#bbf7d0!important;background:#f0fdf4!important;color:#166534!important}
+  .alkam-report-uncertain .alkam-fin-card,.alkam-report-uncertain .alkam-fin-table-wrap{outline:2px solid rgba(220,38,38,.18)!important;outline-offset:0!important}
   @media(max-width:640px){.alkam-summary-fixed-grid{grid-template-columns:1fr!important}.alkam-summary-fixed-value{font-size:15px!important}}
 </style>
 <script id="alkam-summary-card-fix-script">
@@ -70,7 +74,54 @@ export async function onRequest(context) {
         '</div>';
     });
   }
-  document.addEventListener('DOMContentLoaded', function(){fixCards(); setTimeout(fixCards, 300); setTimeout(fixCards, 1000); setTimeout(fixCards, 2200);});
+  function arr(x){return Array.isArray(x)?x:[];}
+  function readJson(key,fallback){try{var raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback;}catch(e){return fallback;}}
+  function countLive(name){try{return arr(window.__liveCaches&&window.__liveCaches[name]).length;}catch(e){return 0;}}
+  function countState(name){try{return arr((window.state||{})[name]).length;}catch(e){return 0;}}
+  function reportInputs(){
+    return {
+      cari: countState('cariler') + countState('customers'),
+      sales: countState('sales') + countState('satislar') + countState('invoices') + countLive('sales') + countLive('invoices') + readJson('alkam_local_sales_v1',[]).length,
+      ledger: countState('operationalLedger') + countState('hareketler') + readJson('alkam_local_ledger_v1',[]).length,
+      accountOps: countState('accountOps') + countLive('account_ops') + readJson('alkam_local_account_ops_v1',[]).length,
+      bank: countState('bankPanel') + readJson('alkam_local_bank_ops_v1',{}).processed?.length || 0,
+      expense: countState('expenseAccruals') + countState('expensePayments') + countLive('expense_accruals') + countLive('expense_payments') + readJson('alkam_local_expense_accruals_v1',[]).length + readJson('alkam_local_expense_payments_v1',[]).length
+    };
+  }
+  function installReportGuard(){
+    var panel=document.getElementById('alkamFinanceReportPanel');
+    if(!panel) return;
+    var input=reportInputs();
+    var missing=[];
+    if(input.sales===0) missing.push('Satışlar / gelir tahakkuk kaynağı bağlı değil');
+    if(input.ledger===0) missing.push('Cari hareket / tahakkuk hareketleri tamamlanmamış');
+    if(input.accountOps===0 && input.bank===0) missing.push('Banka, kasa ve hesap hareketleri tamamlanmamış');
+    if(input.cari===0) missing.push('Cari kart verisi rapora bağlanmamış');
+    var old=document.getElementById('alkamReportGuard');
+    if(old) old.remove();
+    var box=document.createElement('div');
+    box.id='alkamReportGuard';
+    if(missing.length){
+      panel.classList.add('alkam-report-uncertain');
+      box.className='alkam-report-guard';
+      box.innerHTML='<b>Kesin rapor değildir.</b> Bu rakamlar muhasebe raporu olarak kullanılamaz; veri omurgası eksik. Eksikler:<ul>'+missing.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>';
+    }else{
+      panel.classList.remove('alkam-report-uncertain');
+      box.className='alkam-report-guard alkam-report-guard-ok';
+      box.innerHTML='<b>Rapor veri kaynakları bağlı görünüyor.</b> Yine de kapanış/açılış bakiyesi ve dönem mutabakatı tamamlanmadan nihai beyan raporu sayılmaz.';
+    }
+    panel.insertBefore(box,panel.firstChild);
+  }
+  function patchReportRenderer(){
+    if(window.__alkamReportGuardPatched) return;
+    window.__alkamReportGuardPatched=true;
+    var original=window.ALKAM_RENDER_FINANCE_REPORT;
+    if(typeof original==='function'){
+      window.ALKAM_RENDER_FINANCE_REPORT=function(){var r=original.apply(this,arguments); setTimeout(installReportGuard,60); return r;};
+    }
+  }
+  function run(){fixCards(); patchReportRenderer(); installReportGuard();}
+  document.addEventListener('DOMContentLoaded', function(){run(); setTimeout(run,300); setTimeout(run,1000); setTimeout(run,2200); setTimeout(run,3800);});
 })();
 </script>`;
 
