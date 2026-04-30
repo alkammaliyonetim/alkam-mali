@@ -78,13 +78,14 @@ export async function onRequest(context) {
   function readJson(key,fallback){try{var raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback;}catch(e){return fallback;}}
   function countLive(name){try{return arr(window.__liveCaches&&window.__liveCaches[name]).length;}catch(e){return 0;}}
   function countState(name){try{return arr((window.state||{})[name]).length;}catch(e){return 0;}}
+  function bankLocalCount(){var bank=readJson('alkam_local_bank_ops_v1',{});return arr(bank.processed).length+arr(bank.pending).length+arr(bank.history).length;}
   function reportInputs(){
     return {
       cari: countState('cariler') + countState('customers'),
       sales: countState('sales') + countState('satislar') + countState('invoices') + countLive('sales') + countLive('invoices') + readJson('alkam_local_sales_v1',[]).length,
       ledger: countState('operationalLedger') + countState('hareketler') + readJson('alkam_local_ledger_v1',[]).length,
       accountOps: countState('accountOps') + countLive('account_ops') + readJson('alkam_local_account_ops_v1',[]).length,
-      bank: countState('bankPanel') + readJson('alkam_local_bank_ops_v1',{}).processed?.length || 0,
+      bank: countState('bankPanel') + bankLocalCount(),
       expense: countState('expenseAccruals') + countState('expensePayments') + countLive('expense_accruals') + countLive('expense_payments') + readJson('alkam_local_expense_accruals_v1',[]).length + readJson('alkam_local_expense_payments_v1',[]).length
     };
   }
