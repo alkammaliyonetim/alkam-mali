@@ -8946,5 +8946,500 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 })();
 </script>
 
+
+<style id="alkam-finans-rapor-patch-style">
+#alkamFinanceReportQuickBtn{
+  position:fixed;right:18px;bottom:26px;z-index:99998;
+  border:0;border-radius:14px;background:#1769e8;color:#fff;
+  padding:12px 14px;font-size:13px;font-weight:900;
+  box-shadow:0 16px 44px rgba(15,23,42,.24);cursor:pointer;
+}
+#alkamFinanceReportPanel{
+  border:1px solid #dbe5f3;border-radius:18px;background:#fff;
+  box-shadow:0 10px 32px rgba(15,23,42,.06);
+  padding:16px;margin:0 0 16px;
+}
+.alkam-fin-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.alkam-fin-title{margin:0;font-size:24px;font-weight:950;color:#0f172a;letter-spacing:-.03em}
+.alkam-fin-sub{font-size:12px;color:#64748b;font-weight:800;line-height:1.45;margin-top:5px}
+.alkam-fin-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.alkam-fin-date{border:1px solid #d8e1ef;border-radius:10px;min-height:36px;padding:7px 10px;font-size:12px;font-weight:900;background:#fff}
+.alkam-fin-btn{border:0;border-radius:10px;min-height:36px;padding:8px 11px;font-size:12px;font-weight:900;cursor:pointer}
+.alkam-fin-btn.blue{background:#1769e8;color:#fff}.alkam-fin-btn.soft{background:#e8eef9;color:#0f172a}
+.alkam-fin-cards{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.alkam-fin-card{border:1px solid #e2e8f0;border-radius:14px;background:#fbfdff;padding:11px}
+.alkam-fin-card .k{font-size:10px;font-weight:950;color:#64748b;text-transform:uppercase;letter-spacing:.045em;line-height:1.25}
+.alkam-fin-card .v{font-size:17px;font-weight:950;color:#0f172a;margin-top:6px;font-variant-numeric:tabular-nums}
+.alkam-fin-table-wrap{overflow:auto;border:1px solid #e2e8f0;border-radius:14px}
+.alkam-fin-table{width:100%;border-collapse:separate;border-spacing:0;min-width:1120px;background:#fff}
+.alkam-fin-table th,.alkam-fin-table td{padding:10px 9px;border-bottom:1px solid #e2e8f0;font-size:12px;text-align:right;vertical-align:top}
+.alkam-fin-table th{background:#f8fbff;color:#334155;font-weight:950;position:sticky;top:0;z-index:2}
+.alkam-fin-table td:first-child,.alkam-fin-table th:first-child{text-align:left;position:sticky;left:0;background:inherit;z-index:1}
+.alkam-fin-table th:first-child{z-index:3;background:#f8fbff}
+.alkam-fin-row-title{font-weight:950;color:#0f172a}
+.alkam-fin-note{border:1px solid #e2e8f0;border-radius:13px;background:#fbfdff;padding:10px;color:#334155;font-size:12px;font-weight:750;line-height:1.55;margin-top:12px}
+.alkam-fin-pos{color:#047857;font-weight:950}.alkam-fin-neg{color:#b91c1c;font-weight:950}.alkam-fin-zero{color:#64748b;font-weight:950}
+@media(max-width:1400px){.alkam-fin-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:760px){.alkam-fin-cards{grid-template-columns:1fr}}
+</style>
+
+<script id="alkam-finans-karsilastirmali-rapor-patch">
+/* ALKAM Finansal Karşılaştırmalı Rapor Patch
+   Parametreler:
+   - Gelir tahakkuk
+   - Tahsilat
+   - Alacak bakiye
+   - Borç bakiye
+   - Gider tahakkuk
+   - Ödenen gider
+   Dönemler:
+   - Bu ay
+   - Geçen ay
+   - Geçen yıl aynı ay
+   - Yılbaşından bugüne
+   - Geçen yıl aynı dönem
+*/
+(function(){
+  "use strict";
+
+  const REPORT_ID = "ALKAM_FINANS_KARSILASTIRMALI_RAPOR_20260429";
+  const LOCAL_KEYS = {
+    ledger:"alkam_local_ledger_v1",
+    accountOps:"alkam_local_account_ops_v1",
+    cariCollections:"alkam_local_cari_collections_v1",
+    expenseAccruals:"alkam_local_expense_accruals_v1",
+    expensePayments:"alkam_local_expense_payments_v1",
+    expenses:"alkam_local_expenses_v1",
+    bankOps:"alkam_local_bank_ops_v1"
+  };
+
+  function readJson(key, fallback){
+    try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }catch(e){ return fallback; }
+  }
+  function st(){
+    try{ if(typeof state !== "undefined") return state; }catch(e){}
+    return window.state || {};
+  }
+  function arr(x){ return Array.isArray(x) ? x : []; }
+  function num(v){
+    if(typeof v==="number") return Number.isFinite(v)?v:0;
+    let s=String(v??"").trim().replace(/\s/g,"").replace(/TL|₺/gi,"");
+    if(!s) return 0;
+    if(s.includes(",")&&s.includes(".")) s=s.replace(/\./g,"").replace(",",".");
+    else if(s.includes(",")) s=s.replace(",",".");
+    return Number(s)||0;
+  }
+  function money(v){
+    return num(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" TL";
+  }
+  function pct(v){
+    if(!isFinite(v)) return "-";
+    return v.toLocaleString("tr-TR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%";
+  }
+  function esc(v){
+    return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]));
+  }
+  function toDate(v){
+    if(!v) return null;
+    if(v instanceof Date && !isNaN(v)) return new Date(v.getFullYear(),v.getMonth(),v.getDate());
+    const s=String(v).trim();
+    let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(m) return new Date(+m[1],+m[2]-1,+m[3]);
+    m=s.match(/^(\d{2})[./-](\d{2})[./-](\d{4})/);
+    if(m) return new Date(+m[3],+m[2]-1,+m[1]);
+    const d=new Date(s);
+    return isNaN(d) ? null : new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  }
+  function iso(d){
+    return d ? `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}` : "";
+  }
+  function endOfMonth(y,m){ return new Date(y,m+1,0); }
+  function startOfMonth(d){ return new Date(d.getFullYear(),d.getMonth(),1); }
+  function sameDayLastYear(d){
+    const y=d.getFullYear()-1, m=d.getMonth(), day=d.getDate();
+    return new Date(y,m,Math.min(day,endOfMonth(y,m).getDate()));
+  }
+  function between(d,start,end){ return d && d>=start && d<=end; }
+  function rowDate(r){
+    return toDate(r.line_date||r.entry_date||r.date||r.tarih||r.payment_date||r.due_date||r.accrual_date||r.created_at||r.updated_at);
+  }
+  function rowText(r){
+    return String([
+      r.movement_type,r.type,r.source_module,r.source,r.kaynak,r.description,r.aciklama,
+      r.content_summary,r.title,r.expense_title,r.category,r.vendor,r.target_type,r.doc_type
+    ].filter(Boolean).join(" ")).toLocaleLowerCase("tr-TR");
+  }
+  function rowId(r, prefix){
+    return String(r.id||r.txn_id||r.operation_no||r.payment_id||r.accrual_id||r.row_id||prefix+"_"+Math.random().toString(36).slice(2));
+  }
+  function getLiveCache(name){
+    try{ return arr(window.__liveCaches && window.__liveCaches[name]); }catch(e){ return []; }
+  }
+  function collectRaw(){
+    const s=st();
+    const raw = [];
+    function pushMany(list, source){
+      arr(list).forEach(r => raw.push(Object.assign({__reportSource:source}, r||{})));
+    }
+
+    pushMany(s.operationalLedger, "state.operationalLedger");
+    pushMany(s.hareketler, "state.hareketler");
+    pushMany(s.processed, "state.processed");
+    pushMany(s.pending, "state.pending");
+    pushMany(s.accountOps, "state.accountOps");
+    pushMany(s.expenseAccruals, "state.expenseAccruals");
+    pushMany(s.expensePayments, "state.expensePayments");
+    pushMany(s.expenses, "state.expenses");
+    pushMany(s.bankPanel, "state.bankPanel");
+    pushMany(s.mokaPanel, "state.mokaPanel");
+
+    pushMany(getLiveCache("account_ops"), "__liveCaches.account_ops");
+    pushMany(getLiveCache("cari_collections"), "__liveCaches.cari_collections");
+    pushMany(getLiveCache("expense_accruals"), "__liveCaches.expense_accruals");
+    pushMany(getLiveCache("expense_payments"), "__liveCaches.expense_payments");
+    pushMany(getLiveCache("expenses"), "__liveCaches.expenses");
+
+    pushMany(readJson(LOCAL_KEYS.ledger,[]), LOCAL_KEYS.ledger);
+    pushMany(readJson(LOCAL_KEYS.accountOps,[]), LOCAL_KEYS.accountOps);
+    pushMany(readJson(LOCAL_KEYS.cariCollections,[]), LOCAL_KEYS.cariCollections);
+    pushMany(readJson(LOCAL_KEYS.expenseAccruals,[]), LOCAL_KEYS.expenseAccruals);
+    pushMany(readJson(LOCAL_KEYS.expensePayments,[]), LOCAL_KEYS.expensePayments);
+    pushMany(readJson(LOCAL_KEYS.expenses,[]), LOCAL_KEYS.expenses);
+
+    const bankOps = readJson(LOCAL_KEYS.bankOps,{});
+    pushMany(bankOps.processed, LOCAL_KEYS.bankOps+".processed");
+    pushMany(bankOps.pending, LOCAL_KEYS.bankOps+".pending");
+    pushMany(bankOps.history, LOCAL_KEYS.bankOps+".history");
+
+    // Cari JSON fallback hareketleri
+    if(s.__jsonCariTxns && typeof s.__jsonCariTxns === "object"){
+      Object.keys(s.__jsonCariTxns).forEach(k => pushMany(s.__jsonCariTxns[k], "jsonCariTxns"));
+    }
+
+    // Cari kart total fallback: hareket detayı yoksa cari bakiye ile bilanço hesaplaması için kullanılacak
+    pushMany((s.cariler||[]).map(c=>({
+      __isCariBalance:true,
+      cari_id:c.cari_id||c.id,
+      cari_name:c.cari_name||c.name,
+      balance:c.bakiye||c.balance||0,
+      date:new Date().toISOString().slice(0,10),
+      source_module:"Cari Bakiye"
+    })), "state.cariler.balance");
+
+    return raw;
+  }
+
+  function normalizeRows(){
+    const seen = new Set();
+    return collectRaw().map((r, idx)=>{
+      const text=rowText(r);
+      const source=String(r.source_module||r.source||r.kaynak||r.__reportSource||"");
+      const debit=num(r.debit ?? r.borc ?? r.BORC ?? 0);
+      const credit=num(r.credit ?? r.alacak ?? r.ALACAK ?? 0);
+      const amount=num(r.amount ?? r.tutar ?? r.total ?? r.net_amount ?? r.payment_amount ?? r.accrual_amount ?? debit ?? credit ?? 0);
+      const date=rowDate(r);
+      const id=rowId(r,"R"+idx);
+      const key=[id,iso(date),debit,credit,amount,source].join("|");
+      if(seen.has(key)) return null;
+      seen.add(key);
+
+      const isExpenseSource =
+        source.toLocaleLowerCase("tr-TR").includes("expense") ||
+        text.includes("gider") || text.includes("masraf") || text.includes("sgk") ||
+        r.expense_id || r.expense_accrual_id || r.expense_payment_id;
+
+      const isExpensePayment =
+        source.toLocaleLowerCase("tr-TR").includes("expense_payment") ||
+        text.includes("gider ödeme") || text.includes("gider odeme") ||
+        text.includes("ödendi") || text.includes("odendi") ||
+        r.expense_payment_id || r.payment_date;
+
+      const isExpenseAccrual =
+        source.toLocaleLowerCase("tr-TR").includes("expense_accrual") ||
+        text.includes("gider tahakkuk") || text.includes("gider kart") ||
+        r.expense_accrual_id || (isExpenseSource && !isExpensePayment);
+
+      const isCollection =
+        !isExpenseSource && (
+          source.toLocaleLowerCase("tr-TR").includes("cari_collection") ||
+          text.includes("tahsilat") || text.includes("gelen ödeme") || text.includes("gelen odeme") ||
+          credit > 0
+        );
+
+      const isIncomeAccrual =
+        !isExpenseSource && (
+          text.includes("tahakkuk") || text.includes("muhasebe ücreti") || text.includes("muhasebe ucreti") ||
+          text.includes("satış faturası") || text.includes("satis faturasi") ||
+          (debit > 0 && !isCollection)
+        );
+
+      const cariKey = String(r.cari_id||r.cariId||r.customer_id||r.cari_name||r.name||r.target_name||"");
+      return {raw:r,id,date,text,source,debit,credit,amount,cariKey,isExpenseAccrual,isExpensePayment,isCollection,isIncomeAccrual,isCariBalance:!!r.__isCariBalance,balance:num(r.balance ?? r.bakiye ?? 0)};
+    }).filter(Boolean);
+  }
+
+  function periods(baseDate){
+    const d=baseDate || new Date();
+    const cmStart=startOfMonth(d);
+    const cmEnd=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+    const pm = new Date(d.getFullYear(),d.getMonth()-1,1);
+    const pmStart=startOfMonth(pm);
+    const pmEnd=endOfMonth(pm.getFullYear(),pm.getMonth());
+    const lymStart=new Date(d.getFullYear()-1,d.getMonth(),1);
+    const lymEnd=endOfMonth(d.getFullYear()-1,d.getMonth());
+    const ytdStart=new Date(d.getFullYear(),0,1);
+    const ytdEnd=cmEnd;
+    const lyYtdStart=new Date(d.getFullYear()-1,0,1);
+    const lyYtdEnd=sameDayLastYear(cmEnd);
+    return {
+      currentMonth:{label:"Bu Ay",start:cmStart,end:cmEnd},
+      prevMonth:{label:"Geçen Ay",start:pmStart,end:pmEnd},
+      lastYearMonth:{label:"Geçen Yıl Aynı Ay",start:lymStart,end:lymEnd},
+      ytd:{label:"Yılbaşından Bugüne",start:ytdStart,end:ytdEnd},
+      lastYearYtd:{label:"Geçen Yıl Aynı Dönem",start:lyYtdStart,end:lyYtdEnd}
+    };
+  }
+
+  function calcRange(rows, start, end){
+    const inRange = rows.filter(r => between(r.date,start,end));
+    const gelirTahakkuk = inRange.filter(r=>r.isIncomeAccrual).reduce((s,r)=>s+(r.debit||r.amount||0),0);
+    const tahsilat = inRange.filter(r=>r.isCollection).reduce((s,r)=>s+(r.credit||r.amount||0),0);
+    const giderTahakkuk = inRange.filter(r=>r.isExpenseAccrual).reduce((s,r)=>s+(r.amount||r.debit||0),0);
+    const odenenGider = inRange.filter(r=>r.isExpensePayment).reduce((s,r)=>s+(r.amount||r.credit||r.debit||0),0);
+
+    const balanceMap = {};
+    rows.filter(r=>r.date && r.date<=end && !r.isExpenseAccrual && !r.isExpensePayment && !r.isCariBalance).forEach(r=>{
+      const k = r.cariKey || "_unknown";
+      if(!balanceMap[k]) balanceMap[k]=0;
+      balanceMap[k] += (r.debit||0) - (r.credit||0);
+    });
+
+    // Hareket satırı yoksa cari kart bakiyesi fallback olarak kullanılır.
+    if(!Object.keys(balanceMap).length){
+      rows.filter(r=>r.isCariBalance).forEach(r=>{
+        const k = r.cariKey || "_unknown";
+        balanceMap[k] = (balanceMap[k]||0) + r.balance;
+      });
+    }
+
+    let borcBakiye=0, alacakBakiye=0;
+    Object.values(balanceMap).forEach(v=>{
+      if(v>0) borcBakiye += v;
+      else if(v<0) alacakBakiye += Math.abs(v);
+    });
+
+    return {gelirTahakkuk,tahsilat,borcBakiye,alacakBakiye,giderTahakkuk,odenenGider};
+  }
+
+  function buildReport(baseDate){
+    const rows=normalizeRows();
+    const p=periods(baseDate);
+    const result={periods:p, rowCount:rows.length, metrics:{}};
+    Object.keys(p).forEach(k=>result.metrics[k]=calcRange(rows,p[k].start,p[k].end));
+    return result;
+  }
+
+  const metricRows = [
+    ["gelirTahakkuk","Gelir tahakkuk"],
+    ["tahsilat","Tahsilat"],
+    ["borcBakiye","Borç bakiye"],
+    ["alacakBakiye","Alacak bakiye"],
+    ["giderTahakkuk","Gider tahakkuk"],
+    ["odenenGider","Ödenen gider"]
+  ];
+
+  function diffClass(v){
+    if(Math.abs(v)<0.01) return "alkam-fin-zero";
+    return v>0 ? "alkam-fin-pos" : "alkam-fin-neg";
+  }
+  function renderReport(){
+    const baseInput=document.getElementById("alkamFinanceReportDate");
+    const baseDate=toDate(baseInput && baseInput.value) || new Date();
+    const report=buildReport(baseDate);
+    window.ALKAM_LAST_FINANCE_REPORT = report;
+
+    const cm=report.metrics.currentMonth;
+    const container = ensurePanel();
+
+    const cards = metricRows.map(([key,label])=>`
+      <div class="alkam-fin-card">
+        <div class="k">${label} / Bu Ay</div>
+        <div class="v">${money(cm[key])}</div>
+      </div>
+    `).join("");
+
+    const tableRows = metricRows.map(([key,label])=>{
+      const buAy=report.metrics.currentMonth[key]||0;
+      const gecenAy=report.metrics.prevMonth[key]||0;
+      const gecenYilAy=report.metrics.lastYearMonth[key]||0;
+      const ytd=report.metrics.ytd[key]||0;
+      const lyYtd=report.metrics.lastYearYtd[key]||0;
+      const fark=ytd-lyYtd;
+      const oran=lyYtd ? (fark/Math.abs(lyYtd))*100 : (ytd ? 100 : 0);
+      return `<tr>
+        <td class="alkam-fin-row-title">${label}</td>
+        <td>${money(buAy)}</td>
+        <td>${money(gecenAy)}</td>
+        <td>${money(gecenYilAy)}</td>
+        <td>${money(ytd)}</td>
+        <td>${money(lyYtd)}</td>
+        <td class="${diffClass(fark)}">${money(fark)}</td>
+        <td class="${diffClass(oran)}">${pct(oran)}</td>
+      </tr>`;
+    }).join("");
+
+    const dateText = (p)=>`${iso(p.start)} / ${iso(p.end)}`;
+
+    container.innerHTML = `
+      <div class="alkam-fin-head">
+        <div>
+          <h2 class="alkam-fin-title">Finansal Karşılaştırmalı Rapor</h2>
+          <div class="alkam-fin-sub">
+            Bu ay, geçen ay, geçen yıl aynı ay, yılbaşından bugüne ve geçen yıl aynı dönem karşılaştırması.
+            <br>Rapor satırı: ${report.rowCount}
+          </div>
+        </div>
+        <div class="alkam-fin-actions">
+          <input id="alkamFinanceReportDate" class="alkam-fin-date" type="date" value="${iso(baseDate)}">
+          <button class="alkam-fin-btn blue" onclick="window.ALKAM_RENDER_FINANCE_REPORT()">Yenile</button>
+          <button class="alkam-fin-btn soft" onclick="window.ALKAM_EXPORT_FINANCE_REPORT()">Excel / CSV</button>
+        </div>
+      </div>
+      <div class="alkam-fin-cards">${cards}</div>
+      <div class="alkam-fin-table-wrap">
+        <table class="alkam-fin-table">
+          <thead>
+            <tr>
+              <th>Parametre</th>
+              <th>Bu Ay<br><small>${dateText(report.periods.currentMonth)}</small></th>
+              <th>Geçen Ay<br><small>${dateText(report.periods.prevMonth)}</small></th>
+              <th>Geçen Yıl Aynı Ay<br><small>${dateText(report.periods.lastYearMonth)}</small></th>
+              <th>Yılbaşından Bugüne<br><small>${dateText(report.periods.ytd)}</small></th>
+              <th>Geçen Yıl Aynı Dönem<br><small>${dateText(report.periods.lastYearYtd)}</small></th>
+              <th>YTD Fark</th>
+              <th>YTD %</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <div class="alkam-fin-note">
+        Hesaplama standardı: gelir tahakkuk = cari borç/tahakkuk/satış/muhasebe ücreti satırları; tahsilat = cari alacak/tahsilat satırları; borç/alacak bakiye = dönem sonu cari bazlı net bakiye; gider tahakkuk ve ödenen gider = gider tahakkuk/ödeme kayıtları ve yerel/live gider tabloları.
+      </div>
+    `;
+  }
+
+  function ensurePanel(){
+    let panel=document.getElementById("alkamFinanceReportPanel");
+    if(panel) return panel;
+
+    panel=document.createElement("div");
+    panel.id="alkamFinanceReportPanel";
+
+    const reportTab=document.getElementById("tab-raporlar");
+    if(reportTab){
+      reportTab.insertBefore(panel, reportTab.firstChild);
+    }else{
+      document.body.appendChild(panel);
+      panel.style.position="fixed";
+      panel.style.left="18px";
+      panel.style.right="18px";
+      panel.style.top="86px";
+      panel.style.zIndex="99997";
+      panel.style.maxHeight="80vh";
+      panel.style.overflow="auto";
+    }
+    return panel;
+  }
+
+  function installButtons(){
+    if(!document.getElementById("alkamFinanceReportQuickBtn")){
+      const b=document.createElement("button");
+      b.id="alkamFinanceReportQuickBtn";
+      b.textContent="📊 Finans Rapor";
+      b.onclick=function(){ openReport(); };
+      document.body.appendChild(b);
+    }
+
+    const nav=document.querySelector(".nav");
+    if(nav && !document.getElementById("alkamFinanceReportNavBtn")){
+      const b=document.createElement("button");
+      b.id="alkamFinanceReportNavBtn";
+      b.className="nav-btn";
+      b.type="button";
+      b.innerHTML='<span class="nav-ico">📊</span><span>Finans Rapor</span>';
+      b.onclick=function(){ openReport(); };
+      nav.appendChild(b);
+    }
+
+    const top=document.querySelector(".erp-module-left");
+    if(top && !document.getElementById("alkamFinanceReportTopBtn")){
+      const b=document.createElement("button");
+      b.id="alkamFinanceReportTopBtn";
+      b.className="erp-module-btn";
+      b.type="button";
+      b.innerHTML="📊 Finans Rapor";
+      b.onclick=function(){ openReport(); };
+      top.appendChild(b);
+    }
+  }
+
+  function openReport(){
+    try{ if(typeof switchTab==="function") switchTab("raporlar"); }catch(e){}
+    setTimeout(renderReport,150);
+  }
+
+  function exportReport(){
+    const report = window.ALKAM_LAST_FINANCE_REPORT || buildReport(new Date());
+    const rows = metricRows.map(([key,label])=>{
+      const buAy=report.metrics.currentMonth[key]||0;
+      const gecenAy=report.metrics.prevMonth[key]||0;
+      const gecenYilAy=report.metrics.lastYearMonth[key]||0;
+      const ytd=report.metrics.ytd[key]||0;
+      const lyYtd=report.metrics.lastYearYtd[key]||0;
+      const fark=ytd-lyYtd;
+      const oran=lyYtd ? (fark/Math.abs(lyYtd))*100 : (ytd ? 100 : 0);
+      return {
+        "Parametre":label,
+        "Bu Ay":buAy,
+        "Geçen Ay":gecenAy,
+        "Geçen Yıl Aynı Ay":gecenYilAy,
+        "Yılbaşından Bugüne":ytd,
+        "Geçen Yıl Aynı Dönem":lyYtd,
+        "YTD Fark":fark,
+        "YTD %":oran
+      };
+    });
+
+    if(window.XLSX){
+      const wb=XLSX.utils.book_new();
+      const ws=XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb,ws,"Finans Rapor");
+      XLSX.writeFile(wb,"alkam-finans-karsilastirmali-rapor.xlsx");
+      return;
+    }
+    const keys=Object.keys(rows[0]||{});
+    const csv=keys.join(";")+"\n"+rows.map(r=>keys.map(k=>`"${String(r[k]??"").replace(/"/g,'""')}"`).join(";")).join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+    a.download="alkam-finans-karsilastirmali-rapor.csv";
+    document.body.appendChild(a);a.click();a.remove();
+  }
+
+  window.ALKAM_RENDER_FINANCE_REPORT = renderReport;
+  window.ALKAM_OPEN_FINANCE_REPORT = openReport;
+  window.ALKAM_EXPORT_FINANCE_REPORT = exportReport;
+  window.ALKAM_BUILD_FINANCE_REPORT = buildReport;
+
+  document.addEventListener("DOMContentLoaded", function(){
+    installButtons();
+    setTimeout(renderReport,1200);
+    setTimeout(installButtons,1800);
+  });
+
+  console.info(REPORT_ID+" aktif.");
+})();
+</script>
+
 </body>
 </html>
