@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ALKAM Moka/POS Mutabakat Merkezi</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f7fb;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--muted:#64748b;--blue:#1769e8;--green:#059669;--red:#dc2626;--amber:#d97706;--ink:#061d3f;--shadow:0 12px 32px rgba(15,23,42,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}.shell{max-width:1500px;margin:0 auto;padding:18px}.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}.title h1{margin:0;font-size:28px;font-weight:950}.title p{margin:7px 0 0;color:var(--muted);font-size:13px;font-weight:800;line-height:1.45}.btns{display:flex;gap:8px;flex-wrap:wrap}.btn{border:0;border-radius:10px;min-height:38px;padding:0 12px;font-size:12px;font-weight:950;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}.blue{background:var(--blue);color:#fff}.green{background:var(--green);color:#fff}.red{background:var(--red);color:#fff}.amber{background:var(--amber);color:#fff}.soft{background:#e8eef9;color:#0f172a}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px;margin-bottom:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:11px;font-weight:950;color:#334155;text-transform:uppercase;letter-spacing:.03em}input,select,textarea{width:100%;border:1px solid #cfd8e6;border-radius:10px;min-height:40px;padding:8px 10px;font-weight:750;background:#fff;color:#0f172a}textarea{min-height:150px;resize:vertical;line-height:1.45}.section-title{margin:0 0 10px;font-size:18px;font-weight:950}.mini{font-size:11px;color:var(--muted);font-weight:800;line-height:1.45}.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.metric{background:#fbfdff;border:1px solid var(--line);border-radius:12px;padding:11px}.metric .k{font-size:10px;color:var(--muted);font-weight:950;text-transform:uppercase}.metric .v{font-size:18px;font-weight:950;margin-top:6px}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff;max-height:420px}table{border-collapse:collapse;width:100%;min-width:1040px}th,td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;vertical-align:top}th{background:#f8fbff;color:#334155;font-weight:950;position:sticky;top:0;z-index:2}.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:950}.tag{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;min-height:22px;padding:0 8px;font-size:10px;font-weight:950;white-space:nowrap}.tag.green{background:#dcfce7;color:#166534}.tag.amber{background:#fff7ed;color:#c2410c}.tag.red{background:#fee2e2;color:#991b1b}.tag.blue{background:#eaf1ff;color:#2457d6}.empty{padding:20px;border:1px dashed #cbd5e1;border-radius:12px;text-align:center;color:#64748b;font-weight:900}.preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.preview img{width:118px;height:90px;border:1px solid var(--line);border-radius:10px;object-fit:contain;background:#fff}.notice{border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:12px;padding:10px;font-size:12px;font-weight:800;line-height:1.5}.warn{border-color:#fed7aa;background:#fff7ed;color:#9a3412}.toast{position:fixed;right:16px;bottom:16px;background:#0f172a;color:#fff;border-radius:12px;padding:12px 14px;font-size:12px;font-weight:900;display:none;box-shadow:var(--shadow);z-index:20}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.tab{border:0;border-radius:999px;background:#e8eef9;color:#0f172a;height:34px;padding:0 12px;font-size:12px;font-weight:950;cursor:pointer}.tab.active{background:var(--blue);color:#fff}.hidden{display:none!important}.row-actions{display:flex;gap:6px;flex-wrap:wrap}.small-btn{border:0;border-radius:8px;min-height:30px;padding:0 9px;font-size:11px;font-weight:950;cursor:pointer}.audit{max-height:210px;overflow:auto;display:grid;gap:8px}.audit-item{border:1px solid var(--line);background:#fbfdff;border-radius:10px;padding:9px;font-size:11px;color:#334155;font-weight:750;line-height:1.45}.statusline{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.upload-card{border:1px dashed #b8c5d8;background:#fbfdff;border-radius:14px;padding:12px}.upload-card input{background:#fff}.mobile-strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:10px}.mobile-strip .pill{border:1px solid var(--line);background:#fff;border-radius:12px;min-height:44px;padding:8px 10px;font-size:11px;font-weight:950;color:#334155;display:flex;align-items:center;justify-content:center;text-align:center}.file-list{display:grid;gap:6px;margin-top:8px}.file-pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:850;color:#334155}.sticky-actions{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(244,247,251,0),#f4f7fb 28%);padding-top:18px;margin-top:4px}
+@media(max-width:1100px){.grid,.grid-3,.cards,.mobile-strip{grid-template-columns:1fr}.top{flex-direction:column}.btn{min-height:42px}.shell{padding:12px}.title h1{font-size:24px}textarea{min-height:130px}.sticky-actions .btn{width:100%}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="title">
+      <h1>Moka/POS Mutabakat Merkezi</h1>
+      <p>Mobil, WhatsApp, Telegram, ekran görüntüsü, PDF ve Excel kaynaklı tahsilatları aday kayda çevirir; beklenen banka yatışlarını ve onaylı cari/hesap işlemini yönetir.</p>
+    </div>
+    <div class="btns">
+      <a class="btn soft" href="/">Programa Dön</a>
+      <button class="btn green" id="exportBtn">Excel / JSON Yedek</button>
+      <button class="btn red" id="resetBtn">Modül Verisini Temizle</button>
+    </div>
+  </div>
+
+  <div class="notice warn">AI/OCR sonuçları adaydır. Banka hesabı, cari hareketi ve muhasebe etkisi yalnızca kullanıcı onayından sonra oluşur.</div>
+
+  <div class="cards" style="margin:14px 0">
+    <div class="metric"><div class="k">Moka İşlemi</div><div class="v" id="mMoka">0</div></div>
+    <div class="metric"><div class="k">Beklenen Yatış</div><div class="v" id="mExpected">0</div></div>
+    <div class="metric"><div class="k">Banka Hareketi</div><div class="v" id="mBank">0</div></div>
+    <div class="metric"><div class="k">Eşleşme</div><div class="v" id="mMatch">0</div></div>
+    <div class="metric"><div class="k">Onaylanan</div><div class="v" id="mApproved">0</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="moka">Moka/POS Yükle</button>
+    <button class="tab" data-tab="bank">Banka Ekstresi</button>
+    <button class="tab" data-tab="match">Eşleştirme ve Onay</button>
+    <button class="tab" data-tab="audit">Denetim İzi</button>
+  </div>
+
+  <section class="panel tab-page" id="tab-moka">
+    <h2 class="section-title">Moka/POS Aday Kayıt</h2>
+    <div class="mobile-strip"><div class="pill">Telefon Kamerası</div><div class="pill">Ekran Görüntüsü</div><div class="pill">WhatsApp / Telegram Dosyası</div><div class="pill">Excel / PDF</div></div>
+    <div class="grid">
+      <div>
+        <div class="upload-card">
+          <div class="grid-3">
+            <div class="field"><label>Mobil / Mesajlaşma Dosyası</label><input id="mokaFiles" type="file" multiple capture="environment" accept="image/*,.pdf,.xlsx,.xls,.csv"></div>
+            <div class="field"><label>Varsayılan Taksit</label><input id="defaultInstallments" type="number" min="1" value="1"></div>
+            <div class="field"><label>İlk Yatış Günü</label><input id="settlementDays" type="number" min="1" value="40"></div>
+          </div>
+          <div class="preview" id="mokaPreview"></div>
+          <div class="file-list" id="mokaFileList"></div>
+          <div class="btns" style="margin-top:10px"><button class="btn blue" id="readMokaFilesBtn">Dosyaları Oku</button></div>
+        </div>
+        <div class="field" style="margin-top:10px"><label>Moka/POS OCR Metni veya Excelden Gelen Satırlar</label><textarea id="mokaText" placeholder="12.04.2026 ALKAM LTD 12.000,00 TL 3 Taksit Ref: MOKA123"></textarea></div>
+        <div class="btns" style="margin-top:10px"><button class="btn blue" id="parseMokaBtn">Metni Analiz Et</button><button class="btn green" id="saveMokaBtn">Aday Moka Kaydını Oluştur</button></div>
+      </div>
+      <div>
+        <h3 class="section-title">AI/OCR Çıkarılan Alanlar</h3>
+        <div class="grid-3">
+          <div class="field"><label>İşlem Tarihi</label><input id="pDate" type="date"></div>
+          <div class="field"><label>Cari / Açıklama</label><input id="pCari"></div>
+          <div class="field"><label>Ref No</label><input id="pRef"></div>
+          <div class="field"><label>Brüt Tutar</label><input id="pGross" type="number" step="0.01"></div>
+          <div class="field"><label>Komisyon</label><input id="pFee" type="number" step="0.01" value="0"></div>
+          <div class="field"><label>Taksit Sayısı</label><input id="pInstallments" type="number" min="1" value="1"></div>
+          <div class="field"><label>Kanal</label><input id="pChannel" value="Moka/POS"></div>
+          <div class="field"><label>Güven Puanı</label><input id="pConfidence" type="number" min="0" max="100"></div>
+          <div class="field"><label>Kaynak</label><input id="pSource" value="Mobil / OCR"></div>
+        </div>
+        <div class="notice" style="margin-top:10px">Net tutar taksit sayısına bölünür. İlk beklenen yatış işlem tarihinden 40 gün sonra, diğer taksitler aylık planlanır.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel tab-page hidden" id="tab-bank">
+    <h2 class="section-title">Banka Ekstresi Aday Okuma</h2>
+    <div class="grid">
+      <div>
+        <div class="upload-card">
+          <div class="field"><label>Banka Görüntüsü / PDF / Excel</label><input id="bankFiles" type="file" multiple capture="environment" accept="image/*,.pdf,.xlsx,.xls,.csv"></div>
+          <div class="preview" id="bankPreview"></div>
+          <div class="file-list" id="bankFileList"></div>
+          <div class="btns" style="margin-top:10px"><button class="btn blue" id="readBankFilesBtn">Dosyaları Oku</button></div>
+        </div>
+        <div class="field" style="margin-top:10px"><label>Banka OCR Metni veya Excelden Gelen Satırlar</label><textarea id="bankText" placeholder="22.05.2026 MOKA POS AKTARIMI 4.000,00 +"></textarea></div>
+        <div class="btns" style="margin-top:10px"><button class="btn blue" id="parseBankBtn">Banka Satırlarını Analiz Et</button></div>
+      </div>
+      <div>
+        <h3 class="section-title">Banka Adayları</h3>
+        <div class="table-wrap"><table><thead><tr><th>Tarih</th><th>Açıklama</th><th class="num">Tutar</th><th>Yön</th><th>Ref</th></tr></thead><tbody id="bankRows"></tbody></table></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel tab-page hidden" id="tab-match">
+    <div class="statusline" style="justify-content:space-between;margin-bottom:10px"><h2 class="section-title" style="margin:0">Eşleştirme ve Onay</h2><div class="btns"><button class="btn blue" id="runMatchBtn">Eşleştir</button><button class="btn green" id="approveHighBtn">Tek Tık Onayla</button></div></div>
+    <div class="grid">
+      <div><h3 class="section-title">Beklenen Moka/POS Yatışları</h3><div class="table-wrap"><table><thead><tr><th>Vade</th><th>Cari</th><th>Taksit</th><th class="num">Tutar</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="expectedRows"></tbody></table></div></div>
+      <div><h3 class="section-title">Eşleşme Adayları</h3><div class="table-wrap"><table><thead><tr><th>Beklenen</th><th>Banka</th><th class="num">Tutar</th><th>Güven</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="matchRows"></tbody></table></div></div>
+    </div>
+    <div class="sticky-actions"><button class="btn green" id="approveHighBtnBottom">Yüksek Güvenli Eşleşmeleri Tek Tıkla Cari ve Hesaba İşle</button></div>
+  </section>
+
+  <section class="panel tab-page hidden" id="tab-audit"><h2 class="section-title">Denetim İzi</h2><div class="audit" id="auditRows"></div></section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+  const KEY='alkam_moka_pos_reconciliation_v2';
+  const LEDGER_KEY='alkam_local_ledger_v1';
+  const ACCOUNT_OPS_KEY='alkam_local_account_ops_v1';
+  const $=id=>document.getElementById(id);
+  let db={moka:[],expected:[],bank:[],matches:[],audit:[],documents:[]};
+
+  function load(){try{db=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){db={}};['moka','expected','bank','matches','audit','documents'].forEach(k=>db[k]=Array.isArray(db[k])?db[k]:[])}
+  function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+  function uid(p){return p+'-'+Date.now()+'-'+Math.random().toString(16).slice(2,8)}
+  function today(){return new Date().toISOString().slice(0,10)}
+  function money(v){return num(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL'}
+  function num(v){if(typeof v==='number')return Number.isFinite(v)?v:0;let s=String(v??'').replace(/\s/g,'').replace(/TL|₺/gi,'');if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');return Number(s)||0}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function norm(v){return String(v||'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[ıİ]/g,'i')}
+  function toIso(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+  function parseDate(v){const s=String(v||'').trim();let m=s.match(/(\d{4})-(\d{2})-(\d{2})/);if(m)return new Date(+m[1],+m[2]-1,+m[3]);m=s.match(/(\d{2})[./-](\d{2})[./-](\d{4})/);if(m)return new Date(+m[3],+m[2]-1,+m[1]);const d=new Date(s);return isNaN(d)?null:d}
+  function addDays(iso,days){const d=parseDate(iso)||new Date();d.setDate(d.getDate()+Number(days||0));return toIso(d)}
+  function addMonths(iso,months){const d=parseDate(iso)||new Date();const day=d.getDate();d.setMonth(d.getMonth()+Number(months||0));if(d.getDate()<day)d.setDate(0);return toIso(d)}
+  function daysBetween(a,b){const da=parseDate(a),dbb=parseDate(b);if(!da||!dbb)return 9999;return Math.round((dbb-da)/86400000)}
+  function toast(t){const el=$('toast');el.textContent=t;el.style.display='block';clearTimeout(window.__mokaToast);window.__mokaToast=setTimeout(()=>el.style.display='none',2800)}
+  function audit(type,message,payload){db.audit.unshift({id:uid('AUD'),at:new Date().toISOString(),type,message,payload:payload||{}});db.audit=db.audit.slice(0,500)}
+
+  function bestAmount(text){const matches=String(text||'').match(/(?:₺|TL)?\s*-?\d{1,3}(?:\.\d{3})*(?:,\d{2})|-?\d+(?:,\d{2})/g)||[];return matches.map(num).filter(x=>Math.abs(x)>0).sort((a,b)=>Math.abs(b)-Math.abs(a))[0]||0}
+  function parseRef(text){const m=String(text||'').match(/(?:ref|referans|işlem no|islem no|provizyon|onay|dekont)[\s:#-]*([A-Z0-9-]{4,})/i);return m?m[1]:''}
+  function parseInstallments(text,fallback){const m=String(text||'').match(/(\d{1,2})\s*(?:taksit|tk|ay)/i);return Math.max(1,Number(m?m[1]:fallback)||1)}
+  function parseCari(text){let s=String(text||'').replace(/\s+/g,' ').trim();s=s.replace(/\d{1,2}[./-]\d{1,2}[./-]\d{4}/g,'').replace(/(?:₺|TL)?\s*-?\d{1,3}(?:\.\d{3})*(?:,\d{2})/g,'').replace(/\b\d+\s*(taksit|tk|ay)\b/ig,'').replace(/(?:ref|referans|dekont)[\s:#-]*[A-Z0-9-]+/ig,'').replace(/moka|pos|sanal|tahsilat|ödeme|odeme|banka|aktarımı|aktarimi/ig,'').trim();return s.slice(0,90)||'Moka/POS Cari Adayı'}
+  function confidenceFor(parsed,raw){let c=30;if(parsed.date)c+=20;if(parsed.amount>0)c+=20;if(parsed.ref)c+=15;if(parsed.installments>0)c+=5;if(/moka|pos/i.test(raw))c+=10;return Math.min(100,c)}
+  function parseMokaText(){const raw=$('mokaText').value;const lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);const text=lines.join(' ');const d=(text.match(/\d{4}-\d{2}-\d{2}|\d{2}[./-]\d{2}[./-]\d{4}/)||[])[0]||today();const parsed={date:toIso(parseDate(d)||new Date()),amount:bestAmount(text),installments:parseInstallments(text,$('defaultInstallments').value),ref:parseRef(text)||('MOKA-'+Date.now()),cari:parseCari(text),fee:0,channel:'Moka/POS'};parsed.confidence=confidenceFor(parsed,text);$('pDate').value=parsed.date;$('pCari').value=parsed.cari;$('pRef').value=parsed.ref;$('pGross').value=parsed.amount.toFixed(2);$('pFee').value='0.00';$('pInstallments').value=parsed.installments;$('pChannel').value=parsed.channel;$('pConfidence').value=parsed.confidence;$('pSource').value='Mobil / Dosya / OCR';toast('Moka/POS adayı hazırlandı')}
+  function duplicateMoka(ref){return db.moka.some(x=>x.ref&&x.ref===ref)}
+  function saveMoka(){const row={id:uid('MOKA'),date:$('pDate').value||today(),cari:$('pCari').value||'Moka/POS Cari Adayı',ref:$('pRef').value||uid('REF'),gross:num($('pGross').value),fee:num($('pFee').value),installments:Math.max(1,Number($('pInstallments').value)||1),channel:$('pChannel').value||'Moka/POS',source:$('pSource').value||'Mobil / OCR',confidence:Number($('pConfidence').value)||0,status:'Aday',rawText:$('mokaText').value,createdAt:new Date().toISOString()};row.net=Math.max(0,row.gross-row.fee);if(!row.gross)return toast('Brüt tutar bulunamadı');if(duplicateMoka(row.ref))return toast('Bu Moka referansı zaten kayıtlı');db.moka.unshift(row);createExpected(row);audit('MOKA_ADAY','Moka/POS aday kaydı ve beklenen yatış planı oluşturuldu',row);save();toast('Aday Moka kaydı oluşturuldu')}
+  function createExpected(moka){const days=Number($('settlementDays').value)||40;const per=Math.round((moka.net/moka.installments)*100)/100;let remaining=moka.net;for(let i=1;i<=moka.installments;i++){const amount=i===moka.installments?Math.round(remaining*100)/100:per;remaining-=amount;const due=i===1?addDays(moka.date,days):addMonths(addDays(moka.date,days),i-1);db.expected.push({id:uid('EXP'),mokaId:moka.id,mokaRef:moka.ref,cari:moka.cari,dueDate:due,installmentNo:i,totalInstallments:moka.installments,amount,status:'Bekliyor',bankId:'',approvedAt:'',approvedBy:'',createdAt:new Date().toISOString()})}}
+  function parseBankText(){const lines=$('bankText').value.split(/\n+/).map(x=>x.trim()).filter(Boolean);const rows=[];lines.forEach(line=>{const dm=line.match(/\d{4}-\d{2}-\d{2}|\d{2}[./-]\d{2}[./-]\d{4}/);const amount=bestAmount(line);if(!dm||!amount)return;const direction=/\-|çıkış|cikis|borç|borc/i.test(line)?'Çıkış':'Giriş';rows.push({id:uid('BNK'),date:toIso(parseDate(dm[0])||new Date()),description:line,amount:Math.abs(amount),direction,ref:parseRef(line),status:'Aday',createdAt:new Date().toISOString()})});db.bank.unshift(...rows);audit('BANKA_ADAY',rows.length+' banka hareketi aday olarak okundu',{count:rows.length});save();toast(rows.length+' banka satırı okundu')}
+  function scoreMatch(exp,bank){let score=0;const diff=Math.abs(num(exp.amount)-num(bank.amount));if(diff<0.01)score+=45;else if(diff<=1)score+=35;else if(diff<=10)score+=20;const day=Math.abs(daysBetween(exp.dueDate,bank.date));if(day===0)score+=25;else if(day<=2)score+=18;else if(day<=5)score+=10;const text=norm(bank.description+' '+bank.ref);if(text.includes('moka')||text.includes('pos'))score+=15;if(exp.mokaRef&&text.includes(norm(exp.mokaRef)))score+=15;const cariWords=norm(exp.cari).split(/\s+/).filter(x=>x.length>3);if(cariWords.some(w=>text.includes(w)))score+=10;return Math.min(100,score)}
+  function runMatch(){let made=0;db.expected.filter(e=>e.status!=='Onaylandı').forEach(exp=>{const candidates=db.bank.filter(b=>b.direction==='Giriş').map(bank=>({bank,score:scoreMatch(exp,bank)})).filter(x=>x.score>=45).sort((a,b)=>b.score-a.score);if(!candidates.length)return;const best=candidates[0];const existing=db.matches.find(m=>m.expectedId===exp.id&&m.bankId===best.bank.id);if(existing)return;db.matches.unshift({id:uid('MAT'),expectedId:exp.id,bankId:best.bank.id,amount:exp.amount,confidence:best.score,status:best.score>=80?'Onaya Hazır':'Manuel İnceleme',createdAt:new Date().toISOString()});exp.status=best.score>=80?'Bankada Eşleşti':'Manuel İnceleme';exp.bankId=best.bank.id;made++});audit('MATCH',made+' beklenen yatış banka hareketiyle eşleştirildi',{count:made});save();toast(made+' eşleşme üretildi')}
+  function approveMatch(id){const m=db.matches.find(x=>x.id===id);if(!m)return;const exp=db.expected.find(x=>x.id===m.expectedId);const bank=db.bank.find(x=>x.id===m.bankId);if(!exp||!bank)return;exp.status='Onaylandı';exp.approvedAt=new Date().toISOString();exp.approvedBy='Kullanıcı';bank.status='Onaylandı';m.status='Onaylandı';postApprovedLedger(exp,bank,m);audit('ONAY','Moka/POS banka yatışı onaylandı',{expected:exp,bank,match:m});save();toast('Cari ve hesap işlemi tamamlandı')}
+  function rejectMatch(id){const m=db.matches.find(x=>x.id===id);if(!m)return;m.status='Reddedildi';const exp=db.expected.find(x=>x.id===m.expectedId);if(exp&&exp.status!=='Onaylandı')exp.status='Bekliyor';audit('RED','Eşleşme reddedildi',m);save();toast('Eşleşme reddedildi')}
+  function approveHigh(){let c=0;db.matches.filter(m=>m.status==='Onaya Hazır'&&m.confidence>=80).forEach(m=>{approveMatch(m.id);c++});if(!c)toast('Tek tık onaya uygun yüksek güvenli eşleşme yok')}
+  function readArr(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(e){return[]}}
+  function postApprovedLedger(exp,bank,match){const ledger=readArr(LEDGER_KEY);const accountOps=readArr(ACCOUNT_OPS_KEY);const duplicateKey='moka-pos-approved-'+match.id;if(ledger.some(x=>x.id===duplicateKey))return;ledger.unshift({id:duplicateKey,txn_id:duplicateKey,operation_no:exp.mokaRef,cari_id:exp.cari,cari_name:exp.cari,source_module:'moka_pos_reconciliation',movement_type:'Tahsilat',line_date:bank.date,entry_date:bank.date,description:'Moka/POS banka yatışı onayı - '+exp.mokaRef,amount:exp.amount,debit:0,credit:exp.amount,target_type:'cari',created_at:new Date().toISOString(),updated_at:new Date().toISOString()});accountOps.unshift({id:duplicateKey,account_name:'Banka',account_type:'Banka',direction:'Giriş',date:bank.date,amount:exp.amount,description:bank.description,source:'moka_pos_reconciliation',ref:exp.mokaRef,created_at:new Date().toISOString()});localStorage.setItem(LEDGER_KEY,JSON.stringify(ledger));localStorage.setItem(ACCOUNT_OPS_KEY,JSON.stringify(accountOps))}
+  function tag(status){const cls=status==='Onaylandı'?'green':status==='Bankada Eşleşti'||status==='Onaya Hazır'?'blue':status==='Manuel İnceleme'?'amber':status==='Reddedildi'?'red':'amber';return `<span class="tag ${cls}">${esc(status)}</span>`}
+
+  async function filesToText(inputId,targetId,kind){const files=Array.from($(inputId).files||[]);if(!files.length)return toast('Dosya seçilmedi');let text=[];for(const file of files){db.documents.unshift({id:uid('DOC'),kind,name:file.name,type:file.type,size:file.size,at:new Date().toISOString()});if(/\.csv$/i.test(file.name)){text.push(await file.text());continue}if(/\.xlsx$|\.xls$/i.test(file.name)){const buf=await file.arrayBuffer();const wb=XLSX.read(buf,{type:'array'});wb.SheetNames.forEach(name=>{const rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{defval:''});rows.forEach(r=>text.push(Object.values(r).join(' '))) });continue}if(file.type.startsWith('image/')) text.push(file.name+' görüntü dosyası yüklendi. OCR/AI metni gerekiyorsa ilgili satırı buraya ekle.');else if(/pdf/i.test(file.type)||/\.pdf$/i.test(file.name)) text.push(file.name+' PDF dosyası yüklendi. OCR/AI metni gerekiyorsa ilgili satırı buraya ekle.')}$(targetId).value=[$(targetId).value,text.join('\n')].filter(Boolean).join('\n');audit('DOSYA_YUKLEME',files.length+' '+kind+' dosyası alındı',{count:files.length,kind});renderFiles(inputId,kind);save();toast(files.length+' dosya alındı')}
+  function renderFiles(inputId,kind){const files=Array.from($(inputId).files||[]);const list=$(kind==='moka'?'mokaFileList':'bankFileList');const preview=$(kind==='moka'?'mokaPreview':'bankPreview');list.innerHTML=files.map(f=>`<div class="file-pill">${esc(f.name)} · ${Math.round(f.size/1024)} KB</div>`).join('');preview.innerHTML='';files.filter(f=>f.type.startsWith('image/')).slice(0,4).forEach(f=>{const img=document.createElement('img');img.src=URL.createObjectURL(f);preview.appendChild(img)})}
+  function render(){ $('mMoka').textContent=db.moka.length;$('mExpected').textContent=db.expected.length;$('mBank').textContent=db.bank.length;$('mMatch').textContent=db.matches.length;$('mApproved').textContent=db.matches.filter(x=>x.status==='Onaylandı').length;renderBank();renderExpected();renderMatches();renderAudit() }
+  function renderBank(){ $('bankRows').innerHTML=db.bank.length?db.bank.map(b=>`<tr><td>${esc(b.date)}</td><td>${esc(b.description)}</td><td class="num">${money(b.amount)}</td><td>${esc(b.direction)}</td><td>${esc(b.ref||'-')}</td></tr>`).join(''):'<tr><td colspan="5"><div class="empty">Banka adayı yok.</div></td></tr>' }
+  function renderExpected(){ $('expectedRows').innerHTML=db.expected.length?db.expected.map(e=>`<tr><td>${esc(e.dueDate)}</td><td>${esc(e.cari)}</td><td>${e.installmentNo}/${e.totalInstallments}</td><td class="num">${money(e.amount)}</td><td>${tag(e.status)}</td><td><button class="small-btn soft" onclick="ALKAM_MOKA_POS.markLate('${e.id}')">Gecikti</button></td></tr>`).join(''):'<tr><td colspan="6"><div class="empty">Beklenen yatış yok.</div></td></tr>' }
+  function renderMatches(){ $('matchRows').innerHTML=db.matches.length?db.matches.map(m=>{const e=db.expected.find(x=>x.id===m.expectedId)||{};const b=db.bank.find(x=>x.id===m.bankId)||{};return `<tr><td>${esc(e.dueDate||'-')}<br>${esc(e.cari||'')}</td><td>${esc(b.date||'-')}<br>${esc((b.description||'').slice(0,90))}</td><td class="num">${money(m.amount)}</td><td>${m.confidence}/100</td><td>${tag(m.status)}</td><td><div class="row-actions"><button class="small-btn green" onclick="ALKAM_MOKA_POS.approve('${m.id}')">Onayla</button><button class="small-btn red" onclick="ALKAM_MOKA_POS.reject('${m.id}')">Reddet</button></div></td></tr>`}).join(''):'<tr><td colspan="6"><div class="empty">Eşleşme adayı yok.</div></td></tr>' }
+  function renderAudit(){ $('auditRows').innerHTML=db.audit.length?db.audit.map(a=>`<div class="audit-item"><b>${esc(a.type)}</b> · ${new Date(a.at).toLocaleString('tr-TR')}<br>${esc(a.message)}</div>`).join(''):'<div class="empty">Denetim izi yok.</div>' }
+  function switchLocalTab(name){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));document.querySelectorAll('.tab-page').forEach(p=>p.classList.add('hidden'));$('tab-'+name).classList.remove('hidden')}
+  function resetAll(){if(!confirm('Moka/POS mutabakat modülü verileri temizlensin mi?'))return;db={moka:[],expected:[],bank:[],matches:[],audit:[],documents:[]};audit('RESET','Modül verisi temizlendi',{});save()}
+  function exportAll(){const payload=JSON.stringify(db,null,2);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([payload],{type:'application/json'}));a.download='alkam-moka-pos-mutabakat-yedek.json';a.click();URL.revokeObjectURL(a.href);if(window.XLSX){const wb=XLSX.utils.book_new();[['Moka',db.moka],['Beklenen',db.expected],['Banka',db.bank],['Eslesme',db.matches],['Belgeler',db.documents]].forEach(([n,r])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(r),n));XLSX.writeFile(wb,'alkam-moka-pos-mutabakat.xlsx')}}
+  function markLate(id){const e=db.expected.find(x=>x.id===id);if(e&&e.status!=='Onaylandı'){e.status='Gecikti';audit('GECIKME','Beklenen Moka/POS yatışı gecikti olarak işaretlendi',e);save()}}
+  document.addEventListener('DOMContentLoaded',()=>{load();render();document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>switchLocalTab(b.dataset.tab));$('mokaFiles').onchange=()=>renderFiles('mokaFiles','moka');$('bankFiles').onchange=()=>renderFiles('bankFiles','bank');$('readMokaFilesBtn').onclick=()=>filesToText('mokaFiles','mokaText','moka');$('readBankFilesBtn').onclick=()=>filesToText('bankFiles','bankText','banka');$('parseMokaBtn').onclick=parseMokaText;$('saveMokaBtn').onclick=saveMoka;$('parseBankBtn').onclick=parseBankText;$('runMatchBtn').onclick=runMatch;$('approveHighBtn').onclick=approveHigh;$('approveHighBtnBottom').onclick=approveHigh;$('resetBtn').onclick=resetAll;$('exportBtn').onclick=exportAll});
+  window.ALKAM_MOKA_POS={approve:approveMatch,reject:rejectMatch,markLate,db:()=>db,runMatch};
+})();
+</script>
+</body>
+</html>
