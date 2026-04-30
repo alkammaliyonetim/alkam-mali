@@ -1,0 +1,100 @@
+{
+  "version": "2026-04-30",
+  "principle": "Program hizli calisir; kesin muhasebe etkisi kullanici kontrolunde kalir.",
+  "automaticAllowed": [
+    {
+      "key": "document_receive",
+      "title": "Belge alma",
+      "description": "WhatsApp, Telegram, Excel, PDF veya ekran goruntusu gibi kaynaklardan gelen belgeyi aday kuyruğa almak."
+    },
+    {
+      "key": "ocr_ai_read",
+      "title": "OCR/AI okuma",
+      "description": "Belgeden metin ve finans alanlarini aday veri olarak cikarmak."
+    },
+    {
+      "key": "moka_candidate_create",
+      "title": "Moka/POS aday kaydi",
+      "description": "Moka/POS tahsilatini kesin kayit degil aday kayit olarak olusturmak."
+    },
+    {
+      "key": "bank_candidate_create",
+      "title": "Banka ekstresi aday kaydi",
+      "description": "Banka hareketlerini kesin kayit degil aday hareket olarak olusturmak."
+    },
+    {
+      "key": "installment_plan_create",
+      "title": "Taksit plani",
+      "description": "Moka/POS tutarini taksit sayisina gore bolmek ve beklenen yatış plani olusturmak."
+    },
+    {
+      "key": "expected_settlement_create",
+      "title": "Beklenen yatış listesi",
+      "description": "Ilk yatışı islem tarihinden 40 gun sonraya, sonraki taksitleri aylik vadeye koymak."
+    },
+    {
+      "key": "match_suggestion_create",
+      "title": "Eslesme onerisi",
+      "description": "Beklenen Moka/POS yatışları ile banka hareketlerini guven puanli aday olarak eslestirmek."
+    },
+    {
+      "key": "high_confidence_ready",
+      "title": "Onaya hazir yapma",
+      "description": "Yuksek guvenli eslesmeleri kesin kayit yapmadan onaya hazir durumuna almak."
+    }
+  ],
+  "approvalRequired": [
+    {
+      "key": "post_to_cari",
+      "title": "Cari hesaba işleme",
+      "description": "Cari bakiyeyi etkileyen tahsilat, tahakkuk veya mahsup kaydi kullanici onayi ister."
+    },
+    {
+      "key": "post_to_bank",
+      "title": "Banka hesabina kesin hareket yazma",
+      "description": "Banka hesabini etkileyen kesin hareket kullanici onayi ister."
+    },
+    {
+      "key": "bulk_approve",
+      "title": "Toplu onay",
+      "description": "Birden fazla kaydi kesinlestiren her aksiyon kullanici onayi ister."
+    },
+    {
+      "key": "delete_record",
+      "title": "Kayit silme",
+      "description": "Finansal veya belge kaydi silme islemi kullanici onayi ve sebep ister."
+    },
+    {
+      "key": "permission_change",
+      "title": "Yetki veya ayar degistirme",
+      "description": "Rol, entegrasyon, token veya sistem ayari degisikligi kullanici onayi ister."
+    },
+    {
+      "key": "connect_external_token",
+      "title": "Gercek token baglama",
+      "description": "WhatsApp, Telegram veya AI servis tokenlari kullanici onayi ile baglanir."
+    }
+  ],
+  "notAllowed": [
+    {
+      "key": "ai_auto_post_accounting",
+      "title": "AI otomatik kesin muhasebe kaydi",
+      "description": "AI/OCR sonucu kullanici onayi olmadan cari veya banka kaydina donusemez."
+    },
+    {
+      "key": "browser_heavy_ocr",
+      "title": "Program icinde agir OCR",
+      "description": "Mobil ve tarayiciyi kasacak agir OCR motoru ana program icinde calistirilmaz."
+    },
+    {
+      "key": "inflate_main_index",
+      "title": "Ana programi sisirme",
+      "description": "Buyuk entegrasyonlar ana index.html icine gomulmez; ayri endpoint veya modulle calisir."
+    },
+    {
+      "key": "bulk_legacy_migration",
+      "title": "Eski kayitlari topluca donusturme",
+      "description": "Eski kayitlar tek hamlede riskli sekilde yeni standarda zorlanmaz; kademeli ilerlenir."
+    }
+  ]
+}
