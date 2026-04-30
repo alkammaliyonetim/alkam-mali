@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ALKAM Banka Aktarım ve Mutabakat</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f7fb;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--muted:#64748b;--blue:#1769e8;--green:#059669;--red:#dc2626;--amber:#d97706;--shadow:0 12px 30px rgba(15,23,42,.07)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}.shell{max-width:1440px;margin:0 auto;padding:16px}.top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}.title h1{margin:0;font-size:28px;font-weight:950;letter-spacing:-.02em}.title p{margin:6px 0 0;color:var(--muted);font-size:13px;font-weight:800;line-height:1.45}.btns{display:flex;gap:8px;flex-wrap:wrap}.btn{border:0;border-radius:10px;min-height:38px;padding:0 12px;font-size:12px;font-weight:950;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.blue{background:var(--blue);color:#fff}.green{background:var(--green);color:#fff}.soft{background:#e8eef9;color:#0f172a}.red{background:var(--red);color:#fff}.amber{background:#fff7ed;color:#9a3412;border:1px solid #fed7aa}.panel{background:var(--panel);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:13px;margin-bottom:12px}.notice{border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:11px;padding:10px;font-size:12px;font-weight:850;line-height:1.5}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:12px 0}.metric{background:#fbfdff;border:1px solid var(--line);border-radius:11px;padding:10px;min-height:76px}.metric .k{font-size:10px;color:var(--muted);font-weight:950;text-transform:uppercase;letter-spacing:.04em}.metric .v{font-size:20px;font-weight:950;margin-top:6px;font-variant-numeric:tabular-nums}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:11px;font-weight:950;color:#334155;text-transform:uppercase}.field input,.field select,.field textarea{width:100%;border:1px solid #cfd8e6;border-radius:10px;min-height:40px;padding:9px 10px;font-size:13px;font-weight:750;background:#fff}.field textarea{min-height:160px;font-family:Consolas,monospace}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#fff}table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0}th,td{padding:8px;border-bottom:1px solid var(--line);font-size:12px;text-align:left;vertical-align:top;line-height:1.35}th{background:#f8fbff;color:#334155;font-weight:950;position:sticky;top:0;z-index:2;text-transform:uppercase;font-size:10px;letter-spacing:.03em}td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:900;white-space:nowrap}.tag{display:inline-flex;align-items:center;justify-content:center;min-height:22px;border-radius:999px;padding:0 8px;font-size:10px;font-weight:950;white-space:nowrap}.tag.green{background:#dcfce7;color:#166534}.tag.blue{background:#eaf1ff;color:#2457d6}.tag.red{background:#fee2e2;color:#991b1b}.tag.amber{background:#fff7ed;color:#9a3412}.tag.gray{background:#f1f5f9;color:#475569}.suggest{font-weight:850;color:#0f172a}.muted{color:var(--muted);font-size:11px;font-weight:750}.small{font-size:11px}.actions{display:flex;gap:6px;flex-wrap:wrap}.small-btn{border:0;border-radius:8px;min-height:30px;padding:0 9px;font-size:11px;font-weight:950;cursor:pointer}.processed-row{background:#fffbea}.approved-row{background:#f0fdf4}.risk-row{background:#fff7f7}.toast{position:fixed;right:16px;bottom:16px;z-index:20;background:#0f172a;color:#fff;border-radius:12px;padding:12px 14px;font-size:12px;font-weight:900;display:none;box-shadow:var(--shadow);max-width:360px}.empty{padding:18px;text-align:center;border:1px dashed #cbd5e1;border-radius:12px;color:#64748b;font-weight:900;background:#fbfdff}.pill-input{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.review-card{border:1px solid var(--line);border-radius:12px;background:#fbfdff;padding:10px;margin-top:10px}.review-title{font-size:13px;font-weight:950;margin-bottom:6px}.review-list{display:grid;gap:6px;font-size:12px;font-weight:800;color:#334155}.code{font-family:Consolas,monospace;color:#334155;font-size:11px}
+@media(max-width:980px){.top,.grid{grid-template-columns:1fr;display:grid}.cards{grid-template-columns:1fr}.shell{padding:12px}.btn{min-height:42px;width:100%}.pill-input{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="top">
+    <div class="title">
+      <h1>Banka Aktarım ve Mutabakat Merkezi</h1>
+      <p>Excel, CSV veya kopyalanan banka hareketlerini okur; işlenmiş satırları kontrol eder, işlenmemiş satırlara aday muhasebe yönü önerir ve onaya sunar.</p>
+    </div>
+    <div class="btns">
+      <a class="btn soft" href="/">Programa Dön</a>
+      <a class="btn soft" href="/gelen-belge-kutusu.html">Gelen Belge Kutusu</a>
+      <button class="btn green" id="exportBtn">Rapor İndir</button>
+    </div>
+  </div>
+
+  <div class="notice">Bu ekran kesin kayıt oluşturmaz. Sarı/işlenmiş satırlar önce mevcut kayıtlarla eşleştirilir; diğer satırlar AI kural önerisiyle onaya düşer. Onaydan sonra kayıt yerel muhasebe kuyruğuna alınır ve denetim izi tutulur.</div>
+
+  <div class="cards">
+    <div class="metric"><div class="k">Toplam Satır</div><div class="v" id="mTotal">0</div></div>
+    <div class="metric"><div class="k">İşlenmiş Kontrol</div><div class="v" id="mProcessed">0</div></div>
+    <div class="metric"><div class="k">Onay Bekleyen</div><div class="v" id="mPending">0</div></div>
+    <div class="metric"><div class="k">Onaylanan</div><div class="v" id="mApproved">0</div></div>
+    <div class="metric"><div class="k">Riskli / Eksik</div><div class="v" id="mRisk">0</div></div>
+  </div>
+
+  <section class="panel grid">
+    <div class="field">
+      <label>Excel / CSV Dosyası</label>
+      <input id="fileInput" type="file" accept=".xlsx,.xls,.csv,.txt">
+      <div class="muted">Excel içinde sarı dolgulu satır varsa “işlenmiş kontrol” olarak algılanmaya çalışılır. Renk okunamazsa açıklamadaki işlenmiş bilgisi veya tekrar kontrolü kullanılır.</div>
+    </div>
+    <div class="field">
+      <label>Varsayılan Banka Hesabı</label>
+      <div class="pill-input">
+        <input id="bankName" value="Garanti Bankası" placeholder="Banka">
+        <input id="accountName" value="Ana Banka" placeholder="Hesap adı">
+        <select id="mode"><option value="review">Sadece Onaya Sun</option><option value="learn">Öğrenerek Öner</option></select>
+      </div>
+    </div>
+    <div class="field" style="grid-column:1/-1">
+      <label>Excel'den Kopyala / Yapıştır</label>
+      <textarea id="pasteBox" placeholder="01.01.2025	Açıklama	-14,29"></textarea>
+      <div class="row"><button class="btn blue" id="parsePasteBtn">Metni Oku</button><button class="btn soft" id="sampleBtn">Bu Örneği Yükle</button><button class="btn red" id="clearBtn">Temizle</button></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="row" style="justify-content:space-between;margin-bottom:10px">
+      <div><b>Aktarım Ön İzleme ve Onay</b><div class="muted">Her satırda önerilen işlem yeri, güven puanı ve varsa mevcut kayıt eşleşmesi görünür.</div></div>
+      <div class="row"><button class="btn green" id="approveSafeBtn">Güvenli Olanları Onayla</button><button class="btn soft" id="relearnBtn">Tekrar Öner</button></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Durum</th><th>Tarih</th><th>Açıklama</th><th>Tutar</th><th>Önerilen İşlem</th><th>Cari / Hesap Adayı</th><th>Güven</th><th>Kontrol</th><th>İşlem</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+(function(){
+  const IMPORT_KEY='alkam_bank_import_reconciliation_v1';
+  const APPROVAL_KEY='alkam_bank_import_approvals_v1';
+  const AUDIT_KEY='alkam_bank_import_audit_v1';
+  const OPS_KEY='alkam_local_account_ops_v1';
+  const MOKA_KEY='alkam_moka_pos_reconciliation_v2';
+  let rows=[];
+  const $=id=>document.getElementById(id);
+  function toast(t){const el=$('toast');el.textContent=t;el.style.display='block';clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.style.display='none',2800)}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+  function read(k,f){try{return JSON.parse(localStorage.getItem(k)||'')}catch(e){return f}}
+  function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
+  function uid(p){return p+'-'+Date.now()+'-'+Math.random().toString(16).slice(2,8)}
+  function num(v){if(typeof v==='number')return Number.isFinite(v)?v:0;let s=String(v??'').trim().replace(/\s/g,'').replace(/TL|₺/gi,'');if(!s)return 0;if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');return Number(s)||0}
+  function money(v){return num(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL'}
+  function isoDate(v){if(v instanceof Date&&!isNaN(v))return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,'0')}-${String(v.getDate()).padStart(2,'0')}`;const s=String(v||'').trim();let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return `${m[1]}-${m[2]}-${m[3]}`;m=s.match(/^(\d{2})[./-](\d{2})[./-](\d{4})/);if(m)return `${m[3]}-${m[2]}-${m[1]}`;if(typeof v==='number'&&window.XLSX){const d=XLSX.SSF.parse_date_code(v);if(d)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;}return ''}
+  function norm(s){return String(s||'').toLocaleLowerCase('tr-TR').replace(/\s+/g,' ').trim()}
+  function isYellow(cell){try{const fg=cell&&cell.s&&cell.s.fill&&(cell.s.fill.fgColor||cell.s.fill.bgColor);const rgb=String((fg&&fg.rgb)||'').toUpperCase();const idx=String((fg&&fg.indexed)||'');return rgb.includes('FFFF00')||rgb.includes('FFF2CC')||idx==='13'}catch(e){return false}}
+  function existingIndex(){
+    const out=[];
+    const approvals=read(APPROVAL_KEY,[]); approvals.forEach(x=>out.push({type:'Banka Aktarım Onayı',date:x.date,amount:x.amount,desc:x.description,id:x.id}));
+    const ops=read(OPS_KEY,[]); ops.forEach(x=>out.push({type:'Hesap İşlemi',date:x.date||x.operation_date,amount:x.amount,desc:x.description||x.note,id:x.id}));
+    const moka=read(MOKA_KEY,{bank:[],expected:[],matches:[]}); (moka.bank||[]).forEach(x=>out.push({type:'Moka Banka Adayı',date:x.date,amount:x.amount,desc:x.description,id:x.id}));
+    return out;
+  }
+  function similarity(a,b){a=norm(a);b=norm(b);if(!a||!b)return 0;const aw=new Set(a.split(/[^a-z0-9ğüşöçıİĞÜŞÖÇ]+/).filter(x=>x.length>2));const bw=new Set(b.split(/[^a-z0-9ğüşöçıİĞÜŞÖÇ]+/).filter(x=>x.length>2));let hit=0;aw.forEach(w=>{if(bw.has(w))hit++});return hit/Math.max(aw.size||1,bw.size||1)}
+  function findExisting(r){const list=existingIndex();let best=null;list.forEach(x=>{const amountOk=Math.abs(Math.abs(num(x.amount))-Math.abs(num(r.amount)))<0.02;const dateOk=!x.date||!r.date||x.date===r.date;const sim=similarity(x.desc,r.description);const score=(amountOk?45:0)+(dateOk?25:0)+Math.round(sim*30);if(score>55&&(!best||score>best.score))best={score,item:x}});return best}
+  function cleanCari(desc){let s=String(desc||'').replace(/'DAN|'DEN|DAN|DEN/gi,' ').replace(/,.*$/,' ').replace(/\b(Türkiye|Garanti|Bankası|A\.Ş\.|QNB|FAST|EFT|ODEMESİ|ÖDEMESİ|GELEN)\b/gi,' ').replace(/\d{2}\/\d{4}|\d{4}|\d+/g,' ').replace(/\s+/g,' ').trim();return s.slice(0,90)||'Cari aday eşleşmesi gerekli'}
+  function suggest(r){const d=norm(r.description);const amount=num(r.amount);let s={target:'İnceleme',candidate:'Manuel kontrol gerekli',confidence:35,reason:'Belirsiz banka açıklaması',direction:amount>=0?'Giriş':'Çıkış'};
+    if(d.includes('pos aidat')||d.includes('eft masraf')||d.includes('masraf')) s={target:'Banka Gideri',candidate:d.includes('pos')?'POS aidat/komisyon gideri':'Banka masrafı',confidence:92,reason:'Banka/POS masraf anahtar kelimesi bulundu',direction:'Çıkış'};
+    else if(d.includes('batch valor')||d.includes('pos satış')||d.includes('pos satis')) s={target:'POS Tahsilatı',candidate:'Moka/POS beklenen banka yatışı',confidence:88,reason:'POS satış/batch valör açıklaması bulundu',direction:'Giriş'};
+    else if(d.includes('maaş')||d.includes('maas')) s={target:'Personel Ödemesi',candidate:r.description.replace(/maaş|maas/ig,'').trim()||'Personel',confidence:86,reason:'Maaş açıklaması bulundu',direction:'Çıkış'};
+    else if(d.includes('kredi kart')) s={target:'Kredi Kartı Ödemesi',candidate:'Kredi kartı hesabı',confidence:84,reason:'Kredi kart ödeme açıklaması bulundu',direction:'Çıkış'};
+    else if(d.includes('transfer')||d.includes('iban')||d.includes('tr20')) s={target:'Virman / Hesaplar Arası Transfer',candidate:'Banka/kasa/ortak hesap eşleştirme',confidence:72,reason:'Transfer/IBAN açıklaması bulundu',direction:amount>=0?'Giriş':'Çıkış'};
+    else if(amount>0&&(d.includes('dan ')||d.includes("'dan")||d.includes('gelen'))) s={target:'Cari Tahsilat',candidate:cleanCari(r.description),confidence:82,reason:'Gelen ödeme ve gönderen bilgisi bulundu',direction:'Giriş'};
+    else if(amount>0) s={target:'Cari Tahsilat Adayı',candidate:cleanCari(r.description),confidence:62,reason:'Pozitif banka girişi',direction:'Giriş'};
+    else if(amount<0) s={target:'Gider / Ödeme Adayı',candidate:cleanCari(r.description),confidence:58,reason:'Negatif banka çıkışı',direction:'Çıkış'};
+    if(d.includes('defter tasdik')){s.target=amount>0?'Cari Tahsilat':'Gider / Resmi Defter Tasdik';s.candidate=cleanCari(r.description);s.confidence=Math.max(s.confidence,74);s.reason='Defter tasdik açıklaması bulundu'}
+    return s;
+  }
+  function enrich(base){return base.map((r,i)=>{const ex=findExisting(r);const sug=suggest(r);const status=ex?'İşlenmiş Kontrol':(r.markedProcessed?'Sarı İşaretli Kontrol':'Onay Bekliyor');return Object.assign({id:r.id||uid('BNK'),rowNo:i+1,existing:ex,suggestion:sug,status,approved:false,risk:(!ex&&sug.confidence<65)},r)})}
+  function parseText(text){const out=[];String(text||'').split(/\r?\n/).forEach(line=>{const s=line.trim();if(!s)return;let parts=s.split(/\t+/);if(parts.length<3)parts=s.split(/\s{2,}/);if(parts.length<3){const m=s.match(/^(\d{2}[./-]\d{2}[./-]\d{4})\s+(.+)\s+(-?\d+(?:[.,]\d{1,2})?)$/);if(m)parts=[m[1],m[2],m[3]];}if(parts.length>=3){out.push({date:isoDate(parts[0]),description:parts.slice(1,-1).join(' ').trim(),amount:num(parts[parts.length-1]),markedProcessed:/işlenmiş|islenmis|sarı|sari/i.test(s)})}});return enrich(out)}
+  async function parseFile(file){const buf=await file.arrayBuffer();if(/\.csv$|\.txt$/i.test(file.name)){const text=new TextDecoder('utf-8').decode(buf);return parseText(text)}const wb=XLSX.read(buf,{type:'array',cellDates:true,cellStyles:true});const ws=wb.Sheets[wb.SheetNames[0]];const range=XLSX.utils.decode_range(ws['!ref']||'A1:C1');const out=[];for(let R=range.s.r;R<=range.e.r;R++){const vals=[];let yellow=false;for(let C=range.s.c;C<=Math.min(range.e.c,8);C++){const cell=ws[XLSX.utils.encode_cell({r:R,c:C})];if(cell){vals.push(cell.v);if(isYellow(cell))yellow=true}else vals.push('')}const non=vals.filter(v=>String(v??'').trim()!=='');if(non.length<3)continue;const date=isoDate(non[0]);const amount=num(non[non.length-1]);const desc=non.slice(1,-1).join(' ').trim();if(date&&desc&&amount)out.push({date,description:desc,amount,markedProcessed:yellow})}return enrich(out)}
+  function render(){
+    $('mTotal').textContent=rows.length;$('mProcessed').textContent=rows.filter(r=>r.existing||r.markedProcessed).length;$('mPending').textContent=rows.filter(r=>!r.approved&&!r.existing).length;$('mApproved').textContent=rows.filter(r=>r.approved).length;$('mRisk').textContent=rows.filter(r=>r.risk&&!r.approved&&!r.existing).length;
+    $('rows').innerHTML=rows.length?rows.map(r=>{const cls=r.approved?'approved-row':(r.risk?'risk-row':(r.existing||r.markedProcessed?'processed-row':''));const st=r.approved?'<span class="tag green">Onaylandı</span>':r.existing?'<span class="tag blue">İşlenmiş</span>':r.markedProcessed?'<span class="tag amber">Sarı Kontrol</span>':r.risk?'<span class="tag red">Kontrol</span>':'<span class="tag gray">Onay Bekliyor</span>';return `<tr class="${cls}"><td>${st}</td><td>${esc(r.date)}</td><td>${esc(r.description)}<div class="muted">Satır ${r.rowNo}</div></td><td class="num">${money(r.amount)}</td><td><div class="suggest">${esc(r.suggestion.target)}</div><div class="muted">${esc(r.suggestion.reason)}</div></td><td>${esc(r.suggestion.candidate)}</td><td><span class="tag ${r.suggestion.confidence>=80?'green':r.suggestion.confidence>=65?'amber':'red'}">%${r.suggestion.confidence}</span></td><td>${r.existing?`<b>${esc(r.existing.item.type)}</b><br><span class="code">${esc(r.existing.item.id||'')}</span><br><span class="muted">Eşleşme %${r.existing.score}</span>`:(r.markedProcessed?'Sarı işaretli ama sistem kaydı bulunamadı':'Yeni aday')}</td><td><div class="actions"><button class="small-btn green" onclick="BANKAPP.approve('${r.id}')" ${r.existing||r.approved?'disabled':''}>Onayla</button><button class="small-btn soft" onclick="BANKAPP.edit('${r.id}')">Düzelt</button><button class="small-btn red" onclick="BANKAPP.skip('${r.id}')">Atla</button></div></td></tr>`}).join(''):'<tr><td colspan="9"><div class="empty">Banka hareketi yüklenmedi.</div></td></tr>'}
+  function persist(){save(IMPORT_KEY,rows)}
+  function approve(id){const r=rows.find(x=>x.id===id);if(!r||r.existing)return;const approvals=read(APPROVAL_KEY,[]);const rec={id:uid('APR'),sourceRowId:r.id,date:r.date,description:r.description,amount:r.amount,bank:$('bankName').value,account:$('accountName').value,target:r.suggestion.target,candidate:r.suggestion.candidate,confidence:r.suggestion.confidence,approvedAt:new Date().toISOString(),status:'Onaylandı'};approvals.unshift(rec);save(APPROVAL_KEY,approvals);const ops=read(OPS_KEY,[]);ops.unshift({id:uid('ACC'),date:r.date,amount:Math.abs(r.amount),direction:r.amount>=0?'Giriş':'Çıkış',description:r.description,source:'Banka Aktarım Merkezi',target_type:r.suggestion.target,target_name:r.suggestion.candidate,created_at:new Date().toISOString()});save(OPS_KEY,ops);const audit=read(AUDIT_KEY,[]);audit.unshift({id:uid('AUD'),at:new Date().toISOString(),type:'BANK_IMPORT_APPROVED',payload:rec});save(AUDIT_KEY,audit);r.approved=true;r.status='Onaylandı';r.risk=false;persist();render();toast('Satır onaylandı ve hesap işlem kuyruğuna alındı')}
+  function edit(id){const r=rows.find(x=>x.id===id);if(!r)return;const target=prompt('Önerilen işlem yeri',r.suggestion.target);if(target===null)return;const cand=prompt('Cari / hesap adayı',r.suggestion.candidate);if(cand===null)return;r.suggestion.target=target.trim()||r.suggestion.target;r.suggestion.candidate=cand.trim()||r.suggestion.candidate;r.suggestion.confidence=Math.max(r.suggestion.confidence,76);r.risk=false;persist();render();toast('Satır önerisi güncellendi')}
+  function skip(id){rows=rows.filter(x=>x.id!==id);persist();render();toast('Satır atlandı')}
+  function approveSafe(){rows.filter(r=>!r.approved&&!r.existing&&!r.risk&&r.suggestion.confidence>=80).forEach(r=>approve(r.id));render()}
+  function exportReport(){const data=rows.map(r=>({Durum:r.approved?'Onaylandı':r.existing?'İşlenmiş':r.markedProcessed?'Sarı Kontrol':'Onay Bekliyor',Tarih:r.date,Açıklama:r.description,Tutar:r.amount,Öneri:r.suggestion.target,Aday:r.suggestion.candidate,Güven:r.suggestion.confidence,Kontrol:r.existing?`${r.existing.item.type} ${r.existing.score}`:''}));if(window.XLSX){const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);XLSX.utils.book_append_sheet(wb,ws,'Banka Mutabakat');XLSX.writeFile(wb,'alkam-banka-aktarim-mutabakat.xlsx');return}const csv=Object.keys(data[0]||{}).join(';')+'\n'+data.map(o=>Object.values(o).map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(';')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='alkam-banka-aktarim-mutabakat.csv';document.body.appendChild(a);a.click();a.remove()}
+  const sample=`01.01.2025\t000000003166185/PAU1 POS Aidat VP726724/000001488709630\t-14,29\n01.01.2025\tERCAN ALAYLI 'DAN ELİT DEFTER , Türkiye Garanti Bankası A.Ş.\t8000\n02.01.2025\tErkan Şahin 'DAN Nzozi gıda defter tasdik ücreti , QNB Bank A.Ş.\t10000\n02.01.2025\tErkan Şahin 'DAN Orhan demir muhasebe ücreti , QNB Bank A.Ş.\t5000\n02.01.2025\tErkan Şahin 'DAN Kasa kalan para , QNB Bank A.Ş.\t13300\n03.01.2025\tenes matar bilanço\t-10000\n03.01.2025\tEFT MASRAFI (0279 7115870)\t-8,86\n06.01.2025\tBATCH VALOR ÇOZUM 26-11-2024 /000000003166185 P POS Satış /01459775202\t25000\n07.01.2025\t5528791841487834 Kredi Kart Odeme\t-515\n07.01.2025\tERCAN ALAYLI 12/2024 MUH.ÜCR.-WOODLENT ORM.ÜRÜN.LTD.ŞTİ.\t10000\n07.01.2025\t279-09009675 dan TR200001500158007320855168 a transfer\t-3200\n07.01.2025\t279-09009675 dan TR200001500158007320855168 a transfer\t-6,39\n07.01.2025\tdefter 2025\t-945,63\n07.01.2025\tEFT MASRAFI (0279 7932181)\t-6,39\n08.01.2025\tMUHAMMED GAZİ 'DAN mali müşavirlik ücretidir , Albaraka Türk Katılım Bankası A.Ş\t10000\n08.01.2025\tROYALCOMFORT MOBİLYA İÇ VE DIŞ TİCARET LİMİTED ŞİRKETİ 'DAN GELEN FAST ODEMESİ ,\t15000\n09.01.2025\tkübra maaş\t-24000\n09.01.2025\tEFT MASRAFI (0279 8275399)\t-12,8\n09.01.2025\terkan maaş\t-24000\n09.01.2025\tEFT MASRAFI (0279 8276080)\t-12,8`;
+  document.addEventListener('DOMContentLoaded',()=>{rows=read(IMPORT_KEY,[]);render();$('parsePasteBtn').onclick=()=>{rows=parseText($('pasteBox').value);persist();render();toast(rows.length+' satır okundu')};$('sampleBtn').onclick=()=>{$('pasteBox').value=sample;rows=parseText(sample);persist();render();toast('Örnek banka hareketleri yüklendi')};$('clearBtn').onclick=()=>{rows=[];save(IMPORT_KEY,[]);$('pasteBox').value='';render()};$('approveSafeBtn').onclick=approveSafe;$('relearnBtn').onclick=()=>{rows=enrich(rows.map(r=>({date:r.date,description:r.description,amount:r.amount,markedProcessed:r.markedProcessed,id:r.id})));persist();render();toast('Öneriler güncellendi')};$('exportBtn').onclick=exportReport;$('fileInput').onchange=async e=>{const f=e.target.files[0];if(!f)return;rows=await parseFile(f);persist();render();toast(f.name+' okundu: '+rows.length+' satır')}});
+  window.BANKAPP={approve,edit,skip};
+})();
+</script>
+</body>
+</html>
