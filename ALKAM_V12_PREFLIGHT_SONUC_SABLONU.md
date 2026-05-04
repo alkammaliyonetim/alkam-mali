@@ -18,7 +18,27 @@ failed: 0
 liveBad: false
 ```
 
-## 3. Gerçek Sonuç
+## 3. Sonuç Export Komutu
+
+Canlı sonuçları tek JSON çıktısı olarak almak için:
+
+```js
+ALKAM_V12_PREFLIGHT_EXPORT_V1.test()
+```
+
+Detaylı JSON çıktısını almak için:
+
+```js
+ALKAM_V12_PREFLIGHT_EXPORT_V1.collect()
+```
+
+Panelden kullanım:
+
+```text
+Ana Dashboard > Sonuç Export
+```
+
+## 4. Gerçek Preflight Sonucu
 
 ```text
 ready:
@@ -30,7 +50,15 @@ missing:
 time:
 ```
 
-## 4. Sonuç Değerlendirmesi
+## 5. Export Kontrol Sonucu
+
+```text
+hasPreflight:
+hasLiveTest:
+hasWriteGate:
+```
+
+## 6. Sonuç Değerlendirmesi
 
 ```text
 [ ] Temiz - v12 stabilizasyonuna geçilebilir
@@ -39,7 +67,7 @@ time:
 [ ] ACİL - Supabase yazma açık
 ```
 
-## 5. Eksik / Riskli Modül Varsa
+## 7. Eksik / Riskli Modül Varsa
 
 Eksik veya riskli görünen modül:
 
@@ -53,7 +81,7 @@ Aksiyon:
 
 ```
 
-## 6. Supabase Yazma Kontrolü
+## 8. Supabase Yazma Kontrolü
 
 Ayrı kontrol komutu:
 
@@ -73,7 +101,7 @@ Gerçek sonuç:
 writeAllowed:
 ```
 
-## 7. Canlı Test Kontrolü
+## 9. Canlı Test Kontrolü
 
 Ayrı kontrol komutu:
 
@@ -95,20 +123,28 @@ failed:
 risky:
 ```
 
-## 8. Karar
+## 10. Karar
 
 ```text
 [ ] v12: stabilize dashboard and module loading
 [ ] fix: resolve v11 live test gaps before v12
 ```
 
-## 9. Değişmez Güvenlik Cümlesi
+## 11. Kayıt Altına Alınacak Dosya
+
+Sonuç Export panelinden JSON indirildiyse dosya adı:
+
+```text
+alkam-v12-preflight-sonuc-YYYY-MM-DD-HH-MM-SS.json
+```
+
+## 12. Değişmez Güvenlik Cümlesi
 
 ```text
 AI kayıt yapmaz, Supabase yazma kapalıdır, cari ekstresi ana defterdir, Moka United banka aktarımı cari tahsilatı sayılmaz.
 ```
 
-## 10. Notlar
+## 13. Notlar
 
 ```text
 
