@@ -5,7 +5,7 @@ export default {
     if (!contentType.includes('text/html')) return response;
 
     let html = await response.text();
-    const patch = '<style id="alkam-hide-islem-izi-panel">#alkamBusinessAuditPanel,#alkamAuditTrailDashboardCard,.alkam-business-audit-panel,.business-audit-panel,.audit-trail-dashboard-card{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}</style>';
+    const patch = '<style id="alkam-hide-islem-izi-panel">#alkamBusinessAuditPanel,#alkamAuditTrailDashboardCard,.alkam-business-audit-panel,.business-audit-panel,.audit-trail-dashboard-card{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}</style><script src="/alkam-cari-core-v4.js"></script>';
     html = html.replace('</head>', patch + '</head>');
 
     const headers = new Headers(response.headers);
