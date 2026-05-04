@@ -1,4 +1,4 @@
 Cloudflare deployment trigger
 Date: 2026-05-04
-Purpose: refresh live deployment after moving audit history away from dashboard without deleting records.
-Commit target: audit history visible in program, not on main dashboard.
+Purpose: restore app after safe worker passthrough.
+Commit target: program must load normally before further UI relocation.
