@@ -1,4 +1,4 @@
 Cloudflare deployment trigger
 Date: 2026-05-04
-Purpose: restore app after safe worker passthrough.
-Commit target: program must load normally before further UI relocation.
+Purpose: refresh after safe audit section move.
+Commit target: audit history removed from dashboard and kept under backup/audit area.
