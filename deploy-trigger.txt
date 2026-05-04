@@ -1,4 +1,4 @@
 Cloudflare deployment trigger
-Date: 2026-04-30
-Purpose: refresh live deployment after direct dashboard audit trace removal worker.
-Commit target: remove visible Islem Izi from home dashboard.
+Date: 2026-05-04
+Purpose: refresh live deployment after moving audit history away from dashboard without deleting records.
+Commit target: audit history visible in program, not on main dashboard.
