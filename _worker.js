@@ -15,6 +15,7 @@ export default {
     scripts += '<script src="/alkam-supabase-baglanti-test-v10.js"></script>';
     scripts += '<script src="/alkam-supabase-readonly-v10.js"></script>';
     scripts += '<script src="/alkam-supabase-compare-ui-v10.js"></script>';
+    scripts += '<script src="/alkam-supabase-write-gate-v10.js"></script>';
     html = html.replace('</head>', hide + scripts + '</head>');
 
     const headers = new Headers(response.headers);
