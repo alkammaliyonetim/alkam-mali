@@ -1,16 +1,24 @@
 (function(){
   'use strict';
-  var VERSION='ALKAM Kurumsal Dashboard v11.10';
+  var VERSION='ALKAM Kurumsal Dashboard v11.12';
   function q(s,r){return (r||document).querySelector(s)}
   function read(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}}
   function money(v){return Number(v||0)||0}
   function fmt(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))+' TL'}
-  function loadPeriodFilter(){
-    if(window.ALKAM_DASHBOARD_DONEM_FILTRE_V11||q('script[data-alkam-period-filter]'))return;
+  function loadScriptOnce(src,attr){
+    if(q('script['+attr+']'))return;
     var s=document.createElement('script');
-    s.src='/alkam-dashboard-donem-filtre-v11.js';
-    s.setAttribute('data-alkam-period-filter','1');
+    s.src=src;
+    s.setAttribute(attr,'1');
     document.head.appendChild(s);
+  }
+  function loadPeriodFilter(){
+    if(window.ALKAM_DASHBOARD_DONEM_FILTRE_V11)return;
+    loadScriptOnce('/alkam-dashboard-donem-filtre-v11.js','data-alkam-period-filter');
+  }
+  function loadSingleScreen(){
+    if(window.ALKAM_DASHBOARD_TEK_EKRAN_V11)return;
+    loadScriptOnce('/alkam-dashboard-tek-ekran-v11.js','data-alkam-tek-ekran');
   }
   function getFilter(){
     if(window.ALKAM_DASHBOARD_DONEM_FILTRE_V11&&ALKAM_DASHBOARD_DONEM_FILTRE_V11.getFilter)return ALKAM_DASHBOARD_DONEM_FILTRE_V11.getFilter();
@@ -53,15 +61,16 @@
   function findMount(){return q('#app')||q('main')||q('.container')||document.body}
   function render(){
     loadPeriodFilter();
+    loadSingleScreen();
     css(); var m=metrics(); var host=q('#alkamCorporateDashboard');
     if(!host){host=document.createElement('section');host.id='alkamCorporateDashboard';host.className='alkam-corp-wrap';var mount=findMount();mount.insertBefore(host,mount.firstChild)}
     var durum=m.aiCritical?'Kritik Kontrol':(m.bankaOnay||m.aiWarning?'Kontrol Gerekir':'Sistem Normal');
     host.innerHTML='<div class="alkam-corp-head"><div><h2>ALKAM Mali Yönetim Özeti</h2><p>Cari ana defter, tahakkuk, tahsilat, banka onay ve AI risk görünümü.</p></div><div class="alkam-corp-badges"><div class="alkam-corp-badge light">Dönem: '+m.filterLabel+'</div><div class="alkam-corp-badge">'+durum+'</div></div></div><div class="alkam-corp-grid"><div class="alkam-corp-card"><b>Net Cari Bakiye</b><span>'+fmt(m.bakiye)+'</span><small>'+(m.bakiye>0?'BAKİYE B':(m.bakiye<0?'BAKİYE A':'KAPALI'))+'</small></div><div class="alkam-corp-card"><b>Tahakkuk</b><span>'+fmt(m.tahTop)+'</span><small>'+m.tahakkuk+' kayıt</small></div><div class="alkam-corp-card"><b>Tahsilat</b><span>'+fmt(m.tahsilTop)+'</span><small>'+m.tahsilat+' kayıt</small></div><div class="alkam-corp-card"><b>Banka Onay</b><span>'+m.bankaOnay+'</span><small>bekleyen kayıt</small></div><div class="alkam-corp-card"><b>Cari Hareket</b><span>'+m.cari+'</span><small>ana defter satırı</small></div><div class="alkam-corp-card"><b>AI Kritik</b><span>'+m.aiCritical+'</span><small>önce incelenecek</small></div><div class="alkam-corp-card"><b>AI Uyarı</b><span>'+m.aiWarning+'</span><small>kontrol önerisi</small></div><div class="alkam-corp-card"><b>Sistem Zamanı</b><span style="font-size:13px">'+m.time.slice(0,19).replace('T',' ')+'</span><small>son yenileme</small></div></div><div class="alkam-corp-actions"><button onclick="window.ALKAM_AI_ASISTAN_MERKEZI_V11&&ALKAM_AI_ASISTAN_MERKEZI_V11.open()">AI Merkezi</button><button onclick="window.ALKAM_GUVENILIRLIK_RAPORU_V9&&ALKAM_GUVENILIRLIK_RAPORU_V9.open()">Güvenilirlik</button><button onclick="window.ALKAM_AI_RAPOR_OZETI_V11&&ALKAM_AI_RAPOR_OZETI_V11.open()" class="secondary">AI Rapor</button><button onclick="window.ALKAM_BANKA_ONAY_UI_V8&&ALKAM_BANKA_ONAY_UI_V8.open&&ALKAM_BANKA_ONAY_UI_V8.open()" class="secondary">Banka Onay</button></div>';
-    setTimeout(function(){if(window.ALKAM_DASHBOARD_DONEM_FILTRE_V11&&ALKAM_DASHBOARD_DONEM_FILTRE_V11.inject)ALKAM_DASHBOARD_DONEM_FILTRE_V11.inject()},100);
+    setTimeout(function(){if(window.ALKAM_DASHBOARD_DONEM_FILTRE_V11&&ALKAM_DASHBOARD_DONEM_FILTRE_V11.inject)ALKAM_DASHBOARD_DONEM_FILTRE_V11.inject(); if(window.ALKAM_DASHBOARD_TEK_EKRAN_V11&&ALKAM_DASHBOARD_TEK_EKRAN_V11.run)ALKAM_DASHBOARD_TEK_EKRAN_V11.run();},120);
     window.__ALKAM_DASHBOARD_KURUMSAL_LAST=m; return m;
   }
-  function boot(){setTimeout(function(){loadPeriodFilter();render()},2400)}
-  window.ALKAM_DASHBOARD_KURUMSAL_V11={version:VERSION,metrics:metrics,render:render,run:boot,test:function(){var m=render();return {version:VERSION,card:!!q('#alkamCorporateDashboard'),periodFilterLoader:!!q('script[data-alkam-period-filter]'),filter:m.filter,filterLabel:m.filterLabel,metrics:m,time:new Date().toISOString()}},last:function(){return window.__ALKAM_DASHBOARD_KURUMSAL_LAST||metrics()}};
+  function boot(){setTimeout(function(){loadPeriodFilter();loadSingleScreen();render()},2400)}
+  window.ALKAM_DASHBOARD_KURUMSAL_V11={version:VERSION,metrics:metrics,render:render,run:boot,test:function(){var m=render();return {version:VERSION,card:!!q('#alkamCorporateDashboard'),periodFilterLoader:!!q('script[data-alkam-period-filter]'),singleScreenLoader:!!q('script[data-alkam-tek-ekran]'),filter:m.filter,filterLabel:m.filterLabel,metrics:m,time:new Date().toISOString()}},last:function(){return window.__ALKAM_DASHBOARD_KURUMSAL_LAST||metrics()}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
   setInterval(render,15000);
 })();
