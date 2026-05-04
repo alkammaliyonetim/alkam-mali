@@ -2,7 +2,23 @@
 
 Bu liste deploy sonrası hızlı ve güvenli kontrol için hazırlanmıştır.
 
-## 1. Ana dashboard kontrolü
+## 1. v12 Preflight karar kontrolü
+
+```js
+ALKAM_V12_PREFLIGHT_V1.test()
+```
+
+Beklenen:
+
+```text
+ready: true
+decision: "v12 stabilizasyonuna geçilebilir"
+writeOpen: false
+```
+
+Eğer `ready: false` çıkarsa v12 refactor genişletilmeyecek; önce eksik/riskli modül düzeltilecek.
+
+## 2. Ana dashboard kontrolü
 
 ```js
 ALKAM_DASHBOARD_KURUMSAL_V11.test()
@@ -20,9 +36,10 @@ versionBadgeLoader: true
 cacheControlLoader: true
 viewPrefLoader: true
 v12StabilizerLoader: true
+v12PreflightLoader: true
 ```
 
-## 2. Cache / deploy kontrolü
+## 3. Cache / deploy kontrolü
 
 ```js
 ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
@@ -37,7 +54,7 @@ missing: 0
 
 Eksik görünürse önce Ctrl+F5 / sert yenileme yapılır.
 
-## 3. Canlı test paketi
+## 4. Canlı test paketi
 
 ```js
 ALKAM_CANLI_TEST_PAKETI_V11.test()
@@ -47,17 +64,12 @@ Beklenen:
 
 ```text
 failed: 0
-```
-
-Ek güvenli beklenti:
-
-```text
 risky: 0
 ```
 
 Riskli alan çıkarsa ilgili modül ayrı test edilir.
 
-## 4. v12 Stabilizer kontrolü
+## 5. v12 Stabilizer kontrolü
 
 ```js
 ALKAM_V12_STABILIZER_V1.test()
@@ -78,7 +90,7 @@ status: "ACİL: Yazma Açık"
 writeAllowed: true
 ```
 
-## 5. Görünüm tercihi kontrolü
+## 6. Görünüm tercihi kontrolü
 
 ```js
 ALKAM_DASHBOARD_GORUNUM_TERCIHI_V11.test()
@@ -93,7 +105,7 @@ selector: true
 oldTogglesHidden: true
 ```
 
-## 6. Görsel kontrol
+## 7. Görsel kontrol
 
 ```js
 ALKAM_DASHBOARD_GORSEL_KONTROL_V11.test()
@@ -106,7 +118,7 @@ status: "Temiz"
 missing: 0
 ```
 
-## 7. Dönem filtre kontrolü
+## 8. Dönem filtre kontrolü
 
 ```js
 ALKAM_DASHBOARD_DONEM_FILTRE_V11.test()
@@ -118,7 +130,7 @@ Beklenen:
 injected: true
 ```
 
-## 8. Tek ekran kontrolü
+## 9. Tek ekran kontrolü
 
 ```js
 ALKAM_DASHBOARD_TEK_EKRAN_V11.test()
@@ -131,7 +143,7 @@ dashboard: true
 note: true
 ```
 
-## 9. Sürüm rozeti kontrolü
+## 10. Sürüm rozeti kontrolü
 
 ```js
 ALKAM_SURUM_ROZETI_V11.test()
@@ -144,7 +156,7 @@ visible: true
 build: "v11.17 - 05.05.2026"
 ```
 
-## 10. AI merkez kontrolü
+## 11. AI merkez kontrolü
 
 ```js
 ALKAM_AI_ASISTAN_MERKEZI_V11.test()
@@ -158,7 +170,7 @@ total: 6
 missing: 0
 ```
 
-## 11. Supabase güvenlik kontrolü
+## 12. Supabase güvenlik kontrolü
 
 ```js
 ALKAM_SUPABASE_WRITE_GATE_V10.test()
@@ -170,11 +182,11 @@ Beklenen:
 writeAllowed: false
 ```
 
-## 12. Kritik güvenlik notları
+## 13. Kritik güvenlik notları
 
 - Supabase yazma kapalı kalacak.
 - AI modülleri kayıt yapmayacak.
 - Cari ana defter korunacak.
 - Moka United banka aktarımı cari tahsilatı sayılmayacak.
 - Onaysız işlem yapılmayacak.
-- Canlı test temiz olmadan v12 refactor genişletilmeyecek.
+- Preflight temiz olmadan v12 refactor genişletilmeyecek.
