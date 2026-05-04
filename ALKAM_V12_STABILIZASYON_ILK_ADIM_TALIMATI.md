@@ -6,9 +6,27 @@ Bu talimat v12 stabilizasyonuna başlarken yapılacak ilk pratik adımı netleş
 
 v11 sonunda oluşan modül yükleme zincirini bozmadan, canlı test ve güvenlik kontrollerini tek standart akışa almak.
 
-## Önce Çalıştırılacak Canlı Komutlar
+## Önce Çalıştırılacak Ana Karar Komutu
 
-Canlı sitede sırasıyla:
+Canlı sitede ilk çalıştırılacak komut:
+
+```js
+ALKAM_V12_PREFLIGHT_V1.test()
+```
+
+Beklenen karar:
+
+```text
+ready: true
+decision: "v12 stabilizasyonuna geçilebilir"
+writeOpen: false
+```
+
+Bu komut temiz çıkmadan v12 refactor genişletilmeyecek.
+
+## Detay Kontrol Komutları
+
+Preflight sonucu temiz değilse canlı sitede sırasıyla:
 
 ```js
 ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
@@ -21,7 +39,9 @@ ALKAM_SUPABASE_WRITE_GATE_V10.test()
 ## Beklenen Temiz Sonuç
 
 ```text
+v12 Preflight: ready true
 Cache Kontrol: missing 0
+Dashboard: v12PreflightLoader true
 Dashboard: v12StabilizerLoader true
 Canlı Test: failed 0
 Canlı Test: risky 0
@@ -39,6 +59,7 @@ Eksik çıkan modül önce ayrı test edilir.
 ALKAM_DASHBOARD_GORUNUM_TERCIHI_V11.test()
 ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
 ALKAM_V12_STABILIZER_V1.test()
+ALKAM_V12_PREFLIGHT_V1.test()
 ```
 
 ## İlk Teknik Refactor Sınırı
@@ -65,17 +86,18 @@ Dashboard butonlarını sade tutmak
 Görünüm seçiciyi korumak
 Cache kontrolünü güncel tutmak
 v12 Stabilizer raporunu güçlendirmek
+v12 Preflight karar akışını ana referans yapmak
 ```
 
 ## Karar
 
-Canlı test temizse v12 ilk teknik commit mesajı:
+Preflight temizse v12 ilk teknik commit mesajı:
 
 ```text
 v12: stabilize dashboard and module loading
 ```
 
-Canlı test temiz değilse commit mesajı:
+Preflight temiz değilse commit mesajı:
 
 ```text
 fix: resolve v11 live test gaps before v12
