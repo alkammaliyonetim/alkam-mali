@@ -2,7 +2,37 @@
 
 Bu form v12 stabilizasyonuna geçmeden önce canlı sitede yapılacak son kontrol listesidir.
 
-## 1. Sürüm / Deploy Kontrolü
+## 1. v12 Preflight Karar Kontrolü
+
+Kontrol komutu:
+
+```js
+ALKAM_V12_PREFLIGHT_V1.test()
+```
+
+Beklenen:
+
+```text
+ready: true
+decision: "v12 stabilizasyonuna geçilebilir"
+writeOpen: false
+```
+
+Kontrol sonucu:
+
+```text
+[ ] v12'ye geçilebilir
+[ ] Önce eksikler düzeltilecek
+[ ] DUR: Supabase yazma açık
+```
+
+Not:
+
+```text
+
+```
+
+## 2. Sürüm / Deploy Kontrolü
 
 Kontrol komutu:
 
@@ -30,7 +60,7 @@ Not:
 
 ```
 
-## 2. Ana Dashboard Kontrolü
+## 3. Ana Dashboard Kontrolü
 
 Kontrol komutu:
 
@@ -44,6 +74,7 @@ Beklenen:
 card: true
 viewPrefLoader: true
 v12StabilizerLoader: true
+v12PreflightLoader: true
 ```
 
 Kontrol sonucu:
@@ -59,7 +90,7 @@ Not:
 
 ```
 
-## 3. Canlı Test Paketi
+## 4. Canlı Test Paketi
 
 Kontrol komutu:
 
@@ -88,7 +119,7 @@ Not:
 
 ```
 
-## 4. v12 Stabilizer Kontrolü
+## 5. v12 Stabilizer Kontrolü
 
 Kontrol komutu:
 
@@ -118,7 +149,7 @@ Not:
 
 ```
 
-## 5. Supabase Yazma Güvenliği
+## 6. Supabase Yazma Güvenliği
 
 Kontrol komutu:
 
@@ -145,7 +176,7 @@ Not:
 
 ```
 
-## 6. Görünüm Tercihi Kontrolü
+## 7. Görünüm Tercihi Kontrolü
 
 Kontrol komutu:
 
@@ -175,7 +206,7 @@ Not:
 
 ```
 
-## 7. Moka / Cari Ana Defter Güvenlik Hatırlatması
+## 8. Moka / Cari Ana Defter Güvenlik Hatırlatması
 
 Canlı sistemde bu kurallar değiştirilmeyecek:
 
@@ -200,12 +231,13 @@ Not:
 
 ```
 
-## 8. v12 Başlama Kararı
+## 9. v12 Başlama Kararı
 
 Aşağıdaki şartların tamamı sağlanmadan v12 refactor genişletilmeyecek:
 
 ```text
-Cache kontrol temiz.
+v12 Preflight ready: true.
+Cache kontrol missing: 0.
 Canlı test failed: 0.
 Canlı test risky: 0.
 v12 Stabilizer status: Stabil.
@@ -219,7 +251,7 @@ Karar:
 [ ] Önce eksikler düzeltilecek
 ```
 
-## 9. İlk v12 Teknik Aksiyon
+## 10. İlk v12 Teknik Aksiyon
 
 Eğer tüm kontroller temizse ilk v12 teknik aksiyon:
 
