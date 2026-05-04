@@ -23,6 +23,7 @@ export default {
     scripts += '<script src="/alkam-vergi-savunma-v11.js"></script>';
     scripts += '<script src="/alkam-belge-onay-oneri-v11.js"></script>';
     scripts += '<script src="/alkam-mukellef-ai-soru-cevap-v11.js"></script>';
+    scripts += '<script src="/alkam-ai-asistan-merkezi-v11.js"></script>';
     html = html.replace('</head>', hide + scripts + '</head>');
 
     const headers = new Headers(response.headers);
