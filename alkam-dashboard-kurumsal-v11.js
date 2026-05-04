@@ -5,6 +5,13 @@
   function read(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}}
   function money(v){return Number(v||0)||0}
   function fmt(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))+' TL'}
+  function loadPeriodFilter(){
+    if(window.ALKAM_DASHBOARD_DONEM_FILTRE_V11||q('script[data-alkam-period-filter]'))return;
+    var s=document.createElement('script');
+    s.src='/alkam-dashboard-donem-filtre-v11.js';
+    s.setAttribute('data-alkam-period-filter','1');
+    document.head.appendChild(s);
+  }
   function metrics(){
     var cari=read('alkam_cari_hareketleri');
     var tah=read('alkam_tahakkuklar');
@@ -25,14 +32,15 @@
   }
   function findMount(){return q('#app')||q('main')||q('.container')||document.body}
   function render(){
+    loadPeriodFilter();
     css(); var m=metrics(); var host=q('#alkamCorporateDashboard');
     if(!host){host=document.createElement('section');host.id='alkamCorporateDashboard';host.className='alkam-corp-wrap';var mount=findMount();mount.insertBefore(host,mount.firstChild)}
     var durum=m.aiCritical?'Kritik Kontrol':(m.bankaOnay||m.aiWarning?'Kontrol Gerekir':'Sistem Normal');
     host.innerHTML='<div class="alkam-corp-head"><div><h2>ALKAM Mali Yönetim Özeti</h2><p>Cari ana defter, tahakkuk, tahsilat, banka onay ve AI risk görünümü.</p></div><div class="alkam-corp-badge">'+durum+'</div></div><div class="alkam-corp-grid"><div class="alkam-corp-card"><b>Net Cari Bakiye</b><span>'+fmt(m.bakiye)+'</span><small>'+(m.bakiye>0?'BAKİYE B':(m.bakiye<0?'BAKİYE A':'KAPALI'))+'</small></div><div class="alkam-corp-card"><b>Tahakkuk</b><span>'+fmt(m.tahTop)+'</span><small>'+m.tahakkuk+' kayıt</small></div><div class="alkam-corp-card"><b>Tahsilat</b><span>'+fmt(m.tahsilTop)+'</span><small>'+m.tahsilat+' kayıt</small></div><div class="alkam-corp-card"><b>Banka Onay</b><span>'+m.bankaOnay+'</span><small>bekleyen kayıt</small></div><div class="alkam-corp-card"><b>Cari Hareket</b><span>'+m.cari+'</span><small>ana defter satırı</small></div><div class="alkam-corp-card"><b>AI Kritik</b><span>'+m.aiCritical+'</span><small>önce incelenecek</small></div><div class="alkam-corp-card"><b>AI Uyarı</b><span>'+m.aiWarning+'</span><small>kontrol önerisi</small></div><div class="alkam-corp-card"><b>Sistem Zamanı</b><span style="font-size:13px">'+m.time.slice(0,19).replace('T',' ')+'</span><small>son yenileme</small></div></div><div class="alkam-corp-actions"><button onclick="window.ALKAM_AI_ASISTAN_MERKEZI_V11&&ALKAM_AI_ASISTAN_MERKEZI_V11.open()">AI Merkezi</button><button onclick="window.ALKAM_GUVENILIRLIK_RAPORU_V9&&ALKAM_GUVENILIRLIK_RAPORU_V9.open()">Güvenilirlik</button><button onclick="window.ALKAM_AI_RAPOR_OZETI_V11&&ALKAM_AI_RAPOR_OZETI_V11.open()" class="secondary">AI Rapor</button><button onclick="window.ALKAM_BANKA_ONAY_UI_V8&&ALKAM_BANKA_ONAY_UI_V8.open&&ALKAM_BANKA_ONAY_UI_V8.open()" class="secondary">Banka Onay</button></div>';
     window.__ALKAM_DASHBOARD_KURUMSAL_LAST=m; return m;
   }
-  function boot(){setTimeout(render,2400)}
-  window.ALKAM_DASHBOARD_KURUMSAL_V11={version:VERSION,metrics:metrics,render:render,run:boot,test:function(){var m=render();return {version:VERSION,card:!!q('#alkamCorporateDashboard'),metrics:m,time:new Date().toISOString()}},last:function(){return window.__ALKAM_DASHBOARD_KURUMSAL_LAST||metrics()}};
+  function boot(){setTimeout(function(){loadPeriodFilter();render()},2400)}
+  window.ALKAM_DASHBOARD_KURUMSAL_V11={version:VERSION,metrics:metrics,render:render,run:boot,test:function(){var m=render();return {version:VERSION,card:!!q('#alkamCorporateDashboard'),periodFilterLoader:!!q('script[data-alkam-period-filter]'),metrics:m,time:new Date().toISOString()}},last:function(){return window.__ALKAM_DASHBOARD_KURUMSAL_LAST||metrics()}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
   setInterval(render,15000);
 })();
