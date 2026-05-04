@@ -1,0 +1,42 @@
+(function(){
+  'use strict';
+  var VERSION='ALKAM Moka UI v6.1';
+  function q(s,r){return (r||document).querySelector(s)}
+  function m(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))+' TL'}
+  function css(){
+    if(q('#alkam-moka-ui-style'))return;
+    var st=document.createElement('style');st.id='alkam-moka-ui-style';
+    st.textContent='.alkam-moka-modal{position:fixed;inset:0;z-index:1000001;background:rgba(15,23,42,.42);display:none;align-items:center;justify-content:center;padding:18px}.alkam-moka-modal.open{display:flex}.alkam-moka-box{width:min(500px,100%);background:#fff;border-radius:20px;border:1px solid #dbe4f0;box-shadow:0 30px 80px rgba(15,23,42,.32);font-family:Arial,Helvetica,sans-serif;overflow:hidden}.alkam-moka-head{padding:16px 18px;background:linear-gradient(180deg,#f8fbff,#fff);border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;gap:10px}.alkam-moka-head b{font-size:18px;color:#0f172a}.alkam-moka-head small{display:block;margin-top:4px;color:#64748b;font-weight:800}.alkam-moka-close{width:34px;height:34px;border:0;border-radius:10px;background:#e8eef9;font-weight:950;cursor:pointer}.alkam-moka-body{padding:16px 18px}.alkam-moka-warning{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:10px;font-size:12px;font-weight:900;line-height:1.5;margin-bottom:12px}.alkam-moka-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.alkam-moka-field label{display:block;font-size:11px;font-weight:950;color:#64748b;margin-bottom:5px;text-transform:uppercase}.alkam-moka-field input{width:100%;height:38px;border:1px solid #cbd5e1;border-radius:11px;padding:0 10px;font-weight:900;box-sizing:border-box}.alkam-moka-field.full{grid-column:1/-1}.alkam-moka-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}.alkam-moka-actions button{height:36px;border:0;border-radius:11px;padding:0 12px;font-weight:950;cursor:pointer;background:#1769e8;color:#fff}.alkam-moka-actions button.secondary{background:#e8eef9;color:#0f172a}.alkam-moka-result{margin-top:10px;font-size:12px;font-weight:900;color:#047857}.alkam-moka-result.err{color:#b91c1c}@media(max-width:700px){.alkam-moka-grid{grid-template-columns:1fr}}';
+    document.head.appendChild(st);
+  }
+  function modal(){
+    var el=q('#alkamMokaModal'); if(el)return el;
+    el=document.createElement('div'); el.id='alkamMokaModal'; el.className='alkam-moka-modal';
+    el.innerHTML='<div class="alkam-moka-box"><div class="alkam-moka-head"><div><b>Moka → Banka Aktarımı</b><small>Bu işlem cari tahsilatı sayılmaz.</small></div><button class="alkam-moka-close">×</button></div><div class="alkam-moka-body"><div class="alkam-moka-warning">Kural: Moka United’dan bankaya gelen para sadece finans hesapları arasında aktarım olarak işlenir. Cari ekstresine ikinci tahsilat olarak yazılmaz.</div><div class="alkam-moka-grid"><div class="alkam-moka-field"><label>Tutar</label><input id="alkamMokaTutar" type="number" step="0.01" placeholder="0,00"></div><div class="alkam-moka-field"><label>Tarih</label><input id="alkamMokaTarih" type="date"></div><div class="alkam-moka-field full"><label>Açıklama</label><input id="alkamMokaAciklama" placeholder="Moka United banka aktarımı"></div></div><div class="alkam-moka-actions"><button class="secondary" id="alkamMokaCancel">Vazgeç</button><button id="alkamMokaSave">Yedek Al ve Aktar</button></div><div id="alkamMokaResult" class="alkam-moka-result"></div></div></div>';
+    document.body.appendChild(el);
+    q('.alkam-moka-close',el).onclick=function(){el.classList.remove('open')};
+    q('#alkamMokaCancel',el).onclick=function(){el.classList.remove('open')};
+    q('#alkamMokaTarih',el).value=new Date().toISOString().slice(0,10);
+    q('#alkamMokaSave',el).onclick=save;
+    return el;
+  }
+  function save(){
+    var el=modal(); var res=q('#alkamMokaResult',el); res.className='alkam-moka-result'; res.textContent='Aktarılıyor...';
+    if(!window.ALKAM_FINANS_FLOW_V6||!ALKAM_FINANS_FLOW_V6.mokaSettlement){res.className+=' err';res.textContent='Finans çekirdeği hazır değil.';return}
+    var tutar=Number(q('#alkamMokaTutar',el).value||0);
+    var aciklama=q('#alkamMokaAciklama',el).value||'Moka United banka aktarımı';
+    var out=ALKAM_FINANS_FLOW_V6.mokaSettlement(tutar,aciklama);
+    if(out.ok){res.textContent='Aktarım işlendi: '+m(tutar)+' · Cari tahsilatı sayılmadı.'; setTimeout(function(){el.classList.remove('open')},1300)}
+    else{res.className+=' err';res.textContent=out.reason||'İşlem başarısız'}
+  }
+  function open(){css();var el=modal();q('#alkamMokaResult',el).textContent='';el.classList.add('open');setTimeout(function(){q('#alkamMokaTutar',el).focus()},100)}
+  function addButton(){
+    var bar=q('#alkamActionBar'); if(!bar||q('#alkamABMokaAktar',bar))return;
+    var btn=document.createElement('button');btn.id='alkamABMokaAktar';btn.type='button';btn.textContent='Moka → Banka';btn.onclick=open;
+    bar.appendChild(btn);
+  }
+  function run(){css();modal();addButton()}
+  window.ALKAM_MOKA_UI_V6={version:VERSION,open:open,run:run,test:function(){return {version:VERSION,modal:!!q('#alkamMokaModal'),button:!!q('#alkamABMokaAktar'),financeCore:!!window.ALKAM_FINANS_FLOW_V6,time:new Date().toISOString()}}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
+  setInterval(addButton,2000);
+})();
