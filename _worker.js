@@ -13,6 +13,7 @@ export default {
     scripts += '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>';
     scripts += '<script src="/supabase-config.example.js"></script>';
     scripts += '<script src="/alkam-supabase-baglanti-test-v10.js"></script>';
+    scripts += '<script src="/alkam-supabase-readonly-v10.js"></script>';
     html = html.replace('</head>', hide + scripts + '</head>');
 
     const headers = new Headers(response.headers);
