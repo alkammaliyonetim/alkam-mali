@@ -37,6 +37,7 @@ v11 sonunda şu yapı kuruldu:
 - Sürüm Rozeti
 - v12 Stabilizer
 - v12 Preflight
+- v12 Preflight Sonuç Export
 - AI Asistan Merkezi
 - Supabase güvenlik katmanı
 
@@ -56,6 +57,32 @@ decision: "v12 stabilizasyonuna geçilebilir"
 writeOpen: false
 ```
 
+## Sonucu Kayıt Altına Alma
+
+Preflight sonucunu JSON olarak almak için:
+
+```js
+ALKAM_V12_PREFLIGHT_EXPORT_V1.collect()
+```
+
+veya panelden:
+
+```text
+Ana Dashboard > Sonuç Export
+```
+
+Beklenen export kontrolü:
+
+```js
+ALKAM_V12_PREFLIGHT_EXPORT_V1.test()
+```
+
+```text
+hasPreflight: true
+hasLiveTest: true
+hasWriteGate: true
+```
+
 ## Preflight Temizse
 
 İlk teknik commit amacı:
@@ -69,7 +96,7 @@ Yapılacaklar:
 - Dashboard yükleme sırasını sadeleştir.
 - Modül loader zincirini daha okunabilir hale getir.
 - Görünüm tercih yöneticisini koru.
-- Canlı test / cache kontrol / v12 preflight akışını koru.
+- Canlı test / cache kontrol / v12 preflight / sonuç export akışını koru.
 - Ana dashboard butonlarını sade tut.
 
 ## Preflight Temiz Değilse
@@ -115,6 +142,7 @@ Eski özellikler kullanıcı onayı olmadan silinmez.
 ```text
 alkam-dashboard-kurumsal-v11.js
 alkam-v12-preflight-v1.js
+alkam-v12-preflight-export-v1.js
 alkam-v12-stabilizer-v1.js
 alkam-canli-test-paketi-v11.js
 alkam-cache-deploy-kontrol-v11.js
