@@ -10,6 +10,8 @@ export default {
     let scripts = files.map((src)=>'<script src="/'+src+'"></script>').join('');
     scripts += '<script src="/alkam-loader-kontrol-v10.js"></script>';
     scripts += '<script src="/alkam-migration-precheck-v10.js"></script>';
+    scripts += '<script src="/supabase-config.example.js"></script>';
+    scripts += '<script src="/alkam-supabase-baglanti-test-v10.js"></script>';
     html = html.replace('</head>', hide + scripts + '</head>');
 
     const headers = new Headers(response.headers);
