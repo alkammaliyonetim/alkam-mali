@@ -1,0 +1,52 @@
+(function(){
+  'use strict';
+  var VERSION='ALKAM Banka History v8.7';
+  var PROCESSED_KEY='alkam_banka_islenen';
+  var REJECTED_KEY='alkam_banka_reddedilen';
+  function q(s,r){return (r||document).querySelector(s)}
+  function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+  function readJson(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}}
+  function m(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))+' TL'}
+  function css(){
+    if(q('#alkam-banka-history-style'))return;
+    var st=document.createElement('style');st.id='alkam-banka-history-style';
+    st.textContent='.alkam-bank-history-modal{position:fixed;inset:0;z-index:1000004;background:rgba(15,23,42,.42);display:none;align-items:center;justify-content:center;padding:18px}.alkam-bank-history-modal.open{display:flex}.alkam-bank-history-box{width:min(1050px,100%);max-height:88vh;background:#fff;border-radius:20px;border:1px solid #dbe4f0;box-shadow:0 30px 80px rgba(15,23,42,.32);font-family:Arial,Helvetica,sans-serif;overflow:hidden}.alkam-bank-history-head{padding:16px 18px;background:linear-gradient(180deg,#f8fbff,#fff);border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;gap:10px}.alkam-bank-history-head b{font-size:18px;color:#0f172a}.alkam-bank-history-head small{display:block;margin-top:4px;color:#64748b;font-weight:800}.alkam-bank-history-close{width:34px;height:34px;border:0;border-radius:10px;background:#e8eef9;font-weight:950;cursor:pointer}.alkam-bank-history-body{padding:16px 18px;overflow:auto;max-height:calc(88vh - 72px)}.alkam-bank-history-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.alkam-bank-history-tabs button{height:34px;border:0;border-radius:10px;background:#e8eef9;color:#0f172a;font-weight:950;padding:0 12px;cursor:pointer}.alkam-bank-history-tabs button.active{background:#1769e8;color:#fff}.alkam-bank-history-table{border:1px solid #e2e8f0;border-radius:14px;overflow:hidden}.alkam-bank-history-table table{width:100%;border-collapse:collapse}.alkam-bank-history-table th{background:#f8fafc;color:#475569;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:9px;text-align:left}.alkam-bank-history-table td{border-top:1px solid #eef2f7;padding:9px;font-size:12px;font-weight:800;color:#0f172a}.alkam-bank-history-badge{display:inline-flex;border-radius:999px;padding:4px 8px;font-size:11px;font-weight:950}.alkam-bank-history-badge.ok{background:#dcfce7;color:#047857}.alkam-bank-history-badge.no{background:#fee2e2;color:#991b1b}.alkam-bank-history-empty{padding:22px;border:1px dashed #cbd5e1;border-radius:14px;color:#64748b;text-align:center;font-weight:900}@media(max-width:900px){.alkam-bank-history-table{overflow:auto}.alkam-bank-history-table table{min-width:780px}}';
+    document.head.appendChild(st);
+  }
+  function rows(mode){return mode==='rejected'?readJson(REJECTED_KEY):readJson(PROCESSED_KEY)}
+  function modal(){
+    var el=q('#alkamBankHistoryModal'); if(el)return el;
+    el=document.createElement('div'); el.id='alkamBankHistoryModal'; el.className='alkam-bank-history-modal';
+    el.innerHTML='<div class="alkam-bank-history-box"><div class="alkam-bank-history-head"><div><b>Banka Onay Geçmişi</b><small>İşlenen ve reddedilen banka hareketleri ayrı izlenir.</small></div><button class="alkam-bank-history-close">×</button></div><div class="alkam-bank-history-body"><div class="alkam-bank-history-tabs"><button id="alkamBankHistoryProcessed" class="active">İşlenenler</button><button id="alkamBankHistoryRejected">Reddedilenler</button></div><div id="alkamBankHistoryContent"></div></div></div>';
+    document.body.appendChild(el);
+    q('.alkam-bank-history-close',el).onclick=function(){el.classList.remove('open')};
+    q('#alkamBankHistoryProcessed',el).onclick=function(){render('processed')};
+    q('#alkamBankHistoryRejected',el).onclick=function(){render('rejected')};
+    return el;
+  }
+  function render(mode){
+    mode=mode||'processed'; var el=modal(); var content=q('#alkamBankHistoryContent',el);
+    q('#alkamBankHistoryProcessed',el).classList.toggle('active',mode==='processed');
+    q('#alkamBankHistoryRejected',el).classList.toggle('active',mode==='rejected');
+    var list=rows(mode);
+    if(!list.length){content.innerHTML='<div class="alkam-bank-history-empty">Bu bölümde kayıt yok.</div>';return}
+    content.innerHTML='<div class="alkam-bank-history-table"><table><thead><tr><th>Durum</th><th>Tarih</th><th>Tutar</th><th>Açıklama</th><th>Tip</th><th>Cari</th><th>İşlem Zamanı</th></tr></thead><tbody>'+list.slice().reverse().map(function(r){var ok=mode==='processed';var cari=r.onerilen_cari?(r.onerilen_cari.cari_unvan||'-'):'-';return '<tr><td><span class="alkam-bank-history-badge '+(ok?'ok':'no')+'">'+(ok?'İşlendi':'Reddedildi')+'</span></td><td>'+r.tarih+'</td><td>'+(r.tutar<0?'-':'')+m(r.tutar)+'</td><td>'+r.aciklama+'</td><td>'+(r.onerilen_tip||'-')+'</td><td>'+cari+'</td><td>'+(r.processed_at||r.rejected_at||'-')+'</td></tr>'}).join('')+'</tbody></table></div>';
+  }
+  function open(){css();modal().classList.add('open');render('processed')}
+  function addButtons(){
+    var approval=q('#alkamBankApprovalModal .alkam-bank-actions');
+    if(approval&&!q('#alkamBankHistoryBtn',approval)){var b=document.createElement('button');b.id='alkamBankHistoryBtn';b.type='button';b.className='secondary';b.textContent='Geçmiş';b.onclick=open;approval.appendChild(b)}
+    var bar=q('#alkamActionBar');
+    if(bar&&!q('#alkamABBankaHistory',bar)){var b2=document.createElement('button');b2.id='alkamABBankaHistory';b2.type='button';b2.textContent='Banka Geçmiş';b2.onclick=open;bar.appendChild(b2)}
+  }
+  function injectDrawer(){
+    var body=q('#alkamProfessionalDrawer .alkam-drawer-body'); if(!body)return;
+    var old=q('#alkamBankHistoryCard',body); if(old)old.remove();
+    var p=readJson(PROCESSED_KEY).length, r=readJson(REJECTED_KEY).length;
+    body.insertAdjacentHTML('beforeend','<div class="alkam-control-card" id="alkamBankHistoryCard"><b>Banka Onay Geçmişi</b><div class="line">İşlenen: '+p+' · Reddedilen: '+r+'</div><div class="alkam-drawer-actions"><button onclick="window.ALKAM_BANKA_HISTORY_V8&&ALKAM_BANKA_HISTORY_V8.open()">Geçmişi Aç</button></div></div>');
+  }
+  function run(){css();modal();addButtons();injectDrawer()}
+  window.ALKAM_BANKA_HISTORY_V8={version:VERSION,open:open,render:render,run:run,test:function(){return {version:VERSION,modal:!!q('#alkamBankHistoryModal'),actionButton:!!q('#alkamABBankaHistory'),processed:readJson(PROCESSED_KEY).length,rejected:readJson(REJECTED_KEY).length,time:new Date().toISOString()}}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
+  setInterval(function(){addButtons();injectDrawer()},2500);
+})();
