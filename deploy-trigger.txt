@@ -1,4 +1,4 @@
 Cloudflare deployment trigger
 Date: 2026-05-04
-Purpose: refresh after moving the floating Islem Izi panel into the backup/audit area.
-Commit target: no floating audit panel on working screens; history remains accessible.
+Purpose: restore safe passthrough after audit panel regression.
+Commit target: program must return to normal working screen.
