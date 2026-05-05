@@ -1,0 +1,27 @@
+(function(){
+'use strict';
+var VERSION='ALKAM UI Core Stable v2.0';
+function q(s,r){return (r||document).querySelector(s)}
+function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function css(){
+ if(q('#alkam-ui-core-stable-v2-style'))return;
+ var st=document.createElement('style');st.id='alkam-ui-core-stable-v2-style';
+ st.textContent=':root{--alkam-sidebar-w:205px;--alkam-page-pad:18px}html,body{background:#f4f7fb!important;overflow-x:hidden!important}.layout{grid-template-columns:var(--alkam-sidebar-w) minmax(0,1fr)!important;width:100%!important}.sidebar{width:var(--alkam-sidebar-w)!important;min-width:var(--alkam-sidebar-w)!important;max-width:var(--alkam-sidebar-w)!important;padding:14px 12px!important;box-sizing:border-box!important}.main{min-width:0!important;width:100%!important;padding-left:var(--alkam-page-pad)!important;padding-right:var(--alkam-page-pad)!important}.brand-title{font-size:16px!important;line-height:1.12!important;white-space:normal!important}.brand-sub{font-size:11px!important;line-height:1.35!important;white-space:normal!important}.nav-btn,.sidebar button,.sidebar a{min-height:42px!important;border-radius:12px!important;font-size:13px!important;line-height:1.16!important;white-space:normal!important;padding:10px 12px!important;box-sizing:border-box!important}.section,.card,.metric-mini,.empty,.rule-box{border-radius:16px!important;box-shadow:0 10px 28px rgba(15,23,42,.055)!important}.btn,button,.chip{font-size:13px!important;font-weight:950!important}.btn{min-height:42px!important;border-radius:12px!important}.btn-blue,.primary{background:#1769e8!important;color:#fff!important}.btn-green,.success{background:#059669!important;color:#fff!important}.btn-red,.danger{background:#dc2626!important;color:#fff!important}.btn-soft{background:#e8eef9!important;color:#0f172a!important}.alkam-hide-debug{display:none!important;visibility:hidden!important;pointer-events:none!important}.alkam-date-master-note{margin:8px 0 10px;padding:9px 11px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:12px;font-size:12px;font-weight:900}@media(max-width:1200px){.layout{grid-template-columns:1fr!important}.sidebar{width:auto!important;min-width:0!important;max-width:none!important}.main{padding-left:10px!important;padding-right:10px!important}}';
+ document.head.appendChild(st)
+}
+function clean(){
+ var keys=['v12 preflight','sonuç export','sonuc export','final test','cache','deploy','canlı test','canli test','görsel kontrol','gorsel kontrol','preflight'];
+ qa('button,a,.btn,.chip').forEach(function(el){var t=String(el.innerText||el.textContent||'').toLocaleLowerCase('tr-TR');if(keys.some(function(k){return t.indexOf(k)>-1}))el.classList.add('alkam-hide-debug')})
+}
+function dateMaster(){
+ var root=q('#tab-cari-toplu-tahakkuk')||q('#tab-toplu-tahakkuk'); if(!root)return;
+ var dates=qa('input[type="date"]',root); if(!dates.length)return;
+ var master=dates[0];
+ if(!q('.alkam-date-master-note',root)){var note=document.createElement('div');note.className='alkam-date-master-note';note.textContent='Tek tarih standardı aktif: üstte seçilen tarih toplu tahakkuk gridinin ana tarihidir.';(master.closest('.field')||master.parentElement||root).insertAdjacentElement('afterend',note)}
+ if(!master.dataset.alkamDateBound){master.dataset.alkamDateBound='1';master.addEventListener('change',function(){qa('input[type="date"]',root).forEach(function(d){if(d!==master&&!d.disabled){d.value=master.value;d.dispatchEvent(new Event('change',{bubbles:true}))}})})}
+}
+function run(){css();clean();dateMaster();return window.__ALKAM_UI_CORE_STABLE_V2_LAST={version:VERSION,time:new Date().toISOString()}}
+function boot(){run();setTimeout(run,500);setTimeout(run,1500);document.addEventListener('click',function(){setTimeout(run,160)},true);document.addEventListener('input',function(){setTimeout(run,160)},true)}
+window.ALKAM_UI_CORE_STABLE_V2={version:VERSION,run:run,test:run};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
