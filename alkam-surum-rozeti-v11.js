@@ -1,7 +1,7 @@
 (function(){
   'use strict';
-  var VERSION='ALKAM Sürüm Rozeti v11.17';
-  var BUILD='v11.17 - 05.05.2026';
+  var VERSION='ALKAM Sürüm Rozeti v11.32';
+  var BUILD='v11.32 - 05.05.2026';
   function q(s,r){return (r||document).querySelector(s)}
   function css(){
     if(q('#alkam-surum-rozeti-style'))return;
