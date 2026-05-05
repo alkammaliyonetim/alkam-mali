@@ -26,6 +26,8 @@ export default {
     scripts += '<script src="/alkam-ai-asistan-merkezi-v11.js"></script>';
     scripts += '<script src="/alkam-actionbar-sade-v11.js"></script>';
     scripts += '<script src="/alkam-dashboard-kurumsal-v11.js"></script>';
+    scripts += '<script src="/alkam-v12-preflight-export-v1.js"></script>';
+    scripts += '<script src="/alkam-v12-modal-layout-fix-v1.js"></script>';
     scripts += '<script src="/alkam-v12-final-test-runner-v1.js"></script>';
     scripts += '<script src="/alkam-v12-final-test-button-v1.js"></script>';
     html = html.replace('</head>', hide + scripts + '</head>');
