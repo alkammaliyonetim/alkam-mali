@@ -1,0 +1,22 @@
+ALKAM Mali v12 wide layout fix deploy trigger
+
+Amaç:
+- Sağ/sol profesyonel olmayan boşlukları azaltan wide layout fix dosyasını canlıya almak
+- Toplu tahakkuk tek tarih modu ve modal sızıntı düzeltmesini canlıda korumak
+- Final Test recursive kilitlenme düzeltmesini canlıda korumak
+
+İlgili dosyalar:
+- alkam-v12-wide-layout-fix-v1.js
+- alkam-v12-modal-layout-fix-v1.js
+- alkam-v12-preflight-export-v1.js
+- _worker.js
+
+Beklenen canlı kontrol:
+1. ALKAM_V12_WIDE_LAYOUT_FIX_V1.test() çalışmalı.
+2. corp: true ve activeTab: true dönmeli.
+3. Sağ-sol boş alanlar azalmalı.
+4. Sol alttaki düz modal yazıları görünmemeli.
+5. Cari Toplu Tahakkuk ekranında tarih üstteki tek alandan yönetilmeli.
+
+Güvenlik:
+Veri yazmaz. Supabase yazma açılmaz. AI kayıt yapmaz.
