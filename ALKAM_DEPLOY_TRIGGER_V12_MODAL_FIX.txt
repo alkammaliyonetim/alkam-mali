@@ -1,0 +1,20 @@
+ALKAM Mali v12 modal/layout fix deploy trigger
+
+Amaç:
+- Final Test kilitlenme düzeltmesini canlıya almak
+- Kapalı modal içeriklerinin sol altta düz yazı gibi görünmesini engelleyen düzeltmeyi canlıya almak
+- Cari Toplu Tahakkuk tek tarih modunu canlıya almak
+
+İlgili dosyalar:
+- alkam-v12-preflight-export-v1.js
+- alkam-v12-modal-layout-fix-v1.js
+- _worker.js
+
+Beklenen canlı kontrol:
+1. Sol alttaki düz yazılar kaybolmalı.
+2. Final Test paneli programı kilitlememeli.
+3. Cari Toplu Tahakkuk ekranında üst tarih ana tarih olarak çalışmalı.
+4. ALKAM_V12_MODAL_LAYOUT_FIX_V1.test() çalışmalı.
+
+Güvenlik:
+Veri yazmaz. Supabase yazma açılmaz. AI kayıt yapmaz.
