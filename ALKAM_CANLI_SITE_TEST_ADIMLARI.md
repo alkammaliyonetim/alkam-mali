@@ -25,10 +25,26 @@ Sol altta sürüm rozeti görünmeli.
 Beklenen:
 
 ```text
-ALKAM Mali v11.17 - 05.05.2026
+ALKAM Mali v11.32 - 05.05.2026
 ```
 
-## 3. Ana Dashboard Kontrolü
+## 3. Cache / Deploy Kontrolü
+
+Console komutu:
+
+```js
+ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
+```
+
+Beklenen:
+
+```text
+status: "Güncel"
+missing: 0
+expected: "v11.32 - 05.05.2026"
+```
+
+## 4. Ana Dashboard Kontrolü
 
 Console komutu:
 
@@ -46,7 +62,7 @@ v12PreflightLoader: true
 v12ExportLoader: true
 ```
 
-## 4. Preflight Karar Kontrolü
+## 5. Preflight Karar Kontrolü
 
 Console komutu:
 
@@ -62,7 +78,7 @@ decision: "v12 stabilizasyonuna geçilebilir"
 writeOpen: false
 ```
 
-## 5. Sonuç Export Kontrolü
+## 6. Sonuç Export Kontrolü
 
 Console komutu:
 
@@ -84,7 +100,7 @@ Panelden kullanım:
 Ana Dashboard > Sonuç Export
 ```
 
-## 6. JSON Sonuç Al
+## 7. JSON Sonuç Al
 
 Console komutu:
 
@@ -98,7 +114,7 @@ veya panelden:
 Sonuç Export > JSON İndir
 ```
 
-## 7. Supabase Yazma Kapısı Kontrolü
+## 8. Supabase Yazma Kapısı Kontrolü
 
 Console komutu:
 
@@ -112,7 +128,7 @@ Beklenen:
 writeAllowed: false
 ```
 
-## 8. Canlı Test Paketi
+## 9. Canlı Test Paketi
 
 Console komutu:
 
@@ -127,7 +143,7 @@ failed: 0
 risky: 0
 ```
 
-## 9. Karar
+## 10. Karar
 
 Eğer tüm sonuçlar temizse:
 
@@ -141,7 +157,7 @@ Eğer eksik/risk varsa:
 fix: resolve v11 live test gaps before v12
 ```
 
-## 10. Değişmez Güvenlik Kuralı
+## 11. Değişmez Güvenlik Kuralı
 
 ```text
 AI kayıt yapmaz, Supabase yazma kapalıdır, cari ekstresi ana defterdir, Moka United banka aktarımı cari tahsilatı sayılmaz.
