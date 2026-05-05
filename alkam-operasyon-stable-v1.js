@@ -1,6 +1,6 @@
 (function(){
 'use strict';
-var VERSION='ALKAM Operasyon Stable v1.1';
+var VERSION='ALKAM Operasyon Stable v1.2';
 function q(s,r){return (r||document).querySelector(s)}
 function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
 function read(k){try{var x=JSON.parse(localStorage.getItem(k)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}}
@@ -18,8 +18,9 @@ function css(){if(q('#alkam-operasyon-stable-style'))return;var st=document.crea
 function hideDebug(){var bad=['v12 preflight','sonuç export','sonuc export','final test','cache','deploy','canlı test','canli test','görsel kontrol','gorsel kontrol'];qa('button,a,.btn,.chip').forEach(function(el){var t=String(el.innerText||'').toLocaleLowerCase('tr-TR');if(bad.some(function(k){return t.indexOf(k)>-1}))el.classList.add('alkam-debug-clean')})}
 function enrichCards(){qa('#tab-cariler .list-item').forEach(function(item){var title=q('.list-title',item);if(!title)return;var old=q('.alkam-last-grid',item);if(old)old.remove();var s=summary(title.innerText),ta=s.tah,ts=s.tahs;var div=document.createElement('div');div.className='alkam-last-grid';div.innerHTML='<div class="alkam-last-box"><b>Son Tahakkuk</b><span>'+(ta?tl(num(ta.tutar)||num(ta.borc)):'-')+'</span><em>'+(ta?d(ta):'-')+'</em></div><div class="alkam-last-box"><b>Son Tahsilat</b><span>'+(ts?tl(num(ts.tutar)||num(ts.alacak)):'-')+'</span><em>'+(ts?d(ts):'-')+'</em></div>';item.appendChild(div)})}
 function sevvalAudit(){var rows=all().filter(function(x){return nm(x).indexOf('SEVVAL')>-1||nm(x).indexOf('ŞEVVAL')>-1||up(x.aciklama).indexOf('SEVVAL')>-1||up(x.aciklama).indexOf('ŞEVVAL')>-1});window.__ALKAM_SEVVAL_TAHSILAT_AUDIT={count:rows.length,rows:rows.slice(-20),time:new Date().toISOString()};return window.__ALKAM_SEVVAL_TAHSILAT_AUDIT}
-function loadDemo(){if(window.ALKAM_GECIS_DEMO_KONTROL_V1||q('script[data-alkam-demo]'))return;var s=document.createElement('script');s.src='/alkam-gecis-demo-kontrol-v1.js';s.dataset.alkamDemo='1';document.head.appendChild(s)}
-function run(){css();hideDebug();enrichCards();sevvalAudit();loadDemo();window.__ALKAM_OPERASYON_STABLE_LAST={version:VERSION,time:new Date().toISOString()};return window.__ALKAM_OPERASYON_STABLE_LAST}
+function loadScript(src,flag){if(window[flag]||q('script[src="'+src+'"]'))return;var s=document.createElement('script');s.src=src;document.head.appendChild(s)}
+function loadExtra(){loadScript('/alkam-gecis-demo-kontrol-v1.js','ALKAM_GECIS_DEMO_KONTROL_V1');loadScript('/alkam-kasa-aktarim-kontrol-v1.js','ALKAM_KASA_AKTARIM_KONTROL_V1')}
+function run(){css();hideDebug();enrichCards();sevvalAudit();loadExtra();window.__ALKAM_OPERASYON_STABLE_LAST={version:VERSION,time:new Date().toISOString()};return window.__ALKAM_OPERASYON_STABLE_LAST}
 function boot(){run();setTimeout(run,500);setTimeout(run,1600);document.addEventListener('click',function(){setTimeout(run,250)},true);document.addEventListener('input',function(){setTimeout(run,250)},true)}
 window.ALKAM_OPERASYON_STABLE_V1={version:VERSION,run:run,auditSevval:sevvalAudit,summary:summary,test:function(){return run()}};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
