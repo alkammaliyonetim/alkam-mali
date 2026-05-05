@@ -1,8 +1,24 @@
-# ALKAM Mali - Canlı Test Komutları v11 / v12 Hazırlık
+# ALKAM Mali - Canlı Test Komutları v11.32 / v12 Hazırlık
 
 Bu liste deploy sonrası hızlı ve güvenli kontrol için hazırlanmıştır.
 
-## 1. v12 Preflight karar kontrolü
+## 1. Cache / Deploy Kontrolü
+
+```js
+ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
+```
+
+Beklenen:
+
+```text
+status: "Güncel"
+missing: 0
+expected: "v11.32 - 05.05.2026"
+```
+
+Eksik görünürse önce Ctrl+F5 / sert yenileme yapılır.
+
+## 2. v12 Preflight Karar Kontrolü
 
 ```js
 ALKAM_V12_PREFLIGHT_V1.test()
@@ -14,11 +30,32 @@ Beklenen:
 ready: true
 decision: "v12 stabilizasyonuna geçilebilir"
 writeOpen: false
+exportBad: false
 ```
 
 Eğer `ready: false` çıkarsa v12 refactor genişletilmeyecek; önce eksik/riskli modül düzeltilecek.
 
-## 2. Ana dashboard kontrolü
+## 3. Sonuç Export Kontrolü
+
+```js
+ALKAM_V12_PREFLIGHT_EXPORT_V1.test()
+```
+
+Beklenen:
+
+```text
+hasPreflight: true
+hasLiveTest: true
+hasWriteGate: true
+```
+
+Detaylı sonucu almak için:
+
+```js
+ALKAM_V12_PREFLIGHT_EXPORT_V1.collect()
+```
+
+## 4. Ana Dashboard Kontrolü
 
 ```js
 ALKAM_DASHBOARD_KURUMSAL_V11.test()
@@ -37,24 +74,10 @@ cacheControlLoader: true
 viewPrefLoader: true
 v12StabilizerLoader: true
 v12PreflightLoader: true
+v12ExportLoader: true
 ```
 
-## 3. Cache / deploy kontrolü
-
-```js
-ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
-```
-
-Beklenen:
-
-```text
-status: "Güncel"
-missing: 0
-```
-
-Eksik görünürse önce Ctrl+F5 / sert yenileme yapılır.
-
-## 4. Canlı test paketi
+## 5. Canlı Test Paketi
 
 ```js
 ALKAM_CANLI_TEST_PAKETI_V11.test()
@@ -69,7 +92,7 @@ risky: 0
 
 Riskli alan çıkarsa ilgili modül ayrı test edilir.
 
-## 5. v12 Stabilizer kontrolü
+## 6. v12 Stabilizer Kontrolü
 
 ```js
 ALKAM_V12_STABILIZER_V1.test()
@@ -90,7 +113,7 @@ status: "ACİL: Yazma Açık"
 writeAllowed: true
 ```
 
-## 6. Görünüm tercihi kontrolü
+## 7. Görünüm Tercihi Kontrolü
 
 ```js
 ALKAM_DASHBOARD_GORUNUM_TERCIHI_V11.test()
@@ -105,7 +128,7 @@ selector: true
 oldTogglesHidden: true
 ```
 
-## 7. Görsel kontrol
+## 8. Görsel Kontrol
 
 ```js
 ALKAM_DASHBOARD_GORSEL_KONTROL_V11.test()
@@ -118,7 +141,7 @@ status: "Temiz"
 missing: 0
 ```
 
-## 8. Dönem filtre kontrolü
+## 9. Dönem Filtre Kontrolü
 
 ```js
 ALKAM_DASHBOARD_DONEM_FILTRE_V11.test()
@@ -130,7 +153,7 @@ Beklenen:
 injected: true
 ```
 
-## 9. Tek ekran kontrolü
+## 10. Tek Ekran Kontrolü
 
 ```js
 ALKAM_DASHBOARD_TEK_EKRAN_V11.test()
@@ -143,7 +166,7 @@ dashboard: true
 note: true
 ```
 
-## 10. Sürüm rozeti kontrolü
+## 11. Sürüm Rozeti Kontrolü
 
 ```js
 ALKAM_SURUM_ROZETI_V11.test()
@@ -153,10 +176,10 @@ Beklenen:
 
 ```text
 visible: true
-build: "v11.17 - 05.05.2026"
+build: "v11.32 - 05.05.2026"
 ```
 
-## 11. AI merkez kontrolü
+## 12. AI Merkez Kontrolü
 
 ```js
 ALKAM_AI_ASISTAN_MERKEZI_V11.test()
@@ -170,7 +193,7 @@ total: 6
 missing: 0
 ```
 
-## 12. Supabase güvenlik kontrolü
+## 13. Supabase Güvenlik Kontrolü
 
 ```js
 ALKAM_SUPABASE_WRITE_GATE_V10.test()
@@ -182,7 +205,7 @@ Beklenen:
 writeAllowed: false
 ```
 
-## 13. Kritik güvenlik notları
+## 14. Kritik Güvenlik Notları
 
 - Supabase yazma kapalı kalacak.
 - AI modülleri kayıt yapmayacak.
