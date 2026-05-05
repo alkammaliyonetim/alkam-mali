@@ -2,7 +2,23 @@
 
 Bu dosya canlı site testleri tamamlandıktan sonra hangi sonuca göre ne yapılacağını belirler.
 
-## 1. Ana Karar Kaynağı
+## 1. İlk Kontrol Kaynağı
+
+Önce Cache / Deploy kontrol edilir:
+
+```js
+ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
+```
+
+Beklenen:
+
+```text
+status: "Güncel"
+missing: 0
+expected: "v11.32 - 05.05.2026"
+```
+
+## 2. Ana Karar Kaynağı
 
 Öncelikli karar komutu:
 
@@ -10,7 +26,7 @@ Bu dosya canlı site testleri tamamlandıktan sonra hangi sonuca göre ne yapıl
 ALKAM_V12_PREFLIGHT_V1.test()
 ```
 
-## 2. Senaryo A - Her Şey Temiz
+## 3. Senaryo A - Her Şey Temiz
 
 Beklenen sonuç:
 
@@ -18,12 +34,13 @@ Beklenen sonuç:
 ready: true
 decision: "v12 stabilizasyonuna geçilebilir"
 writeOpen: false
+exportBad: false
 ```
 
 Aksiyon:
 
 ```text
-v12 stabilizasyonuna geç.
+Sonuç Export alınır ve v12 stabilizasyonuna geçilir.
 ```
 
 Commit mesajı:
@@ -43,7 +60,7 @@ Eski modülleri silme.
 Veri yazma ekleme.
 ```
 
-## 3. Senaryo B - Preflight Hazır Değil
+## 4. Senaryo B - Preflight Hazır Değil
 
 Beklenen riskli sonuç:
 
@@ -71,9 +88,10 @@ ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
 ALKAM_CANLI_TEST_PAKETI_V11.test()
 ALKAM_DASHBOARD_KURUMSAL_V11.test()
 ALKAM_V12_STABILIZER_V1.test()
+ALKAM_V12_PREFLIGHT_EXPORT_V1.test()
 ```
 
-## 4. Senaryo C - Supabase Yazma Açık
+## 5. Senaryo C - Supabase Yazma Açık
 
 Riskli sonuç:
 
@@ -107,7 +125,7 @@ Beklenen:
 writeAllowed: false
 ```
 
-## 5. Senaryo D - Cache / Deploy Eksik
+## 6. Senaryo D - Cache / Deploy Eksik
 
 Riskli sonuç:
 
@@ -129,7 +147,7 @@ Kontrol komutu:
 ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
 ```
 
-## 6. Senaryo E - Canlı Test Riskli
+## 7. Senaryo E - Canlı Test Riskli
 
 Riskli sonuç:
 
@@ -151,7 +169,42 @@ Eksik modül ayrı test edilir.
 Modül yüklenmiyorsa loader zinciri kontrol edilir.
 ```
 
-## 7. Sonuç Export Alınacak
+## 8. Senaryo F - Sonuç Export Eksik
+
+Riskli sonuç:
+
+```text
+exportBad: true
+```
+
+veya:
+
+```text
+Sonuç Export eksik
+```
+
+Aksiyon:
+
+```text
+Preflight sonucu temiz kabul edilmez.
+Önce Sonuç Export modülü ve dashboard loader kontrol edilir.
+```
+
+Kontrol komutu:
+
+```js
+ALKAM_V12_PREFLIGHT_EXPORT_V1.test()
+```
+
+Beklenen:
+
+```text
+hasPreflight: true
+hasLiveTest: true
+hasWriteGate: true
+```
+
+## 9. Sonuç Export Alınacak
 
 Her senaryoda sonuç export alınacak:
 
@@ -165,7 +218,7 @@ veya:
 Ana Dashboard > Sonuç Export > JSON İndir
 ```
 
-## 8. Güvenli Geliştirme Sınırı
+## 10. Güvenli Geliştirme Sınırı
 
 v12 stabilizasyonu sırasında yapılmayacaklar:
 
@@ -181,7 +234,7 @@ Eski modül silmek
 2026 Geçiş kavramı oluşturmak
 ```
 
-## 9. Değişmez Güvenlik Cümlesi
+## 11. Değişmez Güvenlik Cümlesi
 
 ```text
 AI kayıt yapmaz, Supabase yazma kapalıdır, cari ekstresi ana defterdir, Moka United banka aktarımı cari tahsilatı sayılmaz.
