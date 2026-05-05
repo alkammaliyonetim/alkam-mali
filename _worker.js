@@ -27,6 +27,7 @@ export default {
     scripts += '<script src="/alkam-actionbar-sade-v11.js"></script>';
     scripts += '<script src="/alkam-dashboard-kurumsal-v11.js"></script>';
     scripts += '<script src="/alkam-ui-standart-v1.js"></script>';
+    scripts += '<script src="/alkam-ui-debug-clean-v1.js"></script>';
     html = html.replace('</head>', hide + scripts + '</head>');
 
     const headers = new Headers(response.headers);
