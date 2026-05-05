@@ -27,6 +27,7 @@ export default {
     scripts += '<script src="/alkam-actionbar-sade-v11.js"></script>';
     scripts += '<script src="/alkam-dashboard-kurumsal-v11.js"></script>';
     scripts += '<script src="/alkam-v12-defter-posting-core-v1.js"></script>';
+    scripts += '<script src="/alkam-v12-posting-bind-v1.js"></script>';
     scripts += '<script src="/alkam-v12-preflight-export-v1.js"></script>';
     scripts += '<script src="/alkam-v12-modal-layout-fix-v1.js"></script>';
     scripts += '<script src="/alkam-v12-wide-layout-fix-v1.js"></script>';
