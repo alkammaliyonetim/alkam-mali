@@ -1,0 +1,17 @@
+ALKAM Mali v12 final test deploy trigger
+
+Amaç:
+Cloudflare Pages'in son _worker.js değişikliğini ve Final Test Runner / Final Test Button dosyalarını canlıya almasını tetiklemek.
+
+Beklenen canlı dosyalar:
+- /alkam-v12-final-test-runner-v1.js
+- /alkam-v12-final-test-button-v1.js
+
+Beklenen canlı buton:
+Final Test v12
+
+Beklenen console komutu:
+ALKAM_V12_FINAL_TEST_RUNNER_V1.test()
+
+Tarih/Saat notu:
+Final test deploy tetikleme kaydı.
