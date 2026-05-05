@@ -5,9 +5,9 @@ Bu dosya, projeye hızlı bakıldığında şu an nerede olduğumuzu tek sayfada
 ## Şu Anki Aşama
 
 ```text
-v11 kapanış tamamlandı.
+v11.32 canlı test hazırlığı tamamlandı.
 v12 stabilizasyon hazırlığı tamamlandı.
-Sıradaki gerçek adım canlı sitede Preflight testidir.
+Sıradaki gerçek adım canlı sitede Cache Kontrol + Preflight testidir.
 ```
 
 ## Ana Canlı Site
@@ -16,7 +16,27 @@ Sıradaki gerçek adım canlı sitede Preflight testidir.
 https://alkam-mali.pages.dev
 ```
 
-## İlk Çalıştırılacak Komut
+## Beklenen Canlı Sürüm
+
+```text
+ALKAM Mali v11.32 - 05.05.2026
+```
+
+## İlk Kontrol Komutu
+
+```js
+ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
+```
+
+Beklenen:
+
+```text
+status: "Güncel"
+missing: 0
+expected: "v11.32 - 05.05.2026"
+```
+
+## Ana Karar Komutu
 
 ```js
 ALKAM_V12_PREFLIGHT_V1.test()
@@ -93,6 +113,7 @@ Eski modüller kullanıcı onayı olmadan silinmez.
 ## Kısa Karar Ağacı
 
 ```text
+Cache missing 0       -> Preflight testine geç.
 Preflight ready true  -> v12 stabilizasyonuna geç.
 Preflight ready false -> eksikleri düzelt.
 writeOpen true        -> dur, Supabase Write Gate kapat.
@@ -110,4 +131,10 @@ Banka hareketi işlemek
 Moka kaydı otomatik işlemek
 AI ile kayıt oluşturmak
 Eski modül silmek
+```
+
+## Kalan Tek Gerçek Operasyon
+
+```text
+Canlı sitede Cache Kontrol + Preflight + Sonuç Export almak.
 ```
