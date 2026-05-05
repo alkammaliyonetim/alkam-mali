@@ -6,7 +6,25 @@ Bu rehber canlı sitede v12'ye geçiş kararı vermek için kullanılacak kısa 
 
 v12 Preflight ekranı, v12 stabilizasyonuna geçmeden önce tüm kritik kontrolleri tek kararda toplar.
 
-## Canlı Sitede İlk Çalıştırılacak Komut
+## Canlı Sitede İlk Kontrol
+
+Önce Cache / Deploy kontrolü çalıştırılır:
+
+```js
+ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
+```
+
+Beklenen:
+
+```text
+status: "Güncel"
+missing: 0
+expected: "v11.32 - 05.05.2026"
+```
+
+## Ana Karar Komutu
+
+Cache temizse şu komut çalıştırılır:
 
 ```js
 ALKAM_V12_PREFLIGHT_V1.test()
@@ -22,6 +40,20 @@ decision: "v12 stabilizasyonuna geçilebilir"
 writeOpen: false
 failed: 0
 liveBad: false
+```
+
+## Sonuç Export
+
+Karar sonucu kayıt altına alınır:
+
+```js
+ALKAM_V12_PREFLIGHT_EXPORT_V1.collect()
+```
+
+veya panelden:
+
+```text
+Ana Dashboard > Sonuç Export > JSON İndir
 ```
 
 ## Temiz Değilse Ne Yapılır?
@@ -69,7 +101,9 @@ ALKAM_CACHE_DEPLOY_KONTROL_V11.test()
 Beklenen:
 
 ```text
+status: "Güncel"
 missing: 0
+expected: "v11.32 - 05.05.2026"
 ```
 
 Eksikse önce Ctrl+F5 / sert yenileme yapılır.
@@ -103,6 +137,7 @@ Beklenen:
 
 ```text
 v12PreflightLoader: true
+v12ExportLoader: true
 v12StabilizerLoader: true
 viewPrefLoader: true
 cacheControlLoader: true
@@ -111,17 +146,19 @@ liveTestLoader: true
 
 ## Panelden Kullanım
 
-Canlı sitede ana dashboard üzerinde şu buton bulunur:
+Canlı sitede ana dashboard üzerinde şu butonlar bulunur:
 
 ```text
 v12 Preflight
+Sonuç Export
 ```
 
-Bu butona basınca karar paneli açılır.
+Preflight karar panelini, Sonuç Export ise JSON çıktı panelini açar.
 
 ## Karar Mantığı
 
 ```text
+Cache missing 0 ise: Preflight testine geç.
 Ready true ise: v12 stabilizasyonuna geçilebilir.
 Ready false ise: eksik/riskli modül düzeltilir.
 writeOpen true ise: sistem durdurulur, yazma kapısı kapatılır.
