@@ -1,7 +1,7 @@
 (function(){
   'use strict';
-  var VERSION='ALKAM Cache Deploy Kontrol v11.30';
-  var EXPECTED='v11.17 - 05.05.2026';
+  var VERSION='ALKAM Cache Deploy Kontrol v11.32';
+  var EXPECTED='v11.32 - 05.05.2026';
   function q(s,r){return (r||document).querySelector(s)}
   function scan(){
     var badge=window.ALKAM_SURUM_ROZETI_V11&&ALKAM_SURUM_ROZETI_V11.last?ALKAM_SURUM_ROZETI_V11.last():null;
@@ -21,6 +21,8 @@
       {name:'Kompakt loader',ok:!!q('script[data-alkam-kompakt]'),detail:'kompakt css'},
       {name:'Ultra kompakt loader',ok:!!q('script[data-alkam-ultra-kompakt]'),detail:'ultra css'},
       {name:'v12 stabilizer loader',ok:!!q('script[data-alkam-v12-stabilizer]'),detail:stabil&&stabil.status||'script kontrol'},
+      {name:'v12 preflight loader',ok:!!q('script[data-alkam-v12-preflight]'),detail:'karar kontrolü'},
+      {name:'v12 export loader',ok:!!q('script[data-alkam-v12-export]'),detail:'sonuç export'},
       {name:'Supabase yazma kapısı kapalı',ok:!(stabil&&stabil.writeAllowed===true),detail:'writeAllowed false olmalı'}
     ];
     var missing=checks.filter(function(x){return !x.ok}).length;
@@ -42,7 +44,7 @@
   }
   function render(){
     css(); var el=modal(), body=q('#alkamCacheBody',el), r=scan();
-    body.innerHTML='<div class="alkam-cache-note">Eksik görünürse önce Ctrl+F5 / sert yenileme yap. Bu panel veri yazmaz.</div><div class="alkam-cache-actions"><button onclick="window.ALKAM_CACHE_DEPLOY_KONTROL_V11&&ALKAM_CACHE_DEPLOY_KONTROL_V11.render()">Yenile</button><button onclick="location.reload()">Sayfayı Yenile</button><button onclick="window.ALKAM_V12_STABILIZER_V1&&ALKAM_V12_STABILIZER_V1.open&&ALKAM_V12_STABILIZER_V1.open()">v12 Stabil Aç</button></div><div class="alkam-cache-table"><table><thead><tr><th>Kontrol</th><th>Durum</th><th>Detay</th></tr></thead><tbody>'+r.checks.map(function(x){return '<tr><td>'+x.name+'</td><td class="'+(x.ok?'alkam-cache-ok':'alkam-cache-bad')+'">'+(x.ok?'OK':'Eksik')+'</td><td>'+x.detail+'</td></tr>'}).join('')+'</tbody></table></div>';
+    body.innerHTML='<div class="alkam-cache-note">Eksik görünürse önce Ctrl+F5 / sert yenileme yap. Bu panel veri yazmaz.</div><div class="alkam-cache-actions"><button onclick="window.ALKAM_CACHE_DEPLOY_KONTROL_V11&&ALKAM_CACHE_DEPLOY_KONTROL_V11.render()">Yenile</button><button onclick="location.reload()">Sayfayı Yenile</button><button onclick="window.ALKAM_V12_PREFLIGHT_V1&&ALKAM_V12_PREFLIGHT_V1.open&&ALKAM_V12_PREFLIGHT_V1.open()">v12 Preflight Aç</button></div><div class="alkam-cache-table"><table><thead><tr><th>Kontrol</th><th>Durum</th><th>Detay</th></tr></thead><tbody>'+r.checks.map(function(x){return '<tr><td>'+x.name+'</td><td class="'+(x.ok?'alkam-cache-ok':'alkam-cache-bad')+'">'+(x.ok?'OK':'Eksik')+'</td><td>'+x.detail+'</td></tr>'}).join('')+'</tbody></table></div>';
     return r;
   }
   function open(){css();modal().classList.add('open');render()}
