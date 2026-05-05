@@ -2,9 +2,11 @@
 
 Bu dosya, `alkam-v12-final-test-runner-v1.js` modülünü canlı sitede çalıştırmak için hazırlanmıştır.
 
-## Neden Bu Dosya Var?
+## Güncel Durum
 
-Dashboard içine otomatik buton bağlama aşamasında büyük dosya güncellemesi GitHub güvenlik filtresine takıldı. Bu yüzden Final Test Runner şimdilik console üzerinden güvenli şekilde yüklenip çalıştırılır.
+Final Test Runner artık `_worker.js` üzerinden canlı siteye otomatik yüklenir.
+
+Bu yüzden normal şartlarda ayrıca script yükleme komutu yapıştırmaya gerek yoktur.
 
 ## Canlı Site
 
@@ -22,7 +24,25 @@ Mac: Cmd + Shift + R
 Mobil: Sayfayı kapat/aç
 ```
 
-## 2. Console'a Yükleme Komutu Yapıştır
+## 2. Paneli Aç
+
+Console'da:
+
+```js
+ALKAM_V12_FINAL_TEST_RUNNER_V1.open()
+```
+
+## 3. Direkt Test Sonucu Almak İçin
+
+Console'da:
+
+```js
+ALKAM_V12_FINAL_TEST_RUNNER_V1.test()
+```
+
+## 4. Eğer Modül Henüz Gelmediyse
+
+Deploy/cache gecikmesi varsa geçici manuel yükleme:
 
 ```js
 const s=document.createElement('script');
@@ -30,13 +50,7 @@ s.src='/alkam-v12-final-test-runner-v1.js';
 document.head.appendChild(s);
 ```
 
-## 3. Paneli Aç
-
-```js
-ALKAM_V12_FINAL_TEST_RUNNER_V1.open()
-```
-
-## 4. Direkt Test Sonucu Almak İçin
+Sonra tekrar:
 
 ```js
 ALKAM_V12_FINAL_TEST_RUNNER_V1.test()
