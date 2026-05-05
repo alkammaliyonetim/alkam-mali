@@ -23,6 +23,7 @@ export default {
     scripts += '<script src="/alkam-supabase-compare-ui-v10.js"></script>';
     scripts += '<script src="/alkam-supabase-write-gate-v10.js"></script>';
     scripts += '<script src="/alkam-supabase-config-guard-v10.js"></script>';
+    scripts += '<script src="/alkam-supabase-sync-v1.js"></script>';
     scripts += '<script src="/alkam-ai-hata-tespit-v11.js"></script>';
     scripts += '<script src="/alkam-belge-onizleme-v11.js"></script>';
     scripts += '<script src="/alkam-ai-rapor-ozeti-v11.js"></script>';
