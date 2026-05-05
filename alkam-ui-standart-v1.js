@@ -1,70 +1,13 @@
 (function(){
 'use strict';
-var VERSION='ALKAM UI Standart v1.1';
+var VERSION='ALKAM UI Standart v1.3 SAFE';
 function q(s,r){return (r||document).querySelector(s)}
 function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
-function css(){
-  if(q('#alkam-ui-standart-style'))return;
-  var st=document.createElement('style');st.id='alkam-ui-standart-style';
-  st.textContent=[
-    ':root{--alkam-sidebar-w:168px;--alkam-bottom-safe:94px;--alkam-page-pad:14px}',
-    'html,body{width:100%!important;max-width:none!important;background:#f4f7fb!important;overflow-x:hidden!important}',
-    '.layout{grid-template-columns:var(--alkam-sidebar-w) minmax(0,1fr)!important;width:100%!important;max-width:none!important}',
-    '.sidebar{width:var(--alkam-sidebar-w)!important;min-width:var(--alkam-sidebar-w)!important;max-width:var(--alkam-sidebar-w)!important;padding-left:8px!important;padding-right:8px!important;box-sizing:border-box!important}',
-    '.main{min-width:0!important;width:100%!important;max-width:none!important;padding-left:var(--alkam-page-pad)!important;padding-right:var(--alkam-page-pad)!important;box-sizing:border-box!important}',
-    '.section,.card,.tab-page.active{max-width:none!important;box-sizing:border-box!important}',
-    '.brand-title,.sidebar .brand-title{white-space:normal!important;line-height:1.16!important;font-size:14px!important;letter-spacing:-.01em!important}',
-    '.sidebar small,.sidebar .muted{line-height:1.25!important;white-space:normal!important}',
-    '.side-link,.nav-item,.sidebar button,.sidebar a{min-height:36px!important;white-space:normal!important;line-height:1.15!important;align-items:center!important;border-radius:10px!important;padding:8px 9px!important;box-sizing:border-box!important}',
-    '.side-link span,.nav-item span,.sidebar button span,.sidebar a span{white-space:normal!important;overflow:visible!important;text-overflow:clip!important}',
-    '.sidebar .group-title,.side-section-title{font-size:10px!important;letter-spacing:.06em!important;line-height:1.15!important;margin:15px 0 7px!important;opacity:.82!important}',
-    '.sidebar .active,.sidebar button.active,.side-link.active,.nav-item.active{box-shadow:inset 0 0 0 1px rgba(255,255,255,.16)!important}',
-    '.alkam-final-modal:not(.open),.alkam-v12-export-modal:not(.open),.alkam-cache-modal:not(.open),.alkam-live-test-modal:not(.open),.alkam-visual-modal:not(.open),.alkam-preflight-modal:not(.open),#alkamV12FinalTestModal:not(.open),#alkamV12PreflightExportModal:not(.open){display:none!important;visibility:hidden!important;height:0!important;width:0!important;overflow:hidden!important}',
-    'body>div:not(.open)[id*="Final"],body>div:not(.open)[id*="Preflight"],body>div:not(.open)[id*="Cache"],body>div:not(.open)[id*="Visual"],body>div:not(.open)[id*="Live"]{display:none!important;visibility:hidden!important;height:0!important;overflow:hidden!important}',
-    '#alkamV12FinalTestButton,.alkam-v12-final-button,#alkamFinalTestButton{display:none!important}',
-    '#alkamTahakkukPanel{left:auto!important;right:18px!important;bottom:calc(var(--alkam-bottom-safe) + 42px)!important;max-width:420px!important;display:none!important}',
-    '#alkamTahakkukPanel.open{display:block!important}',
-    '#alkamModuleButton,#alkamModulMenuButton,.alkam-module-button{right:18px!important;bottom:18px!important;z-index:999990!important}',
-    '#alkamStatusBadge,#alkamTekKontrolRozeti,.alkam-status-badge,.alkam-control-badge{right:18px!important;bottom:58px!important;z-index:999989!important;max-width:360px!important;white-space:normal!important}',
-    '#alkamControlCenterButton,#alkamKontrolMerkeziButton{right:18px!important;bottom:100px!important;z-index:999988!important}',
-    '.alkam-floating-stack{position:fixed!important;right:18px!important;bottom:18px!important;z-index:999990!important;display:flex!important;flex-direction:column!important;gap:8px!important;align-items:flex-end!important}',
-    '.alkam-floating-stack>*{position:static!important;margin:0!important}',
-    '#tab-cari-toplu-tahakkuk .section,#tab-toplu-tahakkuk .section{width:100%!important;max-width:none!important}',
-    '#tab-cari-toplu-tahakkuk input[type="date"],#tab-toplu-tahakkuk input[type="date"]{border-color:#1769e8!important;box-shadow:0 0 0 3px rgba(23,105,232,.10)!important}',
-    '.alkam-date-master-note{margin:8px 0 10px;padding:9px 11px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:12px;font-size:12px;font-weight:900}',
-    '.alkam-ui-clean-note{display:none!important}',
-    '@media(max-width:1200px){:root{--alkam-sidebar-w:146px;--alkam-page-pad:10px}.sidebar{font-size:12px!important}}',
-    '@media(max-width:900px){.layout{grid-template-columns:1fr!important}.sidebar{position:relative!important;width:100%!important;min-width:0!important;max-width:none!important}.main{padding-left:10px!important;padding-right:10px!important}}'
-  ].join('\n');
-  document.head.appendChild(st)
-}
-function hideDebugTextNodes(){
-  var bad=['Final Canlı Test','Dashboard Görsel Kontrol','Canlı Test Paketi','Cache / Deploy Kontrol','v12 Stabilizer','v12 Preflight Kontrol','Sonuç Export','Veri yazmaz'];
-  qa('body>div,body>section,body>aside').forEach(function(el){
-    if(el.classList&&el.classList.contains('open'))return;
-    var txt=(el.innerText||'').slice(0,320);
-    if(bad.some(function(b){return txt.indexOf(b)>-1}) && !el.closest('.main') && !el.closest('.sidebar')){
-      el.style.display='none';el.style.visibility='hidden';el.style.height='0';el.style.overflow='hidden';
-    }
-  })
-}
-function masterDate(){
-  var root=q('#tab-cari-toplu-tahakkuk')||q('#tab-toplu-tahakkuk'); if(!root)return;
-  var dates=qa('input[type="date"]',root); if(!dates.length)return;
-  var master=dates[0]; master.dataset.alkamMasterDate='1';
-  if(!q('.alkam-date-master-note',root)){
-    var note=document.createElement('div');note.className='alkam-date-master-note';
-    note.textContent='Tek tarih standardı aktif: üstte seçilen tarih toplu tahakkuk gridinin ana tarihidir. Satır tarihleri bu tarih üzerinden yürür.';
-    var place=master.closest('.field')||master.parentElement||root.firstChild; place.insertAdjacentElement('afterend',note);
-  }
-  if(!master.dataset.alkamDateBound){master.dataset.alkamDateBound='1';master.addEventListener('change',function(){dates.forEach(function(d){if(d!==master&&!d.disabled){d.value=master.value;d.dispatchEvent(new Event('change',{bubbles:true}))}})})}
-}
-function normalizeFloating(){
-  var ids=['alkamModuleButton','alkamModulMenuButton','alkamStatusBadge','alkamTekKontrolRozeti','alkamControlCenterButton','alkamKontrolMerkeziButton'];
-  ids.forEach(function(id){var el=q('#'+id);if(el){el.style.position='fixed'}});
-}
-function run(){css();hideDebugTextNodes();masterDate();normalizeFloating();window.__ALKAM_UI_STANDART_LAST={version:VERSION,time:new Date().toISOString()};return window.__ALKAM_UI_STANDART_LAST}
-function boot(){run();setInterval(run,2500);try{new MutationObserver(run).observe(document.body,{childList:true,subtree:true})}catch(e){}}
-window.ALKAM_UI_STANDART_V1={version:VERSION,run:run,test:function(){return run()}};
+function css(){if(q('#alkam-ui-standart-style'))return;var st=document.createElement('style');st.id='alkam-ui-standart-style';st.textContent=':root{--alkam-sidebar-w:205px;--alkam-page-pad:18px}html,body{width:100%!important;background:#f4f7fb!important;overflow-x:hidden!important}.layout{grid-template-columns:var(--alkam-sidebar-w) minmax(0,1fr)!important;width:100%!important}.sidebar{width:var(--alkam-sidebar-w)!important;min-width:var(--alkam-sidebar-w)!important;max-width:var(--alkam-sidebar-w)!important;padding:14px 12px!important}.main{min-width:0!important;width:100%!important;padding-left:var(--alkam-page-pad)!important;padding-right:var(--alkam-page-pad)!important}.brand-title{white-space:normal!important;line-height:1.14!important;font-size:16px!important}.brand-sub{font-size:11px!important;line-height:1.35!important}.nav-btn,.sidebar button,.sidebar a{min-height:42px!important;border-radius:12px!important;font-size:13px!important;line-height:1.16!important;white-space:normal!important;padding:10px 12px!important}.section,.card,.metric-mini,.empty{border-radius:16px!important;box-shadow:0 10px 28px rgba(15,23,42,.055)!important}.btn{min-height:42px!important;border-radius:12px!important}.alkam-ui-hidden{display:none!important;visibility:hidden!important}.alkam-date-master-note{margin:8px 0 10px;padding:9px 11px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;border-radius:12px;font-size:12px;font-weight:900}@media(max-width:1200px){.layout{grid-template-columns:1fr!important}.sidebar{width:auto!important;min-width:0!important;max-width:none!important}.main{padding-left:10px!important;padding-right:10px!important}}';document.head.appendChild(st)}
+function hideDebug(){var bad=['v12 preflight','sonuç export','sonuc export','final test','cache','deploy','canlı test','canli test','görsel kontrol','gorsel kontrol','preflight'];qa('button,a,.btn,.chip').forEach(function(el){var t=String(el.innerText||el.textContent||'').toLocaleLowerCase('tr-TR');if(bad.some(function(k){return t.indexOf(k)>-1}))el.classList.add('alkam-ui-hidden')})}
+function masterDate(){var root=q('#tab-cari-toplu-tahakkuk')||q('#tab-toplu-tahakkuk');if(!root)return;var dates=qa('input[type="date"]',root);if(!dates.length)return;var master=dates[0];if(!q('.alkam-date-master-note',root)){var note=document.createElement('div');note.className='alkam-date-master-note';note.textContent='Tek tarih standardı aktif: üstte seçilen tarih toplu tahakkuk gridinin ana tarihidir.';(master.closest('.field')||master.parentElement||root).insertAdjacentElement('afterend',note)}if(!master.dataset.alkamDateBound){master.dataset.alkamDateBound='1';master.addEventListener('change',function(){qa('input[type="date"]',root).forEach(function(d){if(d!==master&&!d.disabled){d.value=master.value;d.dispatchEvent(new Event('change',{bubbles:true}))}})})}}
+function run(){css();hideDebug();masterDate();window.__ALKAM_UI_STANDART_LAST={version:VERSION,time:new Date().toISOString()};return window.__ALKAM_UI_STANDART_LAST}
+function boot(){run();setTimeout(run,500);setTimeout(run,1500);document.addEventListener('click',function(){setTimeout(run,180)},true);document.addEventListener('input',function(){setTimeout(run,180)},true)}
+window.ALKAM_UI_STANDART_V1={version:VERSION,run:run,test:run};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
 })();
