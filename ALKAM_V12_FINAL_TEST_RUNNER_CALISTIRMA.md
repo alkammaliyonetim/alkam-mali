@@ -6,6 +6,12 @@ Bu dosya, `alkam-v12-final-test-runner-v1.js` modülünü canlı sitede çalış
 
 Final Test Runner artık `_worker.js` üzerinden canlı siteye otomatik yüklenir.
 
+Ayrıca sağ altta şu buton da otomatik gelir:
+
+```text
+Final Test v12
+```
+
 Bu yüzden normal şartlarda ayrıca script yükleme komutu yapıştırmaya gerek yoktur.
 
 ## Canlı Site
@@ -24,23 +30,44 @@ Mac: Cmd + Shift + R
 Mobil: Sayfayı kapat/aç
 ```
 
-## 2. Paneli Aç
+## 2. En Kolay Kullanım
 
-Console'da:
+Sağ alttaki butona basılır:
+
+```text
+Final Test v12
+```
+
+Bu buton final test panelini açar.
+
+## 3. Console ile Panel Açmak İçin
 
 ```js
 ALKAM_V12_FINAL_TEST_RUNNER_V1.open()
 ```
 
-## 3. Direkt Test Sonucu Almak İçin
-
-Console'da:
+## 4. Direkt Test Sonucu Almak İçin
 
 ```js
 ALKAM_V12_FINAL_TEST_RUNNER_V1.test()
 ```
 
-## 4. Eğer Modül Henüz Gelmediyse
+## 5. Buton Kontrolü
+
+Buton yüklendi mi kontrol etmek için:
+
+```js
+ALKAM_V12_FINAL_TEST_BUTTON_V1.test()
+```
+
+Beklenen:
+
+```text
+visible: true
+runner: true
+```
+
+## 6. Eğer Modül Henüz Gelmediyse
 
 Deploy/cache gecikmesi varsa geçici manuel yükleme:
 
@@ -56,7 +83,7 @@ Sonra tekrar:
 ALKAM_V12_FINAL_TEST_RUNNER_V1.test()
 ```
 
-## 5. Beklenen Temiz Sonuç
+## 7. Beklenen Temiz Sonuç
 
 ```text
 cacheOk: true
@@ -69,19 +96,19 @@ liveRisky: 0
 decision: "v12 stabilizasyonuna geçilebilir"
 ```
 
-## 6. Temizse Sonraki Commit
+## 8. Temizse Sonraki Commit
 
 ```text
 v12: stabilize dashboard and module loading
 ```
 
-## 7. Temiz Değilse Sonraki Commit
+## 9. Temiz Değilse Sonraki Commit
 
 ```text
 fix: resolve v11 live test gaps before v12
 ```
 
-## 8. Güvenlik Notu
+## 10. Güvenlik Notu
 
 Bu test runner veri yazmaz. Sadece mevcut test fonksiyonlarını çalıştırır.
 
