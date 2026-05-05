@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var VERSION='ALKAM Banka Onay v8.3 SPECIAL PAYMENT RULES';
+  var VERSION='ALKAM Banka Onay v8.4 KK KMH ROUTING';
   var RAW_KEY='alkam_banka_ice_aktarim_raw';
   var APPROVAL_KEY='alkam_onay_bekleyen_banka';
   var PROCESSED_KEY='alkam_banka_islenen';
@@ -12,67 +12,18 @@
   function norm(s){return String(s||'').toLowerCase().replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
   function fingerprint(x){return [x.tarih||x.date||'',n(x.tutar||x.amount||0).toFixed(2),norm(x.aciklama||x.description||x.detay||'')].join('|')}
   function isCreditCardPayment(desc){var d=norm(desc);return (d.indexOf('kredi kart')>-1||d.indexOf('kk odeme')>-1||d.indexOf('kart odeme')>-1||d.indexOf('card payment')>-1) && (d.indexOf('odeme')>-1||d.indexOf('borc')>-1)}
+  function isKmhPayment(desc){var d=norm(desc);return d.indexOf('kmh')>-1||d.indexOf('ek hesap')>-1||d.indexOf('kredili mevduat')>-1}
   function isTaxOrSgk(desc){var d=norm(desc);return d.indexOf('sgk')>-1||d.indexOf('mosip')>-1||d.indexOf('bagkur')>-1||d.indexOf('gib')>-1||d.indexOf('vergi')>-1}
   function getCariler(){try{return window.ALKAM_TAHAKKUK_V5&&ALKAM_TAHAKKUK_V5.readCariler?ALKAM_TAHAKKUK_V5.readCariler():[]}catch(e){return []}}
   function snapshot(reason){if(window.ALKAM_RELIABILITY_GUARD&&window.ALKAM_RELIABILITY_GUARD.snapshot)return ALKAM_RELIABILITY_GUARD.snapshot(reason);return null}
-  function suggestCari(desc){
-    var d=norm(desc), best=null, score=0;
-    getCariler().forEach(function(c){var name=norm(c.unvan||c.unvan_tam||c.tam_unvan||c.name||c.ad||''); if(!name)return; var parts=name.split(' ').filter(function(p){return p.length>2}); var s=0; parts.forEach(function(p){if(d.indexOf(p)>-1)s+=15}); if(name&&d.indexOf(name)>-1)s+=60; if(s>score){score=s;best=c}});
-    if(!best)return null;
-    return {cari_id:best.cari_id||best.id||best.kod||best.vergi_no||best.unvan,cari_unvan:best.unvan||best.unvan_tam||best.tam_unvan||best.name||best.ad,confidence:Math.min(100,score),reason:'Açıklama içinden cari adı benzerliği'};
-  }
-  function classify(row){
-    var desc=row.aciklama||row.description||row.detay||''; var d=norm(desc); var amount=n(row.tutar||row.amount);
-    var type=amount>=0?'Tahsilat Adayı':'Ödeme Adayı'; var special=false;
-    if(isCreditCardPayment(desc)){type='Kredi Kartı Borç Ödemesi / Hesap Aktarımı'; special=true}
-    else if(isTaxOrSgk(desc)){type='Vergi SGK Bağkur Ödemesi'; special=true}
-    else if(d.indexOf('eft masraf')>-1||d.indexOf('pos aidat')>-1||d.indexOf('banka masraf')>-1){type='Banka/POS Masrafı'; special=true}
-    else if(d.indexOf('moka')>-1||d.indexOf('united')>-1)type='Moka Banka Aktarım Adayı';
-    else if(d.indexOf('pos')>-1)type='POS/Moka Adayı';
-    var cari=special?null:suggestCari(desc);
-    return {type:type,cari:cari,confidence:cari?cari.confidence:(special?90:(type.indexOf('Moka')>-1?80:30)),reason:cari?cari.reason:(special?'Özel ödeme/aktarım kuralı; cari tahsilatı değildir':(type.indexOf('Moka')>-1?'Moka/United ifadesi bulundu':'Cari eşleşmesi düşük'))};
-  }
-  function importRows(rows,source){
-    if(!Array.isArray(rows))return {ok:false,reason:'Satır listesi bekleniyor'};
-    var raw=readJson(RAW_KEY), approvals=readJson(APPROVAL_KEY), processed=readJson(PROCESSED_KEY), rejected=readJson(REJECTED_KEY);
-    var known={}; raw.concat(approvals).concat(processed).concat(rejected).forEach(function(x){known[x.fp||fingerprint(x)]=true});
-    var added=0, duplicate=0, items=[];
-    rows.forEach(function(r){var row={id:'BNK-'+Date.now()+'-'+Math.random().toString(16).slice(2),tarih:r.tarih||r.date||new Date().toISOString().slice(0,10),tutar:n(r.tutar||r.amount),aciklama:r.aciklama||r.description||r.detay||'',kaynak:source||'Banka İçe Aktarım',created_at:now()}; row.fp=fingerprint(row); if(known[row.fp]){duplicate++; return} var c=classify(row); row.onerilen_tip=c.type; row.onerilen_cari=c.cari; row.guven=c.confidence; row.eslesme_sebebi=c.reason; row.durum='Onay Bekliyor'; raw.push(row); approvals.push(row); known[row.fp]=true; added++; items.push(row)});
-    writeJson(RAW_KEY,raw); writeJson(APPROVAL_KEY,approvals);
-    return {ok:true,version:VERSION,added:added,duplicate:duplicate,totalApproval:approvals.length,items:items,time:now()};
-  }
-  function processRow(row){
-    if(row.onerilen_tip&&row.onerilen_tip.indexOf('Moka')>-1&&window.ALKAM_FINANS_FLOW_V6&&ALKAM_FINANS_FLOW_V6.mokaSettlement){return ALKAM_FINANS_FLOW_V6.mokaSettlement(Math.abs(row.tutar),row.aciklama)}
-    if(row.tutar>0&&window.ALKAM_TAHSILAT_V7&&ALKAM_TAHSILAT_V7.collect){return ALKAM_TAHSILAT_V7.collect({tutar:row.tutar,hesap:'banka',tarih:row.tarih,kaynak:'Banka Onay',aciklama:row.aciklama,cari:row.onerilen_cari?{id:row.onerilen_cari.cari_id,unvan:row.onerilen_cari.cari_unvan}:null})}
-    if(window.ALKAM_FINANS_FLOW_V6&&ALKAM_FINANS_FLOW_V6.addMovement){return ALKAM_FINANS_FLOW_V6.addMovement({hesap:'banka',tip:row.tutar>=0?'Giriş':'Çıkış',tutar:Math.abs(row.tutar),tarih:row.tarih,kaynak:row.onerilen_tip||'Banka Onay',aciklama:row.aciklama})}
-    return {ok:false,reason:'İşleme çekirdeği hazır değil'};
-  }
-  function approve(id){
-    var approvals=readJson(APPROVAL_KEY), processed=readJson(PROCESSED_KEY); var i=approvals.findIndex(function(x){return x.id===id});
-    if(i<0)return {ok:false,reason:'Onay kaydı bulunamadı'};
-    var row=approvals[i]; snapshot('Banka onay öncesi '+id);
-    var result=processRow(row);
-    if(!result||result.ok===false)return {ok:false,reason:(result&&result.reason)||'Posting başarısız',item:row,result:result};
-    row.durum='İşlendi'; row.processed_at=now(); row.posting_result=result; processed.push(row); approvals.splice(i,1); writeJson(APPROVAL_KEY,approvals); writeJson(PROCESSED_KEY,processed);
-    return {ok:true,item:row,result:result,remaining:approvals.length};
-  }
+  function suggestCari(desc){var d=norm(desc), best=null, score=0;getCariler().forEach(function(c){var name=norm(c.unvan||c.unvan_tam||c.tam_unvan||c.name||c.ad||''); if(!name)return; var parts=name.split(' ').filter(function(p){return p.length>2}); var s=0; parts.forEach(function(p){if(d.indexOf(p)>-1)s+=15}); if(name&&d.indexOf(name)>-1)s+=60; if(s>score){score=s;best=c}});if(!best)return null;return {cari_id:best.cari_id||best.id||best.kod||best.vergi_no||best.unvan,cari_unvan:best.unvan||best.unvan_tam||best.tam_unvan||best.name||best.ad,confidence:Math.min(100,score),reason:'Açıklama içinden cari adı benzerliği'};}
+  function classify(row){var desc=row.aciklama||row.description||row.detay||''; var d=norm(desc); var amount=n(row.tutar||row.amount);var type=amount>=0?'Tahsilat Adayı':'Ödeme Adayı'; var special=false;if(isCreditCardPayment(desc)){type='Kredi Kartı Borç Ödemesi / Hesap Aktarımı'; special=true}else if(isKmhPayment(desc)){type='KMH / Ek Hesap Ödemesi / Hesap Aktarımı'; special=true}else if(isTaxOrSgk(desc)){type='Vergi SGK Bağkur Ödemesi'; special=true}else if(d.indexOf('eft masraf')>-1||d.indexOf('pos aidat')>-1||d.indexOf('banka masraf')>-1){type='Banka/POS Masrafı'; special=true}else if(d.indexOf('moka')>-1||d.indexOf('united')>-1)type='Moka Banka Aktarım Adayı';else if(d.indexOf('pos')>-1)type='POS/Moka Adayı';var cari=special?null:suggestCari(desc);return {type:type,cari:cari,confidence:cari?cari.confidence:(special?90:(type.indexOf('Moka')>-1?80:30)),reason:cari?cari.reason:(special?'Özel ödeme/aktarım kuralı; cari tahsilatı değildir':(type.indexOf('Moka')>-1?'Moka/United ifadesi bulundu':'Cari eşleşmesi düşük'))};}
+  function importRows(rows,source){if(!Array.isArray(rows))return {ok:false,reason:'Satır listesi bekleniyor'};var raw=readJson(RAW_KEY), approvals=readJson(APPROVAL_KEY), processed=readJson(PROCESSED_KEY), rejected=readJson(REJECTED_KEY);var known={}; raw.concat(approvals).concat(processed).concat(rejected).forEach(function(x){known[x.fp||fingerprint(x)]=true});var added=0, duplicate=0, items=[];rows.forEach(function(r){var row={id:'BNK-'+Date.now()+'-'+Math.random().toString(16).slice(2),tarih:r.tarih||r.date||new Date().toISOString().slice(0,10),tutar:n(r.tutar||r.amount),aciklama:r.aciklama||r.description||r.detay||'',kaynak:source||'Banka İçe Aktarım',created_at:now()}; row.fp=fingerprint(row); if(known[row.fp]){duplicate++; return} var c=classify(row); row.onerilen_tip=c.type; row.onerilen_cari=c.cari; row.guven=c.confidence; row.eslesme_sebebi=c.reason; row.durum='Onay Bekliyor'; raw.push(row); approvals.push(row); known[row.fp]=true; added++; items.push(row)});writeJson(RAW_KEY,raw); writeJson(APPROVAL_KEY,approvals);return {ok:true,version:VERSION,added:added,duplicate:duplicate,totalApproval:approvals.length,items:items,time:now()};}
+  function processRow(row){var tip=row.onerilen_tip||'';var amount=Math.abs(n(row.tutar));if(tip.indexOf('Kredi Kartı')>-1&&window.ALKAM_FINANS_FLOW_V6&&ALKAM_FINANS_FLOW_V6.creditCardPayment){return ALKAM_FINANS_FLOW_V6.creditCardPayment(amount,row.aciklama,row.tarih)}if(tip.indexOf('KMH')>-1&&window.ALKAM_FINANS_FLOW_V6&&ALKAM_FINANS_FLOW_V6.kmhPayment){return ALKAM_FINANS_FLOW_V6.kmhPayment(amount,row.aciklama,row.tarih)}if(tip.indexOf('Moka')>-1&&window.ALKAM_FINANS_FLOW_V6&&ALKAM_FINANS_FLOW_V6.mokaSettlement){return ALKAM_FINANS_FLOW_V6.mokaSettlement(amount,row.aciklama)}if(row.tutar>0&&window.ALKAM_TAHSILAT_V7&&ALKAM_TAHSILAT_V7.collect){return ALKAM_TAHSILAT_V7.collect({tutar:row.tutar,hesap:'banka',tarih:row.tarih,kaynak:'Banka Onay',aciklama:row.aciklama,cari:row.onerilen_cari?{id:row.onerilen_cari.cari_id,unvan:row.onerilen_cari.cari_unvan}:null})}if(window.ALKAM_FINANS_FLOW_V6&&ALKAM_FINANS_FLOW_V6.addMovement){return ALKAM_FINANS_FLOW_V6.addMovement({hesap:'banka',tip:row.tutar>=0?'Giriş':'Çıkış',tutar:amount,tarih:row.tarih,kaynak:tip||'Banka Onay',aciklama:row.aciklama,gider_degildir:tip.indexOf('Aktarımı')>-1})}return {ok:false,reason:'İşleme çekirdeği hazır değil'};}
+  function approve(id){var approvals=readJson(APPROVAL_KEY), processed=readJson(PROCESSED_KEY); var i=approvals.findIndex(function(x){return x.id===id});if(i<0)return {ok:false,reason:'Onay kaydı bulunamadı'};var row=approvals[i]; snapshot('Banka onay öncesi '+id);var result=processRow(row);if(!result||result.ok===false)return {ok:false,reason:(result&&result.reason)||'Posting başarısız',item:row,result:result};row.durum='İşlendi'; row.processed_at=now(); row.posting_result=result; processed.push(row); approvals.splice(i,1); writeJson(APPROVAL_KEY,approvals); writeJson(PROCESSED_KEY,processed);return {ok:true,item:row,result:result,remaining:approvals.length};}
   function reject(id,reason){var approvals=readJson(APPROVAL_KEY), rejected=readJson(REJECTED_KEY); var i=approvals.findIndex(function(x){return x.id===id}); if(i<0)return {ok:false,reason:'Kayıt bulunamadı'}; var row=approvals[i]; row.durum='Reddedildi'; row.red_sebebi=reason||''; row.rejected_at=now(); rejected.push(row); approvals.splice(i,1); writeJson(APPROVAL_KEY,approvals); writeJson(REJECTED_KEY,rejected); return {ok:true,item:row,remaining:approvals.length}}
-  function bulkApprove(minConfidence){
-    var min=Number(minConfidence||100); var approvals=readJson(APPROVAL_KEY).slice();
-    var selected=approvals.filter(function(x){return Number(x.guven||0)>=min});
-    if(!selected.length)return {ok:false,reason:'Toplu onay için uygun kayıt yok',minConfidence:min};
-    snapshot('Banka toplu onay öncesi min güven '+min+' / '+selected.length+' kayıt');
-    var results=[]; selected.forEach(function(x){results.push(approve(x.id))});
-    return {ok:true,mode:'bulkApprove',minConfidence:min,count:results.filter(function(r){return r.ok}).length,failed:results.filter(function(r){return !r.ok}).length,results:results,remaining:readJson(APPROVAL_KEY).length,time:now()};
-  }
-  function bulkRejectBelow(minConfidence){
-    var min=Number(minConfidence||50); var approvals=readJson(APPROVAL_KEY).slice();
-    var selected=approvals.filter(function(x){return Number(x.guven||0)<min});
-    if(!selected.length)return {ok:false,reason:'Toplu red için uygun kayıt yok',minConfidence:min};
-    snapshot('Banka toplu red öncesi min güven altı '+min+' / '+selected.length+' kayıt');
-    var results=[]; selected.forEach(function(x){results.push(reject(x.id,'Güven puanı düşük: %'+(x.guven||0)))});
-    return {ok:true,mode:'bulkRejectBelow',minConfidence:min,count:results.length,results:results,remaining:readJson(APPROVAL_KEY).length,time:now()};
-  }
+  function bulkApprove(minConfidence){var min=Number(minConfidence||100); var approvals=readJson(APPROVAL_KEY).slice();var selected=approvals.filter(function(x){return Number(x.guven||0)>=min});if(!selected.length)return {ok:false,reason:'Toplu onay için uygun kayıt yok',minConfidence:min};snapshot('Banka toplu onay öncesi min güven '+min+' / '+selected.length+' kayıt');var results=[]; selected.forEach(function(x){results.push(approve(x.id))});return {ok:true,mode:'bulkApprove',minConfidence:min,count:results.filter(function(r){return r.ok}).length,failed:results.filter(function(r){return !r.ok}).length,results:results,remaining:readJson(APPROVAL_KEY).length,time:now()};}
+  function bulkRejectBelow(minConfidence){var min=Number(minConfidence||50); var approvals=readJson(APPROVAL_KEY).slice();var selected=approvals.filter(function(x){return Number(x.guven||0)<min});if(!selected.length)return {ok:false,reason:'Toplu red için uygun kayıt yok',minConfidence:min};snapshot('Banka toplu red öncesi min güven altı '+min+' / '+selected.length+' kayıt');var results=[]; selected.forEach(function(x){results.push(reject(x.id,'Güven puanı düşük: %'+(x.guven||0)))});return {ok:true,mode:'bulkRejectBelow',minConfidence:min,count:results.length,results:results,remaining:readJson(APPROVAL_KEY).length,time:now()};}
   function list(){return readJson(APPROVAL_KEY)}
   function rejected(){return readJson(REJECTED_KEY)}
   function summary(){var a=readJson(APPROVAL_KEY), p=readJson(PROCESSED_KEY), r=readJson(REJECTED_KEY);return {version:VERSION,onayBekleyen:a.length,islenen:p.length,reddedilen:r.length,totalAmount:a.reduce(function(t,x){return t+n(x.tutar)},0),highConfidence:a.filter(function(x){return Number(x.guven||0)>=100}).length,lowConfidence:a.filter(function(x){return Number(x.guven||0)<50}).length,time:now()}}
