@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var VERSION='ALKAM Banka Onay v8.1 bulk-actions';
+  var VERSION='ALKAM Banka Onay v8.2 STABLE POSTING';
   var RAW_KEY='alkam_banka_ice_aktarim_raw';
   var APPROVAL_KEY='alkam_onay_bekleyen_banka';
   var PROCESSED_KEY='alkam_banka_islenen';
@@ -10,9 +10,9 @@
   function now(){return new Date().toISOString()}
   function n(v){var x=Number(String(v||0).replace(/TL|₺/g,'').replace(/\./g,'').replace(',','.'));return isNaN(x)?0:x}
   function norm(s){return String(s||'').toLowerCase().replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
-  function fingerprint(x){return [x.tarih||x.date||'',n(x.tutar||x.amount||0),norm(x.aciklama||x.description||x.detay||'')].join('|')}
+  function fingerprint(x){return [x.tarih||x.date||'',n(x.tutar||x.amount||0).toFixed(2),norm(x.aciklama||x.description||x.detay||'')].join('|')}
   function getCariler(){try{return window.ALKAM_TAHAKKUK_V5&&ALKAM_TAHAKKUK_V5.readCariler?ALKAM_TAHAKKUK_V5.readCariler():[]}catch(e){return []}}
-  function snapshot(reason){if(window.ALKAM_RELIABILITY_GUARD&&ALKAM_RELIABILITY_GUARD.snapshot)return ALKAM_RELIABILITY_GUARD.snapshot(reason);return null}
+  function snapshot(reason){if(window.ALKAM_RELIABILITY_GUARD&&window.ALKAM_RELIABILITY_GUARD.snapshot)return ALKAM_RELIABILITY_GUARD.snapshot(reason);return null}
   function suggestCari(desc){
     var d=norm(desc), best=null, score=0;
     getCariler().forEach(function(c){var name=norm(c.unvan||c.unvan_tam||c.tam_unvan||c.name||c.ad||''); if(!name)return; var parts=name.split(' ').filter(function(p){return p.length>2}); var s=0; parts.forEach(function(p){if(d.indexOf(p)>-1)s+=15}); if(name&&d.indexOf(name)>-1)s+=60; if(s>score){score=s;best=c}});
@@ -46,8 +46,9 @@
     var approvals=readJson(APPROVAL_KEY), processed=readJson(PROCESSED_KEY); var i=approvals.findIndex(function(x){return x.id===id});
     if(i<0)return {ok:false,reason:'Onay kaydı bulunamadı'};
     var row=approvals[i]; snapshot('Banka onay öncesi '+id);
-    row.durum='İşlendi'; row.processed_at=now(); processed.push(row); approvals.splice(i,1); writeJson(APPROVAL_KEY,approvals); writeJson(PROCESSED_KEY,processed);
     var result=processRow(row);
+    if(!result||result.ok===false)return {ok:false,reason:(result&&result.reason)||'Posting başarısız',item:row,result:result};
+    row.durum='İşlendi'; row.processed_at=now(); row.posting_result=result; processed.push(row); approvals.splice(i,1); writeJson(APPROVAL_KEY,approvals); writeJson(PROCESSED_KEY,processed);
     return {ok:true,item:row,result:result,remaining:approvals.length};
   }
   function reject(id,reason){var approvals=readJson(APPROVAL_KEY), rejected=readJson(REJECTED_KEY); var i=approvals.findIndex(function(x){return x.id===id}); if(i<0)return {ok:false,reason:'Kayıt bulunamadı'}; var row=approvals[i]; row.durum='Reddedildi'; row.red_sebebi=reason||''; row.rejected_at=now(); rejected.push(row); approvals.splice(i,1); writeJson(APPROVAL_KEY,approvals); writeJson(REJECTED_KEY,rejected); return {ok:true,item:row,remaining:approvals.length}}
@@ -57,7 +58,7 @@
     if(!selected.length)return {ok:false,reason:'Toplu onay için uygun kayıt yok',minConfidence:min};
     snapshot('Banka toplu onay öncesi min güven '+min+' / '+selected.length+' kayıt');
     var results=[]; selected.forEach(function(x){results.push(approve(x.id))});
-    return {ok:true,mode:'bulkApprove',minConfidence:min,count:results.length,results:results,remaining:readJson(APPROVAL_KEY).length,time:now()};
+    return {ok:true,mode:'bulkApprove',minConfidence:min,count:results.filter(function(r){return r.ok}).length,failed:results.filter(function(r){return !r.ok}).length,results:results,remaining:readJson(APPROVAL_KEY).length,time:now()};
   }
   function bulkRejectBelow(minConfidence){
     var min=Number(minConfidence||50); var approvals=readJson(APPROVAL_KEY).slice();
