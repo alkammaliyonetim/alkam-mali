@@ -1,6 +1,6 @@
 (function(){
   'use strict';
-  var VERSION='ALKAM Banka Onay v8.2 STABLE POSTING';
+  var VERSION='ALKAM Banka Onay v8.3 SPECIAL PAYMENT RULES';
   var RAW_KEY='alkam_banka_ice_aktarim_raw';
   var APPROVAL_KEY='alkam_onay_bekleyen_banka';
   var PROCESSED_KEY='alkam_banka_islenen';
@@ -11,6 +11,8 @@
   function n(v){var x=Number(String(v||0).replace(/TL|₺/g,'').replace(/\./g,'').replace(',','.'));return isNaN(x)?0:x}
   function norm(s){return String(s||'').toLowerCase().replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s').replace(/ö/g,'o').replace(/ç/g,'c').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim()}
   function fingerprint(x){return [x.tarih||x.date||'',n(x.tutar||x.amount||0).toFixed(2),norm(x.aciklama||x.description||x.detay||'')].join('|')}
+  function isCreditCardPayment(desc){var d=norm(desc);return (d.indexOf('kredi kart')>-1||d.indexOf('kk odeme')>-1||d.indexOf('kart odeme')>-1||d.indexOf('card payment')>-1) && (d.indexOf('odeme')>-1||d.indexOf('borc')>-1)}
+  function isTaxOrSgk(desc){var d=norm(desc);return d.indexOf('sgk')>-1||d.indexOf('mosip')>-1||d.indexOf('bagkur')>-1||d.indexOf('gib')>-1||d.indexOf('vergi')>-1}
   function getCariler(){try{return window.ALKAM_TAHAKKUK_V5&&ALKAM_TAHAKKUK_V5.readCariler?ALKAM_TAHAKKUK_V5.readCariler():[]}catch(e){return []}}
   function snapshot(reason){if(window.ALKAM_RELIABILITY_GUARD&&window.ALKAM_RELIABILITY_GUARD.snapshot)return ALKAM_RELIABILITY_GUARD.snapshot(reason);return null}
   function suggestCari(desc){
@@ -21,11 +23,14 @@
   }
   function classify(row){
     var desc=row.aciklama||row.description||row.detay||''; var d=norm(desc); var amount=n(row.tutar||row.amount);
-    var type=amount>=0?'Tahsilat Adayı':'Ödeme Adayı';
-    if(d.indexOf('moka')>-1||d.indexOf('united')>-1)type='Moka Banka Aktarım Adayı';
-    if(d.indexOf('pos')>-1)type='POS/Moka Adayı';
-    var cari=suggestCari(desc);
-    return {type:type,cari:cari,confidence:cari?cari.confidence:(type.indexOf('Moka')>-1?80:30),reason:cari?cari.reason:(type.indexOf('Moka')>-1?'Moka/United ifadesi bulundu':'Cari eşleşmesi düşük')};
+    var type=amount>=0?'Tahsilat Adayı':'Ödeme Adayı'; var special=false;
+    if(isCreditCardPayment(desc)){type='Kredi Kartı Borç Ödemesi / Hesap Aktarımı'; special=true}
+    else if(isTaxOrSgk(desc)){type='Vergi SGK Bağkur Ödemesi'; special=true}
+    else if(d.indexOf('eft masraf')>-1||d.indexOf('pos aidat')>-1||d.indexOf('banka masraf')>-1){type='Banka/POS Masrafı'; special=true}
+    else if(d.indexOf('moka')>-1||d.indexOf('united')>-1)type='Moka Banka Aktarım Adayı';
+    else if(d.indexOf('pos')>-1)type='POS/Moka Adayı';
+    var cari=special?null:suggestCari(desc);
+    return {type:type,cari:cari,confidence:cari?cari.confidence:(special?90:(type.indexOf('Moka')>-1?80:30)),reason:cari?cari.reason:(special?'Özel ödeme/aktarım kuralı; cari tahsilatı değildir':(type.indexOf('Moka')>-1?'Moka/United ifadesi bulundu':'Cari eşleşmesi düşük'))};
   }
   function importRows(rows,source){
     if(!Array.isArray(rows))return {ok:false,reason:'Satır listesi bekleniyor'};
@@ -39,7 +44,7 @@
   function processRow(row){
     if(row.onerilen_tip&&row.onerilen_tip.indexOf('Moka')>-1&&window.ALKAM_FINANS_FLOW_V6&&ALKAM_FINANS_FLOW_V6.mokaSettlement){return ALKAM_FINANS_FLOW_V6.mokaSettlement(Math.abs(row.tutar),row.aciklama)}
     if(row.tutar>0&&window.ALKAM_TAHSILAT_V7&&ALKAM_TAHSILAT_V7.collect){return ALKAM_TAHSILAT_V7.collect({tutar:row.tutar,hesap:'banka',tarih:row.tarih,kaynak:'Banka Onay',aciklama:row.aciklama,cari:row.onerilen_cari?{id:row.onerilen_cari.cari_id,unvan:row.onerilen_cari.cari_unvan}:null})}
-    if(window.ALKAM_FINANS_FLOW_V6&&ALKAM_FINANS_FLOW_V6.addMovement){return ALKAM_FINANS_FLOW_V6.addMovement({hesap:'banka',tip:row.tutar>=0?'Giriş':'Çıkış',tutar:Math.abs(row.tutar),tarih:row.tarih,kaynak:'Banka Onay',aciklama:row.aciklama})}
+    if(window.ALKAM_FINANS_FLOW_V6&&ALKAM_FINANS_FLOW_V6.addMovement){return ALKAM_FINANS_FLOW_V6.addMovement({hesap:'banka',tip:row.tutar>=0?'Giriş':'Çıkış',tutar:Math.abs(row.tutar),tarih:row.tarih,kaynak:row.onerilen_tip||'Banka Onay',aciklama:row.aciklama})}
     return {ok:false,reason:'İşleme çekirdeği hazır değil'};
   }
   function approve(id){
