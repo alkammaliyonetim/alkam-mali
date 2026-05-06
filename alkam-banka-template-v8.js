@@ -1,42 +1,12 @@
 (function(){
-  'use strict';
-  var VERSION='ALKAM Banka Template v8.6';
-  function q(s,r){return (r||document).querySelector(s)}
-  function downloadTemplate(){
-    var rows=[
-      ['Tarih','Açıklama','Tutar'],
-      ['2026-05-04','Müşteri tahsilatı açıklaması','15000'],
-      ['2026-05-04','Moka United banka aktarımı','7500']
-    ];
-    var csv=rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"'}).join(';')}).join('\n');
-    var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');
-    a.href=url;
-    a.download='alkam_banka_ice_aktarim_sablonu.csv';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){URL.revokeObjectURL(url)},500);
-    return {ok:true,version:VERSION,file:'alkam_banka_ice_aktarim_sablonu.csv'};
-  }
-  function addButtons(){
-    var importModal=q('#alkamBankImportModal');
-    if(importModal&&!q('#alkamBankTemplateBtn',importModal)){
-      var actions=q('.alkam-bank-import-actions',importModal);
-      if(actions){var b=document.createElement('button');b.id='alkamBankTemplateBtn';b.type='button';b.className='secondary';b.textContent='Şablon İndir';b.onclick=downloadTemplate;actions.insertBefore(b,actions.firstChild)}
-    }
-    var approvalModal=q('#alkamBankApprovalModal');
-    if(approvalModal&&!q('#alkamBankTemplateBtn2',approvalModal)){
-      var actions2=q('.alkam-bank-actions',approvalModal);
-      if(actions2){var b2=document.createElement('button');b2.id='alkamBankTemplateBtn2';b2.type='button';b2.className='secondary';b2.textContent='Şablon İndir';b2.onclick=downloadTemplate;actions2.appendChild(b2)}
-    }
-  }
-  function injectDrawer(){
-    var body=q('#alkamProfessionalDrawer .alkam-drawer-body');
-    if(!body||q('#alkamBankTemplateCard',body))return;
-    body.insertAdjacentHTML('beforeend','<div class="alkam-control-card" id="alkamBankTemplateCard"><b>Banka İçe Aktarım Şablonu</b><div class="line">Tarih; Açıklama; Tutar formatında güvenli CSV şablonu indir.</div><div class="alkam-drawer-actions"><button onclick="window.ALKAM_BANKA_TEMPLATE_V8&&ALKAM_BANKA_TEMPLATE_V8.download()">Şablon İndir</button></div></div>');
-  }
-  function run(){addButtons();injectDrawer()}
-  window.ALKAM_BANKA_TEMPLATE_V8={version:VERSION,download:downloadTemplate,run:run,test:function(){return {version:VERSION,importButton:!!q('#alkamBankTemplateBtn'),approvalButton:!!q('#alkamBankTemplateBtn2'),drawerCard:!!q('#alkamBankTemplateCard'),time:new Date().toISOString()}}};
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
-  setInterval(run,2000);
+'use strict';
+var VERSION='ALKAM Banka Template v8.7 stable';
+function q(s,r){return (r||document).querySelector(s)}
+function downloadTemplate(){var rows=[['Tarih','Açıklama','Tutar'],['2026-05-04','Müşteri tahsilatı açıklaması','15000'],['2026-05-04','Moka United banka aktarımı','7500']];var csv=rows.map(function(r){return r.map(function(x){return '"'+String(x).replace(/"/g,'""')+'"'}).join(';')}).join('\n');var blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});var url=URL.createObjectURL(blob);var a=document.createElement('a');a.href=url;a.download='alkam_banka_ice_aktarim_sablonu.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},500);return {ok:true,version:VERSION,file:'alkam_banka_ice_aktarim_sablonu.csv'}}
+function addButtons(){var importModal=q('#alkamBankImportModal');if(importModal&&!q('#alkamBankTemplateBtn',importModal)){var actions=q('.alkam-bank-import-actions',importModal);if(actions){var b=document.createElement('button');b.id='alkamBankTemplateBtn';b.type='button';b.className='secondary';b.textContent='Şablon İndir';b.onclick=downloadTemplate;actions.insertBefore(b,actions.firstChild)}}var approvalModal=q('#alkamBankApprovalModal');if(approvalModal&&!q('#alkamBankTemplateBtn2',approvalModal)){var actions2=q('.alkam-bank-actions',approvalModal);if(actions2){var b2=document.createElement('button');b2.id='alkamBankTemplateBtn2';b2.type='button';b2.className='secondary';b2.textContent='Şablon İndir';b2.onclick=downloadTemplate;actions2.appendChild(b2)}}}
+function injectDrawer(){var body=q('#alkamProfessionalDrawer .alkam-drawer-body');if(!body||q('#alkamBankTemplateCard',body))return;body.insertAdjacentHTML('beforeend','<div class="alkam-control-card" id="alkamBankTemplateCard"><b>Banka İçe Aktarım Şablonu</b><div class="line">Tarih; Açıklama; Tutar formatında güvenli CSV şablonu indir.</div><div class="alkam-drawer-actions"><button onclick="window.ALKAM_BANKA_TEMPLATE_V8&&ALKAM_BANKA_TEMPLATE_V8.download()">Şablon İndir</button></div></div>')}
+function run(){addButtons();injectDrawer();return {version:VERSION,importButton:!!q('#alkamBankTemplateBtn'),approvalButton:!!q('#alkamBankTemplateBtn2'),drawerCard:!!q('#alkamBankTemplateCard'),time:new Date().toISOString()}}
+window.ALKAM_BANKA_TEMPLATE_V8={version:VERSION,download:downloadTemplate,run:run,test:run};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
+document.addEventListener('click',function(){setTimeout(run,250)},true);
 })();
