@@ -46,6 +46,7 @@ export default {
     scripts += '<script src="/alkam-merkezi-veri-uyari-v1.js"></script>';
     scripts += '<script src="/alkam-yedekleme-gecis-v1.js"></script>';
     scripts += '<script src="/alkam-gece-final-kontrol-v1.js"></script>';
+    scripts += '<script src="/alkam-profesyonel-ana-ekran-v1.js"></script>';
     html = html.replace('</head>', hide + scripts + '</head>');
 
     const headers = new Headers(response.headers);
