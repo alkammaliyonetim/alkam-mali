@@ -1,0 +1,27 @@
+(function(){
+'use strict';
+var VERSION='ALKAM Cari Card FinalFix v2.0';
+function q(s,r){return (r||document).querySelector(s)}
+function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function read(k){try{var x=JSON.parse(localStorage.getItem(k)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}}
+function up(s){return String(s||'').toLocaleUpperCase('tr-TR').replace(/\s+/g,' ').trim()}
+function num(v){var s=String(v||0).replace(/\s/g,'').replace(/TL|₺/gi,'');if(s.indexOf(',')>-1)s=s.replace(/\./g,'').replace(',','.');var n=Number(s);return isFinite(n)?n:0}
+function tl(v){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(num(v)))+' TL'}
+function dateOf(x){return String(x.tarih||x.date||x.islem_tarihi||x.created_at||'').slice(0,10)||'-'}
+function nameOf(x){return up(x.cari||x.cari_adi||x.cari_unvan||x.unvan||x.mukellef||x.ad||x.name||'')}
+function rows(){return [].concat(read('alkam_cari_hareketleri'),read('alkam_tahakkuklar'),read('alkam_tahsilatlar'))}
+function isTahakkuk(x){var t=up([x.tip,x.type,x.islem,x.islem_turu,x.aciklama,x.description].join(' '));return t.indexOf('TAHAKKUK')>-1||num(x.borc)>0}
+function isTahsilat(x){var t=up([x.tip,x.type,x.islem,x.islem_turu,x.aciklama,x.description].join(' '));return t.indexOf('TAHSILAT')>-1||t.indexOf('TAHSİLAT')>-1||num(x.alacak)>0}
+function amount(x,kind){return kind==='tahakkuk'?num(x.tutar||x.borc||0):num(x.tutar||x.alacak||0)}
+function cleanName(s){return up(String(s||'').replace(/\s+Tür:.*/i,'').replace(/\s+Skor:.*/i,'').replace(/\s+Son tahakkuk:.*/i,'').replace(/\s+Son tahsilat:.*/i,''))}
+function cardName(card){var t=q('.list-title',card)||q('strong',card)||q('b',card)||q('h3',card);if(t)return cleanName(t.innerText);var txt=card.innerText||'';return cleanName(txt.split('\n')[0]||txt.slice(0,80))}
+function findRows(name){var n=cleanName(name);return rows().filter(function(x){var y=nameOf(x);return y&&(y===n||y.indexOf(n)>-1||n.indexOf(y)>-1)})}
+function last(name){var r=findRows(name);var th=r.filter(isTahakkuk).sort(function(a,b){return dateOf(b).localeCompare(dateOf(a))})[0];var ts=r.filter(isTahsilat).sort(function(a,b){return dateOf(b).localeCompare(dateOf(a))})[0];return{th:th,ts:ts}}
+function css(){if(q('#alkam-cari-card-finalfix-style'))return;var st=document.createElement('style');st.id='alkam-cari-card-finalfix-style';st.textContent='.alkam-card-final-meta{font-size:12px!important;line-height:1.45!important;color:#334155!important;font-weight:850!important;margin-top:6px!important}.alkam-card-final-meta .row{display:flex!important;justify-content:space-between!important;gap:8px!important;border-top:1px solid #e2e8f0!important;padding-top:5px!important;margin-top:5px!important}.alkam-card-final-meta b{color:#64748b!important;font-size:11px!important}.alkam-card-final-meta span{color:#0f172a!important;font-weight:950!important;text-align:right!important}.alkam-card-final-meta em{font-style:normal!important;color:#64748b!important;font-size:10.5px!important;display:block!important}.alkam-card-text-cleaned{font-size:0!important}.alkam-card-text-cleaned>*{font-size:initial!important}';document.head.appendChild(st)}
+function removeBadTextNodes(card){var walker=document.createTreeWalker(card,NodeFilter.SHOW_TEXT);var list=[];while(walker.nextNode())list.push(walker.currentNode);list.forEach(function(node){var t=node.nodeValue||'';if(/Son tahakkuk\s*:/i.test(t)||/Son tahsilat\s*:/i.test(t)){node.nodeValue=t.replace(/Son tahakkuk\s*:[^\n]*/ig,'').replace(/Son tahsilat\s*:[^\n]*/ig,'')}})}
+function fix(card){if(!card||card.dataset.alkamFinalFixed==='working')return;card.dataset.alkamFinalFixed='working';var name=cardName(card);if(!name){card.dataset.alkamFinalFixed='';return}removeBadTextNodes(card);var old=q('.alkam-card-final-meta',card);if(old)old.remove();var l=last(name);var box=document.createElement('div');box.className='alkam-card-final-meta';box.innerHTML='<div class="row"><b>Son tahakkuk</b><span>'+(l.th?tl(amount(l.th,'tahakkuk')):'-')+'<em>'+(l.th?dateOf(l.th):'-')+'</em></span></div><div class="row"><b>Son tahsilat</b><span>'+(l.ts?tl(amount(l.ts,'tahsilat')):'-')+'<em>'+(l.ts?dateOf(l.ts):'-')+'</em></span></div>';card.appendChild(box);card.dataset.alkamFinalFixed='done'}
+function run(){css();qa('#tab-cariler .list-item,#tab-cariler .cari-card,#tab-cariler [class*="list-item"]').forEach(fix);window.__ALKAM_CARI_CARD_FINALFIX_LAST={version:VERSION,time:new Date().toISOString()};return window.__ALKAM_CARI_CARD_FINALFIX_LAST}
+function boot(){run();setTimeout(run,300);setTimeout(run,1000);setTimeout(run,2200);document.addEventListener('click',function(){qa('#tab-cariler .list-item,#tab-cariler .cari-card,#tab-cariler [class*="list-item"]').forEach(function(c){c.dataset.alkamFinalFixed=''});setTimeout(run,250)},true);document.addEventListener('input',function(){qa('#tab-cariler .list-item,#tab-cariler .cari-card,#tab-cariler [class*="list-item"]').forEach(function(c){c.dataset.alkamFinalFixed=''});setTimeout(run,300)},true)}
+window.ALKAM_CARI_CARD_FINALFIX_V2={version:VERSION,run:run,test:run,last:last};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
