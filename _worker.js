@@ -5,7 +5,7 @@ export default {
     if (!contentType.includes('text/html')) return response;
 
     let html = await response.text();
-    const hide = '<style id="alkam-hide-islem-izi-panel">#alkamBusinessAuditPanel,#alkamAuditTrailDashboardCard,.alkam-business-audit-panel,.business-audit-panel,.audit-trail-dashboard-card{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}</style>';
+    const hide = '<style id="alkam-hide-islem-izi-panel">#alkamBusinessAuditPanel,#alkamAuditTrailDashboardCard,.alkam-business-audit-panel,.business-audit-panel,.audit-trail-dashboard-card,#alkamReadyDash{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;}</style>';
     const files = [
       'alkam-reliability-guard-v1.js','alkam-cari-core-v4.js','alkam-last-amounts-v4g.js','alkam-data-quality-v1.js',
       'alkam-tahakkuk-v5.js','alkam-tahakkuk-control-v5c.js','alkam-balance-highlight-v1.js','alkam-professional-ui-v1.js',
