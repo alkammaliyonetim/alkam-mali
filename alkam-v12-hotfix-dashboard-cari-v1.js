@@ -1,0 +1,22 @@
+(function(){
+'use strict';
+var VERSION='ALKAM v12.04.060526-1204 hotfix';
+function q(s,r){return (r||document).querySelector(s)}
+function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function text(el){return (el&&el.textContent||'').replace(/\s+/g,' ').trim()}
+function read(k){try{var v=JSON.parse(localStorage.getItem(k)||'[]');return Array.isArray(v)?v:[]}catch(e){return[]}}
+function n(v){var s=String(v||0).replace(/\s/g,'').replace(/TL|₺/gi,'');if(s.indexOf(',')>-1)s=s.replace(/\./g,'').replace(',','.');var x=Number(s);return isFinite(x)?x:0}
+function tl(v){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(n(v)))+' TL'}
+function d(x){return String(x.tarih||x.date||x.islem_tarihi||x.created_at||x.createdAt||'')}
+function cn(x){return String(x.cari||x.cari_adi||x.unvan||x.mukellef||x.name||x.ad||'').trim()}
+function amount(x,k){return k==='tahsilat'?n(x.alacak||x.tutar||0):n(x.borc||x.tutar||0)}
+function latest(name,k){var rows=[].concat(read('alkam_cari_hareketleri'),read('alkam_tahakkuklar'),read('alkam_tahsilatlar'));var key=String(name||'').toLocaleLowerCase('tr-TR').trim();rows=rows.filter(function(x){var nm=cn(x).toLocaleLowerCase('tr-TR').trim();if(nm!==key)return false;var tip=String(x.tip||x.tur||x.type||x.islem_tipi||x.hareket_tipi||'').toLocaleLowerCase('tr-TR');return k==='tahsilat'?(amount(x,k)>0||/tahsil|odeme|ödeme|alacak/.test(tip)):(amount(x,k)>0||/tahakkuk|borc|borç|fatura/.test(tip))});rows.sort(function(a,b){return d(b).localeCompare(d(a))});return rows[0]||null}
+function css(){if(q('#alkam-hotfix-v12-style'))return;var st=document.createElement('style');st.id='alkam-hotfix-v12-style';st.textContent='.alkam-cari-last-info{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;width:100%}.alkam-cari-last-info div{border:1px solid #dbeafe;background:#f8fbff;border-radius:8px;padding:6px}.alkam-cari-last-info b{display:block;font-size:9px;color:#64748b;text-transform:uppercase;font-weight:900;margin-bottom:3px}.alkam-cari-last-info span{display:block;font-size:10px;color:#0f172a;font-weight:900;line-height:1.25}[data-alkam-hide="1"]{display:none!important}';document.head.appendChild(st)}
+function dedupe(){var heads=qa('h1,h2,h3,.section-title,.alkam-v2-top h2').filter(function(el){return /ALKAM Mali Kontrol Kulesi/i.test(text(el))});var seen=false;heads.forEach(function(h){var box=h.closest('#alkamDashboardV2,.alkam-dashboard-v2,.section,section,div')||h;if(!seen){seen=true;return}box.setAttribute('data-alkam-hide','1')})}
+function warning(){var ok=!!(window.supabase||window.ALKAM_SUPABASE_SYNC_V1||window.ALKAM_SUPABASE_READONLY_V10||window.ALKAM_SUPABASE_BAGLANTI_TEST_V10);qa('div,section,p,span').forEach(function(el){var t=text(el);if(!/merkezi veri tabanına bağlı görünmüyor/i.test(t)&&!/merkezi veri tabanina bagli gorunmuyor/i.test(t))return;var box=el.closest('.section,div')||el;if(ok){box.setAttribute('data-alkam-hide','1')}else{el.innerHTML='<b>DİKKAT: Merkezi veri bağlantısı bekliyor.</b><br><small>Bu cihaz şu an yerel veriyle çalışıyor. Bağlantı kurulunca uyarı kalkacak.</small>'}})}
+function cards(){qa('#cariList .list-item,.cari-list-scroll .list-item').forEach(function(card){var title=q('.list-title',card);if(!title)return;var name=text(title);var a=latest(name,'tahakkuk'),b=latest(name,'tahsilat');var slot=q('.alkam-cari-last-info',card);if(!slot){slot=document.createElement('div');slot.className='alkam-cari-last-info';card.appendChild(slot)}function line(label,row,k){return row?'<div><b>'+label+'</b><span>'+(d(row)||'Tarih yok')+' · '+tl(amount(row,k))+'</span></div>':'<div><b>'+label+'</b><span>Yok</span></div>'}slot.innerHTML=line('Son tahakkuk',a,'tahakkuk')+line('Son tahsilat',b,'tahsilat')})}
+function labels(){qa('body *').forEach(function(el){if(el.children&&el.children.length)return;var t=text(el);if(t==='2026 Temiz Başlangıç Merkezi')el.textContent='Açılış Bakiyesi / Standart Veri Kontrolü';if(t==='Geçiş & Güvenlik')el.textContent='Veri Kontrolü & Güvenlik'})}
+function run(){css();dedupe();warning();cards();labels();window.__ALKAM_HOTFIX_V12_LAST={version:VERSION,time:new Date().toISOString()}}
+window.ALKAM_V12_HOTFIX_DASHBOARD_CARI={version:VERSION,run:run,test:function(){run();return window.__ALKAM_HOTFIX_V12_LAST}};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();setTimeout(run,500);setTimeout(run,1500);setInterval(run,5000);
+})();
