@@ -1,0 +1,39 @@
+(function(){
+'use strict';
+var VERSION='ALKAM Profesyonel Ana Ekran v1.0';
+function q(s,r){return (r||document).querySelector(s)}
+function qa(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function read(k){try{var x=JSON.parse(localStorage.getItem(k)||'[]');return Array.isArray(x)?x:[]}catch(e){return[]}}
+function n(v){var s=String(v||0).replace(/\s/g,'').replace(/TL|₺/gi,'');if(s.indexOf(',')>-1)s=s.replace(/\./g,'').replace(',','.');var x=Number(s);return isFinite(x)?x:0}
+function tl(v){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(n(v)))+' TL'}
+function sum(key){return read(key).reduce(function(t,x){return t+n(x.tutar||x.borc||x.alacak)},0)}
+function css(){if(q('#alkam-prof-home-style'))return;var st=document.createElement('style');st.id='alkam-prof-home-style';st.textContent=[
+':root{--alkam-blue:#1d55d6;--alkam-navy:#061b3d;--alkam-bg:#f5f7fb;--alkam-line:#e2e8f0;--alkam-text:#0f172a;--alkam-muted:#64748b;--alkam-radius:16px}',
+'body{background:var(--alkam-bg)!important;color:var(--alkam-text)!important}',
+'.sidebar{background:#f1f5f9!important;color:#0f172a!important;border-right:1px solid #dbe4f0!important;box-shadow:none!important}',
+'.sidebar .brand,.brand{background:transparent!important;color:#0f172a!important}',
+'.brand-title{color:#0f172a!important;font-weight:950!important}.brand-sub{color:#64748b!important}',
+'.nav-btn,.sidebar button,.sidebar a{background:transparent!important;color:#172033!important;border:0!important;box-shadow:none!important;justify-content:flex-start!important}',
+'.nav-btn.active,.sidebar .active,.sidebar button.active,.sidebar a.active{background:#e8eef9!important;color:#174fc7!important;font-weight:950!important}',
+'.topbar,.app-topbar{background:#0b234a!important;color:#fff!important;min-height:54px!important;border-bottom:0!important;box-shadow:0 3px 12px rgba(15,23,42,.10)!important}',
+'.main{background:var(--alkam-bg)!important;padding:22px 28px!important;max-width:none!important}',
+'.section,.card,.metric-mini,.rule-box{background:#fff!important;border:1px solid var(--alkam-line)!important;border-radius:var(--alkam-radius)!important;box-shadow:0 8px 22px rgba(15,23,42,.055)!important}',
+'.page-head,.alkam-page-titlebar{background:transparent!important;border:0!important;box-shadow:none!important;margin-bottom:14px!important}',
+'.page-head h1,.section-title{font-size:24px!important;line-height:1.2!important;color:#0f172a!important}',
+'.alkam-prof-dashboard{background:#fff;border:1px solid var(--alkam-line);border-radius:18px;padding:18px;margin:0 0 16px;box-shadow:0 8px 22px rgba(15,23,42,.055)}',
+'.alkam-prof-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px}.alkam-prof-head h2{margin:0;font-size:22px;color:#0f172a}.alkam-prof-head p{margin:4px 0 0;color:#64748b;font-weight:800;font-size:13px}',
+'.alkam-prof-tabs{display:flex;gap:8px;flex-wrap:wrap}.alkam-prof-tabs span{background:#eef4ff;color:#1d55d6;border-radius:10px;padding:10px 14px;font-weight:950;font-size:13px}',
+'.alkam-prof-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.alkam-prof-card{background:#fff;border:1px solid #e2e8f0;border-radius:15px;padding:18px;min-height:112px;box-shadow:0 8px 18px rgba(15,23,42,.05)}.alkam-prof-card b{display:block;color:#536176;font-size:13px;line-height:1.35;font-weight:850}.alkam-prof-card strong{display:block;margin-top:18px;font-size:28px;line-height:1;color:#0f172a}.alkam-prof-card small{display:block;margin-top:8px;color:#64748b;font-weight:850}',
+'.alkam-prof-card.blue strong{color:#1769e8}.alkam-prof-card.red strong{color:#ef4444}.alkam-prof-card.green strong{color:#059669}',
+'.alkam-prof-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}.alkam-prof-panel{background:#fff;border:1px solid #e2e8f0;border-radius:15px;padding:18px}.alkam-prof-panel h3{margin:0 0 14px;font-size:17px}.alkam-prof-line{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #edf2f7;padding:11px 0;font-weight:850}.alkam-prof-line:last-child{border-bottom:0}',
+'.btn,button{border-radius:10px!important}.btn-blue,.primary{background:#1769e8!important;color:#fff!important}',
+'@media(max-width:1100px){.alkam-prof-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.alkam-prof-row{grid-template-columns:1fr}.main{padding:16px!important}}',
+'@media(max-width:760px){.alkam-prof-grid{grid-template-columns:1fr}.alkam-prof-head{display:block}.alkam-prof-tabs{margin-top:10px}.alkam-prof-card{min-height:96px}.alkam-prof-card strong{font-size:26px}.main{padding:12px!important}.sidebar{display:none!important}}'
+].join('\n');document.head.appendChild(st)}
+function injectDashboard(){var root=q('#tab-dashboard')||q('.main');if(!root||q('#alkamProfDashboard'))return;var cari=read('alkam_cariler').length,har=read('alkam_cari_hareketleri').length,tah=read('alkam_tahakkuklar'),tahs=read('alkam_tahsilatlar'),gider=read('alkam_giderler'),onay=read('alkam_onay_bekleyen_banka').length+read('alkam_gider_onay_bekleyen').length+read('alkam_kasa_onay_bekleyen').length;var div=document.createElement('div');div.id='alkamProfDashboard';div.className='alkam-prof-dashboard';div.innerHTML='<div class="alkam-prof-head"><div><h2>ALKAM Mali Operasyon Paneli</h2><p>Cari, tahakkuk, tahsilat, banka/kasa onay ve giderlerin merkezi yönetim özeti.</p></div><div class="alkam-prof-tabs"><span>Ön Muhasebe</span><span>Finans</span><span>Geçiş Kontrol</span></div></div><div class="alkam-prof-grid"><div class="alkam-prof-card blue"><b>Cari Sayısı</b><strong>'+cari+'</strong><small>Aktif kart / geçiş verisi</small></div><div class="alkam-prof-card blue"><b>Cari Hareket</b><strong>'+har+'</strong><small>Ana defter satırı</small></div><div class="alkam-prof-card green"><b>Tahsilat</b><strong>'+tl(tahs.reduce(function(t,x){return t+n(x.tutar||x.alacak)},0))+'</strong><small>'+tahs.length+' kayıt</small></div><div class="alkam-prof-card red"><b>Onay Bekleyen</b><strong>'+onay+'</strong><small>Banka / kasa / gider</small></div></div><div class="alkam-prof-row"><div class="alkam-prof-panel"><h3>Gelir Akışı</h3><div class="alkam-prof-line"><span>Tahakkuk</span><b>'+tl(tah.reduce(function(t,x){return t+n(x.tutar||x.borc)},0))+'</b></div><div class="alkam-prof-line"><span>Tahsilat</span><b>'+tl(tahs.reduce(function(t,x){return t+n(x.tutar||x.alacak)},0))+'</b></div><div class="alkam-prof-line"><span>Banka Onay</span><b>'+read('alkam_onay_bekleyen_banka').length+'</b></div></div><div class="alkam-prof-panel"><h3>Gider & Özel İşlemler</h3><div class="alkam-prof-line"><span>Giderler</span><b>'+tl(gider.reduce(function(t,x){return t+n(x.tutar)},0))+'</b></div><div class="alkam-prof-line"><span>Gider Onay</span><b>'+read('alkam_gider_onay_bekleyen').length+'</b></div><div class="alkam-prof-line"><span>HALKBANK Sorulacak</span><b>'+read('alkam_halkbank_gecis_sorulacak').length+'</b></div></div></div>';root.insertBefore(div,root.firstChild)}
+function cleanup(){qa('.alkam-prof-dashboard').slice(1).forEach(function(x){x.remove()})}
+function run(){css();injectDashboard();cleanup();window.__ALKAM_PROF_HOME_LAST={version:VERSION,time:new Date().toISOString()};return window.__ALKAM_PROF_HOME_LAST}
+function boot(){run();setTimeout(run,1000);document.addEventListener('click',function(){setTimeout(run,250)},true);document.addEventListener('input',function(){setTimeout(function(){var x=q('#alkamProfDashboard');if(x)x.remove();run()},350)},true)}
+window.ALKAM_PROFESYONEL_ANA_EKRAN_V1={version:VERSION,run:run,test:run};
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
+})();
