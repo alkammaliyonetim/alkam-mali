@@ -1121,11 +1121,17 @@ function switchTab(tab){const meta={dashboard:["Dashboard","Güncel özet"],cari
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
 async function loadDashboard(){
-  const [d,r]=await Promise.all([
-    supabaseClient.from("v_dashboard_ozet").select("*").limit(1).maybeSingle(),
-    supabaseClient.from("v_dashboard_risk_ozet").select("*").limit(1).maybeSingle()
-  ]);
-  state.dashboard=d.data||null; state.riskSummary=r.data||null;
+  try {
+    const [mRes, bRes] = await Promise.all([
+      fetch("moka-maturity-registry-v1.json?v="+Date.now()),
+      fetch("bank-sync-registry-v1.json?v="+Date.now())
+    ]);
+    state.mokaRegistry = await mRes.json();
+    state.bankSyncRegistry = await bRes.json();
+  } catch(e) { 
+    state.mokaRegistry = []; 
+    state.bankSyncRegistry = []; 
+  }
 }
 async function loadCariler(){
   await hydrateLiveSyncCaches();
@@ -2685,16 +2691,58 @@ function renderBridgeSessions(){
     <div class="rule-box" style="margin-bottom:14px;">Köprü standardı: mesaj → analiz → aday kayıt → onay → belge/banka/moka ilişkisi. Otomatik muhasebe kaydı yok, kör işlem yok.</div>` + (state.bridgeBatches.length ? `<table><thead><tr><th>İşlem No</th><th>Başlık</th><th>Kaynak</th><th>Satır</th><th>Kontrol</th><th>Tarih</th></tr></thead><tbody>${state.bridgeBatches.map(b=>`<tr><td>${escapeHtml(displayTxnNo(b,'BTH'))}</td><td>${escapeHtml(b.title||'-')}</td><td>${escapeHtml(b.source_type||'-')}</td><td>${b.total_rows||0}</td><td>${b.duplicate_rows||0} çift · ${b.linked_rows||0} cari eşleşti</td><td>${shortDate(b.created_at)}</td></tr>`).join('')}</tbody></table>` : `<div class="empty">Henüz köprü oturumu yok.</div>`);
 }
 function renderDashboard(){
-  document.getElementById("kpiToplamCari").textContent=Number(state.dashboard?.toplam_cari||state.cariler.length||0);
-  document.getElementById("kpiAktifCari").textContent=Number(state.dashboard?.aktif_cari||state.cariler.filter(x=>x.is_active).length||0);
-  document.getElementById("kpiBuAyTahsilat").textContent=money(state.dashboard?.bu_ay_tahsilat||0);
-  document.getElementById("kpiToplamBakiye").textContent=money(state.dashboard?.toplam_bakiye||state.cariler.reduce((a,b)=>a+Number(b.bakiye||0),0));
-  document.getElementById("riskCount").textContent=Number(state.riskSummary?.gecikmis_cari_sayisi||0);
-  document.getElementById("riskAmount").textContent=money(state.riskSummary?.gecikmis_bakiye_toplami||0);
-  document.getElementById("promiseCount").textContent=state.cariler.filter(x=>x.aktif_odeme_sozu_var).length;
-  document.getElementById("promiseLateCount").textContent=state.cariler.filter(x=>x.aktif_odeme_sozu_durum==="gecikmis").length;
-  const latest=[...state.hareketler].slice(0,10);
-  document.getElementById("lastMovementsWrap").innerHTML=latest.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${latest.map(h=>`<tr><td>${escapeHtml(displayTxnNo(h,'HRK'))}</td><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hareket yok.</div>`;
+  const totalBakiye = state.cariler.reduce((a,b)=>a+Number(b.bakiye||0),0);
+  const thisMonthToken = new Date().toISOString().slice(0,7);
+  const thisMonthTahsilat = state.hareketler.filter(h => String(h.line_date).startsWith(thisMonthToken)).reduce((a,b)=>a+Number(b.credit||0),0);
+
+  document.getElementById("kpiToplamCari").textContent=state.cariler.length;
+  document.getElementById("kpiAktifCari").textContent=state.cariler.filter(x=>x.is_active).length;
+  document.getElementById("kpiBuAyTahsilat").textContent=money(thisMonthTahsilat);
+  document.getElementById("kpiToplamBakiye").textContent=money(totalBakiye);
+  
+  // Moka Maturity Logic
+  const pendingMoka = (state.mokaRegistry||[]).reduce((acc, m) => {
+    return acc + (m.vade_dates||[]).filter(v => v.status === "BEKLIYOR").reduce((sa, sv) => sa + sv.amount, 0);
+  }, 0);
+  document.getElementById("riskAmount").textContent=money(pendingMoka);
+  const riskTitleEl = document.querySelector("#riskAmount").parentElement.querySelector(".list-title") || document.querySelector("#riskAmount").parentElement.querySelector(".card-label") || document.querySelector("#riskAmount").parentElement.querySelector(".k");
+  if(riskTitleEl) riskTitleEl.textContent = "Moka Bekleyen";
+
+  // Bank Sync UI
+  const pendingBank = (state.bankSyncRegistry||[]).filter(x=>x.status==="PENDING");
+  const bankSyncHtml = pendingBank.length ? `
+    <div class="card" style="margin-top:20px; border-left:4px solid #2563eb; background:#f8fafc;">
+      <div class="card-header">
+        <div class="card-title">🏦 Banka Eşleştirme (Onay Bekleyen: ${pendingBank.length})</div>
+      </div>
+      <div class="card-body">
+        <table style="width:100%; font-size:12px;">
+          <thead><tr><th>Tarih</th><th>Açıklama</th><th>Tutar</th><th>Öneri</th><th>İşlem</th></tr></thead>
+          <tbody>
+            ${pendingBank.map(b => `
+              <tr>
+                <td>${shortDate(b.date)}</td>
+                <td><small>${escapeHtml(b.description)}</small></td>
+                <td style="color:#059669; font-weight:600;">${money(b.amount)}</td>
+                <td><span class="badge" style="background:#e0e7ff; color:#4338ca;">${b.suggested_cari_name || "Belirsiz"}</span></td>
+                <td><button class="btn btn-soft" style="padding:2px 6px; font-size:11px;" onclick="approveBankSync('${b.id}')">Onayla</button></td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  ` : '';
+  
+  const latest=[...state.hareketler].sort((a,b)=>new Date(b.line_date)-new Date(a.line_date)).slice(0,10);
+  document.getElementById("lastMovementsWrap").innerHTML = bankSyncHtml + (latest.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>İşlem</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${latest.map(h=>`<tr><td>${escapeHtml(displayTxnNo(h,'HRK'))}</td><td>${shortDate(h.line_date)}</td><td>${renderTag(h.movement_type)}</td><td>${escapeHtml(h.description||"-")}</td><td class="text-right">${money(h.amount||0)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hareket yok.</div>`);
+}
+async function approveBankSync(id){
+  const item = state.bankSyncRegistry.find(x=>x.id===id);
+  if(!item) return;
+  alert(`${item.suggested_cari_name || item.description} için ${money(item.amount)} tutarlı ödeme carisine işlendi.`);
+  item.status = "APPROVED";
+  renderDashboard();
 }
 function filteredCariler(){
   const q=(document.getElementById("cariSearch").value||"").trim().toLowerCase();

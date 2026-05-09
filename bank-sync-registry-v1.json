@@ -1,0 +1,46 @@
+[
+  {
+    "id": "bank_hrk_001",
+    "date": "2026-01-06",
+    "description": "İNEGÖL ADA KOLTUK - ÇEK (9148284)",
+    "amount": 70000.0,
+    "type": "Credit",
+    "suggested_cari_id": null,
+    "suggested_cari_name": "İNEGÖL ADA KOLTUK",
+    "status": "PENDING",
+    "source": "HALKBANK (1).pdf"
+  },
+  {
+    "id": "bank_hrk_002",
+    "date": "2026-04-15",
+    "description": "15.000 TL TEK İSMAİL SAKARYA",
+    "amount": 15000.0,
+    "type": "Credit",
+    "suggested_cari_id": "ismail_sakarya",
+    "suggested_cari_name": "İSMAİL SAKARYA",
+    "status": "PENDING",
+    "source": "15.000 TL TEK İSMAİL SAKARYA.pdf"
+  },
+  {
+    "id": "bank_hrk_003",
+    "date": "2026-04-20",
+    "description": "20.000 MSTYLEE",
+    "amount": 20000.0,
+    "type": "Credit",
+    "suggested_cari_id": "mstyle_ic_dis_ticaret",
+    "suggested_cari_name": "MSTYLE İÇ VE DIŞ TİCARET",
+    "status": "PENDING",
+    "source": "20.000 MSTYLEE.pdf"
+  },
+  {
+    "id": "bank_hrk_004",
+    "date": "2026-04-22",
+    "description": "30.000 MSTYLE",
+    "amount": 30000.0,
+    "type": "Credit",
+    "suggested_cari_id": "mstyle_ic_dis_ticaret",
+    "suggested_cari_name": "MSTYLE İÇ VE DIŞ TİCARET",
+    "status": "PENDING",
+    "source": "30.000 MSTYLE.pdf"
+  }
+]
