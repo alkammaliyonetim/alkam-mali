@@ -3908,91 +3908,27 @@ function processBankRowFast(bucket,key){
   notify('Tek tık işlendi ve eşleşme öğrenildi.');
 }
 function renderAccounts(){
-  const combinedAccounts=getCombinedAccounts();
-  const manualRows=[...getLocalAccountOps()].sort((a,b)=>new Date(b.entry_date||b.created_at||0)-new Date(a.entry_date||a.created_at||0));
-  const bankRows = state.bankPanel.filter(r=>rowMatchesBankFilter(r,'bank'));
-  const mokaRows = state.mokaPanel.filter(r=>rowMatchesBankFilter(r,'moka'));
-  const bankStats = {
-    total: state.bankPanel.length,
-    processable: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='processable').length,
-    needs_approval: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='needs_approval').length,
-    queued: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='queued').length,
-    processed: state.bankPanel.filter(r=>bankStatusCode(r,'bank')==='processed').length,
-    ignored: state.bankPanel.filter(r=>['ignored','rejected'].includes(bankStatusCode(r,'bank'))).length,
-  };
-  const mokaStats = {
-    total: state.mokaPanel.length,
-    tahsilat: state.mokaPanel.filter(r=>mokaRowClass(r)==='moka_tahsilat').length,
-    aktarim: state.mokaPanel.filter(r=>mokaRowClass(r)==='banka_aktarim').length,
-    queued: state.mokaPanel.filter(r=>bankStatusCode(r,'moka')==='queued').length,
-    processed: state.mokaPanel.filter(r=>bankStatusCode(r,'moka')==='processed').length,
-    ignored: state.mokaPanel.filter(r=>['ignored','rejected'].includes(bankStatusCode(r,'moka'))).length,
-  };
-  document.getElementById("accountSummaryWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
-    <div class="metric-mini"><div class="k">Toplam Hesap</div><div class="v">${combinedAccounts.length}</div></div>
-    <div class="metric-mini"><div class="k">Yerel Hesap İşlemi</div><div class="v">${manualRows.length}</div></div>
-    <div class="metric-mini"><div class="k">Banka Onay Kuyruğu</div><div class="v">${bankStats.queued}</div></div>
-    <div class="metric-mini"><div class="k">Net Toplam</div><div class="v">${money(combinedAccounts.reduce((a,b)=>a+num(b.net_bakiye),0))}</div></div>
-  </div>
-  <div class="account-actions">
-    <button class="btn btn-blue" onclick="openManualFinanceModal('create')">Yeni Hesap Tanımla</button>
-    <button class="btn btn-soft" onclick="openManualFinanceModal('entry')">Hesaba İşlem Gir</button>
-    <button class="btn btn-soft" onclick="openManualFinanceModal('transfer')">Hesaplar Arası Transfer</button>
-  </div>
-  <div class="rule-box" style="margin-bottom:14px;">
-    Standart sıra: <strong>banka satırı incele</strong> → hedefi doğrula → <strong>emin değilsen Onay Merkezi</strong> → Moka kaynaklıysa <strong>önce Moka United</strong> → bankaya aktarım geldiğinde <strong>mahsup</strong>.
-  </div>
-  <div class="grid-2" style="align-items:start;">
-    <div>
-      <h3 class="subsection-title">Hesap Kartları</h3>
-      ${combinedAccounts.length?`<table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th><th>Son Hareket</th></tr></thead><tbody>${combinedAccounts.map(a=>`<tr class="click-row row-clickable" data-account-key="${escapeHtml(a.account_key)}"><td>${escapeHtml(a.account_name)}</td><td>${renderTag(a.account_type)}</td><td class="text-right">${money(a.net_bakiye||0)}</td><td>${shortDate(a.son_hareket_tarihi)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap özeti yok.</div>`}
-    </div>
-    <div>
-      <h3 class="subsection-title">Son Manuel İşlemler</h3>
-      ${manualRows.length?`<table><thead><tr><th>No</th><th>Tarih</th><th>İşlem</th><th>Hedef</th><th class="text-right">Tutar</th></tr></thead><tbody>${manualRows.slice(0,12).map(op=>{ const label = op.type==='account_transfer' ? 'Transfer' : (op.type==='account_create' ? 'Hesap Tanımı' : (op.type==='cari_collection' ? 'Cari Tahsilat' : 'Hesap İşlemi')); const target = op.type==='account_transfer' ? `${escapeHtml(op.source_account_name || '-') } → ${escapeHtml(op.target_account_name || '-')}` : escapeHtml(op.account_name || '-'); const signed = op.type==='account_transfer' ? money(op.amount||0) : money((String(op.direction||'giris')==='cikis' ? -num(op.amount) : num(op.amount))); return `<tr class="click-row row-clickable" data-manual-op-id="${escapeHtml(op.id)}"><td>${escapeHtml(displayTxnNo(op,'LAC'))}</td><td>${shortDate(op.entry_date || op.created_at)}</td><td>${label}</td><td>${target}<div class="muted-note">${escapeHtml(op.description || op.note || '-')}</div></td><td class="text-right">${signed}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Henüz manuel hesap işlemi yok.</div>`}
-    </div>
-  </div>`;
-
-  document.getElementById("bankPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
-      <div class="metric-mini"><div class="k">Toplam Satır</div><div class="v">${bankStats.total}</div></div>
-      <div class="metric-mini"><div class="k">İşlenebilir</div><div class="v">${bankStats.processable}</div></div>
-      <div class="metric-mini"><div class="k">Onaya Düşmeli</div><div class="v">${bankStats.needs_approval}</div></div>
-      <div class="metric-mini"><div class="k">Kuyruk / İşlenen</div><div class="v">${bankStats.queued} / ${bankStats.processed}</div></div>
-    </div>
-    <div class="filter-chips" id="bankFilterChips">
-      <button class="chip ${state.bankFilter==='all'?'active':''}" data-bfilter="all">Tümü</button>
-      <button class="chip ${state.bankFilter==='processable'?'active':''}" data-bfilter="processable">İşlenebilir</button>
-      <button class="chip ${state.bankFilter==='needs_approval'?'active':''}" data-bfilter="needs_approval">Onaya Düşmeli</button>
-      <button class="chip ${state.bankFilter==='queued'?'active':''}" data-bfilter="queued">Onay Kuyruğu</button>
-      <button class="chip ${state.bankFilter==='processed'?'active':''}" data-bfilter="processed">İşlenen</button>
-      <button class="chip ${state.bankFilter==='ignored'?'active':''}" data-bfilter="ignored">İşlenmeyen</button>
-    </div>
-    <div class="btn-row" style="margin-bottom:12px;">
-      <button class="btn btn-soft" onclick="openBankRuleModal()">Kural Tanımla</button>
-      <span class="tag gray">Öğrenilmiş eşleşme: ${getBankLearnRows().length}</span>
-    </div>
-    <div class="rule-box" style="margin-bottom:14px;">Satıra tıkla, hedefi doğrula ve karar ver. Kör otomasyon yok. Yanlış cariye yanlış hareket gitmez. Kural tanımlarsan açıklamaya göre otomatik hedef önerir.</div>` + (bankRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Önerilen Hedef</th><th>Güven</th><th>Durum</th><th>Hızlı İşlem</th><th class="text-right">Tutar</th></tr></thead><tbody>${bankRows.map(r=>{ const suggestion = bankSuggestedTarget(r); const conf = bankRowConfidence(r); const fastBtn = bankStatusCode(r,'bank')==='processable' ? `<button class="btn btn-blue" style="padding:6px 10px;font-size:12px;" onclick="event.stopPropagation();processBankRowFast('bank','${escapeHtml(bankRowKey(r,'bank'))}')">Hemen İşle</button>` : `<span class="tag gray">Detay</span>`;
-    return `<tr class="click-row" data-bank-bucket="bank" data-bank-key="${escapeHtml(bankRowKey(r,'bank'))}"><td>${escapeHtml(displayTxnNo(r,'BNK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(bankDescriptionText(r)||"-")}<div class="muted-note">${escapeHtml(bankStatusNote(r,'bank'))}</div></td><td>${escapeHtml(suggestion)} ${renderTag(r.suggested_financial_account_type||"-")}</td><td>${conf ? conf.toFixed(0) : '-'}</td><td>${bankStatusBadge(r,'bank')}</td><td>${fastBtn}</td><td class="text-right">${money(num(r.net_amount ?? r.amount ?? r.raw_amount ?? r.final_amount ?? 0))}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede banka satırı yok.</div>`);
-
-  document.getElementById("mokaPanelWrap").innerHTML=`<div class="grid-4" style="margin-bottom:14px">
-      <div class="metric-mini"><div class="k">Toplam Moka Satırı</div><div class="v">${mokaStats.total}</div></div>
-      <div class="metric-mini"><div class="k">Moka Tahsilat</div><div class="v">${mokaStats.tahsilat}</div></div>
-      <div class="metric-mini"><div class="k">Banka Aktarım</div><div class="v">${mokaStats.aktarim}</div></div>
-      <div class="metric-mini"><div class="k">Kuyruk / İşlenen</div><div class="v">${mokaStats.queued} / ${mokaStats.processed}</div></div>
-    </div>
-    <div class="filter-chips" id="mokaFilterChips">
-      <button class="chip ${state.mokaFilter==='all'?'active':''}" data-mfilter="all">Tümü</button>
-      <button class="chip ${state.mokaFilter==='moka_tahsilat'?'active':''}" data-mfilter="moka_tahsilat">Moka Tahsilat</button>
-      <button class="chip ${state.mokaFilter==='banka_aktarim'?'active':''}" data-mfilter="banka_aktarim">Banka Aktarım</button>
-      <button class="chip ${state.mokaFilter==='queued'?'active':''}" data-mfilter="queued">Onay Kuyruğu</button>
-      <button class="chip ${state.mokaFilter==='processed'?'active':''}" data-mfilter="processed">İşlenen</button>
-      <button class="chip ${state.mokaFilter==='ignored'?'active':''}" data-mfilter="ignored">İşlenmeyen</button>
-    </div>
-    <div class="rule-box" style="margin-bottom:14px;">
-      Moka kredi kartı tahsilatı <strong>doğrudan bankaya gelir yazılmaz</strong>. İlk kayıt <strong>Moka United</strong> içinde tutulur. Vadesi gelince bankaya aktarılan tutar ayrıca işlenir ve <strong>Moka United → Banka</strong> mahsup mantığıyla kapatılır.
-    </div>` + (mokaRows.length?`<table><thead><tr><th>İşlem No</th><th>Tarih</th><th>Açıklama</th><th>Sınıf</th><th>Durum</th><th class="text-right">Tutar</th></tr></thead><tbody>${mokaRows.map(r=>{ const cls = mokaRowClass(r); const tag = cls==='moka_tahsilat' ? '<span class="tag blue">Moka Tahsilat</span>' : (cls==='banka_aktarim' ? '<span class="tag green">Banka Aktarım</span>' : '<span class="tag amber">Belirsiz</span>'); return `<tr class="click-row" data-bank-bucket="moka" data-bank-key="${escapeHtml(bankRowKey(r,'moka'))}"><td>${escapeHtml(displayTxnNo(r,'MOK'))}</td><td>${shortDate(r.movement_date)}</td><td>${escapeHtml(bankDescriptionText(r)||"-")}<div class="muted-note">${escapeHtml(mokaRecommendedAction(r))}</div></td><td>${tag}</td><td>${bankStatusBadge(r,'moka')}</td><td class="text-right">${money(num(r.net_amount ?? r.amount ?? r.raw_amount ?? r.final_amount ?? 0))}</td></tr>`; }).join("")}</tbody></table>`:`<div class="empty">Bu filtrede Moka satırı yok.</div>`);
-
-  document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
+  const accounts = getCombinedAccounts();
+  const manualRows = [...getLocalAccountOps()].sort((a,b)=>new Date(b.entry_date||b.created_at||0)-new Date(a.entry_date||a.created_at||0));
+  const totalBakiye = accounts.reduce((a,b)=>a+num(b.net_bakiye),0);
+  const summaryWrap = document.getElementById("accountSummaryWrap");
+  if(summaryWrap) {
+    summaryWrap.innerHTML = `<div class="grid-4" style="margin-bottom:14px"><div class="metric-mini"><div class="k">Toplam Hesap</div><div class="v">${accounts.length}</div></div><div class="metric-mini"><div class="k">Yerel ��lem</div><div class="v">${manualRows.length}</div></div><div class="metric-mini"><div class="k">Sync Bekleyen</div><div class="v">${(state.bankSyncRegistry||[]).filter(x=>x.status==="PENDING").length}</div></div><div class="metric-mini"><div class="k">Net Toplam</div><div class="v">${money(totalBakiye)}</div></div></div>`;
+  }
+  const container = document.getElementById("accountListWrap");
+  if(container) {
+    container.innerHTML = `<div class="account-actions" style="margin-bottom:20px;"><button class="btn btn-blue" onclick="openManualFinanceModal(\'create\')">Yeni Hesap Tan�mla</button><button class="btn btn-soft" onclick="openManualFinanceModal(\'entry\')">��lem Gir</button><button class="btn btn-soft" onclick="openManualFinanceModal(\'transfer\')">Transfer</button></div><div class="grid-2" style="align-items:start; gap:20px;"><div><h3 class="subsection-title">Hesap Kartlar�</h3><table><thead><tr><th>Hesap</th><th>T�r</th><th class="text-right">Net Bakiye</th></tr></thead><tbody>${accounts.map(a => `<tr onclick="openAccountDetailModal(\'${a.account_key}\')\" style="cursor:pointer;"><td><strong>${escapeHtml(a.account_name)}</strong></td><td>${renderTag(a.account_type)}</td><td class="text-right" style="font-weight:600; color:${num(a.net_bakiye)<0?'#dc2626':'#059669'}">${money(a.net_bakiye)}</td></tr>`).join("")}</tbody></table></div><div><h3 class="subsection-title">Banka / Moka Sync Merkezi</h3><div id="bankSyncCenterInside"></div></div></div>`;
+    renderBankSyncCenterInside();
+  }
+}
+function renderBankSyncCenterInside(){
+  const pending = (state.bankSyncRegistry||[]).filter(x=>x.status==="PENDING");
+  const el = document.getElementById("bankSyncCenterInside");
+  if(!el) return;
+  if(pending.length === 0) { el.innerHTML = `<div class="empty">Bekleyen banka hareketi yok.</div>`; return; }
+  el.innerHTML = `<table><thead><tr><th>Tarih</th><th>A��klama</th><th class="text-right">Tutar</th><th>��lem</th></tr></thead><tbody>${pending.map(b => `<tr><td>${shortDate(b.date)}</td><td><small>${escapeHtml(b.description)}</small></td><td class="text-right" style="color:#059669; font-weight:600;">${money(b.amount)}</td><td><button class="btn btn-soft" style="padding:2px 6px;" onclick="approveBankSync(\'${b.id}\')">Onayla</button></td></tr>`).join("")}</tbody></table>`;
+}
+document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
   document.querySelectorAll('#mokaFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.mokaFilter = btn.dataset.mfilter; renderAccounts(); }));
   document.querySelectorAll('[data-bank-key]').forEach(el=>el.addEventListener('click',()=>openBankActionModal(el.dataset.bankBucket, el.dataset.bankKey)));
   document.querySelectorAll('[data-account-key]').forEach(el=>el.addEventListener('click',()=>openAccountDetailModal(el.dataset.accountKey)));
