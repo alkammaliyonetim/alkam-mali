@@ -1,0 +1,59 @@
+[
+  {
+    "id": "adem_kamaci_ozan_turk_hukuk",
+    "name": "ADEM KAMACI - OZAN TÜRK HUKUK BÜROSU",
+    "monthlyFee": 4000.0,
+    "balance": 7000.0,
+    "totalDebit": 46000.0,
+    "totalCredit": 39000.0,
+    "lastDebitDate": "2026-04-01",
+    "lastCreditDate": "2026-04-10",
+    "transactions": [
+      {"date": "2025-03-01", "description": "Satış Faturası — MART2025", "debit": 3000.0, "credit": 0.0, "balance": 3000.0, "docNo": "MART2025"},
+      {"date": "2025-04-01", "description": "Satış Faturası — NİSAN25", "debit": 3000.0, "credit": 0.0, "balance": 6000.0, "docNo": "NİSAN25"},
+      {"date": "2025-05-01", "description": "Satış Faturası — MAYIS25", "debit": 3000.0, "credit": 0.0, "balance": 9000.0, "docNo": "MAYIS25"},
+      {"date": "2025-06-01", "description": "Satış Faturası — HAZİRAN25", "debit": 3000.0, "credit": 0.0, "balance": 12000.0, "docNo": "HAZİRAN25"},
+      {"date": "2025-07-01", "description": "Satış Faturası — TEMMUZ25", "debit": 3000.0, "credit": 0.0, "balance": 15000.0, "docNo": "TEMMUZ25"},
+      {"date": "2025-07-09", "description": "Müşteriden Tahsilat", "debit": 0.0, "credit": 15000.0, "balance": 0.0},
+      {"date": "2025-08-01", "description": "Satış Faturası — AĞUSTOS25", "debit": 3000.0, "credit": 0.0, "balance": 3000.0, "docNo": "AĞUSTOS25"},
+      {"date": "2025-09-01", "description": "Satış Faturası — EYLÜL25", "debit": 3000.0, "credit": 0.0, "balance": 6000.0, "docNo": "EYLÜL25"},
+      {"date": "2025-10-01", "description": "Satış Faturası — EKİM25", "debit": 3000.0, "credit": 0.0, "balance": 9000.0, "docNo": "EKİM25"},
+      {"date": "2025-10-21", "description": "Müşteriden Tahsilat", "debit": 0.0, "credit": 9000.0, "balance": 0.0},
+      {"date": "2025-11-01", "description": "Satış Faturası — KASIM25", "debit": 3000.0, "credit": 0.0, "balance": 3000.0, "docNo": "KASIM25"},
+      {"date": "2025-12-01", "description": "Satış Faturası — ARALIK2025", "debit": 3000.0, "credit": 0.0, "balance": 6000.0, "docNo": "ARALIK2025"},
+      {"date": "2026-01-01", "description": "Satış Faturası — OCAK26", "debit": 4000.0, "credit": 0.0, "balance": 10000.0, "docNo": "OCAK26"},
+      {"date": "2026-02-01", "description": "Satış Faturası — ŞUBAT26", "debit": 4000.0, "credit": 0.0, "balance": 14000.0, "docNo": "ŞUBAT26"},
+      {"date": "2026-03-01", "description": "Satış Faturası — MART26", "debit": 4000.0, "credit": 0.0, "balance": 18000.0, "docNo": "MART26"},
+      {"date": "2026-04-01", "description": "Satış Faturası — NİSAN26", "debit": 4000.0, "credit": 0.0, "balance": 22000.0, "docNo": "NİSAN26"},
+      {"date": "2026-04-10", "description": "Müşteriden Tahsilat", "debit": 0.0, "credit": 15000.0, "balance": 7000.0}
+    ]
+  },
+  {
+    "id": "ahmet_samanli_as_optik",
+    "name": "AHMET SAMANLI AS OPTİK",
+    "monthlyFee": 1000.0,
+    "balance": 11000.0,
+    "totalDebit": 138450.0,
+    "totalCredit": 127450.0,
+    "transactions": [
+      {"date": "2024-05-01", "description": "Satış Faturası — MAYIS24", "debit": 2000.0, "credit": 0.0, "balance": 9000.0, "docNo": "MAYIS24"},
+      {"date": "2025-01-01", "description": "Satış Faturası — OCAK2025", "debit": 4500.0, "credit": 0.0, "balance": 4500.0, "docNo": "OCAK2025"},
+      {"date": "2025-12-31", "description": "Satış Faturası — DEFTER2026", "debit": 15000.0, "credit": 0.0, "balance": 36000.0, "docNo": "DEFTER2026"},
+      {"date": "2026-01-01", "description": "Satış Faturası — OCAK26", "debit": 10000.0, "credit": 0.0, "balance": 46000.0, "docNo": "OCAK26"},
+      {"date": "2026-04-01", "description": "Satış Faturası — NİSAN26", "debit": 10000.0, "credit": 0.0, "balance": 40000.0, "docNo": "NİSAN26"}
+    ]
+  },
+  {
+    "id": "ahmet_tamer",
+    "name": "AHMET TAMER",
+    "monthlyFee": 3500.0,
+    "balance": 0.0,
+    "totalDebit": 31600.0,
+    "totalCredit": 31600.0,
+    "transactions": [
+      {"date": "2025-09-01", "description": "Satış Faturası — EYLÜL25", "debit": 3000.0, "credit": 0.0, "balance": 3000.0},
+      {"date": "2025-12-31", "description": "Satış Faturası — DEFTER2026", "debit": 5600.0, "credit": 0.0, "balance": 3000.0},
+      {"date": "2026-04-15", "description": "Müşteriden Tahsilat", "debit": 0.0, "credit": 17000.0, "balance": 0.0}
+    ]
+  }
+]
