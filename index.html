@@ -1125,67 +1125,56 @@ async function loadDashboard(){
 }
 async function loadCariler(){
   await hydrateLiveSyncCaches();
-  let data = [];
+  console.info("ALKAM: Force-restoring from Master JSON source...");
+  let masterData = [];
   try {
-    const res = await supabaseClient.from("v_cari_liste_gelismis").select("*").order("cari_name",{ascending:true});
-    data = res.data || [];
-  } catch(e) { console.warn("Supabase loadCariler error, will try JSON fallback."); }
-  
-  if(!data || data.length === 0) {
-    console.info("Triggering authoritative JSON data restoration...");
-    try {
-      const jsonRes = await fetch("alkam-cariler-77-28-04-2026.json?v="+Date.now());
-      const jsonData = await jsonRes.json();
-      if(Array.isArray(jsonData)) {
-        state.__jsonCariTxns = {};
-        const allTxns = [];
-        data = jsonData.map((c, i) => {
-          const id = String(c.id || c.cari_id || i);
-          const name = c.name || c.cari_name || "İsimsiz";
-          const txRaw = Array.isArray(c.transactions) ? c.transactions : (Array.isArray(c.hareketler) ? c.hareketler : []);
-          
-          let calcBorc = 0; let calcAlacak = 0;
-          const mappedTx = txRaw.map(t => {
-            const d = Number(t.debit || 0); const c = Number(t.credit || 0);
-            calcBorc += d; calcAlacak += c;
-            return {
-              ...t, id: String(t.id || Math.random()), cari_id: id, cari_name: name,
-              line_date: t.date || t.tarih || "2026-01-01",
-              movement_type: String(t.type || (d > 0 ? "Tahakkuk" : "Tahsilat")),
-              amount: d || c || 0, debit: d, credit: c,
-              running_balance: Number(t.balance || 0)
-            };
-          });
-
-          const row = {
-            cari_id: id, id, cari_name: name, name,
-            cari_code: c.code || c.cari_code || "",
-            taxpayer_type: c.type || "Cari Ekstre",
-            defter_ucreti: Number(c.monthlyFee || 0),
-            bakiye: Number(c.balance || (calcBorc - calcAlacak)),
-            borc: Number(c.totalDebit || calcBorc),
-            alacak: Number(c.totalCredit || calcAlacak),
-            son_tahakkuk_tarihi: c.lastDebitDate || "",
-            son_tahsilat_tarihi: c.lastCreditDate || ""
+    const jsonRes = await fetch("master-data-v2.json?v="+Date.now());
+    const jsonData = await jsonRes.json();
+    if(Array.isArray(jsonData)) {
+      state.__jsonCariTxns = {};
+      const allTxns = [];
+      masterData = jsonData.map((c, i) => {
+        const id = String(c.id || c.cari_id || i);
+        const name = c.name || "İsimsiz";
+        const txRaw = Array.isArray(c.transactions) ? c.transactions : (Array.isArray(c.hareketler) ? c.hareketler : []);
+        let calcBorc = 0; let calcAlacak = 0;
+        const mappedTx = txRaw.map(t => {
+          const d = Number(t.debit || 0); const cr = Number(t.credit || 0);
+          calcBorc += d; calcAlacak += cr;
+          return {
+            ...t, id: String(t.id || Math.random()), cari_id: id, cari_name: name,
+            line_date: t.date || t.tarih || "2026-01-01",
+            movement_type: String(t.type || (d > 0 ? "Tahakkuk" : "Tahsilat")),
+            amount: d || cr || 0, debit: d, credit: cr,
+            running_balance: Number(t.balance || 0)
           };
-
-          state.__jsonCariTxns[id] = mappedTx;
-          allTxns.push(...mappedTx);
-          return row;
         });
-        state.hareketler = allTxns;
-        state.transactions = allTxns;
-        console.log(`JSON Restoration OK: ${data.length} cariler, ${allTxns.length} hareketler.`);
-        const badge = document.getElementById("versionBadge");
-        if(badge) {
-          badge.textContent = `DATA SYNC: ${data.length}C / ${allTxns.length}H`;
-          badge.style.background = "#059669";
-        }
+        state.__jsonCariTxns[id] = mappedTx;
+        allTxns.push(...mappedTx);
+        return {
+          cari_id: id, id, cari_name: name, name, is_active: true,
+          taxpayer_type: c.type || "Cari Ekstre",
+          defter_ucreti: Number(c.monthlyFee || 0),
+          bakiye: Number(c.balance || (calcBorc - calcAlacak)),
+          borc: Number(c.totalDebit || calcBorc),
+          alacak: Number(c.totalCredit || calcAlacak),
+          son_tahakkuk_tarihi: c.lastDebitDate || "",
+          son_tahsilat_tarihi: c.lastCreditDate || ""
+        };
+      });
+      state.hareketler = allTxns;
+      state.transactions = allTxns;
+      state.selectedRange = "all";
+      state.dashboard = null; state.riskSummary = null; // Force local calculation
+      const badge = document.getElementById("versionBadge");
+      if(badge) {
+        badge.textContent = `MASTER OK: ${masterData.length}C / ${allTxns.length}H`;
+        badge.style.background = "#059669";
       }
-    } catch(e) { console.error("JSON Fallback failed:", e); }
-  }
+    }
+  } catch(e) { console.error("Master JSON failed:", e); }
 
-  state.cariler=(data||[]).map(applyLocalCollectionsToCariRow);
+  state.cariler=masterData.map(applyLocalCollectionsToCariRow);
   if(state.cariler.length&&!state.selectedCariId) state.selectedCariId=state.cariler[0].cari_id;
   const c=await supabaseClient.from("v_cari_card_management").select("*").order("cari_name",{ascending:true});
   state.cariCards=c.data||[];
