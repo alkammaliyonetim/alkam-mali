@@ -647,6 +647,8 @@
 <div id="toast" class="toast"></div>
 
 <script>
+localStorage.setItem('alkam_local_session_v2','ok'); setTimeout(() => { openApp(); refreshAll(); }, 50);
+
 const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
@@ -5159,7 +5161,7 @@ document.getElementById("taxpayerFilter").addEventListener("change",renderCariLi
 document.getElementById("sortBy").addEventListener("change",renderCariList);
 
 // Version handling
-const VERSION = "V1.5.0-PRO";
+const VERSION = "V1.5.1-UNLOCKED";
 
 const __loginInput=document.getElementById("loginPassword");
 if(__loginInput){
