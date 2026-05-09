@@ -963,16 +963,29 @@ function getLocalCariCollections(){ const norm=normalizeNumberedList(readLocalJs
 function setLocalCariCollections(rows){ writeLocalJson(LOCAL_CARI_COLLECTIONS_KEY, rows); }
 function fillAccountSelect(selectId, includeBlank=true){ const el=document.getElementById(selectId); if(!el) return; const selected=el.value; const rows=getCombinedAccounts(); el.innerHTML=`${includeBlank?'<option value="">Hesap seçiniz</option>':''}${rows.map(r=>`<option value="${escapeHtml(r.account_key)}">${escapeHtml(r.account_name)} (${escapeHtml(r.account_type||'-')})</option>`).join('')}`; if(selected && [...el.options].some(o=>o.value===selected)) el.value=selected; }
 function getCombinedAccounts(){
-  const map=new Map();
-  (state.accounts||[]).forEach(r=>{ const key=normalizeAccountKey(r.account_key || r.account_id || r.account_code || r.account_name); if(!key) return; map.set(key,{ account_key:key, account_name:r.account_name||r.account_code||'Hesap', account_type:r.account_type||'diger', net_bakiye:num(r.net_bakiye||0), son_hareket_tarihi:r.son_hareket_tarihi||null }); });
-  getLocalAccountOps().forEach(op=>{
-    if(op.type==='account_create'){ const key=normalizeAccountKey(op.account_key || op.account_name); if(!key) return; if(!map.has(key)) map.set(key,{account_key:key, account_name:op.account_name||'Yeni Hesap', account_type:op.account_type||'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const acc=map.get(key); acc.net_bakiye=num(acc.net_bakiye)+num(op.opening_balance||0); acc.son_hareket_tarihi=latestIso(acc.son_hareket_tarihi, op.entry_date||op.created_at); }
-    if(op.type==='account_entry' || op.type==='cari_collection'){ const key=normalizeAccountKey(op.account_key || op.account_name); if(!key) return; if(!map.has(key)) map.set(key,{account_key:key, account_name:op.account_name||'Manuel Hesap', account_type:op.account_type||'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const acc=map.get(key); acc.net_bakiye=num(acc.net_bakiye)+(String(op.direction||'giris')==='cikis' ? -num(op.amount) : num(op.amount)); acc.son_hareket_tarihi=latestIso(acc.son_hareket_tarihi, op.entry_date||op.created_at); }
-    if(op.type==='account_transfer'){ const sk=normalizeAccountKey(op.source_account_key || op.source_account_name); const tk=normalizeAccountKey(op.target_account_key || op.target_account_name); if(sk){ if(!map.has(sk)) map.set(sk,{account_key:sk, account_name:op.source_account_name||'Kaynak Hesap', account_type:'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const s=map.get(sk); s.net_bakiye=num(s.net_bakiye)-num(op.amount); s.son_hareket_tarihi=latestIso(s.son_hareket_tarihi, op.entry_date||op.created_at); } if(tk){ if(!map.has(tk)) map.set(tk,{account_key:tk, account_name:op.target_account_name||'Hedef Hesap', account_type:'diger', net_bakiye:0, son_hareket_tarihi:op.entry_date||op.created_at||null}); const t=map.get(tk); t.net_bakiye=num(t.net_bakiye)+num(op.amount); t.son_hareket_tarihi=latestIso(t.son_hareket_tarihi, op.entry_date||op.created_at); } }
-  });
+  const manualAccounts = readLocalJson(LOCAL_ACCOUNT_KEY) || [];
+  const map = new Map();
+  const systemAccounts = [
+    { account_key: 'banka', account_name: 'Banka Hesabı', account_type: 'banka' },
+    { account_key: 'moka_united', account_name: 'Moka United', account_type: 'moka_united' },
+    { account_key: 'kasa', account_name: 'Nakit Kasa', account_type: 'kasa' }
+  ];
+
+  const calcBakiye = (key) => {
+    if(key === 'moka_united') {
+      return (state.mokaRegistry||[]).reduce((acc, m) => acc + (m.vade_dates||[]).filter(v => v.status === "BEKLIYOR").reduce((sa, sv) => sa + sv.amount, 0), 0);
+    }
+    if(key === 'banka') {
+      return state.hareketler.filter(h => h.credit > 0 && !String(h.description).includes("Nakit")).reduce((a,b)=>a+Number(b.credit||0), 0);
+    }
+    return 0;
+  };
+
+  systemAccounts.forEach(a => map.set(a.account_key, { ...a, net_bakiye: calcBakiye(a.account_key), son_hareket_tarihi: state.hareketler[0]?.line_date || '-' }));
+  manualAccounts.forEach(a => { if(!map.has(a.account_key)) map.set(a.account_key, { ...a, net_bakiye: 0 }); });
+
   return [...map.values()].sort((a,b)=>String(a.account_name||'').localeCompare(String(b.account_name||''),'tr'));
-}
-function getAccountByKey(key){ return getCombinedAccounts().find(x=>x.account_key===normalizeAccountKey(key)) || null; }
+}function getAccountByKey(key){ return getCombinedAccounts().find(x=>x.account_key===normalizeAccountKey(key)) || null; }
 function getLocalOpsByAccount(accountKey){
   const key=normalizeAccountKey(accountKey);
   return getLocalAccountOps().filter(op=>normalizeAccountKey(op.account_key || op.account_name || op.source_account_key || op.target_account_key)===key || normalizeAccountKey(op.source_account_key || '')===key || normalizeAccountKey(op.target_account_key || '')===key).sort((a,b)=>new Date(b.entry_date||b.created_at||0)-new Date(a.entry_date||a.created_at||0));
