@@ -485,11 +485,8 @@
       <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
       <button class="nav-btn" data-tab="cariler">Cariler</button>
       <button class="nav-btn" data-tab="hesaplar">Hesaplar</button>
-      <button class="nav-btn" data-tab="giderler">Giderler</button>
-      <button class="nav-btn" data-tab="raporlar">Raporlar</button>
-      <button class="nav-btn" data-tab="belgeler">Belgeler</button>
-      <button class="nav-btn" data-tab="onay">Onay Merkezi</button>
-      <button class="nav-btn" data-tab="yedekleme">Yedekleme</button>
+      <button class="nav-btn" data-tab="gecis2026">Toplu Tahakkuk</button>
+      <button class="nav-btn" data-tab="yedekleme">Veri Yükleme</button>
     </div>
     <div class="sidebar-box"><div class="mini">BAĞLANTI</div><div class="big" id="connState">Bağlantı kontrol ediliyor...</div></div>
     <div class="sidebar-box"><div class="mini">GİRİŞ YAPAN</div><div class="big" id="currentUserBox">-</div></div>
@@ -1125,7 +1122,7 @@ function submitLogin(e){
 }
 function openApp(){document.getElementById("loginOverlay").style.display="none"; document.getElementById("currentUserBox").textContent="Yerel Giriş"; setConnState("Canlı bağlantı aktif")}
 function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
-function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, çek, senet, Moka ve transfer yönetimi"],giderler:["Giderler","Sabit ve değişken gider, tahakkuk ve ödeme kontrol ekranı"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
+function switchTab(tab){const meta={dashboard:["Dashboard","Güncel özet"],cariler:["Cariler","Cari ve tahsilat yönetimi"],hesaplar:["Hesaplar","Kasa, banka ve Moka yönetimi"],yedekleme:["Veri Yükleme","Yeni veri ve ekstre aktarımı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
 async function loadDashboard(){
