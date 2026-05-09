@@ -1,0 +1,48 @@
+[
+  {
+    "id": "moka_elegance_50k",
+    "cari_id": "elagance_furniture",
+    "cari_name": "ELAGANCE FURNITURE",
+    "amount": 50000.0,
+    "installments": 6,
+    "transaction_date": "2026-02-15",
+    "rule": "40_DAYS",
+    "vade_dates": [
+      {"date": "2026-03-27", "amount": 8333.33, "status": "YATTI", "bank_ref": "HALKBANK-1122"},
+      {"date": "2026-05-06", "amount": 8333.33, "status": "BEKLIYOR"},
+      {"date": "2026-06-15", "amount": 8333.33, "status": "BEKLIYOR"},
+      {"date": "2026-07-25", "amount": 8333.33, "status": "BEKLIYOR"},
+      {"date": "2026-09-03", "amount": 8333.33, "status": "BEKLIYOR"},
+      {"date": "2026-10-13", "amount": 8333.33, "status": "BEKLIYOR"}
+    ]
+  },
+  {
+    "id": "moka_as_optik_36k",
+    "cari_id": "ahmet_samanli_as_optik",
+    "cari_name": "AHMET SAMANLI AS OPTİK",
+    "amount": 36000.0,
+    "installments": 4,
+    "transaction_date": "2025-12-31",
+    "rule": "40_DAYS",
+    "vade_dates": [
+      {"date": "2026-02-09", "amount": 9000.0, "status": "YATTI"},
+      {"date": "2026-03-21", "amount": 9000.0, "status": "YATTI"},
+      {"date": "2026-04-30", "amount": 9000.0, "status": "BEKLIYOR"},
+      {"date": "2026-06-09", "amount": 9000.0, "status": "BEKLIYOR"}
+    ]
+  },
+  {
+    "id": "moka_mstyle_24k",
+    "cari_id": "mstyle_ic_dis_ticaret",
+    "cari_name": "MSTYLE İÇ VE DIŞ TİCARET",
+    "amount": 24000.0,
+    "installments": 3,
+    "transaction_date": "2025-10-15",
+    "rule": "35_DAYS",
+    "vade_dates": [
+      {"date": "2025-11-19", "amount": 8000.0, "status": "YATTI"},
+      {"date": "2025-12-24", "amount": 8000.0, "status": "YATTI"},
+      {"date": "2026-01-28", "amount": 8000.0, "status": "YATTI"}
+    ]
+  }
+]
