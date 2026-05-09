@@ -613,37 +613,27 @@
       <div class="section"><h2 class="section-title">Hesap Hareketi Test Merkezi</h2><div id="movementTestWrap" class="empty">Yükleniyor...</div></div>
     </section>
 
-    <section id="tab-giderler" class="tab-page">
-      <div class="section"><h2 class="section-title">Giderler Dinamik Kontrol Paneli</h2><div id="expenseWrap" class="empty">Yükleniyor...</div></div>
-    </section>
-
-    <section id="tab-raporlar" class="tab-page">
-      <div class="section"><h2 class="section-title">Raporlar</h2><div id="reportWrap" class="empty">Yükleniyor...</div></div>
-    </section>
-
-    <section id="tab-belgeler" class="tab-page">
-      <div class="grid-2">
-        <div class="section"><h2 class="section-title">Belge / Makbuz Havuzu</h2><div id="documentWrap" class="empty">Yükleniyor...</div></div>
-        <div class="section"><h2 class="section-title">Aday Kayıt Köprüsü</h2><div id="bridgeWrap" class="empty">Yükleniyor...</div></div>
-      </div>
-      <div class="section"><h2 class="section-title">Tahsilat Köprüsü Oturumları</h2><div id="bridgeSessionWrap" class="empty">Yükleniyor...</div></div>
-    </section>
-
-    <section id="tab-onay" class="tab-page">
-      <div class="section"><h2 class="section-title">Onay Bekleyenler</h2><div id="pendingWrap" class="empty">Yükleniyor...</div></div>
-      <div class="grid-2">
-        <div class="section"><h2 class="section-title">İşlenenler</h2><div id="processedWrap" class="empty">Yükleniyor...</div></div>
-        <div class="section"><h2 class="section-title">Reddedilenler</h2><div id="rejectedWrap" class="empty">Yükleniyor...</div></div>
-      </div>
-      <div class="section"><h2 class="section-title">Operasyon İzleri</h2><div id="approvalAuditWrap" class="empty">Yükleniyor...</div></div>
-    </section>
-
     <section id="tab-yedekleme" class="tab-page">
-      <div class="section"><h2 class="section-title">Canlıya Alma Kontrolü</h2><div id="opsHealthWrapYedek" class="empty">Yükleniyor...</div></div>
-      <div class="section"><h2 class="section-title">Üretim Sıkılaştırma Merkezi</h2><div id="prodHardeningWrapYedek" class="empty">Yükleniyor...</div></div>
+      <div class="grid-3">
+        <div class="section">
+          <h2 class="section-title">Master Veri Güncelleme</h2>
+          <div class="rule-box" style="margin-bottom:12px;">Sistemin ana cari ve geçmiş hareket dosyasını (JSON) buradan güncelleyebilirsiniz.</div>
+          <div class="field"><label>JSON Dosyası Seç</label><input type="file" id="masterJsonFile" accept=".json" onchange="handleMasterJsonUpload(event)" /></div>
+        </div>
+        <div class="section">
+          <h2 class="section-title">Banka Ekstresi Aktarımı</h2>
+          <div class="rule-box" style="margin-bottom:12px;">Banka ekstresinden kopyaladığınız metni buraya yapıştırarak carilere işleyebilirsiniz.</div>
+          <button class="btn btn-blue" style="width:100%" onclick="switchTab('hesaplar'); setTimeout(()=>document.getElementById('movementImportText').focus(), 300)">Banka Panelini Aç</button>
+        </div>
+        <div class="section">
+          <h2 class="section-title">Moka POS Dekontları</h2>
+          <div class="rule-box" style="margin-bottom:12px;">WhatsApp veya PDF üzerinden gelen Moka dekontlarını toplu olarak içeri alın.</div>
+          <button class="btn btn-soft" style="width:100%" onclick="openCandidateBridgeModal()">Dekont Girişini Aç</button>
+        </div>
+      </div>
       <div class="grid-2">
-        <div class="section"><h2 class="section-title">Yedekleme Merkezi</h2><div id="backupWrap" class="empty">Yükleniyor...</div></div>
-        <div class="section"><h2 class="section-title">Restore / Geri Yükleme Planı</h2><div id="restoreWrap" class="empty">Yükleniyor...</div></div>
+        <div class="section"><h2 class="section-title">Yedekleme Geçmişi</h2><div id="backupWrap" class="empty">Yükleniyor...</div></div>
+        <div class="section"><h2 class="section-title">Sistem Sağlığı</h2><div id="opsHealthWrapYedek" class="empty">Yükleniyor...</div></div>
       </div>
     </section>
   </main>
@@ -1152,22 +1142,32 @@ async function loadCariler(){
           const id = String(c.id || c.cari_id || i);
           const name = c.name || c.cari_name || "İsimsiz";
           const txRaw = Array.isArray(c.transactions) ? c.transactions : (Array.isArray(c.hareketler) ? c.hareketler : []);
+          
+          let calcBorc = 0; let calcAlacak = 0;
+          const mappedTx = txRaw.map(t => {
+            const d = Number(t.debit || 0); const c = Number(t.credit || 0);
+            calcBorc += d; calcAlacak += c;
+            return {
+              ...t, id: String(t.id || Math.random()), cari_id: id, cari_name: name,
+              line_date: t.date || t.tarih || "2026-01-01",
+              movement_type: String(t.type || (d > 0 ? "Tahakkuk" : "Tahsilat")),
+              amount: d || c || 0, debit: d, credit: c,
+              running_balance: Number(t.balance || 0)
+            };
+          });
+
           const row = {
             cari_id: id, id, cari_name: name, name,
             cari_code: c.code || c.cari_code || "",
             taxpayer_type: c.type || "Cari Ekstre",
             defter_ucreti: Number(c.monthlyFee || 0),
-            bakiye: Number(c.balance || 0),
-            borc: Number(c.totalDebit || 0),
-            alacak: Number(c.totalCredit || 0)
+            bakiye: Number(c.balance || (calcBorc - calcAlacak)),
+            borc: Number(c.totalDebit || calcBorc),
+            alacak: Number(c.totalCredit || calcAlacak),
+            son_tahakkuk_tarihi: c.lastDebitDate || "",
+            son_tahsilat_tarihi: c.lastCreditDate || ""
           };
-          const mappedTx = txRaw.map(t => ({
-            ...t, id: String(t.id || Math.random()), cari_id: id, cari_name: name,
-            line_date: t.date || t.tarih || "2026-01-01",
-            movement_type: String(t.type || (Number(t.debit)>0 ? "Tahakkuk" : "Tahsilat")),
-            amount: Number(t.debit || t.credit || 0),
-            running_balance: Number(t.balance || 0)
-          }));
+
           state.__jsonCariTxns[id] = mappedTx;
           allTxns.push(...mappedTx);
           return row;
@@ -1276,7 +1276,15 @@ async function loadYearTransitionData(force=false){
     const {data,error}=await supabaseClient.from('v_cari_hareket_dokumu').select('cari_id,cari_name,line_date,movement_type,description,debit,credit').gte('line_date','2026-01-01').lt('line_date','2027-01-01').limit(20000);
     if(error) throw error;
     feeRows = data || [];
-  }catch(_){ feeRows = []; }
+  }catch(_){ 
+    // JSON Fallback for Year Transition
+    if(state.hareketler && state.hareketler.length > 0) {
+      console.info("Using JSON history for Toplu Tahakkuk calculations...");
+      feeRows = state.hareketler.filter(r => String(r.line_date).startsWith('2026'));
+    } else {
+      feeRows = []; 
+    }
+  }
   const monthDetected = Math.max(4, ...feeRows.map(r=>feeMonthFromRow(r)).filter(x=>x>0));
   const rowsByCari = {};
   feeRows.forEach(r=>{
@@ -1294,7 +1302,7 @@ async function loadYearTransitionData(force=false){
     rows.forEach(r=>{ const m=feeMonthFromRow(r); if(m>=1 && m<=12){ monthMap[m]=(monthMap[m]||0)+1; } });
     for(let month=1; month<=monthDetected; month++){
       if(!monthMap[month]){
-        const rec={cari_id:key,cari_name:c.cari_name||c.name||'-',month_no:month,month_label:monthLabelTR(month),month_token:monthTokenTR(month),expected_fee:num(c.monthly_fee_amount||0),status:'eksik'};
+        const rec={cari_id:key,cari_name:c.cari_name||c.name||'-',month_no:month,month_label:monthLabelTR(month),month_token:monthTokenTR(month),expected_fee:num(c.monthly_fee_amount ||0),status:'eksik'};
         missingRows.push(rec);
         if(month===3) marchMissing.push(rec);
         if(month===4) aprilMissing.push(rec);
@@ -1304,6 +1312,55 @@ async function loadYearTransitionData(force=false){
   state.year2026={opening_date:'2025-12-31',moka_opening:0,fee_cards:feeCards,fee_rows:feeRows,missing_rows:missingRows,march_missing:marchMissing,april_missing:aprilMissing,last_month:monthDetected,doc_rules:defaultDocRules2026(),opening_entries:readLocalJson(LOCAL_2026_OPENING_KEY),accrual_suggestions:readLocalJson(LOCAL_2026_ACCRUAL_KEY),openings_written_at:(readLocalJson(LOCAL_2026_OPENING_KEY).find(x=>x.written_at)?.written_at)||null};
   renderYearTransitionPanel();
 }
+
+async function handleMasterJsonUpload(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const jsonData = JSON.parse(e.target.result);
+      if(!Array.isArray(jsonData)) throw new Error("Format hatalı.");
+      // Save locally to persist between refreshes if needed, but for now just load into state
+      const st = state;
+      st.__jsonCariTxns = {};
+      const allTxns = [];
+      st.cariler = jsonData.map((c, i) => {
+        const id = String(c.id || c.cari_id || i);
+        const name = c.name || "İsimsiz";
+        const txRaw = Array.isArray(c.transactions) ? c.transactions : (Array.isArray(c.hareketler) ? c.hareketler : []);
+        let calcBorc = 0; let calcAlacak = 0;
+        const mappedTx = txRaw.map(t => {
+          const d = Number(t.debit || 0); const cr = Number(t.credit || 0);
+          calcBorc += d; calcAlacak += cr;
+          return {
+            ...t, id: String(t.id || Math.random()), cari_id: id, cari_name: name,
+            line_date: t.date || t.tarih || "2026-01-01",
+            movement_type: String(t.type || (d > 0 ? "Tahakkuk" : "Tahsilat")),
+            amount: d || cr || 0, debit: d, credit: cr,
+            running_balance: Number(t.balance || 0)
+          };
+        });
+        st.__jsonCariTxns[id] = mappedTx;
+        allTxns.push(...mappedTx);
+        return {
+          cari_id: id, id, cari_name: name, name,
+          taxpayer_type: c.type || "Cari Ekstre",
+          defter_ucreti: Number(c.monthlyFee || 0),
+          bakiye: Number(c.balance || (calcBorc - calcAlacak)),
+          borc: Number(c.totalDebit || calcBorc),
+          alacak: Number(c.totalCredit || calcAlacak)
+        };
+      });
+      st.hareketler = allTxns;
+      st.transactions = allTxns;
+      notify(`Yeni veri yüklendi: ${st.cariler.length} cari, ${allTxns.length} hareket.`);
+      refreshAll();
+    } catch(err) { alert("Hata: " + err.message); }
+  };
+  reader.readAsText(file);
+}
+
 function renderYearTransitionPanel(){
   const y=state.year2026||{};
   const feeCards=y.fee_cards||[];
