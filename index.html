@@ -2,6 +2,10 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <!-- DEPLOY_ID: 1715264000 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ALKAM Mali Müşavirlik</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -1125,67 +1129,63 @@ async function loadDashboard(){
 }
 async function loadCariler(){
   await hydrateLiveSyncCaches();
-  setConnState("Veri tabanı işleniyor...");
+  setConnState("Master veri yükleniyor...");
   let masterData = [];
   try {
-    // 100/100 Security: Using the 1.3MB authoritative master file
     const jsonRes = await fetch("alkam-cariler-77-28-04-2026.json?v="+Date.now());
+    if(!jsonRes.ok) throw new Error("JSON_NOT_FOUND");
     const jsonData = await jsonRes.json();
     if(Array.isArray(jsonData)) {
       state.__jsonCariTxns = {};
       const allTxns = [];
       masterData = jsonData.map((c, i) => {
-        const id = String(c.id || c.cari_id || i);
-        const name = c.name || c.cari_name || "İsimsiz";
-        const txRaw = Array.isArray(c.transactions) ? c.transactions : (Array.isArray(c.hareketler) ? c.hareketler : []);
-        
-        let calcBorc = 0; let calcAlacak = 0;
-        const mappedTx = txRaw.map(t => {
-          const d = Number(t.debit || 0); const cr = Number(t.credit || 0);
-          calcBorc += d; calcAlacak += cr;
+        try {
+          const id = String(c.id || c.cari_id || i);
+          const name = c.name || c.cari_name || "İsimsiz";
+          const txRaw = Array.isArray(c.transactions) ? c.transactions : (Array.isArray(c.hareketler) ? c.hareketler : []);
+          let calcBorc = 0; let calcAlacak = 0;
+          const mappedTx = txRaw.map(t => {
+            const d = Number(t.debit || 0); const cr = Number(t.credit || 0);
+            calcBorc += d; calcAlacak += cr;
+            return {
+              ...t, id: String(t.id || Math.random()), cari_id: id, cari_name: name,
+              line_date: t.date || t.tarih || "2026-01-01",
+              movement_type: String(t.type || (d > 0 ? "Tahakkuk" : "Tahsilat")),
+              amount: d || cr || 0, debit: d, credit: cr,
+              running_balance: Number(t.balance || 0)
+            };
+          });
+          state.__jsonCariTxns[id] = mappedTx;
+          allTxns.push(...mappedTx);
           return {
-            ...t, id: String(t.id || Math.random()), cari_id: id, cari_name: name,
-            line_date: t.date || t.tarih || "2026-01-01",
-            movement_type: String(t.type || (d > 0 ? "Tahakkuk" : "Tahsilat")),
-            amount: d || cr || 0, debit: d, credit: cr,
-            running_balance: Number(t.balance || 0)
+            cari_id: id, id, cari_name: name, name, is_active: true,
+            taxpayer_type: c.type || "Cari Ekstre",
+            defter_ucreti: Number(c.monthlyFee || 0),
+            bakiye: Number(calcBorc - calcAlacak),
+            borc: calcBorc, alacak: calcAlacak,
+            son_tahakkuk_tarihi: mappedTx.filter(x=>x.debit>0).sort((a,b)=>b.line_date.localeCompare(a.line_date))[0]?.line_date || "",
+            son_tahsilat_tarihi: mappedTx.filter(x=>x.credit>0).sort((a,b)=>b.line_date.localeCompare(a.line_date))[0]?.line_date || ""
           };
-        });
-
-        state.__jsonCariTxns[id] = mappedTx;
-        allTxns.push(...mappedTx);
-        
-        return {
-          cari_id: id, id, cari_name: name, name, is_active: true,
-          taxpayer_type: c.type || "Cari Ekstre",
-          defter_ucreti: Number(c.monthlyFee || 0),
-          bakiye: Number(calcBorc - calcAlacak), // Force calculation from tx history for 100/100 accuracy
-          borc: calcBorc,
-          alacak: calcAlacak,
-          son_tahakkuk_tarihi: mappedTx.filter(x=>x.debit>0).sort((a,b)=>b.line_date.localeCompare(a.line_date))[0]?.line_date || "",
-          son_tahsilat_tarihi: mappedTx.filter(x=>x.credit>0).sort((a,b)=>b.line_date.localeCompare(a.line_date))[0]?.line_date || ""
-        };
-      });
+        } catch(e) { console.error("Row Error:", e); return null; }
+      }).filter(Boolean);
       state.hareketler = allTxns;
       state.transactions = allTxns;
       state.selectedRange = "all";
       state.dashboard = null; state.riskSummary = null;
-      
       const badge = document.getElementById("versionBadge");
       if(badge) {
-        badge.textContent = `V1.1.0-ENGINEER: ${masterData.length}C / ${allTxns.length}H`;
-        badge.style.background = "#2563eb"; // Blue for engineering stability
+        badge.textContent = `V1.1.1-RECOVERY: ${masterData.length}C / ${allTxns.length}H`;
+        badge.style.background = "#2563eb";
       }
     }
-  } catch(e) { console.error("Integrity Error:", e); setConnState("Veri Hatası!"); }
-
+  } catch(e) { console.error("Integrity Error:", e); setConnState("Veri Kaynağı Hatası!"); }
   state.cariler=masterData.map(applyLocalCollectionsToCariRow);
   if(state.cariler.length&&!state.selectedCariId) state.selectedCariId=state.cariler[0].cari_id;
-  const c=await supabaseClient.from("v_cari_card_management").select("*").order("cari_name",{ascending:true});
-  state.cariCards=c.data||[];
-  await loadSelectedCariHareketler(); 
-  renderCariList(); 
-  renderSelectedCariDetail();
+  try {
+    const c=await supabaseClient.from("v_cari_card_management").select("*").order("cari_name",{ascending:true});
+    state.cariCards=c.data||[];
+  } catch(e) {}
+  await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail();
 }
 async function loadSelectedCariHareketler(){
   await hydrateLiveSyncCaches();
