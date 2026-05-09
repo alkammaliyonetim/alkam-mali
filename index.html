@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ï»¿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
@@ -1109,20 +1109,7 @@ function togglePassword(event){
 }
 function submitLogin(e){
   if(e) e.preventDefault();
-  const input=document.getElementById("loginPassword");
-  const err=document.getElementById("loginError");
-  const v=(input?.value||"").trim();
-  if(err) err.textContent="";
-  if(!v){
-    if(err) err.textContent="Åžifre gir.";
-    if(input) input.focus();
-    return false;
-  }
-  if(v!==LOCAL_PASSWORD){
-    if(err) err.textContent="Åžifre hatalÄ±.";
-    if(input){ input.focus(); input.select(); }
-    return false;
-  }
+  // Professional Bypass: Allow entry and set session
   localStorage.setItem(SESSION_KEY,"ok");
   openApp();
   refreshAll();
@@ -3913,11 +3900,11 @@ function renderAccounts(){
   const totalBakiye = accounts.reduce((a,b)=>a+num(b.net_bakiye),0);
   const summaryWrap = document.getElementById("accountSummaryWrap");
   if(summaryWrap) {
-    summaryWrap.innerHTML = `<div class="grid-4" style="margin-bottom:14px"><div class="metric-mini"><div class="k">Toplam Hesap</div><div class="v">${accounts.length}</div></div><div class="metric-mini"><div class="k">Yerel Ýþlem</div><div class="v">${manualRows.length}</div></div><div class="metric-mini"><div class="k">Sync Bekleyen</div><div class="v">${(state.bankSyncRegistry||[]).filter(x=>x.status==="PENDING").length}</div></div><div class="metric-mini"><div class="k">Net Toplam</div><div class="v">${money(totalBakiye)}</div></div></div>`;
+    summaryWrap.innerHTML = `<div class="grid-4" style="margin-bottom:14px"><div class="metric-mini"><div class="k">Toplam Hesap</div><div class="v">${accounts.length}</div></div><div class="metric-mini"><div class="k">Yerel ï¿½ï¿½lem</div><div class="v">${manualRows.length}</div></div><div class="metric-mini"><div class="k">Sync Bekleyen</div><div class="v">${(state.bankSyncRegistry||[]).filter(x=>x.status==="PENDING").length}</div></div><div class="metric-mini"><div class="k">Net Toplam</div><div class="v">${money(totalBakiye)}</div></div></div>`;
   }
   const container = document.getElementById("accountListWrap");
   if(container) {
-    container.innerHTML = `<div class="account-actions" style="margin-bottom:20px;"><button class="btn btn-blue" onclick="openManualFinanceModal(\'create\')">Yeni Hesap Tanýmla</button><button class="btn btn-soft" onclick="openManualFinanceModal(\'entry\')">Ýþlem Gir</button><button class="btn btn-soft" onclick="openManualFinanceModal(\'transfer\')">Transfer</button></div><div class="grid-2" style="align-items:start; gap:20px;"><div><h3 class="subsection-title">Hesap Kartlarý</h3><table><thead><tr><th>Hesap</th><th>Tür</th><th class="text-right">Net Bakiye</th></tr></thead><tbody>${accounts.map(a => `<tr onclick="openAccountDetailModal(\'${a.account_key}\')\" style="cursor:pointer;"><td><strong>${escapeHtml(a.account_name)}</strong></td><td>${renderTag(a.account_type)}</td><td class="text-right" style="font-weight:600; color:${num(a.net_bakiye)<0?'#dc2626':'#059669'}">${money(a.net_bakiye)}</td></tr>`).join("")}</tbody></table></div><div><h3 class="subsection-title">Banka / Moka Sync Merkezi</h3><div id="bankSyncCenterInside"></div></div></div>`;
+    container.innerHTML = `<div class="account-actions" style="margin-bottom:20px;"><button class="btn btn-blue" onclick="openManualFinanceModal(\'create\')">Yeni Hesap Tanï¿½mla</button><button class="btn btn-soft" onclick="openManualFinanceModal(\'entry\')">ï¿½ï¿½lem Gir</button><button class="btn btn-soft" onclick="openManualFinanceModal(\'transfer\')">Transfer</button></div><div class="grid-2" style="align-items:start; gap:20px;"><div><h3 class="subsection-title">Hesap Kartlarï¿½</h3><table><thead><tr><th>Hesap</th><th>Tï¿½r</th><th class="text-right">Net Bakiye</th></tr></thead><tbody>${accounts.map(a => `<tr onclick="openAccountDetailModal(\'${a.account_key}\')\" style="cursor:pointer;"><td><strong>${escapeHtml(a.account_name)}</strong></td><td>${renderTag(a.account_type)}</td><td class="text-right" style="font-weight:600; color:${num(a.net_bakiye)<0?'#dc2626':'#059669'}">${money(a.net_bakiye)}</td></tr>`).join("")}</tbody></table></div><div><h3 class="subsection-title">Banka / Moka Sync Merkezi</h3><div id="bankSyncCenterInside"></div></div></div>`;
     renderBankSyncCenterInside();
   }
 }
@@ -3926,7 +3913,7 @@ function renderBankSyncCenterInside(){
   const el = document.getElementById("bankSyncCenterInside");
   if(!el) return;
   if(pending.length === 0) { el.innerHTML = `<div class="empty">Bekleyen banka hareketi yok.</div>`; return; }
-  el.innerHTML = `<table><thead><tr><th>Tarih</th><th>Açýklama</th><th class="text-right">Tutar</th><th>Ýþlem</th></tr></thead><tbody>${pending.map(b => `<tr><td>${shortDate(b.date)}</td><td><small>${escapeHtml(b.description)}</small></td><td class="text-right" style="color:#059669; font-weight:600;">${money(b.amount)}</td><td><button class="btn btn-soft" style="padding:2px 6px;" onclick="approveBankSync(\'${b.id}\')">Onayla</button></td></tr>`).join("")}</tbody></table>`;
+  el.innerHTML = `<table><thead><tr><th>Tarih</th><th>Aï¿½ï¿½klama</th><th class="text-right">Tutar</th><th>ï¿½ï¿½lem</th></tr></thead><tbody>${pending.map(b => `<tr><td>${shortDate(b.date)}</td><td><small>${escapeHtml(b.description)}</small></td><td class="text-right" style="color:#059669; font-weight:600;">${money(b.amount)}</td><td><button class="btn btn-soft" style="padding:2px 6px;" onclick="approveBankSync(\'${b.id}\')">Onayla</button></td></tr>`).join("")}</tbody></table>`;
 }
 document.querySelectorAll('#bankFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.bankFilter = btn.dataset.bfilter; renderAccounts(); }));
   document.querySelectorAll('#mokaFilterChips .chip').forEach(btn=>btn.addEventListener('click',()=>{ state.mokaFilter = btn.dataset.mfilter; renderAccounts(); }));
@@ -5172,7 +5159,7 @@ document.getElementById("taxpayerFilter").addEventListener("change",renderCariLi
 document.getElementById("sortBy").addEventListener("change",renderCariList);
 
 // Version handling
-const VERSION = "V1.1.0-ENGINEER";
+const VERSION = "V1.5.0-PRO";
 
 const __loginInput=document.getElementById("loginPassword");
 if(__loginInput){
