@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ALKAM Mali | Bizmu Senkronizasyon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+      background: #f4f6fa;
+    }
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+      border: 1px solid #e5e7eb;
+    }
+    .btn {
+      border-radius: 16px;
+      padding: 16px;
+      font-weight: 800;
+      font-size: 15px;
+      text-align: center;
+      width: 100%;
+      transition: 0.12s;
+    }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+      background: #22c55e;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  </style>
+</head>
+
+<body class="pb-10">
+
+  <header class="bg-white sticky top-0 z-50 border-b border-slate-200 px-4 py-4">
+    <div class="max-w-5xl mx-auto flex justify-between items-center">
+      <div>
+        <h1 class="text-lg font-black text-slate-800">ALKAM MALİ</h1>
+        <p class="text-xs text-slate-500 font-bold tracking-wide uppercase">Bizmu Senkronizasyon Merkezi</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="dot"></span>
+        <span class="text-xs font-bold text-slate-600">PANEL HAZIR</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-4 mt-5 space-y-5">
+
+    <section class="grid grid-cols-2 gap-3">
+      <div class="card p-4">
+        <p class="text-[11px] text-slate-400 font-black uppercase">Supabase</p>
+        <p id="stat-supabase" class="text-sm font-bold text-slate-700 mt-1">Bekliyor</p>
+      </div>
+
+      <div class="card p-4">
+        <p class="text-[11px] text-slate-400 font-black uppercase">Son Bot</p>
+        <p id="stat-last-run" class="text-sm font-bold text-slate-700 mt-1">Yok</p>
+      </div>
+
+      <div class="card p-4">
+        <p class="text-[11px] text-slate-400 font-black uppercase">Son Senk.</p>
+        <p id="stat-last-sync" class="text-sm font-bold text-slate-700 mt-1">Yok</p>
+      </div>
+
+      <div class="card p-4 border-l-4 border-orange-400">
+        <p class="text-[11px] text-orange-500 font-black uppercase">Onay Bekleyen</p>
+        <p id="stat-pending" class="text-sm font-black text-orange-600 mt-1">0 Kayıt</p>
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 gap-3">
+      <button class="btn bg-slate-900 text-white" onclick="apiCall('/api/bizmu/login-test')">
+        Bizmu Login Test
+      </button>
+
+      <button class="btn bg-white text-slate-800 border border-slate-200" onclick="apiCall('/api/bizmu/menu-scan')">
+        Menüleri Tara
+      </button>
+
+      <button class="btn bg-blue-600 text-white" onclick="apiCall('/api/bizmu/clients-sync')">
+        Cari Listeyi Çek
+      </button>
+
+      <button class="btn bg-indigo-600 text-white" onclick="apiCall('/api/bizmu/transactions-sync')">
+        Cari Ekstreleri Çek
+      </button>
+
+      <button class="btn bg-amber-500 text-white" onclick="apiCall('/api/bizmu/staging-summary')">
+        Staging Kontrol Et
+      </button>
+
+      <button class="btn bg-emerald-600 text-white" onclick="apiCall('/api/bizmu/send-to-approval')">
+        Onaya Sun
+      </button>
+    </section>
+
+    <section>
+      <h2 class="text-sm font-black text-slate-600 mb-2">Staging Özet</h2>
+      <div class="card table-wrap">
+        <table class="w-full text-sm">
+          <thead class="bg-slate-50 border-b">
+            <tr>
+              <th class="p-3 text-left text-slate-500">Veri Tipi</th>
+              <th class="p-3 text-right text-slate-500">Toplam</th>
+              <th class="p-3 text-right text-slate-500">Onay Bekleyen</th>
+            </tr>
+          </thead>
+          <tbody id="staging-body">
+            <tr>
+              <td colspan="3" class="p-4 text-center text-slate-400 italic">
+                Henüz staging verisi alınmadı.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="text-sm font-black text-slate-600 mb-2">Onay Bekleyen İşlemler</h2>
+      <div class="card table-wrap">
+        <table class="w-full text-xs">
+          <thead class="bg-slate-50 border-b">
+            <tr>
+              <th class="p-3 text-left text-slate-500">Tarih</th>
+              <th class="p-3 text-left text-slate-500">Unvan</th>
+              <th class="p-3 text-right text-slate-500">Tutar</th>
+              <th class="p-3 text-center text-slate-500">Durum</th>
+            </tr>
+          </thead>
+          <tbody id="pending-body">
+            <tr>
+              <td colspan="4" class="p-4 text-center text-slate-400 italic">
+                Güncel kayıt bulunmuyor.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <h2 class="text-sm font-black text-slate-600 mb-2">Sistem Logları</h2>
+      <div id="log-console" class="card bg-slate-950 text-slate-300 p-4 font-mono text-[11px] h-48 overflow-y-auto">
+        <div class="text-emerald-400">[SYSTEM] ALKAM Mali panel hazır.</div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    function addLog(message, type = "info") {
+      const el = document.getElementById("log-console");
+      const time = new Date().toLocaleTimeString("tr-TR");
+
+      let color = "text-slate-300";
+      if (type === "success") color = "text-emerald-400";
+      if (type === "error") color = "text-red-400";
+      if (type === "warn") color = "text-amber-400";
+
+      el.innerHTML += `<div class="${color}">[${time}] ${message}</div>`;
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function formatTL(value) {
+      const number = Number(value || 0);
+      return number.toLocaleString("tr-TR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }) + " TL";
+    }
+
+    async function apiCall(endpoint, method = "POST") {
+      addLog("İşlem başlatıldı: " + endpoint, "info");
+
+      try {
+        const response = await fetch(endpoint, {
+          method: method,
+          headers: { "Content-Type": "application/json" }
+        });
+
+        let data = {};
+        try {
+          data = await response.json();
+        } catch (e) {
+          data = { message: "JSON olmayan cevap alındı." };
+        }
+
+        if (!response.ok) {
+          throw new Error(data.message || "API hatası");
+        }
+
+        document.getElementById("stat-last-run").textContent = new Date().toLocaleTimeString("tr-TR");
+        addLog(data.message || "İşlem başarılı.", "success");
+        return data;
+      } catch (err) {
+        addLog("Hata: " + err.message, "error");
+      }
+    }
+
+    window.onload = function () {
+      addLog("Mobil yönetim paneli başlatıldı.", "success");
+    };
+  </script>
+
+</body>
+</html>
