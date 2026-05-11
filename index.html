@@ -3212,8 +3212,16 @@ function getCurrentStatementMeta(){
     closingBalance, systemBalance, diff, isConsistent: diff < 0.01
   };
 }
-function buildStandardStatementTable(rowsDesc){
-  if(!rowsDesc.length) return `<div class="empty">Seçili aralıkta hareket yok.</div>`;
+function buildStandardStatementTable(rowsInput){
+  if(!rowsInput.length) return `<div class="empty">Seçili aralıkta hareket yok.</div>`;
+  // Force descending sort by date (latest first)
+  const rowsDesc = [...rowsInput].sort((a,b) => {
+    const da = new Date(getRowDateValue(b) || 0).getTime();
+    const db = new Date(getRowDateValue(a) || 0).getTime();
+    if(da !== db) return da - db;
+    return String(b.id || "").localeCompare(String(a.id || ""));
+  });
+
   return `<table>
     <thead>
       <tr>
@@ -3224,14 +3232,13 @@ function buildStandardStatementTable(rowsDesc){
         <th>Açıklama</th>
         <th class="text-right">Borç</th>
         <th class="text-right">Alacak</th>
-        <th class="text-right">Bakiye B</th>
-        <th class="text-right">Bakiye A</th>
+        <th class="text-right">Bakiye</th>
         <th class="text-right">İşlem</th>
       </tr>
     </thead>
     <tbody>
       ${rowsDesc.map((r,idx)=>{
-        const b = balanceColumns(r.running_balance);
+        const balLabel = balanceLabel(r.running_balance);
         const rowNo = displayTxnNo(r,'HRK');
         const mType = r.movement_type || r.final_movement_type || r.suggested_movement_type || "-";
         const source = r.source_module || r.source_type || r.kaynak || "Ana Veri";
@@ -3243,8 +3250,7 @@ function buildStandardStatementTable(rowsDesc){
           <td><div style="font-weight:700;color:#1e293b;">${escapeHtml(r.description || r.content_summary || "-")}</div></td>
           <td class="text-right">${r.debit > 0 ? money(r.debit) : "-"}</td>
           <td class="text-right" style="color:#059669;font-weight:700;">${r.credit > 0 ? money(r.credit) : "-"}</td>
-          <td class="text-right" style="font-weight:700;">${b.bakiye_b || "-"}</td>
-          <td class="text-right" style="font-weight:700;">${b.bakiye_a || "-"}</td>
+          <td class="text-right" style="font-weight:700;white-space:nowrap;">${balLabel}</td>
           <td class="text-right">
             <div class="btn-row" style="justify-content: flex-end;">
               <button class="btn btn-soft" style="padding:4px 8px;font-size:11px;" onclick="editMovementRow('${r.id}')">Düzenle</button>
@@ -3507,7 +3513,10 @@ function renderSelectedCariDetail(){
     <button class="btn btn-soft" onclick="openStatementPrecheck()">Extre Al</button>
     <button class="btn btn-soft" onclick="openDocumentModal(state.selectedCariId)">Belge Bağla</button>
   </div>
-  <div style="margin-bottom:8px;font-size:13px;font-weight:800;color:#1e293b;background:#f1f5f9;padding:8px 12px;border-radius:8px;">📌 Cari Ekstre Standardı: En son hareket en üstte listelenir. Bakiye hesabı tarih sırasına göre korunur.</div>
+  <div style="margin-bottom:12px;font-size:13px;font-weight:700;color:#475569;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid #e2e8f0;">
+    <div style="margin-bottom:4px;color:#1e293b;">📌 <b>Cari Ekstre Standardı:</b> En son hareket en üstte listelenir.</div>
+    <div>Bu extrede Kaynak kolonu zorunludur. Bakiye işarete göre Bakiye B veya Bakiye A gösterilir.</div>
+  </div>
   ${buildStandardStatementTable(meta.rowsDesc)}
   <div class="section" style="box-shadow:none;margin-top:14px;margin-bottom:0;">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;">
