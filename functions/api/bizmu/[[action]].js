@@ -21,6 +21,60 @@ function getActionFromUrl(request) {
   return parts[2] || '';
 }
 
+function extractTitle(html) {
+  const m = String(html || '').match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return m ? m[1].replace(/\s+/g, ' ').trim().slice(0, 120) : '';
+}
+
+function containsLoginHints(html) {
+  const h = String(html || '').toLowerCase();
+  return h.includes('password') || h.includes('şifre') || h.includes('sifre') || h.includes('login') || h.includes('giriş') || h.includes('giris');
+}
+
+async function safeFetchBizmuLogin(env) {
+  if (!env.BIZMU_LOGIN_URL) {
+    return {
+      reachable: false,
+      status: null,
+      title: '',
+      login_hints_found: false,
+      message: 'BIZMU_LOGIN_URL tanımlı değil.'
+    };
+  }
+
+  try {
+    const response = await fetch(env.BIZMU_LOGIN_URL, {
+      method: 'GET',
+      headers: {
+        'user-agent': 'ALKAM-Mali-Readonly-Bizmu-Test/1.0',
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
+    });
+    const text = await response.text();
+    const title = extractTitle(text);
+    const hints = containsLoginHints(text);
+    return {
+      reachable: response.ok,
+      status: response.status,
+      status_text: response.statusText,
+      title,
+      login_hints_found: hints,
+      content_type: response.headers.get('content-type') || '',
+      message: response.ok
+        ? `Bizmu login URL erişilebilir. HTTP ${response.status}. ${title ? 'Başlık: ' + title : 'Başlık okunamadı.'}`
+        : `Bizmu login URL cevap verdi ama başarılı değil. HTTP ${response.status}.`
+    };
+  } catch (err) {
+    return {
+      reachable: false,
+      status: null,
+      title: '',
+      login_hints_found: false,
+      message: 'Bizmu login URL erişim hatası: ' + err.message
+    };
+  }
+}
+
 export async function onRequest(context) {
   const { request, env } = context;
 
@@ -44,14 +98,19 @@ export async function onRequest(context) {
   };
 
   if (action === 'login-test') {
-    return json({
-      ...basePayload,
-      message: 'Bizmu login-test endpoint çalışıyor. Bu aşama sadece Worker bağlantı testidir; Bizmu şifresi kullanılmadı.',
-      worker_ready: true,
+    const envStatus = {
       has_bizmu_url: Boolean(env.BIZMU_LOGIN_URL),
       has_bizmu_user: Boolean(env.BIZMU_EMAIL),
       has_bizmu_password: Boolean(env.BIZMU_PASSWORD)
-    });
+    };
+    const loginPage = await safeFetchBizmuLogin(env);
+    return json({
+      ...basePayload,
+      message: `${loginPage.message} Şifre kullanılmadı; sadece giriş sayfası erişim testi yapıldı.`,
+      worker_ready: true,
+      ...envStatus,
+      login_page: loginPage
+    }, loginPage.reachable ? 200 : 502);
   }
 
   if (action === 'menu-scan') {
