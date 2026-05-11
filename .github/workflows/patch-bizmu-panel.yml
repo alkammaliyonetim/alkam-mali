@@ -1,0 +1,172 @@
+name: Patch Bizmu Panel
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-bizmu-panel.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-bizmu-panel:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Patch index.html
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          text = p.read_text(encoding='utf-8-sig')
+          changed = False
+
+          # Deploy/version marker update
+          if '<!-- DEPLOY_ID: 1811051126 -->' not in text:
+              import re
+              text = re.sub(r'<!-- DEPLOY_ID: .*? -->', '<!-- DEPLOY_ID: 1811051126 -->', text, count=1)
+              changed = True
+
+          # Sidebar menu button
+          if 'data-tab="bizmu"' not in text:
+              old = '<button class="nav-btn" data-tab="yedekleme">Veri Yükleme</button>\n    </div>'
+              new = '<button class="nav-btn" data-tab="yedekleme">Veri Yükleme</button>\n      <button class="nav-btn" data-tab="bizmu">Bizmu Senk.</button>\n    </div>'
+              if old not in text:
+                  raise SystemExit('NAV_PATTERN_NOT_FOUND')
+              text = text.replace(old, new, 1)
+              changed = True
+
+          # Main tab section
+          if 'id="tab-bizmu"' not in text:
+              insert = '''
+
+    <section id="tab-bizmu" class="tab-page">
+      <div class="section">
+        <h2 class="section-title">Bizmu Senkronizasyon Merkezi</h2>
+        <div class="rule-box" style="margin-bottom:14px;">
+          Bu ekran Bizmu verilerini doğrudan ana kayıtlara işlemez. İlk aşamada sadece bağlantı testi, menü tarama, staging ve onay akışı için kullanılacak. Şifreler ve gizli anahtarlar bu dosyada tutulmaz; Cloudflare Worker Secret tarafında kalır.
+        </div>
+        <div class="grid-4" style="margin-bottom:14px;">
+          <div class="metric-mini"><div class="k">Worker Durumu</div><div class="v" id="bizmuWorkerState">Bekliyor</div></div>
+          <div class="metric-mini"><div class="k">Son Bot</div><div class="v" id="bizmuLastRun">Yok</div></div>
+          <div class="metric-mini"><div class="k">Staging Kayıt</div><div class="v" id="bizmuStagingCount">0</div></div>
+          <div class="metric-mini"><div class="k">Onay Bekleyen</div><div class="v" id="bizmuPendingCount">0</div></div>
+        </div>
+        <div class="btn-row" style="margin-bottom:14px;">
+          <button class="btn btn-blue" onclick="bizmuApiCall('/api/bizmu/login-test')">Bizmu Login Test</button>
+          <button class="btn btn-soft" onclick="bizmuApiCall('/api/bizmu/menu-scan')">Menüleri Tara</button>
+          <button class="btn btn-soft" onclick="bizmuApiCall('/api/bizmu/clients-sync')">Cari Listeyi Çek</button>
+          <button class="btn btn-soft" onclick="bizmuApiCall('/api/bizmu/transactions-sync')">Cari Ekstreleri Çek</button>
+          <button class="btn btn-soft" onclick="bizmuApiCall('/api/bizmu/staging-summary')">Staging Kontrol Et</button>
+          <button class="btn btn-blue" onclick="bizmuApiCall('/api/bizmu/send-to-approval')">Onaya Sun</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="section">
+          <h2 class="section-title">Staging Özet</h2>
+          <div style="overflow:auto;">
+            <table>
+              <thead><tr><th>Veri Tipi</th><th class="text-right">Toplam</th><th class="text-right">Temiz</th><th class="text-right">Mükerrer</th><th class="text-right">Onay Bekleyen</th></tr></thead>
+              <tbody id="bizmuStagingBody"><tr><td colspan="5" style="color:var(--muted);font-weight:800;text-align:center;">Henüz staging verisi alınmadı.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="section">
+          <h2 class="section-title">Onay Bekleyen İşlemler</h2>
+          <div style="overflow:auto;">
+            <table>
+              <thead><tr><th>Tarih</th><th>Unvan</th><th class="text-right">Tutar</th><th>Durum</th></tr></thead>
+              <tbody id="bizmuPendingBody"><tr><td colspan="4" style="color:var(--muted);font-weight:800;text-align:center;">Güncel kayıt bulunmuyor.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="section-title">Bizmu Bot Logları</h2>
+        <div id="bizmuLogConsole" style="background:#0f172a;color:#cbd5e1;border-radius:16px;padding:14px;font-family:monospace;font-size:12px;line-height:1.55;min-height:180px;max-height:260px;overflow:auto;">
+          <div style="color:#34d399;">[SYSTEM] Bizmu senkronizasyon paneli hazır.</div>
+        </div>
+      </div>
+    </section>
+'''
+              marker = '\n  </main>\n</div>'
+              if marker not in text:
+                  raise SystemExit('MAIN_MARKER_NOT_FOUND')
+              text = text.replace(marker, insert + marker, 1)
+              changed = True
+
+          # switchTab metadata
+          old_meta = 'function switchTab(tab){const meta={dashboard:["Dashboard","Güncel özet"],cariler:["Cariler","Cari ve tahsilat yönetimi"],hesaplar:["Hesaplar","Kasa, banka ve Moka yönetimi"],yedekleme:["Veri Yükleme","Yeni veri ve ekstre aktarımı"]};'
+          new_meta = 'function switchTab(tab){const meta={dashboard:["Dashboard","Güncel özet"],cariler:["Cariler","Cari ve tahsilat yönetimi"],hesaplar:["Hesaplar","Kasa, banka ve Moka yönetimi"],gecis2026:["Toplu Tahakkuk","2026 kontrollü toplu tahakkuk ve açılış merkezi"],yedekleme:["Veri Yükleme","Yeni veri ve ekstre aktarımı"],bizmu:["Bizmu Senk.","Bizmu readonly bot, staging ve onay merkezi"]};'
+          if old_meta in text:
+              text = text.replace(old_meta, new_meta, 1)
+              changed = True
+          elif 'bizmu:["Bizmu Senk."' not in text:
+              raise SystemExit('SWITCHTAB_PATTERN_NOT_FOUND')
+
+          # Bizmu JS helpers
+          if 'function bizmuApiCall(' not in text:
+              helpers = '''
+function bizmuAddLog(message,type="info"){
+  const el=document.getElementById("bizmuLogConsole");
+  if(!el) return;
+  const time=new Date().toLocaleTimeString("tr-TR");
+  const color=type==="success"?"#34d399":(type==="error"?"#f87171":(type==="warn"?"#fbbf24":"#cbd5e1"));
+  el.innerHTML += `<div style="color:${color};">[${time}] ${message}</div>`;
+  el.scrollTop=el.scrollHeight;
+}
+async function bizmuApiCall(endpoint,method="POST"){
+  bizmuAddLog("İşlem başlatıldı: "+endpoint,"info");
+  const lastRun=document.getElementById("bizmuLastRun");
+  const workerState=document.getElementById("bizmuWorkerState");
+  try{
+    if(workerState) workerState.textContent="Çalışıyor";
+    const response=await fetch(endpoint,{method,headers:{"Content-Type":"application/json"}});
+    let data={};
+    try{ data=await response.json(); }catch(e){ data={message:"JSON olmayan cevap alındı."}; }
+    if(!response.ok) throw new Error(data.message || "Worker/API hatası");
+    if(lastRun) lastRun.textContent=new Date().toLocaleTimeString("tr-TR");
+    if(workerState) workerState.textContent="Başarılı";
+    if(typeof data.staging_count!=="undefined"){ const x=document.getElementById("bizmuStagingCount"); if(x) x.textContent=data.staging_count; }
+    if(typeof data.pending_count!=="undefined"){ const x=document.getElementById("bizmuPendingCount"); if(x) x.textContent=data.pending_count; }
+    bizmuAddLog(data.message || "İşlem başarılı.","success");
+    return data;
+  }catch(err){
+    if(workerState) workerState.textContent="Hata";
+    bizmuAddLog("Hata: "+err.message,"error");
+    if(typeof toast==="function") toast("Bizmu işlemi tamamlanamadı: "+err.message);
+    return null;
+  }
+}
+'''
+              marker = 'function switchTab(tab){'
+              if marker not in text:
+                  raise SystemExit('SWITCHTAB_FUNC_NOT_FOUND')
+              text = text.replace(marker, helpers + '\n' + marker, 1)
+              changed = True
+
+          if changed:
+              p.write_text(text, encoding='utf-8-sig')
+              print('PATCHED')
+          else:
+              print('NO_CHANGE')
+          PY
+
+      - name: Commit patched index
+        run: |
+          if git diff --quiet; then
+            echo "No index change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Bizmu senkronizasyon sekmesi eklendi"
+          git push
