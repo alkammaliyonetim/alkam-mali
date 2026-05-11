@@ -1,9 +1,8 @@
 name = "bizmu-browser-bot"
 main = "src/index.js"
-compatibility_date = "2026-04-08"
+compatibility_date = "2026-05-11"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
 
 [browser]
 binding = "MYBROWSER"
-
-[vars]
-BIZMU_LOGIN_URL = "https://uygulama.bizmu.com/642737"
