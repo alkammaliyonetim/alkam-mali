@@ -7,18 +7,23 @@
   <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>İstasyON | ALKAM Mali Ana Panel</title>
-  <script>
-    window.location.replace('./index.html');
-  </script>
   <style>
-    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;color:#0f172a;display:flex;align-items:center;justify-content:center;min-height:100vh}.box{background:#fff;border:1px solid #e6ebf3;border-radius:18px;padding:24px;box-shadow:0 18px 40px rgba(15,23,42,.08);max-width:420px;text-align:center}h1{margin:0 0 8px;font-size:24px;font-weight:900}p{margin:0 0 16px;color:#64748b;font-weight:700}.btn{display:inline-block;background:#2f67e8;color:#fff;text-decoration:none;border-radius:12px;padding:12px 16px;font-weight:900}
+    *{box-sizing:border-box}html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;color:#0f172a}.shell{height:100vh;display:grid;grid-template-rows:58px 1fr}.top{background:#071a3d;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.12)}.brand{display:flex;flex-direction:column;line-height:1.1}.brand strong{font-size:18px;font-weight:950}.brand span{font-size:11px;color:rgba(255,255,255,.75);font-weight:800}.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:0 14px;border-radius:12px;text-decoration:none;font-size:13px;font-weight:950;border:1px solid rgba(255,255,255,.14);white-space:nowrap}.btn-primary{background:#0ea5e9;color:#fff}.btn-soft{background:rgba(255,255,255,.10);color:#fff}.frame{width:100%;height:100%;border:0;display:block;background:#f4f7fb}@media(max-width:720px){.brand span{display:none}.top{height:auto;min-height:58px;padding:8px}.shell{grid-template-rows:auto 1fr}.btn{font-size:12px;padding:0 10px}}
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>İstasyON Ana Panel</h1>
-    <p>Admin bağlantısı ana ALKAM Mali paneline yönlendiriliyor.</p>
-    <a class="btn" href="./index.html">Ana Paneli Aç</a>
+  <div class="shell">
+    <div class="top">
+      <div class="brand">
+        <strong>İstasyON</strong>
+        <span>ALKAM Mali Ana Panel</span>
+      </div>
+      <div class="actions">
+        <a class="btn btn-primary" href="./automation.html" target="_self">🔄 Dış Veri Aktarım</a>
+        <a class="btn btn-soft" href="./index.html" target="mainFrame">Ana Panel</a>
+      </div>
+    </div>
+    <iframe class="frame" name="mainFrame" src="./index.html" title="İstasyON ALKAM Mali Ana Panel"></iframe>
   </div>
 </body>
 </html>
