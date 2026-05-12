@@ -38,3 +38,4 @@ jobs:
           git add index.html
           git commit -m "Index dış modül cache kırıcı sürüm eklendi"
           git push
+# trigger: 120526-1400
