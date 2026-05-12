@@ -10,6 +10,7 @@
   const ISTASYON_AUTOMATION_CORE = {
     programName: "İstasyON / ALKAM Mali",
     programUrl: "https://0e46431c.alkam-mali.pages.dev/admin.html",
+    version: "120526-GELISTIRME-AKTIF",
     rule: "Ana program korunur. Dış veriler doğrudan cari ekstresine yazılmaz; önce staging ve Onay Merkezi'ne düşer.",
     sources: ["Bizmu", "Luca", "Banka", "Moka", "Excel", "Telegram", "WhatsApp"],
     modules: ["Dış Veri Aktarım Merkezi", "Bizmu Aktarım", "Luca Aktarım", "Banka Aktarım", "Moka Aktarım", "Excel Aktarım", "Telegram / WhatsApp Aktarım", "Zamanlı İşler"],
@@ -82,13 +83,24 @@
     nav.appendChild(btn);
   }
 
+  function installDevelopmentStatus() {
+    var side = document.querySelector('.sidebar');
+    if(!side || document.getElementById('istasyonDevStatus')) return;
+    var box = document.createElement('div');
+    box.id = 'istasyonDevStatus';
+    box.className = 'sidebar-box';
+    box.innerHTML = '<div class="mini">GELİŞTİRME DURUMU</div><div class="big">İstasyON aktif<br>12.05.2026</div>';
+    side.appendChild(box);
+  }
+
   window.ALKAM_PRODUCT_MASTER = { resolve: resolveMasterProduct, stabilize: stabilizeStockData, map: PRODUCT_MAP };
   window.ISTASYON_AUTOMATION_CORE = ISTASYON_AUTOMATION_CORE;
   window.openExternalDataCenter = openExternalDataCenter;
   window.runBizmuBotCheck = runBizmuBotCheck;
 
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(installExternalDataCenter, 600); });
-  else setTimeout(installExternalDataCenter, 600);
+  function bootPatch(){ setTimeout(installExternalDataCenter, 600); setTimeout(installDevelopmentStatus, 900); }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootPatch);
+  else bootPatch();
 
-  console.info(MODULE_ID + ' aktif. Bizmu bot kontrolü program içine eklendi.');
+  console.info(MODULE_ID + ' aktif. Geliştirme durum etiketi eklendi.');
 })();
