@@ -1,3 +1,6 @@
+/program /index.html 200
+/program/ /index.html 200
+/program.html /index.html 200
 /admin /index.html 200
 /admin/ /index.html 200
 /admin.html /index.html 200
