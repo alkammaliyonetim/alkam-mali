@@ -24,12 +24,6 @@ function maskEmail(value) {
   return `${name.slice(0, 2)}***@${domain}`;
 }
 
-function parseAmountTR(raw) {
-  const s = String(raw || '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
-  const n = Number(s);
-  return Number.isFinite(n) ? n : null;
-}
-
 async function closeBrowser(browser) {
   if (!browser) return;
   try { await browser.close(); } catch (_) {}
@@ -76,11 +70,16 @@ async function loginState(page) {
   return { title, currentUrl, bodyText, stillLogin, invalidHint, successLikely };
 }
 
-async function scanCustomers(page, baseUrl) {
-  const customersUrl = `${baseUrl.replace(/\/$/, '')}/musteriler`;
-  await page.goto(customersUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-  await new Promise(resolve => setTimeout(resolve, 2500));
-  return extractCustomersFromPage(page);
+async function ensureLoggedIn(env) {
+  const opened = await loginToBizmu(env);
+  const state = await loginState(opened.page);
+  if (!state.successLikely) {
+    await closeBrowser(opened.browser);
+    const err = new Error('Bizmu girişi başarılı görünmedi.');
+    err.state = state;
+    throw err;
+  }
+  return opened;
 }
 
 async function extractCustomersFromPage(page) {
@@ -113,6 +112,13 @@ async function extractCustomersFromPage(page) {
   });
 }
 
+async function scanCustomers(page, baseUrl) {
+  const customersUrl = `${baseUrl.replace(/\/$/, '')}/musteriler`;
+  await page.goto(customersUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+  await new Promise(resolve => setTimeout(resolve, 2500));
+  return extractCustomersFromPage(page);
+}
+
 async function scanAllCustomerPages(page, baseUrl, maxPages = 10) {
   const root = baseUrl.replace(/\/$/, '');
   const all = [];
@@ -143,6 +149,33 @@ async function scanAllCustomerPages(page, baseUrl, maxPages = 10) {
   return { url: page.url(), title: await page.title(), pages_scanned: pages.length, total_customers: all.length, totals, page_summaries: pages, customers: all };
 }
 
+async function extractSalesFromPage(page) {
+  return page.evaluate(() => {
+    const clean = (v) => String(v || '').replace(/\s+/g, ' ').trim();
+    const hrefAbs = (href) => { try { return href ? new URL(href, location.href).href : ''; } catch (_) { return href || ''; } };
+    const links = Array.from(document.querySelectorAll('a[href]')).map((a, i) => ({
+      index: i,
+      text: clean(a.innerText || a.textContent || a.getAttribute('aria-label')).slice(0, 500),
+      href: hrefAbs(a.getAttribute('href')),
+      visible: Boolean(a.offsetWidth || a.offsetHeight || a.getClientRects().length)
+    })).filter(x => x.text || x.href);
+    const salesLinks = links.filter(x => /\/satislar\/\d+/.test(x.href) && x.text).map(x => {
+      const id = (x.href.match(/\/satislar\/(\d+)/) || [])[1] || '';
+      return { id, raw_text: x.text, href: x.href, visible: x.visible };
+    });
+    const bodyText = clean(document.body ? document.body.innerText : '');
+    const totalMatch = bodyText.match(/(\d+)\s*Kayıt/i);
+    return { url: location.href, title: document.title, body_preview: bodyText.slice(0, 2500), total_hint: totalMatch ? Number(totalMatch[1]) : null, counts: { links: links.length, sales_links: salesLinks.length }, sales_links: salesLinks, links: links.slice(0, 160) };
+  });
+}
+
+async function scanSales(page, baseUrl) {
+  const salesUrl = `${baseUrl.replace(/\/$/, '')}/satislar`;
+  await page.goto(salesUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+  await new Promise(resolve => setTimeout(resolve, 2500));
+  return extractSalesFromPage(page);
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') return json({ ok: true, message: 'CORS hazır.' });
@@ -160,16 +193,22 @@ export default {
 
     if (path === '/customers-scan') {
       let browser;
-      try { const opened = await loginToBizmu(env); browser = opened.browser; const state = await loginState(opened.page); if (!state.successLikely) { await closeBrowser(browser); return json({ ok: false, readonly: true, service: 'bizmu-browser-bot', message: 'Giriş başarılı görünmediği için müşteri taraması yapılmadı.', current_url: state.currentUrl, title: state.title, body_preview: state.bodyText, at: nowTR() }, 409); } const scan = await scanCustomers(opened.page, opened.targetUrl); await closeBrowser(browser); return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Bizmu müşteri/cari liste taraması tamamlandı. Veri yazılmadı, kayıt değiştirilmedi.', used_email_masked: maskEmail(env.BIZMU_EMAIL), login_success_likely: true, scan, at: nowTR() }); }
-      catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Müşteri tarama hatası: ' + err.message, at: nowTR() }, 500); }
+      try { const opened = await ensureLoggedIn(env); browser = opened.browser; const scan = await scanCustomers(opened.page, opened.targetUrl); await closeBrowser(browser); return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Bizmu müşteri/cari liste taraması tamamlandı. Veri yazılmadı, kayıt değiştirilmedi.', used_email_masked: maskEmail(env.BIZMU_EMAIL), login_success_likely: true, scan, at: nowTR() }); }
+      catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Müşteri tarama hatası: ' + err.message, state: err.state || null, at: nowTR() }, 500); }
     }
 
     if (path === '/customers-all-scan') {
       let browser;
-      try { const opened = await loginToBizmu(env); browser = opened.browser; const state = await loginState(opened.page); if (!state.successLikely) { await closeBrowser(browser); return json({ ok: false, readonly: true, service: 'bizmu-browser-bot', message: 'Giriş başarılı görünmediği için tüm müşteri taraması yapılmadı.', current_url: state.currentUrl, title: state.title, body_preview: state.bodyText, at: nowTR() }, 409); } const maxPages = Math.min(Number(url.searchParams.get('max_pages') || 10), 20); const scan = await scanAllCustomerPages(opened.page, opened.targetUrl, maxPages); await closeBrowser(browser); return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Bizmu tüm müşteri/cari sayfaları tarandı. Veri yazılmadı, kayıt değiştirilmedi.', used_email_masked: maskEmail(env.BIZMU_EMAIL), login_success_likely: true, scan, at: nowTR() }); }
-      catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Tüm müşteri tarama hatası: ' + err.message, at: nowTR() }, 500); }
+      try { const opened = await ensureLoggedIn(env); browser = opened.browser; const maxPages = Math.min(Number(url.searchParams.get('max_pages') || 10), 20); const scan = await scanAllCustomerPages(opened.page, opened.targetUrl, maxPages); await closeBrowser(browser); return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Bizmu tüm müşteri/cari sayfaları tarandı. Veri yazılmadı, kayıt değiştirilmedi.', used_email_masked: maskEmail(env.BIZMU_EMAIL), login_success_likely: true, scan, at: nowTR() }); }
+      catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Tüm müşteri tarama hatası: ' + err.message, state: err.state || null, at: nowTR() }, 500); }
     }
 
-    return json({ ok: false, message: 'Bilinmeyen endpoint. Kullanılabilir endpointler: /health, /credential-check, /login-check, /customers-scan, /customers-all-scan', path }, 404);
+    if (path === '/sales-scan') {
+      let browser;
+      try { const opened = await ensureLoggedIn(env); browser = opened.browser; const scan = await scanSales(opened.page, opened.targetUrl); await closeBrowser(browser); return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Bizmu satış/fatura liste taraması tamamlandı. Veri yazılmadı, kayıt değiştirilmedi.', used_email_masked: maskEmail(env.BIZMU_EMAIL), login_success_likely: true, scan, at: nowTR() }); }
+      catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Satış/fatura tarama hatası: ' + err.message, state: err.state || null, at: nowTR() }, 500); }
+    }
+
+    return json({ ok: false, message: 'Bilinmeyen endpoint. Kullanılabilir endpointler: /health, /credential-check, /login-check, /customers-scan, /customers-all-scan, /sales-scan', path }, 404);
   }
 };
