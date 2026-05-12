@@ -3,218 +3,107 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>ALKAM Mali | Bizmu Senkronizasyon</title>
+  <title>ALKAM Mali | Dış Veri Aktarım ve Otomasyon Merkezi</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      background: #f4f6fa;
-    }
-    .card {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
-      border: 1px solid #e5e7eb;
-    }
-    .btn {
-      border-radius: 16px;
-      padding: 16px;
-      font-weight: 800;
-      font-size: 15px;
-      text-align: center;
-      width: 100%;
-      transition: 0.12s;
-    }
-    .btn:active {
-      transform: scale(0.97);
-    }
-    .dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 999px;
-      display: inline-block;
-      background: #22c55e;
-    }
-    .table-wrap {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:#f4f6fa;color:#0f172a}.card{background:#fff;border-radius:16px;box-shadow:0 1px 4px rgba(15,23,42,.08);border:1px solid #e5e7eb}.btn{border-radius:14px;padding:13px 14px;font-weight:900;font-size:13px;text-align:center;width:100%;transition:.12s}.btn:active{transform:scale(.97)}.dot{width:10px;height:10px;border-radius:999px;display:inline-block;background:#22c55e}.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace}.pill{display:inline-flex;align-items:center;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:900}.pill-green{background:#dcfce7;color:#166534}.pill-blue{background:#dbeafe;color:#1d4ed8}.pill-orange{background:#ffedd5;color:#c2410c}.pill-gray{background:#f1f5f9;color:#475569}.result-box{white-space:pre-wrap;word-break:break-word;max-height:360px;overflow:auto}.note{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:14px;padding:12px;font-size:12px;font-weight:800}.module-title{font-size:16px;font-weight:950;color:#0f172a}.module-sub{font-size:12px;color:#64748b;font-weight:700}.module-card{border-radius:18px;border:1px solid #e5e7eb;background:#fff;padding:16px;box-shadow:0 1px 4px rgba(15,23,42,.06)}
   </style>
 </head>
-
 <body class="pb-10">
-
   <header class="bg-white sticky top-0 z-50 border-b border-slate-200 px-4 py-4">
-    <div class="max-w-5xl mx-auto flex justify-between items-center">
+    <div class="max-w-7xl mx-auto flex justify-between items-center gap-3">
       <div>
         <h1 class="text-lg font-black text-slate-800">ALKAM MALİ</h1>
-        <p class="text-xs text-slate-500 font-bold tracking-wide uppercase">Bizmu Senkronizasyon Merkezi</p>
+        <p class="text-xs text-slate-500 font-bold tracking-wide uppercase">Dış Veri Aktarım ve Otomasyon Merkezi</p>
       </div>
-      <div class="flex items-center gap-2">
-        <span class="dot"></span>
-        <span class="text-xs font-bold text-slate-600">PANEL HAZIR</span>
-      </div>
+      <div class="flex items-center gap-2 shrink-0"><span class="dot"></span><span id="panel-status" class="text-xs font-bold text-slate-600">PANEL HAZIR</span></div>
     </div>
   </header>
 
-  <main class="max-w-5xl mx-auto px-4 mt-5 space-y-5">
+  <main class="max-w-7xl mx-auto px-4 mt-5 space-y-5">
+    <section class="note">Ana sistem ALKAM Mali olacaktır. Bizmu geçiş verisi, Luca resmi veri kontrolü, banka/Moka/Excel/Telegram ise dış kaynak olarak çalışacaktır. Hiçbir kaynak ana cari ekstresine otomatik yazmayacak; önce staging ve Onay Merkezi’ne düşecektir.</section>
 
-    <section class="grid grid-cols-2 gap-3">
-      <div class="card p-4">
-        <p class="text-[11px] text-slate-400 font-black uppercase">Supabase</p>
-        <p id="stat-supabase" class="text-sm font-bold text-slate-700 mt-1">Bekliyor</p>
+    <section class="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div class="card p-4"><p class="text-[11px] text-slate-400 font-black uppercase">Bot Durumu</p><p id="stat-bot" class="text-sm font-bold text-slate-700 mt-1">Bekliyor</p></div>
+      <div class="card p-4"><p class="text-[11px] text-slate-400 font-black uppercase">Son İşlem</p><p id="stat-last-run" class="text-sm font-bold text-slate-700 mt-1">Yok</p></div>
+      <div class="card p-4"><p class="text-[11px] text-slate-400 font-black uppercase">Cari Sayısı</p><p id="stat-customer-count" class="text-sm font-black text-blue-700 mt-1">-</p></div>
+      <div class="card p-4"><p class="text-[11px] text-slate-400 font-black uppercase">Satış/Fatura</p><p id="stat-sales-count" class="text-sm font-black text-orange-600 mt-1">-</p></div>
+      <div class="card p-4 border-l-4 border-emerald-400"><p class="text-[11px] text-emerald-500 font-black uppercase">Otomasyon</p><p id="stat-automation" class="text-sm font-black text-emerald-700 mt-1">Planlandı</p></div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div class="module-card space-y-3">
+        <div><div class="module-title">Bizmu Geçiş Aktarımı</div><p class="module-sub">Bizmu iptal edilmeden önce cari, satış ve tahsilat verilerini okuma.</p></div>
+        <div class="grid grid-cols-1 gap-2">
+          <button class="btn bg-slate-900 text-white" onclick="botCall('/health','GET')">Bot Sağlık Kontrolü</button>
+          <button class="btn bg-indigo-700 text-white" onclick="botCall('/login-check','GET')">Bizmu Login Kontrol</button>
+          <button class="btn bg-blue-600 text-white" onclick="botCall('/customers-all-scan?max_pages=6','GET')">Tüm Carileri Çek</button>
+          <button class="btn bg-amber-500 text-white" onclick="botCall('/sales-scan','GET')">Satış İlk Sayfa</button>
+          <button class="btn bg-orange-600 text-white" onclick="botCall('/sales-pages-scan?max_pages=5','GET')">Satış 5 Sayfa</button>
+        </div>
       </div>
 
-      <div class="card p-4">
-        <p class="text-[11px] text-slate-400 font-black uppercase">Son Bot</p>
-        <p id="stat-last-run" class="text-sm font-bold text-slate-700 mt-1">Yok</p>
+      <div class="module-card space-y-3">
+        <div><div class="module-title">Luca Resmi Veri Aktarımı</div><p class="module-sub">Mizan, muavin, KDV, SGK ve beyanname kontrol merkezi.</p></div>
+        <div class="grid grid-cols-1 gap-2">
+          <button class="btn bg-violet-700 text-white" onclick="planned('Luca bağlantı testi')">Luca Bağlantı Testi</button>
+          <button class="btn bg-white border text-slate-800" onclick="planned('Luca mizan yükleme')">Mizan Yükle</button>
+          <button class="btn bg-white border text-slate-800" onclick="planned('Luca muavin yükleme')">Muavin Yükle</button>
+          <button class="btn bg-white border text-slate-800" onclick="planned('KDV / beyanname kontrolü')">KDV & Beyanname Kontrolü</button>
+        </div>
       </div>
 
-      <div class="card p-4">
-        <p class="text-[11px] text-slate-400 font-black uppercase">Son Senk.</p>
-        <p id="stat-last-sync" class="text-sm font-bold text-slate-700 mt-1">Yok</p>
+      <div class="module-card space-y-3">
+        <div><div class="module-title">Banka / Moka Aktarım</div><p class="module-sub">Hesap hareketleri, Moka United, eşleşmeyenler ve onay akışı.</p></div>
+        <div class="grid grid-cols-1 gap-2">
+          <button class="btn bg-sky-700 text-white" onclick="planned('Banka ekstresi yükleme')">Banka Ekstresi Yükle</button>
+          <button class="btn bg-teal-700 text-white" onclick="planned('Moka United aktarımı')">Moka United Kontrol</button>
+          <button class="btn bg-white border text-slate-800" onclick="planned('Banka-Moka eşleştirme')">Eşleşmeyenleri Tara</button>
+          <button class="btn bg-emerald-600 text-white" onclick="prepareApprovalPreview()">Onay Ön İzleme</button>
+        </div>
       </div>
 
-      <div class="card p-4 border-l-4 border-orange-400">
-        <p class="text-[11px] text-orange-500 font-black uppercase">Onay Bekleyen</p>
-        <p id="stat-pending" class="text-sm font-black text-orange-600 mt-1">0 Kayıt</p>
+      <div class="module-card space-y-3">
+        <div><div class="module-title">Excel Aktarım</div><p class="module-sub">Toplu cari, tahakkuk, tahsilat, satış ve masraf aktarımı.</p></div>
+        <div class="grid grid-cols-1 gap-2">
+          <button class="btn bg-green-700 text-white" onclick="planned('Excel dosya yükleme')">Excel Dosyası Yükle</button>
+          <button class="btn bg-white border text-slate-800" onclick="planned('Excel kolon eşleştirme')">Kolon Eşleştir</button>
+          <button class="btn bg-white border text-slate-800" onclick="planned('Excel mükerrer kontrol')">Mükerrer Kontrol</button>
+        </div>
+      </div>
+
+      <div class="module-card space-y-3">
+        <div><div class="module-title">Telegram / WhatsApp Aktarım</div><p class="module-sub">Dekont, Moka bildirimi, ödeme sözü ve saha mesajlarını yakalama.</p></div>
+        <div class="grid grid-cols-1 gap-2">
+          <button class="btn bg-cyan-700 text-white" onclick="planned('Telegram bot bağlantısı')">Telegram Bot Bağla</button>
+          <button class="btn bg-white border text-slate-800" onclick="planned('Dekont mesajı okuma')">Dekont Mesajlarını Oku</button>
+          <button class="btn bg-white border text-slate-800" onclick="planned('Ödeme sözü takip')">Ödeme Sözü Takibi</button>
+        </div>
+      </div>
+
+      <div class="module-card space-y-3">
+        <div><div class="module-title">Zamanlı İşler</div><p class="module-sub">Haftalık, aylık, 3 aylık, yıllık ve son tarihli ofis işleri.</p></div>
+        <div class="grid grid-cols-1 gap-2">
+          <button class="btn bg-rose-700 text-white" onclick="planned('Haftalık iş planı')">Haftalık İş Planı</button>
+          <button class="btn bg-white border text-slate-800" onclick="planned('Aylık beyan ve tahakkuk işleri')">Aylık İşler</button>
+          <button class="btn bg-white border text-slate-800" onclick="planned('3 aylık geçici vergi işleri')">3 Aylık İşler</button>
+          <button class="btn bg-white border text-slate-800" onclick="planned('Yıllık kapanış ve kurumlar işleri')">Yıllık İşler</button>
+        </div>
       </div>
     </section>
 
-    <section class="grid grid-cols-1 gap-3">
-      <button class="btn bg-slate-900 text-white" onclick="apiCall('/api/bizmu/login-test')">
-        Bizmu Login Test
-      </button>
-
-      <button class="btn bg-white text-slate-800 border border-slate-200" onclick="apiCall('/api/bizmu/menu-scan')">
-        Menüleri Tara
-      </button>
-
-      <button class="btn bg-blue-600 text-white" onclick="apiCall('/api/bizmu/clients-sync')">
-        Cari Listeyi Çek
-      </button>
-
-      <button class="btn bg-indigo-600 text-white" onclick="apiCall('/api/bizmu/transactions-sync')">
-        Cari Ekstreleri Çek
-      </button>
-
-      <button class="btn bg-amber-500 text-white" onclick="apiCall('/api/bizmu/staging-summary')">
-        Staging Kontrol Et
-      </button>
-
-      <button class="btn bg-emerald-600 text-white" onclick="apiCall('/api/bizmu/send-to-approval')">
-        Onaya Sun
-      </button>
+    <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="card p-4"><h2 class="text-sm font-black text-slate-700 mb-3">Özet</h2><div class="grid grid-cols-2 gap-3 text-sm"><div class="bg-slate-50 rounded-xl p-3"><p class="text-[11px] font-black text-slate-400 uppercase">Son Endpoint</p><p id="summary-endpoint" class="font-black">-</p></div><div class="bg-slate-50 rounded-xl p-3"><p class="text-[11px] font-black text-slate-400 uppercase">Durum</p><p id="summary-ok" class="font-black">-</p></div><div class="bg-slate-50 rounded-xl p-3"><p class="text-[11px] font-black text-slate-400 uppercase">Okunan Kayıt</p><p id="summary-count" class="font-black">-</p></div><div class="bg-slate-50 rounded-xl p-3"><p class="text-[11px] font-black text-slate-400 uppercase">Son Saat</p><p id="summary-time" class="font-black">-</p></div></div></div>
+      <div class="card p-4"><h2 class="text-sm font-black text-slate-700 mb-3">Sonuç Ön İzleme</h2><div id="preview-list" class="space-y-2 text-xs text-slate-700 max-h-48 overflow-auto"><div class="text-slate-400 italic">Henüz veri çekilmedi.</div></div></div>
     </section>
 
-    <section>
-      <h2 class="text-sm font-black text-slate-600 mb-2">Staging Özet</h2>
-      <div class="card table-wrap">
-        <table class="w-full text-sm">
-          <thead class="bg-slate-50 border-b">
-            <tr>
-              <th class="p-3 text-left text-slate-500">Veri Tipi</th>
-              <th class="p-3 text-right text-slate-500">Toplam</th>
-              <th class="p-3 text-right text-slate-500">Onay Bekleyen</th>
-            </tr>
-          </thead>
-          <tbody id="staging-body">
-            <tr>
-              <td colspan="3" class="p-4 text-center text-slate-400 italic">
-                Henüz staging verisi alınmadı.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section>
-      <h2 class="text-sm font-black text-slate-600 mb-2">Onay Bekleyen İşlemler</h2>
-      <div class="card table-wrap">
-        <table class="w-full text-xs">
-          <thead class="bg-slate-50 border-b">
-            <tr>
-              <th class="p-3 text-left text-slate-500">Tarih</th>
-              <th class="p-3 text-left text-slate-500">Unvan</th>
-              <th class="p-3 text-right text-slate-500">Tutar</th>
-              <th class="p-3 text-center text-slate-500">Durum</th>
-            </tr>
-          </thead>
-          <tbody id="pending-body">
-            <tr>
-              <td colspan="4" class="p-4 text-center text-slate-400 italic">
-                Güncel kayıt bulunmuyor.
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section>
-      <h2 class="text-sm font-black text-slate-600 mb-2">Sistem Logları</h2>
-      <div id="log-console" class="card bg-slate-950 text-slate-300 p-4 font-mono text-[11px] h-48 overflow-y-auto">
-        <div class="text-emerald-400">[SYSTEM] ALKAM Mali panel hazır.</div>
-      </div>
-    </section>
-
+    <section><h2 class="text-sm font-black text-slate-600 mb-2">Staging / Onay Taslağı</h2><div class="card table-wrap"><table class="w-full text-xs"><thead class="bg-slate-50 border-b"><tr><th class="p-3 text-left text-slate-500">Kaynak</th><th class="p-3 text-left text-slate-500">Tip</th><th class="p-3 text-left text-slate-500">Unvan / Açıklama</th><th class="p-3 text-right text-slate-500">Tutar</th><th class="p-3 text-center text-slate-500">Durum</th></tr></thead><tbody id="staging-body"><tr><td colspan="5" class="p-4 text-center text-slate-400 italic">Henüz staging verisi alınmadı.</td></tr></tbody></table></div></section>
+    <section><h2 class="text-sm font-black text-slate-600 mb-2">Ham JSON Sonucu</h2><pre id="json-result" class="card bg-slate-950 text-slate-200 p-4 mono text-[11px] result-box">Henüz sonuç yok.</pre></section>
+    <section><h2 class="text-sm font-black text-slate-600 mb-2">Sistem Logları</h2><div id="log-console" class="card bg-slate-950 text-slate-300 p-4 mono text-[11px] h-48 overflow-y-auto"><div class="text-emerald-400">[SYSTEM] ALKAM Mali panel hazır.</div></div></section>
   </main>
 
   <script>
-    function addLog(message, type = "info") {
-      const el = document.getElementById("log-console");
-      const time = new Date().toLocaleTimeString("tr-TR");
-
-      let color = "text-slate-300";
-      if (type === "success") color = "text-emerald-400";
-      if (type === "error") color = "text-red-400";
-      if (type === "warn") color = "text-amber-400";
-
-      el.innerHTML += `<div class="${color}">[${time}] ${message}</div>`;
-      el.scrollTop = el.scrollHeight;
-    }
-
-    function formatTL(value) {
-      const number = Number(value || 0);
-      return number.toLocaleString("tr-TR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      }) + " TL";
-    }
-
-    async function apiCall(endpoint, method = "POST") {
-      addLog("İşlem başlatıldı: " + endpoint, "info");
-
-      try {
-        const response = await fetch(endpoint, {
-          method: method,
-          headers: { "Content-Type": "application/json" }
-        });
-
-        let data = {};
-        try {
-          data = await response.json();
-        } catch (e) {
-          data = { message: "JSON olmayan cevap alındı." };
-        }
-
-        if (!response.ok) {
-          throw new Error(data.message || "API hatası");
-        }
-
-        document.getElementById("stat-last-run").textContent = new Date().toLocaleTimeString("tr-TR");
-        addLog(data.message || "İşlem başarılı.", "success");
-        return data;
-      } catch (err) {
-        addLog("Hata: " + err.message, "error");
-      }
-    }
-
-    window.onload = function () {
-      addLog("Mobil yönetim paneli başlatıldı.", "success");
-    };
+    const BOT_BASE="https://bizmu-browser-bot.alkammaliyonetim.workers.dev";let lastBotData=null;function addLog(message,type="info"){const el=document.getElementById("log-console");const time=new Date().toLocaleTimeString("tr-TR");let color="text-slate-300";if(type==="success")color="text-emerald-400";if(type==="error")color="text-red-400";if(type==="warn")color="text-amber-400";el.innerHTML+=`<div class="${color}">[${time}] ${message}</div>`;el.scrollTop=el.scrollHeight}function formatTL(value){if(value===null||value===undefined||value==="")return"-";const n=Number(value);if(!Number.isFinite(n))return String(value);return n.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" TL"}function safeText(v){return String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]))}async function botCall(endpoint,method="GET"){addLog("Bot işlemi başlatıldı: "+endpoint,"info");setBusy(true);try{const response=await fetch(BOT_BASE+endpoint,{method,headers:{"Content-Type":"application/json"}});let data;try{data=await response.json()}catch(e){data={ok:false,message:"JSON olmayan cevap alındı."}}lastBotData=data;renderResult(endpoint,data,response.ok);if(!response.ok||data.ok===false)throw new Error(data.message||"Bot hatası");addLog(data.message||"Bot işlemi başarılı.","success");return data}catch(err){addLog("Hata: "+err.message,"error")}finally{setBusy(false)}}function planned(name){addLog(name+" modülü planlandı. Bu aşama ana kayda işlem yapmaz.","warn");document.getElementById("json-result").textContent=JSON.stringify({ok:true,planned:true,module:name,message:"Bu modül ALKAM otomasyon yol haritasına eklendi. Önce staging ve onay merkezi kurulacak."},null,2)}function setBusy(isBusy){document.getElementById("panel-status").textContent=isBusy?"BOT ÇALIŞIYOR":"PANEL HAZIR"}function renderResult(endpoint,data,responseOk){document.getElementById("json-result").textContent=JSON.stringify(data,null,2);document.getElementById("stat-last-run").textContent=new Date().toLocaleTimeString("tr-TR");document.getElementById("summary-endpoint").textContent=endpoint;document.getElementById("summary-ok").textContent=responseOk&&data.ok!==false?"Başarılı":"Hata";document.getElementById("summary-time").textContent=new Date().toLocaleTimeString("tr-TR");document.getElementById("stat-bot").textContent=data.ok===true?"Çalışıyor":"Kontrol Gerekli";let count="-";if(data.scan?.total_customers!==undefined)count=data.scan.total_customers;else if(data.scan?.total_sales_links!==undefined)count=data.scan.total_sales_links;else if(data.scan?.counts?.sales_links!==undefined)count=data.scan.counts.sales_links;else if(data.scan?.counts?.customer_links!==undefined)count=data.scan.counts.customer_links;document.getElementById("summary-count").textContent=count;if(data.scan?.total_customers!==undefined)document.getElementById("stat-customer-count").textContent=data.scan.total_customers;if(data.scan?.total_sales_links!==undefined)document.getElementById("stat-sales-count").textContent=data.scan.total_sales_links;if(data.scan?.total_hint!==undefined&&endpoint.includes("sales"))document.getElementById("stat-sales-count").textContent=data.scan.total_hint;renderPreview(data);renderStaging(data)}function renderPreview(data){const box=document.getElementById("preview-list");let items=[];if(Array.isArray(data.scan?.customers))items=data.scan.customers.slice(0,12).map(x=>`${x.name} — ${formatTL(x.amount)} — ${x.status}`);else if(Array.isArray(data.scan?.customer_links))items=data.scan.customer_links.slice(0,12).map(x=>`${x.name} — ${formatTL(x.amount)} — ${x.status}`);else if(Array.isArray(data.scan?.sales))items=data.scan.sales.slice(0,12).map(x=>x.raw_text);else if(Array.isArray(data.scan?.sales_links))items=data.scan.sales_links.slice(0,12).map(x=>x.raw_text);else if(data.message)items=[data.message];box.innerHTML=items.length?items.map(x=>`<div class="bg-slate-50 border rounded-xl p-2">${safeText(x)}</div>`).join(""):'<div class="text-slate-400 italic">Ön izleme yok.</div>'}function renderStaging(data){const body=document.getElementById("staging-body");let rows=[];if(Array.isArray(data.scan?.customers)){rows=data.scan.customers.slice(0,25).map(x=>({source:"Bizmu",type:"Cari",title:x.name,amount:x.amount,status:x.status||"Okundu"}))}else if(Array.isArray(data.scan?.sales)){rows=data.scan.sales.slice(0,25).map(x=>({source:"Bizmu",type:"Satış",title:x.raw_text,amount:"",status:"Okundu"}))}else if(Array.isArray(data.scan?.sales_links)){rows=data.scan.sales_links.slice(0,25).map(x=>({source:"Bizmu",type:"Satış",title:x.raw_text,amount:"",status:"Okundu"}))}if(!rows.length){body.innerHTML='<tr><td colspan="5" class="p-4 text-center text-slate-400 italic">Bu sonuçtan staging satırı üretilemedi.</td></tr>';return}body.innerHTML=rows.map(r=>`<tr class="border-b"><td class="p-3 font-bold">${safeText(r.source)}</td><td class="p-3">${safeText(r.type)}</td><td class="p-3 max-w-[520px]">${safeText(r.title)}</td><td class="p-3 text-right font-bold">${formatTL(r.amount)}</td><td class="p-3 text-center"><span class="pill pill-blue">${safeText(r.status)}</span></td></tr>`).join("")}function prepareApprovalPreview(){if(!lastBotData){addLog("Onay ön izleme için önce Bizmu verisi çek.","warn");return}renderStaging(lastBotData);addLog("Onay ön izleme hazırlandı. Henüz ana kayda işlenmedi.","success")}window.onload=function(){addLog("Dış Veri Aktarım ve Otomasyon Merkezi başlatıldı.","success");addLog("Bizmu geçiş botu canlı endpointlere bağlandı.","success");addLog("Luca, Banka, Moka, Excel ve Telegram modülleri yol haritasına alındı.","success")};
   </script>
-
 </body>
 </html>
