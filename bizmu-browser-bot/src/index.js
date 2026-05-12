@@ -137,15 +137,46 @@ async function scanPostLogin(page) {
       if (!seen.has(key)) { seen.add(key); uniqueLinks.push(link); }
       if (uniqueLinks.length >= 120) break;
     }
+    return { url: location.href, title: document.title, body_preview: clean(document.body ? document.body.innerText.slice(0, 2500) : ''), counts: { links: linksRaw.length, buttons: buttonsRaw.length, headings: headings.length }, headings: headings.slice(0, 60), important_links: importantLinks, links: uniqueLinks, buttons: buttonsRaw.slice(0, 80) };
+  });
+}
+
+async function scanCustomers(page, baseUrl) {
+  const customersUrl = `${baseUrl.replace(/\/$/, '')}/musteriler`;
+  await page.goto(customersUrl, { waitUntil: 'networkidle2', timeout: 30000 });
+  await new Promise(resolve => setTimeout(resolve, 3000));
+  return page.evaluate(() => {
+    const clean = (v) => String(v || '').replace(/\s+/g, ' ').trim();
+    const hrefAbs = (href) => {
+      try { return href ? new URL(href, location.href).href : ''; } catch (_) { return href || ''; }
+    };
+    const bodyText = clean(document.body ? document.body.innerText : '');
+    const links = Array.from(document.querySelectorAll('a[href]')).map((a, i) => ({
+      index: i,
+      text: clean(a.innerText || a.textContent || a.getAttribute('aria-label')).slice(0, 240),
+      href: hrefAbs(a.getAttribute('href')),
+      visible: Boolean(a.offsetWidth || a.offsetHeight || a.getClientRects().length)
+    })).filter(x => x.text || x.href);
+    const customerLinks = links.filter(x => /\/musteriler\//.test(x.href) && !/\/musteriler\/yeni/.test(x.href)).slice(0, 150);
+    const rows = Array.from(document.querySelectorAll('tr, [role="row"], .ember-view')).map((el, i) => {
+      const text = clean(el.innerText || el.textContent).slice(0, 500);
+      const href = el.querySelector && el.querySelector('a[href]') ? hrefAbs(el.querySelector('a[href]').getAttribute('href')) : '';
+      return { index: i, text, href, visible: Boolean(el.offsetWidth || el.offsetHeight || el.getClientRects().length) };
+    }).filter(x => x.text && x.text.length > 2);
+    const likelyRows = rows.filter(x => {
+      const t = x.text.toLowerCase();
+      return x.href.includes('/musteriler/') || t.includes('müşteri') || t.includes('musteri') || t.includes('bakiye') || t.includes('tl') || t.includes('vergi');
+    }).slice(0, 120);
+    const headings = Array.from(document.querySelectorAll('h1,h2,h3,h4')).map((h, i) => ({ index: i, tag: h.tagName.toLowerCase(), text: clean(h.innerText || h.textContent), visible: Boolean(h.offsetWidth || h.offsetHeight || h.getClientRects().length) })).filter(x => x.text);
     return {
       url: location.href,
       title: document.title,
-      body_preview: clean(document.body ? document.body.innerText.slice(0, 2500) : ''),
-      counts: { links: linksRaw.length, buttons: buttonsRaw.length, headings: headings.length },
-      headings: headings.slice(0, 60),
-      important_links: importantLinks,
-      links: uniqueLinks,
-      buttons: buttonsRaw.slice(0, 80)
+      body_preview: bodyText.slice(0, 2500),
+      counts: { links: links.length, customer_links: customerLinks.length, rows: rows.length, likely_rows: likelyRows.length, headings: headings.length },
+      headings: headings.slice(0, 50),
+      customer_links: customerLinks,
+      likely_rows: likelyRows,
+      links: links.slice(0, 120)
     };
   });
 }
@@ -166,55 +197,34 @@ export default {
 
     if (path === '/login-page-test') {
       let browser;
-      try {
-        const opened = await openBizmuLogin(env); browser = opened.browser;
-        const page = opened.page;
-        const title = await page.title();
-        const currentUrl = page.url();
-        const bodyText = await getBodyPreview(page, 1500);
-        await closeBrowser(browser);
-        return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Browser Run ile Bizmu giriş sayfası açıldı. Şifre kullanılmadı.', target_url: opened.targetUrl, current_url: currentUrl, title, body_preview: bodyText, at: nowTR() });
-      } catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Browser Run test hatası: ' + err.message, at: nowTR() }, 500); }
+      try { const opened = await openBizmuLogin(env); browser = opened.browser; const page = opened.page; const title = await page.title(); const currentUrl = page.url(); const bodyText = await getBodyPreview(page, 1500); await closeBrowser(browser); return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Browser Run ile Bizmu giriş sayfası açıldı. Şifre kullanılmadı.', target_url: opened.targetUrl, current_url: currentUrl, title, body_preview: bodyText, at: nowTR() }); }
+      catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Browser Run test hatası: ' + err.message, at: nowTR() }, 500); }
     }
 
     if (path === '/login-form-detect') {
       let browser;
-      try {
-        const opened = await openBizmuLogin(env); browser = opened.browser;
-        const page = opened.page;
-        const title = await page.title();
-        const currentUrl = page.url();
-        const detected = await detectForm(page);
-        await closeBrowser(browser);
-        return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Bizmu login form alanları tespit edildi. Şifre kullanılmadı.', target_url: opened.targetUrl, current_url: currentUrl, title, detected, at: nowTR() });
-      } catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Login form tespit hatası: ' + err.message, at: nowTR() }, 500); }
+      try { const opened = await openBizmuLogin(env); browser = opened.browser; const page = opened.page; const title = await page.title(); const currentUrl = page.url(); const detected = await detectForm(page); await closeBrowser(browser); return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Bizmu login form alanları tespit edildi. Şifre kullanılmadı.', target_url: opened.targetUrl, current_url: currentUrl, title, detected, at: nowTR() }); }
+      catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Login form tespit hatası: ' + err.message, at: nowTR() }, 500); }
     }
 
     if (path === '/login-check') {
       let browser;
-      try {
-        const opened = await loginToBizmu(env); browser = opened.browser;
-        const state = await loginState(opened.page);
-        await closeBrowser(browser);
-        return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: state.successLikely ? 'Bizmu giriş denemesi başarılı görünüyor. Veri okunmadı, kayıt değiştirilmedi.' : 'Bizmu giriş denemesi tamamlandı ama başarı kesin değil; sayfa hâlâ giriş ekranı olabilir.', login_success_likely: state.successLikely, still_login_page: state.stillLogin, invalid_credential_hint: state.invalidHint, used_email_masked: maskEmail(env.BIZMU_EMAIL), target_url: opened.targetUrl, current_url: state.currentUrl, title: state.title, body_preview: state.bodyText, at: nowTR() });
-      } catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Login kontrol hatası: ' + err.message, at: nowTR() }, 500); }
+      try { const opened = await loginToBizmu(env); browser = opened.browser; const state = await loginState(opened.page); await closeBrowser(browser); return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: state.successLikely ? 'Bizmu giriş denemesi başarılı görünüyor. Veri okunmadı, kayıt değiştirilmedi.' : 'Bizmu giriş denemesi tamamlandı ama başarı kesin değil; sayfa hâlâ giriş ekranı olabilir.', login_success_likely: state.successLikely, still_login_page: state.stillLogin, invalid_credential_hint: state.invalidHint, used_email_masked: maskEmail(env.BIZMU_EMAIL), target_url: opened.targetUrl, current_url: state.currentUrl, title: state.title, body_preview: state.bodyText, at: nowTR() }); }
+      catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Login kontrol hatası: ' + err.message, at: nowTR() }, 500); }
     }
 
     if (path === '/post-login-scan') {
       let browser;
-      try {
-        const opened = await loginToBizmu(env); browser = opened.browser;
-        const state = await loginState(opened.page);
-        if (!state.successLikely) {
-          await closeBrowser(browser);
-          return json({ ok: false, readonly: true, service: 'bizmu-browser-bot', message: 'Giriş başarılı görünmediği için menü taraması yapılmadı.', still_login_page: state.stillLogin, invalid_credential_hint: state.invalidHint, current_url: state.currentUrl, title: state.title, body_preview: state.bodyText, at: nowTR() }, 409);
-        }
-        const scan = await scanPostLogin(opened.page);
-        await closeBrowser(browser);
-        return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Bizmu giriş sonrası menü/link taraması tamamlandı. Veri yazılmadı, kayıt değiştirilmedi.', used_email_masked: maskEmail(env.BIZMU_EMAIL), login_success_likely: true, scan, at: nowTR() });
-      } catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Post login tarama hatası: ' + err.message, at: nowTR() }, 500); }
+      try { const opened = await loginToBizmu(env); browser = opened.browser; const state = await loginState(opened.page); if (!state.successLikely) { await closeBrowser(browser); return json({ ok: false, readonly: true, service: 'bizmu-browser-bot', message: 'Giriş başarılı görünmediği için menü taraması yapılmadı.', still_login_page: state.stillLogin, invalid_credential_hint: state.invalidHint, current_url: state.currentUrl, title: state.title, body_preview: state.bodyText, at: nowTR() }, 409); } const scan = await scanPostLogin(opened.page); await closeBrowser(browser); return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Bizmu giriş sonrası menü/link taraması tamamlandı. Veri yazılmadı, kayıt değiştirilmedi.', used_email_masked: maskEmail(env.BIZMU_EMAIL), login_success_likely: true, scan, at: nowTR() }); }
+      catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Post login tarama hatası: ' + err.message, at: nowTR() }, 500); }
     }
 
-    return json({ ok: false, message: 'Bilinmeyen endpoint. Kullanılabilir endpointler: /health, /credential-check, /login-page-test, /login-form-detect, /login-check, /post-login-scan', path }, 404);
+    if (path === '/customers-scan') {
+      let browser;
+      try { const opened = await loginToBizmu(env); browser = opened.browser; const state = await loginState(opened.page); if (!state.successLikely) { await closeBrowser(browser); return json({ ok: false, readonly: true, service: 'bizmu-browser-bot', message: 'Giriş başarılı görünmediği için müşteri taraması yapılmadı.', current_url: state.currentUrl, title: state.title, body_preview: state.bodyText, at: nowTR() }, 409); } const scan = await scanCustomers(opened.page, opened.targetUrl); await closeBrowser(browser); return json({ ok: true, readonly: true, service: 'bizmu-browser-bot', message: 'Bizmu müşteri/cari liste taraması tamamlandı. Veri yazılmadı, kayıt değiştirilmedi.', used_email_masked: maskEmail(env.BIZMU_EMAIL), login_success_likely: true, scan, at: nowTR() }); }
+      catch (err) { await closeBrowser(browser); return json({ ok: false, service: 'bizmu-browser-bot', message: 'Müşteri tarama hatası: ' + err.message, at: nowTR() }, 500); }
+    }
+
+    return json({ ok: false, message: 'Bilinmeyen endpoint. Kullanılabilir endpointler: /health, /credential-check, /login-page-test, /login-form-detect, /login-check, /post-login-scan, /customers-scan', path }, 404);
   }
 };
