@@ -102,3 +102,13 @@ Dış kaynak
 → Ana kayıt
 → Audit log
 ```
+
+## Geri dönüş noktası
+
+Bu karar sonrası stabil geri dönüş branch'i oluşturulmuştur:
+
+```text
+stabil-program-restore-120526
+```
+
+Bu branch, program tekrar dağılırsa geri dönülecek güvenli noktadır.
