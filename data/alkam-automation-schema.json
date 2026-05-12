@@ -1,0 +1,31 @@
+{
+  "version": "2026-05-12-v1",
+  "program_name": "İstasyON",
+  "title": "İstasyON Dış Veri Aktarım ve Otomasyon Veri Modeli",
+  "brand_note": "Programın adı İstasyON'dur. ALKAM Mali bu programın muhasebe/ofis kullanım bağlamıdır.",
+  "core_rule": "İstasyON ana sistemdir. Bizmu, Luca, Banka, Moka, Excel, Telegram ve WhatsApp dış veri kaynaklarıdır. Hiçbir dış kaynak ana cari ekstresine doğrudan kayıt yazmaz; her veri önce staging ve Onay Merkezi'ne düşer.",
+  "sources": {
+    "bizmu": {"name":"Bizmu Geçiş Aktarımı","role":"Geçici veri aktarım köprüsü","write_allowed":false,"operations":["read_customers","read_sales","read_collections","read_payments"]},
+    "luca": {"name":"Luca Resmi Veri Aktarımı","role":"Resmi muhasebe kontrol ve rapor kaynağı","write_allowed":false,"operations":["trial_balance","ledger","vat_summary","payroll_sgk","declarations"]},
+    "bank": {"name":"Banka Aktarım","role":"Hesap hareketleri ve doğrulama kaynağı","write_allowed":false,"operations":["statement_upload","transaction_match","unmatched_detection"]},
+    "moka": {"name":"Moka United Aktarım","role":"Kart tahsilatı ve banka transfer doğrulama kaynağı","write_allowed":false,"operations":["pos_collection","bank_settlement","maturity_tracking"]},
+    "excel": {"name":"Excel Aktarım","role":"Toplu veri yükleme ve geçici aktarım kaynağı","write_allowed":false,"operations":["customer_upload","transaction_upload","sales_upload","expense_upload","column_mapping"]},
+    "telegram": {"name":"Telegram / WhatsApp Aktarım","role":"Dekont, ödeme sözü, saha mesajı ve bildirim kaynağı","write_allowed":false,"operations":["receipt_read","payment_promise","pos_notification","message_to_staging"]}
+  },
+  "staging_record": {
+    "required_fields": ["staging_id","source","source_ref","record_type","record_date","title","amount","currency","direction","raw_text","approval_status","confidence_score","duplicate_status","created_at"],
+    "approval_status_values": ["draft","waiting_approval","approved","rejected","needs_review","posted"],
+    "duplicate_status_values": ["new","possible_duplicate","duplicate","ignored"],
+    "direction_values": ["debit","credit","neutral","info"],
+    "record_type_values": ["customer","sale","accrual","collection","payment","expense","bank_movement","moka_movement","luca_trial_balance","luca_ledger","declaration","task"]
+  },
+  "posting_targets": ["cari_extre","hesap_hareketleri","task_center","report_only"],
+  "automation_calendar": {
+    "weekly": ["Haftalık tahsilat kontrolü","Riskli cari kontrolü","Bekleyen onay kayıtları kontrolü","Banka-Moka eşleşmeyenler kontrolü"],
+    "monthly": ["Aylık muhasebe ücreti tahakkuk kontrolü","KDV beyanname hazırlık kontrolü","Muhtasar/SGK kontrolü","Cari mutabakat kontrolü","Aylık banka ekstresi kontrolü"],
+    "quarterly": ["Geçici vergi hazırlık kontrolü","3 aylık mizan ve gelir-gider kontrolü","Cari risk raporu","Yönetim raporu"],
+    "yearly": ["Yıllık kapanış kontrolü","Kurumlar/Gelir vergisi hazırlık kontrolü","Defter kapanış kontrolü","Yıllık cari mutabakat"],
+    "deadline_based": ["Beyanname son tarihleri","SGK son tarihleri","E-defter berat tarihleri","Yeni şirket kuruluş sonrası checklist","Sözleşme ve resmi başvuru son tarihleri"]
+  },
+  "approval_flow": ["Dış veri okunur","Staging kaydı oluşturulur","Mükerrer kontrol yapılır","Cari eşleştirme önerilir","Güven puanı hesaplanır","Onay Merkezi'ne düşer","Kullanıcı onaylarsa ana kayda işlenir","Audit log yazılır"]
+}
