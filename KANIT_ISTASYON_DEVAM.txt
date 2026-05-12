@@ -1,0 +1,16 @@
+KANIT
+
+Bu dosya ChatGPT tarafından ALKAM Mali / İstasyON projesine yazılmıştır.
+
+Amaç:
+- Projeye yazma yetkisi olduğunu göstermek
+- Mevcut programı bozmadan küçük ve güvenli bir kanıt bırakmak
+
+Program referansı:
+https://0e46431c.alkam-mali.pages.dev/admin.html
+
+Kural:
+Bu program korunacak. Yeni geliştirmeler bu yapının üzerine yapılacak.
+
+Tarih:
+2026-05-12
