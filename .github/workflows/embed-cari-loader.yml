@@ -1,0 +1,47 @@
+name: Embed cari loader
+
+on:
+  push:
+    paths:
+      - '.github/workflows/embed-cari-loader.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  embed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Embed loader into html files
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          loader = '<script src="/alkam-cari-safe-loader-v1.js?v=loader120526-direct"></script>'
+          marker = 'alkam-cari-safe-loader-v1.js'
+          for name in ['admin.html','index.html']:
+              p = Path(name)
+              if not p.exists():
+                  raise SystemExit(f'Missing {name}')
+              s = p.read_text(encoding='utf-8')
+              if marker not in s:
+                  if '</body>' in s:
+                      s = s.replace('</body>', loader + '\n</body>')
+                  else:
+                      s += '\n' + loader + '\n'
+                  p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit embed
+        run: |
+          if git diff --quiet; then
+            echo "No change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin.html index.html
+          git commit -m "Cari loader admin ve index içine doğrudan gömüldü"
+          git push
