@@ -10,7 +10,8 @@ export default {
     const scripts = [
       '/alkam-cari-core-v4.js?v=core120526',
       '/alkam-v12-wide-layout-fix-v1.js?v=layout120526',
-      '/alkam-cari-self-test-v1.js?v=test120526'
+      '/alkam-cari-self-test-v1.js?v=test120526',
+      '/alkam-cari-history-fallback-v1.js?v=fallback120526'
     ].map((src) => '<script src="' + src + '"></script>').join('');
 
     if (!html.includes('alkam-cari-core-v4.js')) {
