@@ -7,15 +7,10 @@ export default {
     if (!contentType.includes('text/html')) return response;
 
     let html = await response.text();
-    const scripts = [
-      '/alkam-cari-core-v4.js?v=core120526',
-      '/alkam-v12-wide-layout-fix-v1.js?v=layout120526',
-      '/alkam-cari-self-test-v1.js?v=test120526',
-      '/alkam-cari-history-fallback-v1.js?v=fallback120526'
-    ].map((src) => '<script src="' + src + '"></script>').join('');
+    const loader = '<script src="/alkam-cari-safe-loader-v1.js?v=loader120526"></script>';
 
-    if (!html.includes('alkam-cari-core-v4.js')) {
-      html = html.replace('</body>', scripts + '</body>');
+    if (!html.includes('alkam-cari-safe-loader-v1.js')) {
+      html = html.replace('</body>', loader + '</body>');
     }
 
     headers.set('content-type', 'text/html; charset=utf-8');
