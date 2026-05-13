@@ -1,0 +1,40 @@
+name: Copy stable program to admin
+
+on:
+  push:
+    paths:
+      - '.github/workflows/copy-stable-to-admin.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Copy stable file
+        run: |
+          cp backups/index_before_25apr_stable_restore_20260428_125756.html admin.html
+          cp backups/index_before_25apr_stable_restore_20260428_125756.html index.html
+          cat > _redirects <<'EOF'
+          /admin.html /admin.html 200
+          /admin /admin.html 200
+          /admin/ /admin.html 200
+          /program /admin.html 200
+          /program.html /admin.html 200
+          EOF
+      - name: Commit copied files
+        run: |
+          if git diff --quiet; then
+            echo "No change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin.html index.html _redirects
+          git commit -m "Admin ve index stabil program dosyası yapıldı"
+          git push
