@@ -9,9 +9,13 @@ export default {
     }
 
     let html = await response.text();
-    const cariCoreScript = '<script src="/alkam-cari-core-v4.js?v=cari-core-safe-120526"></script>';
+    const safeScripts = [
+      '<script src="/alkam-cari-core-v4.js?v=cari-core-safe-120526"></script>',
+      '<script src="/alkam-v12-wide-layout-fix-v1.js?v=layout-safe-120526"></script>'
+    ].join('');
+
     if (!html.includes('alkam-cari-core-v4.js')) {
-      html = html.replace('</body>', cariCoreScript + '</body>');
+      html = html.replace('</body>', safeScripts + '</body>');
     }
 
     headers.set('content-type', 'text/html; charset=utf-8');
