@@ -35,9 +35,26 @@ backups/index_before_25apr_stable_restore_20260428_125756.html
 
 ## Worker durumu
 
-`_worker.js` sade moddadır.
+`_worker.js` kontrollü modda çalışmaktadır.
 
-HTML içine otomatik çoklu JS modülü basmamaktadır.
+HTML içine rastgele çoklu JS modülü basmamaktadır.
+
+Yalnızca aşağıdaki güvenli çekirdek modüller yüklenir:
+
+```text
+alkam-cari-core-v4.js
+alkam-v12-wide-layout-fix-v1.js
+```
+
+## Bu iki modülün görevi
+
+```text
+alkam-cari-core-v4.js:
+Cari geçmişi / ekstre tablosu, Kaynak kolonu, Borç / Alacak / Bakiye kontrolü, Müşteri Ekstresi.
+
+alkam-v12-wide-layout-fix-v1.js:
+Cari detay alanının görünürlük ve genişlik düzeni.
+```
 
 ## Çekirdek önceliği
 
@@ -58,9 +75,17 @@ Onay Merkezi
 
 `live-cari-check.yml` dosyası eklendi ve güncellendi.
 
-Ancak GitHub Actions run listesi bağlantı aracı üzerinden görünmedi.
+Commit bazlı run listesi bağlantı aracında görünmeyebilir. Bunun sebebi kullanılan GitHub aracının commit run sorgusunda yalnızca belirli tetik tiplerini döndürmesidir.
 
-Bu nedenle canlı görsel kontrol için workflow dispatch veya GitHub Actions ekranı kontrolü gerekir.
+Görsel kontrol için workflow run/artifact yolu kullanılacaktır.
+
+## Geri dönüş noktası
+
+Aşağıdaki branch sağlam geri dönüş noktasıdır:
+
+```text
+stable-admin-cari-core-120526
+```
 
 ## Devam kuralı
 
