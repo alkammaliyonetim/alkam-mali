@@ -38,3 +38,4 @@ jobs:
           git add admin.html index.html _redirects
           git commit -m "Admin ve index stabil program dosyası yapıldı"
           git push
+# trigger 120526-admin-stable-copy
