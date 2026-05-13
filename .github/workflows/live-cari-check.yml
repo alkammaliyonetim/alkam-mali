@@ -30,7 +30,7 @@ jobs:
           const { chromium } = require('playwright');
           const fs = require('fs');
 
-          const url = 'https://alkam-mali.pages.dev/admin.html?v=2f4be2';
+          const url = 'https://alkam-mali.pages.dev/admin.html?v=admin-stable-772ad776';
 
           (async () => {
             const browser = await chromium.launch({ headless: true });
@@ -41,14 +41,15 @@ jobs:
               await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
               await page.screenshot({ path: '01-opened.png', fullPage: true });
 
-              const bodyText = await page.locator('body').innerText({ timeout: 15000 });
-              result.checks.hasAlkam = /ALKAM|Mali|İstasyON|Istasyon/i.test(bodyText);
+              let bodyText = await page.locator('body').innerText({ timeout: 15000 });
+              result.checks.hasAlkam = /ALKAM|Mali|Istasyon|İstasyON/i.test(bodyText);
               result.checks.hasCariWord = /Cari|Cariler|Ekstre/i.test(bodyText);
-              result.checks.possibleLogin = /şifre|password|giriş|login/i.test(bodyText);
+              result.checks.hasLoginScreen = /sifre|şifre|giris|giriş|login/i.test(bodyText);
 
               const cariButtons = page.locator('text=/Cariler|Cari Ekstre|Cari/i');
               const cariCount = await cariButtons.count();
               result.checks.cariButtonCount = cariCount;
+
               if (cariCount > 0) {
                 await cariButtons.nth(0).click({ timeout: 10000 }).catch(() => {});
                 await page.waitForTimeout(1500);
@@ -68,10 +69,10 @@ jobs:
               await page.screenshot({ path: '03-after-first-cari-select.png', fullPage: true });
 
               const afterText = await page.locator('body').innerText({ timeout: 15000 });
-              result.checks.hasSelectedCariDetail = /Bakiye|Borç|Alacak|Tahakkuk|Tahsilat|Kaynak|Ekstre|Hareket/i.test(afterText);
-              result.checks.hasHistorySignals = /Kaynak|Tahakkuk|Tahsilat|İşlem|Bakiye/i.test(afterText);
+              result.checks.hasSelectedCariDetail = /Bakiye|Borc|Borç|Alacak|Tahakkuk|Tahsilat|Kaynak|Ekstre|Hareket/i.test(afterText);
+              result.checks.hasHistorySignals = /Kaynak|Tahakkuk|Tahsilat|Islem|İşlem|Bakiye/i.test(afterText);
               result.ok = result.checks.hasAlkam && result.checks.hasCariWord && result.checks.hasSelectedCariDetail && result.checks.hasHistorySignals;
-              if (!result.ok) result.notes.push('Cari geçmişi kontrolü başarısız; ekran görüntülerine bakılacak.');
+              if (!result.ok) result.notes.push('Cari geçmişi kontrolü başarısız veya giriş ekranında kalınmış olabilir.');
             } catch (err) {
               result.error = err.message;
               await page.screenshot({ path: 'error.png', fullPage: true }).catch(() => {});
@@ -92,4 +93,4 @@ jobs:
           path: |
             *.png
             live-cari-check-result.json
-# trigger 120526-cari-check-2
+# trigger admin-stable-772ad776-no-login
