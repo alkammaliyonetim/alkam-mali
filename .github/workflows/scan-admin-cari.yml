@@ -1,0 +1,89 @@
+name: Scan admin cari code
+
+on:
+  push:
+    paths:
+      - '.github/workflows/scan-admin-cari.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Scan admin.html cari code
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('admin.html')
+          text = p.read_text(encoding='utf-8', errors='ignore')
+          lines = text.splitlines()
+          patterns = [
+            'selectedCariDetail',
+            'tab-cariler',
+            'list-item',
+            'cari-list-scroll',
+            'cari-detail-scroll',
+            'hero-name',
+            'render',
+            'statement',
+            'hareket',
+            'ekstre',
+            'tahakkuk',
+            'tahsilat',
+            'kaynak',
+            'function',
+            'onclick'
+          ]
+          out = []
+          out.append('# ALKAM Admin Cari Kod Tarama Raporu')
+          out.append('')
+          out.append('Kaynak: admin.html')
+          out.append('')
+          out.append('## Dosya Bilgisi')
+          out.append(f'- Satır sayısı: {len(lines)}')
+          out.append(f'- Karakter sayısı: {len(text)}')
+          out.append('')
+          seen = set()
+          for pat in patterns:
+              matches = []
+              lowpat = pat.lower()
+              for i,l in enumerate(lines, start=1):
+                  if lowpat in l.lower():
+                      matches.append(i)
+              out.append(f'## Pattern: `{pat}` — {len(matches)} eşleşme')
+              out.append('')
+              for i in matches[:40]:
+                  start = max(1, i-3)
+                  end = min(len(lines), i+3)
+                  key = (pat, i)
+                  if key in seen:
+                      continue
+                  seen.add(key)
+                  out.append(f'### Satır {i}')
+                  out.append('```html')
+                  for j in range(start, end+1):
+                      out.append(f'{j}: {lines[j-1][:500]}')
+                  out.append('```')
+                  out.append('')
+              if len(matches) > 40:
+                  out.append(f'> İlk 40 eşleşme gösterildi. Toplam: {len(matches)}')
+                  out.append('')
+          Path('ALKAM_ADMIN_CARI_KOD_TARAMA_RAPORU.md').write_text('\n'.join(out), encoding='utf-8')
+          PY
+      - name: Commit scan report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ALKAM_ADMIN_CARI_KOD_TARAMA_RAPORU.md
+          if git diff --cached --quiet; then
+            echo "No report change"
+            exit 0
+          fi
+          git commit -m "Admin cari kod tarama raporu üretildi"
+          git push
