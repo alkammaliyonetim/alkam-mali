@@ -35,13 +35,7 @@ jobs:
           (async () => {
             const browser = await chromium.launch({ headless: true });
             const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-            const result = {
-              url,
-              ok: false,
-              checks: {},
-              notes: [],
-              time: new Date().toISOString()
-            };
+            const result = { url, ok: false, checks: {}, notes: [], time: new Date().toISOString() };
 
             try {
               await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
@@ -50,9 +44,7 @@ jobs:
               const bodyText = await page.locator('body').innerText({ timeout: 15000 });
               result.checks.hasAlkam = /ALKAM|Mali|İstasyON|Istasyon/i.test(bodyText);
               result.checks.hasCariWord = /Cari|Cariler|Ekstre/i.test(bodyText);
-
-              const possibleLogin = /şifre|password|giriş|login/i.test(bodyText);
-              result.checks.possibleLogin = possibleLogin;
+              result.checks.possibleLogin = /şifre|password|giriş|login/i.test(bodyText);
 
               const cariButtons = page.locator('text=/Cariler|Cari Ekstre|Cari/i');
               const cariCount = await cariButtons.count();
@@ -78,11 +70,8 @@ jobs:
               const afterText = await page.locator('body').innerText({ timeout: 15000 });
               result.checks.hasSelectedCariDetail = /Bakiye|Borç|Alacak|Tahakkuk|Tahsilat|Kaynak|Ekstre|Hareket/i.test(afterText);
               result.checks.hasHistorySignals = /Kaynak|Tahakkuk|Tahsilat|İşlem|Bakiye/i.test(afterText);
-              result.ok = result.checks.hasAlkam && result.checks.hasCariWord && result.checks.hasSelectedCariDetail;
-
-              if (!result.ok) {
-                result.notes.push('Canlı sayfa açıldı ama cari geçmişi sinyalleri eksik veya giriş ekranında kalmış olabilir.');
-              }
+              result.ok = result.checks.hasAlkam && result.checks.hasCariWord && result.checks.hasSelectedCariDetail && result.checks.hasHistorySignals;
+              if (!result.ok) result.notes.push('Cari geçmişi kontrolü başarısız; ekran görüntülerine bakılacak.');
             } catch (err) {
               result.error = err.message;
               await page.screenshot({ path: 'error.png', fullPage: true }).catch(() => {});
@@ -103,3 +92,4 @@ jobs:
           path: |
             *.png
             live-cari-check-result.json
+# trigger 120526-cari-check-2
