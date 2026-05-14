@@ -2,7 +2,7 @@
   'use strict';
   if(window.__ALKAM_EMERGENCY_RECOVERY_V2_BOOTED) return;
   window.__ALKAM_EMERGENCY_RECOVERY_V2_BOOTED = true;
-  var VERSION = 'ALKAM Emergency Recovery v2.3';
+  var VERSION = 'ALKAM Emergency Recovery v2.4';
   function q(sel, root){ return (root || document).querySelector(sel); }
   function qa(sel, root){ return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
   function css(){
@@ -41,7 +41,7 @@
       '.cari-detail-scroll::-webkit-scrollbar-thumb,.cari-list-scroll::-webkit-scrollbar-thumb,#cariList::-webkit-scrollbar-thumb,#cariSummaryWrap::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:999px}',
       '.cari-detail-scroll::-webkit-scrollbar-track,.cari-list-scroll::-webkit-scrollbar-track,#cariList::-webkit-scrollbar-track,#cariSummaryWrap::-webkit-scrollbar-track{background:#eaf0f8;border-radius:999px}',
       '#selectedCariDetail .grid-4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;gap:10px!important}#selectedCariDetail .metric-mini{min-height:76px!important}',
-      '.statement-shell,.statement-scroll,#selectedCariDetail .statement-scroll{width:100%!important;max-width:100%!important;overflow-x:auto!important}.statement-table,.source-statement,#selectedCariDetail table.source-statement{min-width:980px!important}',
+      '.statement-shell,.statement-scroll,#selectedCariDetail .statement-scroll{width:100%!important;max-width:100%!important;overflow:auto!important}.statement-scroll,#selectedCariDetail .statement-scroll{max-height:360px!important;min-height:156px!important;scrollbar-gutter:stable!important}.statement-table,.source-statement,#selectedCariDetail table.source-statement{min-width:980px!important}',
       '#selectedCariDetail{display:block!important;min-width:0!important;max-width:100%!important;overflow:visible!important}',
       '#selectedCariDetail>.alkam-cari-toolbar{display:flex!important;flex-wrap:wrap!important;gap:8px!important;margin:0 0 12px!important}',
       '#selectedCariDetail>.hero-name,#selectedCariDetail>.hero-sub{max-width:100%!important;text-align:left!important;margin-left:0!important}',
@@ -55,7 +55,7 @@
       'table{max-width:100%!important}th,td{overflow-wrap:anywhere!important}',
       '#alkamBusinessAuditPanel{right:18px!important;bottom:18px!important;width:330px!important;max-width:calc(100vw - 36px)!important;z-index:60!important;border-radius:14px!important}',
       '#alkamBusinessAuditPanel:not(.force-open) .audit-body{display:none!important}#alkamBusinessAuditPanel .audit-head{padding:10px 12px!important}#alkamBusinessAuditPanel .audit-title{font-size:13px!important}',
-      '#alkamCariCoreBanner{position:static!important;display:block!important;float:none!important;clear:both!important;width:min(430px,calc(100% - 36px))!important;max-width:430px!important;margin:10px 18px 14px auto!important;z-index:1!important;box-shadow:0 8px 22px rgba(15,23,42,.08)!important;pointer-events:none!important}',
+      '#alkamCariCoreBanner{position:relative!important;display:block!important;float:none!important;clear:both!important;width:100%!important;max-width:100%!important;margin:0 0 12px!important;z-index:1!important;box-shadow:none!important;pointer-events:auto!important}',
       '#alkamCariCoreBanner .alkam-cari-core-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}',
       '.control-center-floating,.floating-control-center,#controlCenterFloating,#alkamAutomationControlBtn{right:18px!important;bottom:74px!important;z-index:55!important}',
       '#alkamAutomationControlPanel{right:18px!important;bottom:126px!important;z-index:56!important;max-width:calc(100vw - 36px)!important}',
@@ -93,10 +93,22 @@
       p.addEventListener('dblclick', function(){ p.classList.toggle('force-open'); }, false);
     }
   }
+  function tameCoreBanner(){
+    var b = q('#alkamCariCoreBanner');
+    if(!b) return;
+    var detail = q('#selectedCariDetail');
+    if(detail && b.parentNode !== detail) detail.insertBefore(b, detail.firstChild);
+    [
+      ['position','relative'], ['left','auto'], ['right','auto'], ['top','auto'], ['bottom','auto'],
+      ['display','block'], ['float','none'], ['clear','both'], ['width','100%'], ['max-width','100%'],
+      ['margin','0 0 12px'], ['z-index','1'], ['box-shadow','none'], ['pointer-events','auto']
+    ].forEach(function(x){ b.style.setProperty(x[0], x[1], 'important'); });
+  }
   function normalize(){
     css();
     document.body.classList.add('alkam-recovery-v2');
     tameFloating();
+    tameCoreBanner();
     setTimeout(unstickLoading, 600);
     setTimeout(tameFloating, 800);
     window.__ALKAM_EMERGENCY_RECOVERY_V2_LAST = {version:VERSION, time:new Date().toISOString()};
@@ -106,6 +118,7 @@
     css();
     if(document.body) document.body.classList.add('alkam-recovery-v2');
     tameFloating();
+    tameCoreBanner();
   }
   function boot(){
     normalize();

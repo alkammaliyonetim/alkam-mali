@@ -24,8 +24,8 @@ export default {
     if (!contentType.includes('text/html')) return response;
 
     let html = await response.text();
-    const loader = '<script src="/alkam-cari-safe-loader-v1.js?v=loader140526d"></script>';
-    const recovery = '<script src="/alkam-emergency-recovery-v2.js?v=recovery140526d"></script>';
+    const loader = '<script src="/alkam-cari-safe-loader-v1.js?v=loader140526e"></script>';
+    const recovery = '<script src="/alkam-emergency-recovery-v2.js?v=recovery140526e"></script>';
 
     if (!html.includes('alkam-cari-safe-loader-v1.js')) {
       html = html.replace('</body>', loader + '</body>');
