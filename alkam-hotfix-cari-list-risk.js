@@ -1,9 +1,9 @@
-// ALKAM Mali - Cari Listesi Risk Etiketleri, Filtresi, Sayaci ve Dagilim Ozeti
+// ALKAM Mali - Cari Listesi Risk Etiketleri, Filtresi, Sayaci ve Tiklanabilir Dagilim Ozeti
 // Liste kartlarini gorunen metne gore isaretler; veri kaydina dokunmaz.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_LIST_RISK_V4__) return;
-  window.__ALKAM_CARI_LIST_RISK_V4__ = true;
+  if(window.__ALKAM_CARI_LIST_RISK_V5__) return;
+  window.__ALKAM_CARI_LIST_RISK_V5__ = true;
 
   function ensureStyle(){
     if(document.getElementById('alkamCariListRiskStyle')) return;
@@ -18,9 +18,10 @@
       '#cariList .list-item.alkam-risk-row{border-color:#fecaca;background:#fffafa}' +
       '#cariList .list-item.alkam-warn-row{border-color:#fed7aa;background:#fffdf7}' +
       '#alkamRiskFilter{width:100%;border:1px solid #d8e1ef;border-radius:9px;min-height:40px;padding:9px 11px;font-size:12px;font-weight:900;background:#fff;color:#0f172a}' +
-      '#alkamRiskCount{border:1px solid #dbeafe;background:#eff6ff;color:#1d4ed8;border-radius:999px;padding:8px 10px;font-size:11px;font-weight:950;text-align:center;align-self:center}' +
+      '#alkamRiskCount{border:1px solid #dbeafe;background:#eff6ff;color:#1d4ed8;border-radius:999px;padding:8px 10px;font-size:11px;font-weight:950;text-align:center;align-self:center;cursor:pointer}' +
       '#alkamRiskDistribution{grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap;margin-top:2px}' +
-      '#alkamRiskDistribution .pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:7px 9px;font-size:11px;font-weight:950;border:1px solid #e2e8f0;background:#fff;color:#334155}' +
+      '#alkamRiskDistribution .pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:7px 9px;font-size:11px;font-weight:950;border:1px solid #e2e8f0;background:#fff;color:#334155;cursor:pointer;user-select:none}' +
+      '#alkamRiskDistribution .pill:hover,#alkamRiskDistribution .pill.active{outline:2px solid rgba(23,105,232,.28);outline-offset:1px}' +
       '#alkamRiskDistribution .risk{border-color:#fecaca;background:#fef2f2;color:#b91c1c}' +
       '#alkamRiskDistribution .warn{border-color:#fed7aa;background:#fff7ed;color:#c2410c}' +
       '#alkamRiskDistribution .good{border-color:#a7f3d0;background:#ecfdf5;color:#047857}' +
@@ -68,6 +69,8 @@
       var count = document.createElement('div');
       count.id = 'alkamRiskCount';
       count.textContent = '0 cari';
+      count.title = 'Tüm riskleri göster';
+      count.addEventListener('click', function(){ var sel=document.getElementById('alkamRiskFilter'); if(sel) sel.value='all'; markList(); });
       toolbar.appendChild(count);
     }
     if(!document.getElementById('alkamRiskDistribution')){
@@ -77,14 +80,23 @@
     }
     toolbar.style.gridTemplateColumns = '1.1fr .72fr .72fr .72fr .55fr';
   }
+  function chooseRisk(risk){
+    var sel = document.getElementById('alkamRiskFilter');
+    if(sel) sel.value = risk;
+    markList();
+  }
   function updateDistribution(totals){
     var dist = document.getElementById('alkamRiskDistribution');
     if(!dist) return;
+    var current = (document.getElementById('alkamRiskFilter') || {}).value || 'all';
     dist.innerHTML = ''+
-      '<span class="pill risk">Riskli: <b>'+totals.risk+'</b></span>'+
-      '<span class="pill warn">Takip: <b>'+totals.warn+'</b></span>'+
-      '<span class="pill good">Güncel: <b>'+totals.good+'</b></span>'+
-      '<span class="pill check">Kontrol: <b>'+totals.check+'</b></span>';
+      '<span data-risk="risk" class="pill risk '+(current==='risk'?'active':'')+'">Riskli: <b>'+totals.risk+'</b></span>'+
+      '<span data-risk="warn" class="pill warn '+(current==='warn'?'active':'')+'">Takip: <b>'+totals.warn+'</b></span>'+
+      '<span data-risk="good" class="pill good '+(current==='good'?'active':'')+'">Güncel: <b>'+totals.good+'</b></span>'+
+      '<span data-risk="check" class="pill check '+(current==='check'?'active':'')+'">Kontrol: <b>'+totals.check+'</b></span>';
+    Array.prototype.slice.call(dist.querySelectorAll('[data-risk]')).forEach(function(p){
+      p.addEventListener('click', function(){ chooseRisk(p.getAttribute('data-risk')); });
+    });
   }
   function applyRiskFilter(items, totals){
     var sel = document.getElementById('alkamRiskFilter');
