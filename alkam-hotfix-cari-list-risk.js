@@ -1,9 +1,9 @@
-// ALKAM Mali - Cari Listesi Risk Etiketleri, Filtresi, Sayaci ve Tiklanabilir Dagilim Ozeti
+// ALKAM Mali - Cari Listesi Risk Etiketleri, Filtresi, Sayaci, Tiklanabilir Dagilim ve Hizli Buton
 // Liste kartlarini gorunen metne gore isaretler; veri kaydina dokunmaz.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_LIST_RISK_V5__) return;
-  window.__ALKAM_CARI_LIST_RISK_V5__ = true;
+  if(window.__ALKAM_CARI_LIST_RISK_V6__) return;
+  window.__ALKAM_CARI_LIST_RISK_V6__ = true;
 
   function ensureStyle(){
     if(document.getElementById('alkamCariListRiskStyle')) return;
@@ -26,6 +26,8 @@
       '#alkamRiskDistribution .warn{border-color:#fed7aa;background:#fff7ed;color:#c2410c}' +
       '#alkamRiskDistribution .good{border-color:#a7f3d0;background:#ecfdf5;color:#047857}' +
       '#alkamRiskDistribution .check{border-color:#e2e8f0;background:#f1f5f9;color:#475569}' +
+      '#alkamQuickRiskBtn{border:1px solid #fecaca!important;background:#fef2f2!important;color:#b91c1c!important}' +
+      '#alkamQuickRiskBtn.active{box-shadow:0 0 0 3px rgba(220,38,38,.16)!important}' +
       '@media(max-width:760px){#tab-cariler .toolbar{grid-template-columns:1fr!important}#alkamRiskCount{width:100%;border-radius:10px}#alkamRiskDistribution{display:grid;grid-template-columns:1fr 1fr}.pill{justify-content:center}}';
     document.head.appendChild(st);
   }
@@ -55,6 +57,25 @@
     if(gap >= 30) return {cls:'warn', text:'Takip'};
     return {cls:'good', text:'Güncel'};
   }
+  function chooseRisk(risk){
+    var sel = document.getElementById('alkamRiskFilter');
+    if(sel) sel.value = risk;
+    markList();
+    var list = document.getElementById('cariList');
+    if(list){ try{ list.scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){ list.scrollIntoView(true); } }
+  }
+  function installQuickButton(){
+    var row = document.querySelector('#tab-cariler .topbar .btn-row');
+    if(!row || document.getElementById('alkamQuickRiskBtn')) return;
+    var btn = document.createElement('button');
+    btn.id = 'alkamQuickRiskBtn';
+    btn.type = 'button';
+    btn.className = 'btn btn-soft';
+    btn.textContent = 'Riskli Cariler';
+    btn.title = 'Sadece riskli carileri göster';
+    btn.addEventListener('click', function(){ chooseRisk('risk'); });
+    row.appendChild(btn);
+  }
   function installRiskFilter(){
     var toolbar = document.querySelector('#tab-cariler .toolbar');
     if(!toolbar) return;
@@ -80,10 +101,10 @@
     }
     toolbar.style.gridTemplateColumns = '1.1fr .72fr .72fr .72fr .55fr';
   }
-  function chooseRisk(risk){
+  function updateQuickButton(){
+    var btn = document.getElementById('alkamQuickRiskBtn');
     var sel = document.getElementById('alkamRiskFilter');
-    if(sel) sel.value = risk;
-    markList();
+    if(btn) btn.classList.toggle('active', !!(sel && sel.value === 'risk'));
   }
   function updateDistribution(totals){
     var dist = document.getElementById('alkamRiskDistribution');
@@ -111,9 +132,11 @@
     var count = document.getElementById('alkamRiskCount');
     if(count) count.textContent = visible + ' / ' + items.length + ' cari';
     updateDistribution(totals);
+    updateQuickButton();
   }
   function markList(){
     ensureStyle();
+    installQuickButton();
     installRiskFilter();
     var list = document.getElementById('cariList');
     if(!list) return;
