@@ -4272,7 +4272,6 @@ function openStatementOutput(){
     </div>
     <div style="margin:10px 0 14px;padding:10px 12px;border:1px solid #dbe3ef;border-radius:12px;font-size:12px;color:#475569;font-weight:700;">Bu sistemde her işlem görünürde tek bir <strong>İşlem No</strong> ile izlenir. Teknik kimlik sistem içinde korunur, ekranda tekrar edilmez.</div>
     ${buildStandardStatementTable(meta.rowsDesc).replaceAll('class="text-right"','class="r"')}
-  <script src="/alkam-cari-safe-loader-v1.js?v=loader120526-direct"></script>
 </body>
   </html>`;
   win.document.open();
@@ -7789,7 +7788,7 @@ const oldDetail=typeof renderSelectedCariDetail==='function'?renderSelectedCariD
 function esc(v){try{if(typeof escapeHtml==='function')return escapeHtml(v)}catch(e){}return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function nn(v){try{if(typeof num==='function')return num(v)}catch(e){}const n=Number(String(v??0).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''));return Number.isFinite(n)?n:0}
 function mon(v){try{return typeof money==='function'?money(v):String(v)}catch(e){return String(v??'')}}
-function sd(v){try{return typeof shortDate==='function'?shortDate(v)}catch(e){return String(v||'-').slice(0,10)||'-'}}
+function sd(v){try{return typeof shortDate==='function'?shortDate(v):String(v||'-').slice(0,10)||'-'}catch(e){return String(v||'-').slice(0,10)||'-'}}
 function parse(k,f){try{const r=localStorage.getItem(k);return r?JSON.parse(r):f}catch(e){return f}}
 function toast(m){try{if(typeof notify==='function')notify(m);else console.log(m)}catch(e){console.log(m)}}
 function srcInfo(r){const sm=String(r?.source_module||r?.source_type||r?.source||'');const d=String(r?.description||r?.content_summary||'').toLocaleLowerCase('tr-TR');const corr=r?.is_universal_local_edit||r?._alkam_override_status==='edited'||r?._alkam_override_status==='edited_orphan';if(corr)return{kind:'correction',label:'Düzeltme',detail:'Yerel/Kalıcı düzeltme'};if(sm==='fee_auto')return{kind:'auto',label:'Otomatik Tahakkuk',detail:'Programın ürettiği otomatik muhasebe ücret tahakkuku'};if(sm==='fee_bulk_manual')return{kind:'auto',label:'Toplu Tahakkuk',detail:'Cari Toplu Tahakkuk ekranı'};if(sm==='local_cari_collection')return{kind:'manual',label:'Manuel Tahsilat',detail:'Cari Tahsilat Gir ekranından'};if(sm.includes('manual'))return{kind:'manual',label:'Manuel',detail:sm};if(sm.includes('bank')||sm.includes('banka'))return{kind:'supabase',label:'Banka Extresi',detail:sm};if(d.includes('satış faturası')||d.includes('satis faturasi')||d.includes('muhasebe ücreti')||d.includes('muhasebe ucreti'))return{kind:'supabase',label:'Ana Veri',detail:'Yüklenen cari ekstresi / Supabase'};return{kind:'supabase',label:'Ana Veri',detail:sm||'Yüklenen cari ekstresi / Supabase'}}
@@ -8500,5 +8499,6 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 </script>
 
 <script src="/alkam-cari-safe-loader-v1.js?v=loader120526-direct"></script>
+<script src="/alkam-emergency-recovery-v2.js?v=recovery140526"></script>
 </body>
 </html>
