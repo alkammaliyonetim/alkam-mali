@@ -12,6 +12,7 @@ export default {
     const cariListRisk = '<script src="/alkam-hotfix-cari-list-risk.js?v=20260514a"></script>';
     const mobileCariJump = '<script src="/alkam-hotfix-mobile-cari-jump.js?v=20260514a"></script>';
     const selectedCariSticky = '<script src="/alkam-hotfix-selected-cari-sticky.js?v=20260514a"></script>';
+    const mobileStatementCards = '<script src="/alkam-hotfix-mobile-statement-cards.js?v=20260514a"></script>';
     if (!html.includes('alkam-hotfix-newest-first.js')) {
       html = html.replace('</body>', newestFirst + '</body>');
     }
@@ -29,6 +30,9 @@ export default {
     }
     if (!html.includes('alkam-hotfix-selected-cari-sticky.js')) {
       html = html.replace('</body>', selectedCariSticky + '</body>');
+    }
+    if (!html.includes('alkam-hotfix-mobile-statement-cards.js')) {
+      html = html.replace('</body>', mobileStatementCards + '</body>');
     }
 
     headers.set('content-type', 'text/html; charset=utf-8');
