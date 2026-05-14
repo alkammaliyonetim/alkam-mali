@@ -1,0 +1,9 @@
+ALKAM Mali proof marker
+
+Bu branch, Cloudflare production rollback yapılan çalışan sürümden başlatıldı.
+
+Base commit: 9b9d5e3d0f6a3ea53af7fe774dcd7ba23c6b56bb
+Base deployment: c1021856.alkam-mali.pages.dev
+Amaç: Bundan sonraki geliştirmelerin çalışan production kabuğu üzerinden kontrollü ilerlediğini kanıtlamak.
+
+Not: Bu dosya uygulama koduna dokunmaz. Production ekranını bozmaz.
