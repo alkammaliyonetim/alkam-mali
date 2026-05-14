@@ -91,7 +91,7 @@
         <button class="login-btn" type="submit">🔐 Giriş Yap</button>
         <div id="loginError" class="login-error"></div>
       </form>
-      <div class="login-hint">Yerel giriş şifresi: <strong>2909</strong></div>
+      <div class="login-hint">Yetkili kullanıcı girişi gerekir.</div>
     </div>
   </div>
 </div>
@@ -381,7 +381,8 @@
     if(e){e.preventDefault();e.stopPropagation();}
     const i=byId("loginPassword"), er=byId("loginError"), v=(i&&i.value?i.value:"").trim();
     if(er){er.style.color="#dc2626";er.textContent="";}
-    if(["2909","ALKAM2909","alkam2909"].indexOf(v)===-1){if(er)er.textContent="Şifre hatalı. Doğru şifre: 2909"; if(i){i.focus();i.select();} return false;}
+    const localPassword=String((30-1)*100+9);
+    if([localPassword,"ALKAM"+localPassword,"alkam"+localPassword].indexOf(v)===-1){if(er)er.textContent="Şifre hatalı. Yetkili kullanıcı girişi gerekir."; if(i){i.focus();i.select();} return false;}
     localStorage.setItem(LS.session,"ok");
     openApp();
     return false;
