@@ -1876,6 +1876,64 @@ function rowMatchesCariIdentity(row, identity){
 function readLocalLedgerRows(){
   try{return JSON.parse(localStorage.getItem(LOCAL_LEDGER_KEY)||'[]')||[];}catch(_){return [];}
 }
+function knownMonthlyContractConfigForCari(cari){
+  const list=window.ALKAM_KNOWN_CONTRACTS_2026||[];
+  const target=normalizeCariLookupText(cari?.cari_name || cari?.name || '');
+  if(!target) return null;
+  let best=null;
+  list.forEach(item=>{
+    const source=normalizeCariLookupText(item?.name || '');
+    if(!source) return;
+    const tokens=source.split(' ').filter(x=>x.length>2);
+    const hit=tokens.filter(t=>target.includes(t)).length;
+    const direct=target===source || target.includes(source) || source.includes(target);
+    const score=direct ? 100 + hit : hit;
+    if(score && (!best || score>best.score)) best={...item, score};
+  });
+  return best && best.score>=Math.max(2, Math.ceil(normalizeCariLookupText(best.name).split(' ').filter(x=>x.length>2).length*.5)) ? best : null;
+}
+function hasAccrualForMonth(rows, cari, ym){
+  const identity={id:String(cari?.cari_id || cari?.id || ''), name:cari?.cari_name || cari?.name || ''};
+  return (rows||[]).some(r=>{
+    if(!rowMatchesCariIdentity(r, identity)) return false;
+    const rowYm=String(getRowDateValue(r)||'').slice(0,7);
+    if(rowYm!==ym) return false;
+    const mv=normalizeMovementAmounts(r);
+    const type=String(r.movement_type||'').toLocaleLowerCase('tr-TR');
+    return mv.debit>0 || type.includes('tahakkuk') || type.includes('borç') || type.includes('borc');
+  });
+}
+function knownMonthlyContractRows(existingRows=[]){
+  const months=window.ALKAM_KNOWN_MONTHS_2026||[];
+  if(!months.length) return [];
+  const out=[];
+  (state.cariler||[]).forEach(cari=>{
+    const cfg=knownMonthlyContractConfigForCari(cari);
+    const fee=num(cfg?.fee || 0);
+    if(!cfg || fee<=0) return;
+    months.forEach(m=>{
+      if(hasAccrualForMonth([...existingRows, ...out], cari, m.ym)) return;
+      const id=`MC2026_${String(cari.cari_id).replace(/[^a-zA-Z0-9]/g,'')}_${String(m.ym).replace('-','')}_${fee.toFixed(0)}`;
+      out.push({
+        id, txn_id:id, operation_no:id,
+        cari_id:cari.cari_id,
+        cari_name:cari.cari_name || cfg.name,
+        source_module:'manual_contract_2026',
+        movement_type:'Tahakkuk',
+        line_date:m.date,
+        entry_date:m.date,
+        period_key:m.ym,
+        description:m.label,
+        amount:fee,
+        debit:fee,
+        credit:0,
+        target_type:'cari',
+        _alkam_contract_fallback:true
+      });
+    });
+  });
+  return out;
+}
 function allCariLedgerRows(){
   const seen=new Set(), rows=[];
   const add=(row,prefix)=>{
@@ -1890,6 +1948,7 @@ function allCariLedgerRows(){
   (state.operationalLedger||[]).forEach(r=>add(r,'LGR'));
   (window.__liveCaches?.account_ops||[]).forEach(r=>add(r,'LAC'));
   readLocalLedgerRows().forEach(r=>add(r,'LGR'));
+  knownMonthlyContractRows(rows).forEach(r=>add(r,'MC'));
   return rows;
 }
 function aggregateCariMovements(rows=[]){
@@ -1952,7 +2011,9 @@ function aggregateRowsForCari(cariId, cariRow=null){
 }
 function applyCariAggregate(row, agg){
   if(!agg || !agg.count) return row;
+  const knownFee=num(row.defter_ucreti||0) || num(knownMonthlyContractConfigForCari(row)?.fee || 0);
   return {...row,
+    defter_ucreti:knownFee,
     bakiye:agg.bakiye,
     bu_ay_tahakkuk:agg.bu_ay_tahakkuk,
     bu_ay_tahsilat:agg.bu_ay_tahsilat,
@@ -1998,7 +2059,8 @@ async function loadSelectedCariHareketler(){
   const baseRows=(data&&data.length)?data:snapshotRows;
   const localRows=buildLocalCariMovementRows(state.selectedCariId);
   const localFeeRows=feeAccrualRowsForCari(state.selectedCariId);
-  state.hareketler=[...(baseRows||[]), ...localRows, ...localFeeRows].map(x=>({...x, txn_id:txnId(x,'HRK')}));
+  const knownRows=knownMonthlyContractRows([...(baseRows||[]), ...localRows, ...localFeeRows]).filter(x=>rowMatchesCariIdentity(x, identity));
+  state.hareketler=[...(baseRows||[]), ...localRows, ...localFeeRows, ...knownRows].map(x=>({...x, txn_id:txnId(x,'HRK')}));
 }
 async function loadAccounts(){
   await hydrateLiveSyncCaches();
@@ -3752,7 +3814,8 @@ function feeAccrualRowsForCari(id){
   const liveRows = (window.__liveCaches?.account_ops || []);
   let localLedger = [];
   try { localLedger = JSON.parse(localStorage.getItem('alkam_local_ledger_v1') || '[]'); } catch(e) { localLedger = []; }
-  const rows = [...(state.operationalLedger||[]), ...liveRows, ...localLedger];
+  const baseRows = [...(state.operationalLedger||[]), ...liveRows, ...localLedger];
+  const rows = [...baseRows, ...knownMonthlyContractRows(baseRows)];
   const identity = cariIdentity(id);
   const seen = new Set();
   return rows.filter(x=>{
@@ -8588,6 +8651,8 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
     {date:"2026-03-01",ym:"2026-03",label:"MART 2026 YILI AYLIK MUHASEBE ÜCRETİ"},
     {date:"2026-04-01",ym:"2026-04",label:"NİSAN 2026 YILI AYLIK MUHASEBE ÜCRETİ"}
   ];
+  window.ALKAM_KNOWN_CONTRACTS_2026=CONTRACTS_2026;
+  window.ALKAM_KNOWN_MONTHS_2026=MONTHS_2026;
 
   function S(){try{if(typeof state!=='undefined')return state;}catch(e){}return window.state||{};}
   function nrm(v){return String(v||'').toLocaleLowerCase('tr-TR').replace(/[ıİ]/g,'i').replace(/[ş]/g,'s').replace(/[ğ]/g,'g').replace(/[ü]/g,'u').replace(/[ö]/g,'o').replace(/[ç]/g,'c').replace(/\b(as|anonim|sirketi|şirketi|ltd|limited|şti|sti|san|tic|ticaret|sanayi|mobilya|optik|gida|gıda|tekstil|hukuk|bürosu|burosu)\b/g,' ').replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');}
