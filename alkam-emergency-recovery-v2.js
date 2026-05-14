@@ -2,7 +2,7 @@
   'use strict';
   if(window.__ALKAM_EMERGENCY_RECOVERY_V2_BOOTED) return;
   window.__ALKAM_EMERGENCY_RECOVERY_V2_BOOTED = true;
-  var VERSION = 'ALKAM Emergency Recovery v2.0';
+  var VERSION = 'ALKAM Emergency Recovery v2.1';
   function q(sel, root){ return (root || document).querySelector(sel); }
   function qa(sel, root){ return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
   function css(){
@@ -31,9 +31,21 @@
       '#tab-cariler .section:first-child{position:sticky!important;top:68px!important}.cari-list-scroll{max-height:calc(100vh - 310px)!important;overflow:auto!important}.cari-detail-scroll{max-height:none!important;overflow:visible!important}',
       '#selectedCariDetail .grid-4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;gap:10px!important}#selectedCariDetail .metric-mini{min-height:76px!important}',
       '.statement-shell,.statement-scroll,#selectedCariDetail .statement-scroll{width:100%!important;max-width:100%!important;overflow-x:auto!important}.statement-table,.source-statement,#selectedCariDetail table.source-statement{min-width:980px!important}',
+      '#selectedCariDetail{display:block!important;min-width:0!important;max-width:100%!important;overflow:visible!important}',
+      '#selectedCariDetail>.alkam-cari-toolbar{display:flex!important;flex-wrap:wrap!important;gap:8px!important;margin:0 0 12px!important}',
+      '#selectedCariDetail>.hero-name,#selectedCariDetail>.hero-sub{max-width:100%!important;text-align:left!important;margin-left:0!important}',
+      '#selectedCariDetail>.grid-4{display:grid!important;width:100%!important;clear:both!important;margin:12px 0!important}',
+      '#selectedCariDetail>.rule-box{clear:both!important;margin:12px 0!important}',
+      '#selectedCariDetail>div[style*="overflow:auto"],#selectedCariDetail>.statement-shell{clear:both!important;display:block!important;width:100%!important;margin-top:12px!important;position:relative!important;z-index:1!important}',
+      '#selectedCariDetail table{position:relative!important;z-index:1!important}',
+      '#statementPrecheckModal{z-index:999999!important}',
+      '#statementPrecheckModal[style*="display: flex"],#statementPrecheckModal[style*="display:flex"]{display:flex!important}',
+      '#statementPrecheckModal:not([style*="display: flex"]):not([style*="display:flex"]){pointer-events:none!important}',
       'table{max-width:100%!important}th,td{overflow-wrap:anywhere!important}',
       '#alkamBusinessAuditPanel{right:18px!important;bottom:18px!important;width:330px!important;max-width:calc(100vw - 36px)!important;z-index:60!important;border-radius:14px!important}',
       '#alkamBusinessAuditPanel:not(.force-open) .audit-body{display:none!important}#alkamBusinessAuditPanel .audit-head{padding:10px 12px!important}#alkamBusinessAuditPanel .audit-title{font-size:13px!important}',
+      '#alkamCariCoreBanner{position:static!important;display:block!important;float:none!important;clear:both!important;width:min(430px,calc(100% - 36px))!important;max-width:430px!important;margin:10px 18px 14px auto!important;z-index:1!important;box-shadow:0 8px 22px rgba(15,23,42,.08)!important}',
+      '#alkamCariCoreBanner .alkam-cari-core-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}',
       '.control-center-floating,.floating-control-center,#controlCenterFloating,#alkamAutomationControlBtn{right:18px!important;bottom:74px!important;z-index:55!important}',
       '#alkamAutomationControlPanel{right:18px!important;bottom:126px!important;z-index:56!important;max-width:calc(100vw - 36px)!important}',
       '.toast{right:18px!important;bottom:18px!important;z-index:999999!important}',
@@ -83,7 +95,6 @@
     css();
     document.body.classList.add('alkam-recovery-v2');
     tameFloating();
-    rerender();
     setTimeout(unstickLoading, 600);
     setTimeout(tameFloating, 800);
     window.__ALKAM_EMERGENCY_RECOVERY_V2_LAST = {version:VERSION, time:new Date().toISOString()};
@@ -96,11 +107,11 @@
   }
   function boot(){
     normalize();
-    setTimeout(normalize, 500);
-    setTimeout(normalize, 1600);
-    setTimeout(normalize, 3600);
-    document.addEventListener('click', function(){ setTimeout(normalize, 180); }, true);
-    document.addEventListener('input', function(){ setTimeout(normalize, 180); }, true);
+    setTimeout(layoutOnly, 500);
+    setTimeout(layoutOnly, 1600);
+    setTimeout(unstickLoading, 3600);
+    document.addEventListener('click', function(){ setTimeout(layoutOnly, 180); }, true);
+    document.addEventListener('input', function(){ setTimeout(layoutOnly, 180); }, true);
     try{ new MutationObserver(function(){ clearTimeout(window.__alkamRecoveryV2Timer); window.__alkamRecoveryV2Timer = setTimeout(layoutOnly, 220); }).observe(document.body, {childList:true, subtree:true}); }catch(e){}
   }
   window.ALKAM_EMERGENCY_RECOVERY_V2 = {version:VERSION, run:normalize, test:normalize, last:function(){return window.__ALKAM_EMERGENCY_RECOVERY_V2_LAST || normalize();}};

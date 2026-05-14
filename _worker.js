@@ -8,7 +8,7 @@ export default {
 
     let html = await response.text();
     const loader = '<script src="/alkam-cari-safe-loader-v1.js?v=loader120526"></script>';
-    const recovery = '<script src="/alkam-emergency-recovery-v2.js?v=recovery140526"></script>';
+    const recovery = '<script src="/alkam-emergency-recovery-v2.js?v=recovery140526b"></script>';
 
     if (!html.includes('alkam-cari-safe-loader-v1.js')) {
       html = html.replace('</body>', loader + '</body>');
