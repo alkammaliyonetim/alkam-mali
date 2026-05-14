@@ -1001,7 +1001,7 @@ const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD=String((30-1)*100+9); const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
 const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_BANK_LEARN_KEY="alkam_local_bank_learn_v1"; const LOCAL_EMPLOYEES_KEY="alkam_local_employees_v1"; const LOCAL_EMPLOYEE_ACCRUALS_KEY="alkam_local_employee_accruals_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_CARI_FEE_SETUP_KEY="alkam_local_cari_fee_setup_v1"; const LOCAL_FEE_PERIODS_KEY="alkam_local_fee_periods_v1"; const LOCAL_EXPECTED_CASHFLOWS_KEY="alkam_local_expected_cashflows_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1"; const FEE_MILESTONE_START="2025-12-01";
-const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],employees:[],employeeAccruals:[],selectedEmployeeId:null,cariFeeSetups:[],localFeePeriods:[],bulkCariFeeDrafts:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
+const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],allCariMovementRows:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],employees:[],employeeAccruals:[],selectedEmployeeId:null,cariFeeSetups:[],localFeePeriods:[],bulkCariFeeDrafts:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
 
 const LIVE_SYNC_TABLES={
   account_ops:'alkam_manual_account_ops',
@@ -1831,6 +1831,68 @@ function logout(){localStorage.removeItem(SESSION_KEY); location.reload()}
 function switchTab(tab){const meta={dashboard:["Dashboard","Canlı veritabanı üzerinden güncel özet"],cariler:["Cariler","Dinamik cari, kart yönetimi ve tahsilat görünümü"],hesaplar:["Hesaplar","Kasa, banka, çek, senet, Moka ve transfer yönetimi"],giderler:["Giderler","Sabit ve değişken gider, tahakkuk ve ödeme kontrol ekranı"],calisanlar:["Çalışanlar","Sözleşme, maaş tahakkuku ve manuel personel tahakkukları"],raporlar:["Raporlar","Gelir, risk ve cari özeti"],belgeler:["Belgeler","Makbuz, dekont, belge havuzu ve aday kayıt köprüsü"],onay:["Onay Merkezi","Onay bekleyen, işlenen ve reddedilen kayıtlar"],yedekleme:["Yedekleme","DB dump, belge yedeği ve restore planı"]}; document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab)); document.querySelectorAll(".tab-page").forEach(p=>p.classList.remove("active")); document.getElementById("tab-"+tab).classList.add("active"); document.getElementById("pageTitle").textContent=meta[tab][0]; document.getElementById("pageDesc").textContent=meta[tab][1]}
 document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
 
+async function loadCariMovementSnapshot(){
+  try{
+    const {data,error}=await supabaseClient
+      .from("v_cari_hareket_dokumu")
+      .select("id,txn_id,operation_no,cari_id,cari_name,line_date,movement_type,description,debit,credit,amount,source_module,document_no")
+      .order("line_date",{ascending:false})
+      .limit(50000);
+    if(error) throw error;
+    state.allCariMovementRows=(data||[]).map(x=>({...x, txn_id:txnId(x,'HRK')}));
+  }catch(err){
+    console.warn("Cari hareket snapshot alinamadi", err);
+    state.allCariMovementRows=[];
+  }
+  return state.allCariMovementRows;
+}
+function aggregateCariMovements(rows=[]){
+  const map=new Map();
+  const now=new Date(), ym=now.toISOString().slice(0,7), y=String(now.getFullYear());
+  rows.forEach(row=>{
+    const id=String(row.cari_id||'');
+    if(!id) return;
+    const mv=normalizeMovementAmounts(row);
+    const lineDate=String(getRowDateValue(row)||'').slice(0,10);
+    const keyMonth=lineDate.slice(0,7), keyYear=lineDate.slice(0,4);
+    const type=String(row.movement_type||'').toLocaleLowerCase('tr-TR');
+    const isCredit=mv.credit>0 || type.includes('tahsilat') || type.includes('alacak');
+    const isDebit=mv.debit>0 || type.includes('tahakkuk') || type.includes('borç') || type.includes('borc');
+    if(!map.has(id)) map.set(id,{cari_id:id,cari_name:row.cari_name||'',count:0,bakiye:0,bu_ay_tahakkuk:0,bu_ay_tahsilat:0,bu_yil_tahakkuk:0,bu_yil_tahsilat:0,son_tahakkuk_tarihi:null,son_tahakkuk_tutari:0,son_tahsilat_tarihi:null,son_tahsilat_tutari:0});
+    const a=map.get(id);
+    a.count++;
+    a.bakiye+=mv.debit-mv.credit;
+    if(isDebit){
+      if(keyMonth===ym) a.bu_ay_tahakkuk+=mv.debit;
+      if(keyYear===y) a.bu_yil_tahakkuk+=mv.debit;
+      if(lineDate && (!a.son_tahakkuk_tarihi || lineDate>a.son_tahakkuk_tarihi)){ a.son_tahakkuk_tarihi=lineDate; a.son_tahakkuk_tutari=mv.debit; }
+    }
+    if(isCredit){
+      if(keyMonth===ym) a.bu_ay_tahsilat+=mv.credit;
+      if(keyYear===y) a.bu_yil_tahsilat+=mv.credit;
+      if(lineDate && (!a.son_tahsilat_tarihi || lineDate>a.son_tahsilat_tarihi)){ a.son_tahsilat_tarihi=lineDate; a.son_tahsilat_tutari=mv.credit; }
+    }
+  });
+  return map;
+}
+function enrichCariRowsFromMovements(rows=[]){
+  const byId=aggregateCariMovements(state.allCariMovementRows||[]);
+  return rows.map(c=>{
+    const agg=byId.get(String(c.cari_id||''));
+    if(!agg) return c;
+    return {...c,
+      bakiye:agg.bakiye,
+      bu_ay_tahakkuk:agg.bu_ay_tahakkuk,
+      bu_ay_tahsilat:agg.bu_ay_tahsilat,
+      bu_yil_tahakkuk:agg.bu_yil_tahakkuk,
+      bu_yil_tahsilat:agg.bu_yil_tahsilat,
+      son_tahakkuk_tarihi:agg.son_tahakkuk_tarihi || c.son_tahakkuk_tarihi,
+      son_tahakkuk_tutari:agg.son_tahakkuk_tutari || c.son_tahakkuk_tutari,
+      son_tahsilat_tarihi:agg.son_tahsilat_tarihi || c.son_tahsilat_tarihi,
+      son_tahsilat_tutari:agg.son_tahsilat_tutari || c.son_tahsilat_tutari
+    };
+  });
+}
 async function loadDashboard(){
   const [d,r]=await Promise.all([
     supabaseClient.from("v_dashboard_ozet").select("*").limit(1).maybeSingle(),
@@ -1840,9 +1902,10 @@ async function loadDashboard(){
 }
 async function loadCariler(){
   await hydrateLiveSyncCaches();
+  await loadCariMovementSnapshot();
   const {data,error}=await supabaseClient.from("v_cari_liste_gelismis").select("*").order("cari_name",{ascending:true});
   if(error) throw error;
-  state.cariler=(data||[]).map(applyLocalCollectionsToCariRow);
+  state.cariler=enrichCariRowsFromMovements(data||[]).map(applyLocalCollectionsToCariRow);
   if(state.cariler.length&&!state.selectedCariId) state.selectedCariId=state.cariler[0].cari_id;
   const c=await supabaseClient.from("v_cari_card_management").select("*").order("cari_name",{ascending:true});
   state.cariCards=c.data||[];
@@ -1852,9 +1915,11 @@ async function loadSelectedCariHareketler(){
   await hydrateLiveSyncCaches();
   if(!state.selectedCariId){state.hareketler=[];return}
   const {data}=await supabaseClient.from("v_cari_hareket_dokumu").select("*").eq("cari_id",state.selectedCariId).order("line_date",{ascending:false}).limit(500);
+  const snapshotRows=(state.allCariMovementRows||[]).filter(x=>String(x.cari_id)===String(state.selectedCariId));
+  const baseRows=(data&&data.length)?data:snapshotRows;
   const localRows=buildLocalCariMovementRows(state.selectedCariId);
   const localFeeRows=feeAccrualRowsForCari(state.selectedCariId);
-  state.hareketler=[...(data||[]), ...localRows, ...localFeeRows].map(x=>({...x, txn_id:txnId(x,'HRK')}));
+  state.hareketler=[...(baseRows||[]), ...localRows, ...localFeeRows].map(x=>({...x, txn_id:txnId(x,'HRK')}));
 }
 async function loadAccounts(){
   await hydrateLiveSyncCaches();
@@ -3957,8 +4022,9 @@ function getGlobalOpsSummary(){
   const now=new Date(), ym=now.toISOString().slice(0,7), y=String(now.getFullYear());
   const taxpayer={isletme_defteri:0,bilanco:0,limited_sirket:0,anonim_sirket:0};
   (state.cariler||[]).forEach(c=>{ const t=String(c.taxpayer_type||getCariCard(c.cari_id)?.taxpayer_type||''); if(taxpayer[t]!==undefined) taxpayer[t]++; });
-  const tahakkukRows=(state.operationalLedger||[]).filter(x=>String(x.movement_type||'').toLowerCase()==='tahakkuk');
-  const tahsilatRows=(state.operationalLedger||[]).filter(x=>String(x.source_module||'')==='local_cari_collection');
+  const liveRows=(state.allCariMovementRows||[]).map(r=>({...r,...normalizeMovementAmounts(r)}));
+  const tahakkukRows=[...(state.operationalLedger||[]),...liveRows].filter(x=>num(x.debit)>0 || String(x.movement_type||'').toLowerCase()==='tahakkuk');
+  const tahsilatRows=[...(state.operationalLedger||[]).filter(x=>String(x.source_module||'')==='local_cari_collection'),...liveRows.filter(x=>num(x.credit)>0 || String(x.movement_type||'').toLowerCase()==='tahsilat')];
   const expenseAcc=(state.expenseAccruals||[]), expensePay=(state.expensePayments||[]);
   return { taxpayer,
     thisMonthTahakkuk:tahakkukRows.filter(x=>String(x.line_date||x.entry_date||'').slice(0,7)===ym).reduce((a,b)=>a+num(b.amount),0),
