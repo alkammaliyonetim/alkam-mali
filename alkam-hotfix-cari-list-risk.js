@@ -1,9 +1,9 @@
-// ALKAM Mali - Cari Listesi Risk Etiketleri, Filtresi, Sayaci, Tiklanabilir Dagilim ve Hizli Buton
+// ALKAM Mali - Cari Listesi Risk Etiketleri, Filtresi, Sayaci, Tiklanabilir Dagilim ve Hizli Butonlar
 // Liste kartlarini gorunen metne gore isaretler; veri kaydina dokunmaz.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_LIST_RISK_V6__) return;
-  window.__ALKAM_CARI_LIST_RISK_V6__ = true;
+  if(window.__ALKAM_CARI_LIST_RISK_V7__) return;
+  window.__ALKAM_CARI_LIST_RISK_V7__ = true;
 
   function ensureStyle(){
     if(document.getElementById('alkamCariListRiskStyle')) return;
@@ -27,7 +27,8 @@
       '#alkamRiskDistribution .good{border-color:#a7f3d0;background:#ecfdf5;color:#047857}' +
       '#alkamRiskDistribution .check{border-color:#e2e8f0;background:#f1f5f9;color:#475569}' +
       '#alkamQuickRiskBtn{border:1px solid #fecaca!important;background:#fef2f2!important;color:#b91c1c!important}' +
-      '#alkamQuickRiskBtn.active{box-shadow:0 0 0 3px rgba(220,38,38,.16)!important}' +
+      '#alkamQuickWarnBtn{border:1px solid #fed7aa!important;background:#fff7ed!important;color:#c2410c!important}' +
+      '#alkamQuickRiskBtn.active,#alkamQuickWarnBtn.active{box-shadow:0 0 0 3px rgba(23,105,232,.18)!important}' +
       '@media(max-width:760px){#tab-cariler .toolbar{grid-template-columns:1fr!important}#alkamRiskCount{width:100%;border-radius:10px}#alkamRiskDistribution{display:grid;grid-template-columns:1fr 1fr}.pill{justify-content:center}}';
     document.head.appendChild(st);
   }
@@ -64,17 +65,29 @@
     var list = document.getElementById('cariList');
     if(list){ try{ list.scrollIntoView({behavior:'smooth', block:'start'}); }catch(e){ list.scrollIntoView(true); } }
   }
-  function installQuickButton(){
+  function installQuickButtons(){
     var row = document.querySelector('#tab-cariler .topbar .btn-row');
-    if(!row || document.getElementById('alkamQuickRiskBtn')) return;
-    var btn = document.createElement('button');
-    btn.id = 'alkamQuickRiskBtn';
-    btn.type = 'button';
-    btn.className = 'btn btn-soft';
-    btn.textContent = 'Riskli Cariler';
-    btn.title = 'Sadece riskli carileri göster';
-    btn.addEventListener('click', function(){ chooseRisk('risk'); });
-    row.appendChild(btn);
+    if(!row) return;
+    if(!document.getElementById('alkamQuickRiskBtn')){
+      var riskBtn = document.createElement('button');
+      riskBtn.id = 'alkamQuickRiskBtn';
+      riskBtn.type = 'button';
+      riskBtn.className = 'btn btn-soft';
+      riskBtn.textContent = 'Riskli Cariler';
+      riskBtn.title = 'Sadece riskli carileri göster';
+      riskBtn.addEventListener('click', function(){ chooseRisk('risk'); });
+      row.appendChild(riskBtn);
+    }
+    if(!document.getElementById('alkamQuickWarnBtn')){
+      var warnBtn = document.createElement('button');
+      warnBtn.id = 'alkamQuickWarnBtn';
+      warnBtn.type = 'button';
+      warnBtn.className = 'btn btn-soft';
+      warnBtn.textContent = 'Takipte Cariler';
+      warnBtn.title = 'Sadece takipteki carileri göster';
+      warnBtn.addEventListener('click', function(){ chooseRisk('warn'); });
+      row.appendChild(warnBtn);
+    }
   }
   function installRiskFilter(){
     var toolbar = document.querySelector('#tab-cariler .toolbar');
@@ -101,10 +114,12 @@
     }
     toolbar.style.gridTemplateColumns = '1.1fr .72fr .72fr .72fr .55fr';
   }
-  function updateQuickButton(){
-    var btn = document.getElementById('alkamQuickRiskBtn');
+  function updateQuickButtons(){
+    var riskBtn = document.getElementById('alkamQuickRiskBtn');
+    var warnBtn = document.getElementById('alkamQuickWarnBtn');
     var sel = document.getElementById('alkamRiskFilter');
-    if(btn) btn.classList.toggle('active', !!(sel && sel.value === 'risk'));
+    if(riskBtn) riskBtn.classList.toggle('active', !!(sel && sel.value === 'risk'));
+    if(warnBtn) warnBtn.classList.toggle('active', !!(sel && sel.value === 'warn'));
   }
   function updateDistribution(totals){
     var dist = document.getElementById('alkamRiskDistribution');
@@ -132,11 +147,11 @@
     var count = document.getElementById('alkamRiskCount');
     if(count) count.textContent = visible + ' / ' + items.length + ' cari';
     updateDistribution(totals);
-    updateQuickButton();
+    updateQuickButtons();
   }
   function markList(){
     ensureStyle();
-    installQuickButton();
+    installQuickButtons();
     installRiskFilter();
     var list = document.getElementById('cariList');
     if(!list) return;
