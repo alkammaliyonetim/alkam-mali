@@ -2,8 +2,8 @@
 // Liste kartlarini gorunen metne gore isaretler; veri kaydina dokunmaz.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_LIST_RISK_V7__) return;
-  window.__ALKAM_CARI_LIST_RISK_V7__ = true;
+  if(window.__ALKAM_CARI_LIST_RISK_V8__) return;
+  window.__ALKAM_CARI_LIST_RISK_V8__ = true;
 
   function ensureStyle(){
     if(document.getElementById('alkamCariListRiskStyle')) return;
@@ -26,9 +26,10 @@
       '#alkamRiskDistribution .warn{border-color:#fed7aa;background:#fff7ed;color:#c2410c}' +
       '#alkamRiskDistribution .good{border-color:#a7f3d0;background:#ecfdf5;color:#047857}' +
       '#alkamRiskDistribution .check{border-color:#e2e8f0;background:#f1f5f9;color:#475569}' +
+      '#alkamQuickAllBtn{border:1px solid #dbeafe!important;background:#eff6ff!important;color:#1d4ed8!important}' +
       '#alkamQuickRiskBtn{border:1px solid #fecaca!important;background:#fef2f2!important;color:#b91c1c!important}' +
       '#alkamQuickWarnBtn{border:1px solid #fed7aa!important;background:#fff7ed!important;color:#c2410c!important}' +
-      '#alkamQuickRiskBtn.active,#alkamQuickWarnBtn.active{box-shadow:0 0 0 3px rgba(23,105,232,.18)!important}' +
+      '#alkamQuickAllBtn.active,#alkamQuickRiskBtn.active,#alkamQuickWarnBtn.active{box-shadow:0 0 0 3px rgba(23,105,232,.18)!important}' +
       '@media(max-width:760px){#tab-cariler .toolbar{grid-template-columns:1fr!important}#alkamRiskCount{width:100%;border-radius:10px}#alkamRiskDistribution{display:grid;grid-template-columns:1fr 1fr}.pill{justify-content:center}}';
     document.head.appendChild(st);
   }
@@ -68,6 +69,16 @@
   function installQuickButtons(){
     var row = document.querySelector('#tab-cariler .topbar .btn-row');
     if(!row) return;
+    if(!document.getElementById('alkamQuickAllBtn')){
+      var allBtn = document.createElement('button');
+      allBtn.id = 'alkamQuickAllBtn';
+      allBtn.type = 'button';
+      allBtn.className = 'btn btn-soft';
+      allBtn.textContent = 'Tüm Cariler';
+      allBtn.title = 'Tüm carileri göster';
+      allBtn.addEventListener('click', function(){ chooseRisk('all'); });
+      row.appendChild(allBtn);
+    }
     if(!document.getElementById('alkamQuickRiskBtn')){
       var riskBtn = document.createElement('button');
       riskBtn.id = 'alkamQuickRiskBtn';
@@ -115,9 +126,11 @@
     toolbar.style.gridTemplateColumns = '1.1fr .72fr .72fr .72fr .55fr';
   }
   function updateQuickButtons(){
+    var allBtn = document.getElementById('alkamQuickAllBtn');
     var riskBtn = document.getElementById('alkamQuickRiskBtn');
     var warnBtn = document.getElementById('alkamQuickWarnBtn');
     var sel = document.getElementById('alkamRiskFilter');
+    if(allBtn) allBtn.classList.toggle('active', !!(sel && sel.value === 'all'));
     if(riskBtn) riskBtn.classList.toggle('active', !!(sel && sel.value === 'risk'));
     if(warnBtn) warnBtn.classList.toggle('active', !!(sel && sel.value === 'warn'));
   }
