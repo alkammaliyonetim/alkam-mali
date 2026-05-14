@@ -1,9 +1,9 @@
-// ALKAM Mali - Cari Ekstre Donem Filtresi
+// ALKAM Mali - Cari Ekstre Donem ve Hareket Tipi Filtresi
 // Guvenli DOM katmani: tablo verisine dokunmaz, sadece gorunen satirlari filtreler.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_PERIOD_FILTER__) return;
-  window.__ALKAM_CARI_PERIOD_FILTER__ = true;
+  if(window.__ALKAM_CARI_PERIOD_FILTER_V2__) return;
+  window.__ALKAM_CARI_PERIOD_FILTER_V2__ = true;
 
   function textOf(el){ return (el && el.textContent || '').replace(/\s+/g,' ').trim(); }
 
@@ -18,10 +18,7 @@
 
   function fmt(d){
     if(!d) return '';
-    var y=d.getFullYear();
-    var m=String(d.getMonth()+1).padStart(2,'0');
-    var day=String(d.getDate()).padStart(2,'0');
-    return y+'-'+m+'-'+day;
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
 
   function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
@@ -53,21 +50,32 @@
     return {start:start, end:end};
   }
 
+  function rowType(row){
+    var t = textOf(row.cells[3]).toLocaleLowerCase('tr-TR');
+    var all = textOf(row).toLocaleLowerCase('tr-TR');
+    if(t.indexOf('tahakkuk') >= 0 || all.indexOf('tahakkuk') >= 0) return 'debit';
+    if(t.indexOf('tahsilat') >= 0 || all.indexOf('tahsilat') >= 0) return 'credit';
+    return 'other';
+  }
+
   function applyFilter(){
     var table = findTable();
     if(!table || !table.tBodies || !table.tBodies[0]) return;
     var modeEl = document.getElementById('alkamPeriodMode');
+    var typeEl = document.getElementById('alkamTxnTypeMode');
     var mode = modeEl ? modeEl.value : 'all';
+    var typeMode = typeEl ? typeEl.value : 'all';
     var range = getRange(mode);
     var rows = Array.prototype.slice.call(table.tBodies[0].rows || []);
     var shown = 0;
 
     rows.forEach(function(row){
       var d = parseDate(textOf(row.cells[1]));
-      var visible = true;
-      if(mode !== 'all') {
-        visible = !!(d && range.start && range.end && d >= range.start && d <= range.end);
-      }
+      var dateVisible = true;
+      if(mode !== 'all') dateVisible = !!(d && range.start && range.end && d >= range.start && d <= range.end);
+      var rt = rowType(row);
+      var typeVisible = typeMode === 'all' || typeMode === rt;
+      var visible = dateVisible && typeVisible;
       row.style.display = visible ? '' : 'none';
       if(visible) shown += 1;
     });
@@ -93,6 +101,12 @@
         '<option value="thisYear">Bu yıl</option>'+
         '<option value="custom">Özel tarih</option>'+
       '</select>'+
+      '<select id="alkamTxnTypeMode" style="border:1px solid #cbd5e1;border-radius:9px;padding:7px 9px;font-weight:900;background:white">'+
+        '<option value="all">Tüm tipler</option>'+
+        '<option value="debit">Tahakkuk / Borç</option>'+
+        '<option value="credit">Tahsilat / Alacak</option>'+
+        '<option value="other">Düzeltme / Diğer</option>'+
+      '</select>'+
       '<input id="alkamPeriodStart" type="date" style="border:1px solid #cbd5e1;border-radius:9px;padding:6px 8px;font-weight:900;background:white">'+
       '<input id="alkamPeriodEnd" type="date" style="border:1px solid #cbd5e1;border-radius:9px;padding:6px 8px;font-weight:900;background:white">'+
       '<button id="alkamPeriodApply" type="button" style="border:0;border-radius:9px;background:#1769e8;color:white;padding:8px 11px;font-weight:950">Uygula</button>'+
@@ -108,8 +122,10 @@
     if(e) e.value = fmt(endOfMonth(now));
 
     var mode = document.getElementById('alkamPeriodMode');
+    var type = document.getElementById('alkamTxnTypeMode');
     var btn = document.getElementById('alkamPeriodApply');
     if(mode) mode.addEventListener('change', applyFilter);
+    if(type) type.addEventListener('change', applyFilter);
     if(btn) btn.addEventListener('click', applyFilter);
     if(s) s.addEventListener('change', function(){ if(mode) mode.value='custom'; applyFilter(); });
     if(e) e.addEventListener('change', function(){ if(mode) mode.value='custom'; applyFilter(); });
