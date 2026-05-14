@@ -1,9 +1,9 @@
-// ALKAM Mali - Cari Listesi Risk Etiketleri ve Filtresi
+// ALKAM Mali - Cari Listesi Risk Etiketleri, Filtresi ve Sayaci
 // Liste kartlarini gorunen metne gore isaretler; veri kaydina dokunmaz.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_LIST_RISK_V2__) return;
-  window.__ALKAM_CARI_LIST_RISK_V2__ = true;
+  if(window.__ALKAM_CARI_LIST_RISK_V3__) return;
+  window.__ALKAM_CARI_LIST_RISK_V3__ = true;
 
   function ensureStyle(){
     if(document.getElementById('alkamCariListRiskStyle')) return;
@@ -17,7 +17,9 @@
       '#cariList .list-title{display:flex;align-items:center;justify-content:space-between;gap:8px}' +
       '#cariList .list-item.alkam-risk-row{border-color:#fecaca;background:#fffafa}' +
       '#cariList .list-item.alkam-warn-row{border-color:#fed7aa;background:#fffdf7}' +
-      '#alkamRiskFilter{width:100%;border:1px solid #d8e1ef;border-radius:9px;min-height:40px;padding:9px 11px;font-size:12px;font-weight:900;background:#fff;color:#0f172a}';
+      '#alkamRiskFilter{width:100%;border:1px solid #d8e1ef;border-radius:9px;min-height:40px;padding:9px 11px;font-size:12px;font-weight:900;background:#fff;color:#0f172a}' +
+      '#alkamRiskCount{border:1px solid #dbeafe;background:#eff6ff;color:#1d4ed8;border-radius:999px;padding:8px 10px;font-size:11px;font-weight:950;text-align:center;align-self:center}' +
+      '@media(max-width:760px){#tab-cariler .toolbar{grid-template-columns:1fr!important}#alkamRiskCount{width:100%;border-radius:10px}}';
     document.head.appendChild(st);
   }
 
@@ -48,22 +50,34 @@
   }
   function installRiskFilter(){
     var toolbar = document.querySelector('#tab-cariler .toolbar');
-    if(!toolbar || document.getElementById('alkamRiskFilter')) return;
-    var sel = document.createElement('select');
-    sel.id = 'alkamRiskFilter';
-    sel.innerHTML = '<option value="all">Tüm riskler</option><option value="risk">Riskli</option><option value="warn">Takip</option><option value="good">Güncel</option><option value="check">Kontrol</option>';
-    toolbar.appendChild(sel);
-    sel.addEventListener('change', markList);
-    toolbar.style.gridTemplateColumns = '1.1fr .72fr .72fr .72fr';
+    if(!toolbar) return;
+    if(!document.getElementById('alkamRiskFilter')){
+      var sel = document.createElement('select');
+      sel.id = 'alkamRiskFilter';
+      sel.innerHTML = '<option value="all">Tüm riskler</option><option value="risk">Riskli</option><option value="warn">Takip</option><option value="good">Güncel</option><option value="check">Kontrol</option>';
+      toolbar.appendChild(sel);
+      sel.addEventListener('change', markList);
+    }
+    if(!document.getElementById('alkamRiskCount')){
+      var count = document.createElement('div');
+      count.id = 'alkamRiskCount';
+      count.textContent = '0 cari';
+      toolbar.appendChild(count);
+    }
+    toolbar.style.gridTemplateColumns = '1.1fr .72fr .72fr .72fr .55fr';
   }
   function applyRiskFilter(items){
     var sel = document.getElementById('alkamRiskFilter');
     var mode = sel ? sel.value : 'all';
+    var visible = 0;
     items.forEach(function(item){
       var risk = item.dataset.alkamRisk || 'check';
       var riskVisible = mode === 'all' || mode === risk;
       item.style.display = riskVisible ? '' : 'none';
+      if(riskVisible) visible += 1;
     });
+    var count = document.getElementById('alkamRiskCount');
+    if(count) count.textContent = visible + ' / ' + items.length + ' cari';
   }
   function markList(){
     ensureStyle();
