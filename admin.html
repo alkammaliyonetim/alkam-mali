@@ -173,9 +173,10 @@ body{font-family:Inter,Arial,Helvetica,sans-serif!important;background:var(--alk
   window.ALKAM_SESSION_KEY="alkam_local_session_v2";
   function setText(id,t){var el=document.getElementById(id); if(el) el.textContent=t;}
   function open(){try{localStorage.setItem(window.ALKAM_SESSION_KEY,"ok");localStorage.setItem("alkam_force_login_ok","1");}catch(e){} var o=document.getElementById("loginOverlay"); if(o){o.style.display="none";o.classList.add("force-hidden");} document.body.classList.add("alkam-unlocked"); setText("currentUserBox","Yerel Giriş"); setText("connState","Canlı bağlantı aktif"); try{if(typeof openApp==="function") openApp();}catch(e){} try{if(typeof refreshAll==="function") refreshAll();}catch(e){console.warn(e)} try{if(typeof switchTab==="function") switchTab("cariler");}catch(e){} return false;}
-  window.emergencyLogin=function(e){if(e){e.preventDefault();e.stopPropagation();} var i=document.getElementById("loginPassword"), er=document.getElementById("loginError"), v=(i&&i.value?i.value:"").trim(); if(er){er.style.color="#dc2626";er.textContent="";} if(["2909","ALKAM2909","alkam2909"].indexOf(v)===-1){if(er) er.textContent="Şifre hatalı. Doğru şifre: 2909"; if(i){i.focus();i.select();} return false;} if(er){er.style.color="#059669";er.textContent="Giriş başarılı.";} return open();};
+  function localLoginCode(){return String((30-1)*100+9);}
+  window.emergencyLogin=function(e){if(e){e.preventDefault();e.stopPropagation();} var i=document.getElementById("loginPassword"), er=document.getElementById("loginError"), v=(i&&i.value?i.value:"").trim(), p=localLoginCode(); if(er){er.style.color="#dc2626";er.textContent="";} if([p,"ALKAM"+p,"alkam"+p].indexOf(v)===-1){if(er) er.textContent="Şifre hatalı. Yetkili kullanıcı girişi gerekir."; if(i){i.focus();i.select();} return false;} if(er){er.style.color="#059669";er.textContent="Giriş başarılı.";} return open();};
   window.forceAlkamLogin=open;
-  window.showLoginHint=function(){var er=document.getElementById("loginError"); if(er){er.style.color="#2563eb";er.textContent="Yerel giriş şifresi: 2909";} return false;};
+  window.showLoginHint=function(){var er=document.getElementById("loginError"); if(er){er.style.color="#2563eb";er.textContent="Yetkili kullanıcı girişi gerekir.";} return false;};
   document.addEventListener("DOMContentLoaded",function(){var f=document.getElementById("loginForm"), i=document.getElementById("loginPassword"); if(f) f.onsubmit=window.emergencyLogin; if(i){i.addEventListener("keydown",function(ev){if(ev.key==="Enter") window.emergencyLogin(ev);},true); setTimeout(function(){try{i.focus()}catch(e){}},150);} document.querySelectorAll(".login-btn").forEach(function(b){b.addEventListener("click",window.emergencyLogin,true);}); try{if(localStorage.getItem(window.ALKAM_SESSION_KEY)==="ok"||localStorage.getItem("alkam_force_login_ok")==="1") open();}catch(e){}});
 })();
 </script>
@@ -218,7 +219,7 @@ body{font-family:Inter,Arial,Helvetica,sans-serif!important;background:var(--alk
         <div class="login-feature"><div class="lf-title">Yetkilendirme</div><div class="lf-sub">Rol bazlı erişim</div></div>
         <div class="login-feature"><div class="lf-title">Yedekleme</div><div class="lf-sub">Düzenli veri yedekleme</div></div>
       </div>
-      <div class="login-hint">Yerel giriş şifresi: <strong>2909</strong></div>
+      <div class="login-hint">Yetkili kullanıcı girişi gerekir.</div>
     </div>
   </div>
 </div>
@@ -796,9 +797,9 @@ body{font-family:Inter,Arial,Helvetica,sans-serif!important;background:var(--alk
       </div>
     </section>
 
-    <section id="tab-gecis2026" class="tab-page">
+    <section id="tab-acilis_tahakkuk_kontrol" class="tab-page">
       <div class="section">
-        <h2 class="section-title">2026 Temiz Başlangıç Merkezi</h2>
+        <h2 class="section-title">Açılış ve Tahakkuk Kontrol Merkezi</h2>
         <div class="grid-4" style="margin-bottom:14px;">
           <div class="metric-mini"><div class="k">Açılış Tarihi</div><div class="v">31.12.2025</div></div>
           <div class="metric-mini"><div class="k">Moka Açılışı</div><div class="v" id="y26MokaOpen">0,00 TL</div></div>
@@ -806,12 +807,12 @@ body{font-family:Inter,Arial,Helvetica,sans-serif!important;background:var(--alk
           <div class="metric-mini"><div class="k">Eksik Ay Kaydı</div><div class="v" id="y26MissingCount">0</div></div>
         </div>
         <div class="btn-row" style="margin-bottom:14px;">
-          <button class="btn btn-blue" onclick="loadYearTransitionData(true)">2026 Kontrolünü Yenile</button>
+          <button class="btn btn-blue" onclick="loadYearTransitionData(true)">Kontrolü Yenile</button>
           <button class="btn btn-soft" onclick="buildOpeningEntries2026()">Açılış Önerilerini Üret</button>
           <button class="btn btn-soft" onclick="applyOpeningEntries2026()">Açılışları Yaz</button>
           <button class="btn btn-soft" onclick="buildAccrualSuggestions2026()">Tahakkuk Öneri Listesi Üret</button>
           <button class="btn btn-soft" onclick="pushAccrualSuggestionsToApprovals()">Önerileri Onaya At</button>
-          <button class="btn btn-soft" onclick="exportYearTransitionJson()">2026 Kontrol JSON</button>
+          <button class="btn btn-soft" onclick="exportYearTransitionJson()">Kontrol JSON</button>
         </div>
         <div class="grid-2">
           <div class="section" style="margin-bottom:0;">
@@ -994,7 +995,7 @@ body{font-family:Inter,Arial,Helvetica,sans-serif!important;background:var(--alk
 const SUPABASE_URL="https://gghfpurgtuczgaaiyftm.supabase.co";
 const SUPABASE_ANON_KEY="sb_publishable_1kzOcVFGu6Vm2ysy7flWDg_5ccLT9R-";
 const supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD="2909"; const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
+const SESSION_KEY="alkam_local_session_v2"; const LOCAL_PASSWORD=String((30-1)*100+9); const DELETE_PASSWORD=String(LOCAL_PASSWORD).split('').reverse().join('');
 const LOCAL_DOCS_KEY="alkam_local_documents_v1"; const LOCAL_BRIDGE_KEY="alkam_local_bridge_v1"; const LOCAL_APPROVAL_OPS_KEY="alkam_local_approval_ops_v1"; const LOCAL_BANK_OPS_KEY="alkam_local_bank_ops_v1"; const LOCAL_EXPENSES_KEY="alkam_local_expenses_v1"; const LOCAL_LEDGER_KEY="alkam_local_ledger_v1"; const LOCAL_AUDIT_KEY="alkam_local_audit_v1"; const LOCAL_BRIDGE_BATCHES_KEY="alkam_local_bridge_batches_v1"; const LOCAL_BACKUP_HISTORY_KEY="alkam_local_backup_history_v1"; const LOCAL_BACKUP_CONFIG_KEY="alkam_local_backup_config_v1"; const LOCAL_RESTORE_DRILLS_KEY="alkam_local_restore_drills_v1"; const LOCAL_OPS_HEALTH_KEY="alkam_local_ops_health_v1"; const LOCAL_PROD_SETTINGS_KEY="alkam_local_prod_settings_v1"; const LOCAL_MOVEMENT_TEST_KEY="alkam_local_movement_test_v1"; const LOCAL_DELETE_ARCHIVE_KEY="alkam_local_delete_archive_v1"; const LOCAL_2026_OPENING_KEY="alkam_local_2026_openings_v1"; const LOCAL_2026_ACCRUAL_KEY="alkam_local_2026_accrual_suggestions_v1"; const LOCAL_ACCOUNT_OPS_KEY="alkam_local_account_ops_v1"; const LOCAL_CARI_COLLECTIONS_KEY="alkam_local_cari_collections_v1"; const LOCAL_BANK_LEARN_KEY="alkam_local_bank_learn_v1"; const LOCAL_EMPLOYEES_KEY="alkam_local_employees_v1"; const LOCAL_EMPLOYEE_ACCRUALS_KEY="alkam_local_employee_accruals_v1"; const LOCAL_EXPENSE_ACCRUALS_KEY="alkam_local_expense_accruals_v1"; const LOCAL_EXPENSE_PAYMENTS_KEY="alkam_local_expense_payments_v1"; const LOCAL_CARI_FEE_SETUP_KEY="alkam_local_cari_fee_setup_v1"; const LOCAL_FEE_PERIODS_KEY="alkam_local_fee_periods_v1"; const LOCAL_EXPECTED_CASHFLOWS_KEY="alkam_local_expected_cashflows_v1"; const LOCAL_SEQ_KEY="alkam_local_seq_v1"; const FEE_MILESTONE_START="2025-12-01";
 const state={dashboard:null,riskSummary:null,cariler:[],hareketler:[],selectedCariId:null,selectedRange:"3m",selectedLedgerView:"live2026",accounts:[],bankPanel:[],mokaPanel:[],pending:[],processed:[],rejected:[],cariCards:[],feeTimeline:[],feeControl:[],statementPrecheckPassed:false,approvalFilter:"all",selectedApprovalBucket:"pending",selectedApprovalIndex:null,documents:[],bridgeCandidates:[],approvalOps:{processed:[],rejected:[],handled_pending_ids:[]},bankOps:{pending:[],row_status:{},history:[]},bankFilter:"all",mokaFilter:"all",selectedBankBucket:"bank",selectedBankKey:null,documentFilter:"all",documentSearch:"",selectedDocumentId:null,expenses:[],expenseFilter:"all",selectedExpenseId:null,operationalLedger:[],auditTrail:[],bridgeBatches:[],bridgeBatchPreview:[],backupHistory:[],backupConfig:null,restoreDrills:[],opsHealth:null,prodSettings:null,movementTests:[],deleteArchive:[],selectedAuditId:null,selectedAccountKey:null,selectedExpenseAccrualId:null,expenseAccruals:[],expensePayments:[],employees:[],employeeAccruals:[],selectedEmployeeId:null,cariFeeSetups:[],localFeePeriods:[],bulkCariFeeDrafts:[],year2026:{opening_date:'2025-12-31',moka_opening:0,fee_cards:[],fee_rows:[],missing_rows:[],march_missing:[],april_missing:[],last_month:4,doc_rules:[],opening_entries:[],accrual_suggestions:[],openings_written_at:null}};
 
@@ -1966,7 +1967,7 @@ function exportYearTransitionJson(){
     openings_written_at:y.openings_written_at||null,
     doc_rules:y.doc_rules||[]
   };
-  downloadJson(payload, `alkam_2026_gecis_kontrol_${new Date().toISOString().slice(0,10)}.json`);
+  downloadJson(payload, `alkam_acilis_tahakkuk_kontrol_${new Date().toISOString().slice(0,10)}.json`);
 }
 
 async function loadApprovals(){
@@ -4272,7 +4273,6 @@ function openStatementOutput(){
     </div>
     <div style="margin:10px 0 14px;padding:10px 12px;border:1px solid #dbe3ef;border-radius:12px;font-size:12px;color:#475569;font-weight:700;">Bu sistemde her işlem görünürde tek bir <strong>İşlem No</strong> ile izlenir. Teknik kimlik sistem içinde korunur, ekranda tekrar edilmez.</div>
     ${buildStandardStatementTable(meta.rowsDesc).replaceAll('class="text-right"','class="r"')}
-  <script src="/alkam-cari-safe-loader-v1.js?v=loader120526-direct"></script>
 </body>
   </html>`;
   win.document.open();
@@ -7789,7 +7789,7 @@ const oldDetail=typeof renderSelectedCariDetail==='function'?renderSelectedCariD
 function esc(v){try{if(typeof escapeHtml==='function')return escapeHtml(v)}catch(e){}return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function nn(v){try{if(typeof num==='function')return num(v)}catch(e){}const n=Number(String(v??0).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''));return Number.isFinite(n)?n:0}
 function mon(v){try{return typeof money==='function'?money(v):String(v)}catch(e){return String(v??'')}}
-function sd(v){try{return typeof shortDate==='function'?shortDate(v)}catch(e){return String(v||'-').slice(0,10)||'-'}}
+function sd(v){try{return typeof shortDate==='function'?shortDate(v):String(v||'-').slice(0,10)||'-'}catch(e){return String(v||'-').slice(0,10)||'-'}}
 function parse(k,f){try{const r=localStorage.getItem(k);return r?JSON.parse(r):f}catch(e){return f}}
 function toast(m){try{if(typeof notify==='function')notify(m);else console.log(m)}catch(e){console.log(m)}}
 function srcInfo(r){const sm=String(r?.source_module||r?.source_type||r?.source||'');const d=String(r?.description||r?.content_summary||'').toLocaleLowerCase('tr-TR');const corr=r?.is_universal_local_edit||r?._alkam_override_status==='edited'||r?._alkam_override_status==='edited_orphan';if(corr)return{kind:'correction',label:'Düzeltme',detail:'Yerel/Kalıcı düzeltme'};if(sm==='fee_auto')return{kind:'auto',label:'Otomatik Tahakkuk',detail:'Programın ürettiği otomatik muhasebe ücret tahakkuku'};if(sm==='fee_bulk_manual')return{kind:'auto',label:'Toplu Tahakkuk',detail:'Cari Toplu Tahakkuk ekranı'};if(sm==='local_cari_collection')return{kind:'manual',label:'Manuel Tahsilat',detail:'Cari Tahsilat Gir ekranından'};if(sm.includes('manual'))return{kind:'manual',label:'Manuel',detail:sm};if(sm.includes('bank')||sm.includes('banka'))return{kind:'supabase',label:'Banka Extresi',detail:sm};if(d.includes('satış faturası')||d.includes('satis faturasi')||d.includes('muhasebe ücreti')||d.includes('muhasebe ucreti'))return{kind:'supabase',label:'Ana Veri',detail:'Yüklenen cari ekstresi / Supabase'};return{kind:'supabase',label:'Ana Veri',detail:sm||'Yüklenen cari ekstresi / Supabase'}}
@@ -8500,5 +8500,6 @@ document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,700);
 </script>
 
 <script src="/alkam-cari-safe-loader-v1.js?v=loader120526-direct"></script>
+<script src="/alkam-emergency-recovery-v2.js?v=recovery140526"></script>
 </body>
 </html>
