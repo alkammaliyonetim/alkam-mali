@@ -1,9 +1,9 @@
-// ALKAM Mali - Cari Listesi Risk Etiketleri
+// ALKAM Mali - Cari Listesi Risk Etiketleri ve Filtresi
 // Liste kartlarini gorunen metne gore isaretler; veri kaydina dokunmaz.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_LIST_RISK_V1__) return;
-  window.__ALKAM_CARI_LIST_RISK_V1__ = true;
+  if(window.__ALKAM_CARI_LIST_RISK_V2__) return;
+  window.__ALKAM_CARI_LIST_RISK_V2__ = true;
 
   function ensureStyle(){
     if(document.getElementById('alkamCariListRiskStyle')) return;
@@ -16,7 +16,8 @@
       '.alkam-risk-badge.check{background:#f1f5f9;color:#475569;border:1px solid #e2e8f0}' +
       '#cariList .list-title{display:flex;align-items:center;justify-content:space-between;gap:8px}' +
       '#cariList .list-item.alkam-risk-row{border-color:#fecaca;background:#fffafa}' +
-      '#cariList .list-item.alkam-warn-row{border-color:#fed7aa;background:#fffdf7}';
+      '#cariList .list-item.alkam-warn-row{border-color:#fed7aa;background:#fffdf7}' +
+      '#alkamRiskFilter{width:100%;border:1px solid #d8e1ef;border-radius:9px;min-height:40px;padding:9px 11px;font-size:12px;font-weight:900;background:#fff;color:#0f172a}';
     document.head.appendChild(st);
   }
 
@@ -45,9 +46,28 @@
     if(gap >= 30) return {cls:'warn', text:'Takip'};
     return {cls:'good', text:'Güncel'};
   }
-
+  function installRiskFilter(){
+    var toolbar = document.querySelector('#tab-cariler .toolbar');
+    if(!toolbar || document.getElementById('alkamRiskFilter')) return;
+    var sel = document.createElement('select');
+    sel.id = 'alkamRiskFilter';
+    sel.innerHTML = '<option value="all">Tüm riskler</option><option value="risk">Riskli</option><option value="warn">Takip</option><option value="good">Güncel</option><option value="check">Kontrol</option>';
+    toolbar.appendChild(sel);
+    sel.addEventListener('change', markList);
+    toolbar.style.gridTemplateColumns = '1.1fr .72fr .72fr .72fr';
+  }
+  function applyRiskFilter(items){
+    var sel = document.getElementById('alkamRiskFilter');
+    var mode = sel ? sel.value : 'all';
+    items.forEach(function(item){
+      var risk = item.dataset.alkamRisk || 'check';
+      var riskVisible = mode === 'all' || mode === risk;
+      item.style.display = riskVisible ? '' : 'none';
+    });
+  }
   function markList(){
     ensureStyle();
+    installRiskFilter();
     var list = document.getElementById('cariList');
     if(!list) return;
     var items = Array.prototype.slice.call(list.querySelectorAll('.list-item'));
@@ -59,6 +79,7 @@
       var d = parseDate(textOf(item));
       var gap = daysSince(d);
       var info = riskForDays(gap);
+      item.dataset.alkamRisk = info.cls;
       var badge = document.createElement('span');
       badge.className = 'alkam-risk-badge ' + info.cls;
       badge.textContent = info.text;
@@ -67,6 +88,7 @@
       if(info.cls === 'risk') item.classList.add('alkam-risk-row');
       if(info.cls === 'warn') item.classList.add('alkam-warn-row');
     });
+    applyRiskFilter(items);
   }
 
   var timer = null;
