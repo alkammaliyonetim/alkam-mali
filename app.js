@@ -1,6 +1,6 @@
 (function () {
   const ALKAM_SECURITY = {
-    password: String((30 - 1) * 100 + 9),
+    password: "2909",
     sessionKey: "alkam_secure_session_v4",
     maxFail: 5,
     lockMinutes: 10

@@ -1,0 +1,4 @@
+/admin /admin.html 200
+/admin/ /admin.html 200
+/program /admin.html 200
+/program.html /admin.html 200
