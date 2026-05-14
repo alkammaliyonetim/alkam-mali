@@ -2,172 +2,60 @@
 // Guvenli DOM katmani: tablo verisine dokunmaz, sadece gorunen satirlari filtreler.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_PERIOD_FILTER_V5__) return;
-  window.__ALKAM_CARI_PERIOD_FILTER_V5__ = true;
+  if(window.__ALKAM_CARI_PERIOD_FILTER_V6__) return;
+  window.__ALKAM_CARI_PERIOD_FILTER_V6__ = true;
+
+  function ensureStyle(){
+    if(document.getElementById('alkamPeriodFilterMobileStyle')) return;
+    var st=document.createElement('style');
+    st.id='alkamPeriodFilterMobileStyle';
+    st.textContent = '#alkamPeriodFilterBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px 0;padding:10px;border:1px solid #dbeafe;background:#f8fbff;border-radius:14px;font-size:12px;font-weight:900;color:#334155}' +
+      '#alkamPeriodFilterBar select,#alkamPeriodFilterBar input,#alkamPeriodFilterBar button{min-height:36px}' +
+      '.alkam-filter-summary{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}' +
+      '@media(max-width:760px){#alkamPeriodFilterBar{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important;padding:9px!important}#alkamPeriodFilterBar .alkam-filter-title,#alkamPeriodFilterBar #alkamPeriodCount,.alkam-filter-summary{grid-column:1/-1!important}#alkamPeriodFilterBar select,#alkamPeriodFilterBar input,#alkamPeriodFilterBar button{width:100%!important;font-size:12px!important}.alkam-filter-summary{display:grid!important;grid-template-columns:1fr!important;gap:6px!important;border-top:1px solid #dbeafe!important;padding-top:8px!important}.alkam-filter-summary span{border-left:0!important;padding-left:0!important}}';
+    document.head.appendChild(st);
+  }
 
   function textOf(el){ return (el && el.textContent || '').replace(/\s+/g,' ').trim(); }
-
-  function parseMoney(value){
-    var s = String(value || '').replace(/\s/g,'').replace(/TL|₺/gi,'');
-    if(!s || s === '-') return 0;
-    if(s.indexOf(',') >= 0 && s.indexOf('.') >= 0) s = s.replace(/\./g,'').replace(',','.');
-    else if(s.indexOf(',') >= 0) s = s.replace(',','.');
-    var n = Number(s.replace(/[^0-9.-]/g,''));
-    return isFinite(n) ? n : 0;
-  }
-
+  function parseMoney(value){ var s=String(value||'').replace(/\s/g,'').replace(/TL|₺/gi,''); if(!s||s==='-') return 0; if(s.indexOf(',')>=0&&s.indexOf('.')>=0) s=s.replace(/\./g,'').replace(',','.'); else if(s.indexOf(',')>=0) s=s.replace(',','.'); var n=Number(s.replace(/[^0-9.-]/g,'')); return isFinite(n)?n:0; }
   function money(n){ return (Number(n)||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' TL'; }
-
-  function parseDate(value){
-    var s = String(value || '').replace(/\s+/g,' ').trim();
-    var m = s.match(/(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})/);
-    if(m) return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
-    m = s.match(/(\d{1,2})[-/.](\d{1,2})[-/.](20\d{2})/);
-    if(m) return new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
-    return null;
-  }
-
+  function parseDate(value){ var s=String(value||'').replace(/\s+/g,' ').trim(); var m=s.match(/(20\d{2})[-/.](\d{1,2})[-/.](\d{1,2})/); if(m) return new Date(Number(m[1]),Number(m[2])-1,Number(m[3])); m=s.match(/(\d{1,2})[-/.](\d{1,2})[-/.](20\d{2})/); if(m) return new Date(Number(m[3]),Number(m[2])-1,Number(m[1])); return null; }
   function fmt(d){ if(!d) return ''; return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-  function startOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
-  function endOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999); }
+  function startOfDay(d){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+  function endOfDay(d){ return new Date(d.getFullYear(),d.getMonth(),d.getDate(),23,59,59,999); }
   function startOfWeek(d){ var x=startOfDay(d); var day=x.getDay(); var diff=(day===0?-6:1-day); x.setDate(x.getDate()+diff); return x; }
   function endOfWeek(d){ var x=startOfWeek(d); x.setDate(x.getDate()+6); return endOfDay(x); }
-  function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
-  function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0, 23, 59, 59, 999); }
-  function startOfYear(d){ return new Date(d.getFullYear(), 0, 1); }
-  function endOfYear(d){ return new Date(d.getFullYear(), 11, 31, 23, 59, 59, 999); }
+  function startOfMonth(d){ return new Date(d.getFullYear(),d.getMonth(),1); }
+  function endOfMonth(d){ return new Date(d.getFullYear(),d.getMonth()+1,0,23,59,59,999); }
+  function startOfYear(d){ return new Date(d.getFullYear(),0,1); }
+  function endOfYear(d){ return new Date(d.getFullYear(),11,31,23,59,59,999); }
 
-  function isCariStatementTable(table){
-    var h = (table && table.tHead ? table.tHead.innerText : table && table.innerText || '').toLocaleLowerCase('tr-TR');
-    return h.indexOf('işlem no') >= 0 && h.indexOf('tarih') >= 0 && h.indexOf('kaynak') >= 0 && h.indexOf('bakiye') >= 0;
-  }
-
-  function findTable(){
-    var root = document.getElementById('selectedCariDetail') || document;
-    var tables = Array.prototype.slice.call(root.querySelectorAll('table.source-statement, table'));
-    return tables.find(isCariStatementTable) || null;
-  }
-
-  function getRange(mode){
-    var now = new Date();
-    var start = null, end = null;
-    if(mode === 'today') { start = startOfDay(now); end = endOfDay(now); }
-    if(mode === 'thisWeek') { start = startOfWeek(now); end = endOfWeek(now); }
-    if(mode === 'thisMonth') { start = startOfMonth(now); end = endOfMonth(now); }
-    if(mode === 'lastMonth') { var lm = new Date(now.getFullYear(), now.getMonth()-1, 1); start = startOfMonth(lm); end = endOfMonth(lm); }
-    if(mode === 'thisYear') { start = startOfYear(now); end = endOfYear(now); }
-    if(mode === 'custom') {
-      start = parseDate(document.getElementById('alkamPeriodStart') && document.getElementById('alkamPeriodStart').value);
-      end = parseDate(document.getElementById('alkamPeriodEnd') && document.getElementById('alkamPeriodEnd').value);
-      if(end) end = endOfDay(end);
-    }
-    return {start:start, end:end};
-  }
-
-  function rowType(row){
-    var t = textOf(row.cells[3]).toLocaleLowerCase('tr-TR');
-    var all = textOf(row).toLocaleLowerCase('tr-TR');
-    if(t.indexOf('tahakkuk') >= 0 || all.indexOf('tahakkuk') >= 0) return 'debit';
-    if(t.indexOf('tahsilat') >= 0 || all.indexOf('tahsilat') >= 0) return 'credit';
-    return 'other';
-  }
-
-  function setSummary(shown, debit, credit){
-    var count = document.getElementById('alkamPeriodCount');
-    if(count) count.textContent = shown + ' kayıt gösteriliyor';
-    var debitEl = document.getElementById('alkamFilteredDebit');
-    var creditEl = document.getElementById('alkamFilteredCredit');
-    var netEl = document.getElementById('alkamFilteredNet');
-    if(debitEl) debitEl.textContent = money(debit);
-    if(creditEl) creditEl.textContent = money(credit);
-    if(netEl) netEl.textContent = money(debit - credit);
-  }
-
-  function applyFilter(){
-    var table = findTable();
-    if(!table || !table.tBodies || !table.tBodies[0]) return;
-    var modeEl = document.getElementById('alkamPeriodMode');
-    var typeEl = document.getElementById('alkamTxnTypeMode');
-    var mode = modeEl ? modeEl.value : 'all';
-    var typeMode = typeEl ? typeEl.value : 'all';
-    var range = getRange(mode);
-    var rows = Array.prototype.slice.call(table.tBodies[0].rows || []);
-    var shown = 0, debit = 0, credit = 0;
-    rows.forEach(function(row){
-      var d = parseDate(textOf(row.cells[1]));
-      var dateVisible = true;
-      if(mode !== 'all') dateVisible = !!(d && range.start && range.end && d >= range.start && d <= range.end);
-      var rt = rowType(row);
-      var typeVisible = typeMode === 'all' || typeMode === rt;
-      var visible = dateVisible && typeVisible;
-      row.style.display = visible ? '' : 'none';
-      if(visible) { shown += 1; debit += parseMoney(textOf(row.cells[5])); credit += parseMoney(textOf(row.cells[6])); }
-    });
-    setSummary(shown, debit, credit);
-  }
-
-  function resetFilter(){
-    var now = new Date();
-    var mode = document.getElementById('alkamPeriodMode');
-    var type = document.getElementById('alkamTxnTypeMode');
-    var s = document.getElementById('alkamPeriodStart');
-    var e = document.getElementById('alkamPeriodEnd');
-    if(mode) mode.value = 'all';
-    if(type) type.value = 'all';
-    if(s) s.value = fmt(startOfMonth(now));
-    if(e) e.value = fmt(endOfMonth(now));
-    applyFilter();
-  }
+  function isCariStatementTable(table){ var h=(table&&table.tHead?table.tHead.innerText:table&&table.innerText||'').toLocaleLowerCase('tr-TR'); return h.indexOf('işlem no')>=0&&h.indexOf('tarih')>=0&&h.indexOf('kaynak')>=0&&h.indexOf('bakiye')>=0; }
+  function findTable(){ var root=document.getElementById('selectedCariDetail')||document; var tables=Array.prototype.slice.call(root.querySelectorAll('table.source-statement, table')); return tables.find(isCariStatementTable)||null; }
+  function getRange(mode){ var now=new Date(); var start=null,end=null; if(mode==='today'){start=startOfDay(now);end=endOfDay(now);} if(mode==='thisWeek'){start=startOfWeek(now);end=endOfWeek(now);} if(mode==='thisMonth'){start=startOfMonth(now);end=endOfMonth(now);} if(mode==='lastMonth'){var lm=new Date(now.getFullYear(),now.getMonth()-1,1);start=startOfMonth(lm);end=endOfMonth(lm);} if(mode==='thisYear'){start=startOfYear(now);end=endOfYear(now);} if(mode==='custom'){start=parseDate(document.getElementById('alkamPeriodStart')&&document.getElementById('alkamPeriodStart').value);end=parseDate(document.getElementById('alkamPeriodEnd')&&document.getElementById('alkamPeriodEnd').value);if(end)end=endOfDay(end);} return {start:start,end:end}; }
+  function rowType(row){ var t=textOf(row.cells[3]).toLocaleLowerCase('tr-TR'); var all=textOf(row).toLocaleLowerCase('tr-TR'); if(t.indexOf('tahakkuk')>=0||all.indexOf('tahakkuk')>=0)return 'debit'; if(t.indexOf('tahsilat')>=0||all.indexOf('tahsilat')>=0)return 'credit'; return 'other'; }
+  function setSummary(shown,debit,credit){ var count=document.getElementById('alkamPeriodCount'); if(count)count.textContent=shown+' kayıt gösteriliyor'; var d=document.getElementById('alkamFilteredDebit'), c=document.getElementById('alkamFilteredCredit'), n=document.getElementById('alkamFilteredNet'); if(d)d.textContent=money(debit); if(c)c.textContent=money(credit); if(n)n.textContent=money(debit-credit); }
+  function applyFilter(){ var table=findTable(); if(!table||!table.tBodies||!table.tBodies[0])return; var modeEl=document.getElementById('alkamPeriodMode'); var typeEl=document.getElementById('alkamTxnTypeMode'); var mode=modeEl?modeEl.value:'all'; var typeMode=typeEl?typeEl.value:'all'; var range=getRange(mode); var rows=Array.prototype.slice.call(table.tBodies[0].rows||[]); var shown=0,debit=0,credit=0; rows.forEach(function(row){ var d=parseDate(textOf(row.cells[1])); var dateVisible=true; if(mode!=='all')dateVisible=!!(d&&range.start&&range.end&&d>=range.start&&d<=range.end); var rt=rowType(row); var typeVisible=typeMode==='all'||typeMode===rt; var visible=dateVisible&&typeVisible; row.style.display=visible?'':'none'; if(visible){shown+=1; debit+=parseMoney(textOf(row.cells[5])); credit+=parseMoney(textOf(row.cells[6]));} }); setSummary(shown,debit,credit); }
+  function resetFilter(){ var now=new Date(); var mode=document.getElementById('alkamPeriodMode'), type=document.getElementById('alkamTxnTypeMode'), s=document.getElementById('alkamPeriodStart'), e=document.getElementById('alkamPeriodEnd'); if(mode)mode.value='all'; if(type)type.value='all'; if(s)s.value=fmt(startOfMonth(now)); if(e)e.value=fmt(endOfMonth(now)); applyFilter(); }
 
   function install(){
-    var table = findTable();
-    if(!table) return;
-    if(document.getElementById('alkamPeriodFilterBar')) { applyFilter(); return; }
-    var bar = document.createElement('div');
-    bar.id = 'alkamPeriodFilterBar';
-    bar.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px 0;padding:10px;border:1px solid #dbeafe;background:#f8fbff;border-radius:14px;font-size:12px;font-weight:900;color:#334155';
-    bar.innerHTML = ''+
-      '<span style="color:#1d4ed8">Dönem filtresi</span>'+
-      '<select id="alkamPeriodMode" style="border:1px solid #cbd5e1;border-radius:9px;padding:7px 9px;font-weight:900;background:white">'+
-        '<option value="all">Tüm kayıtlar</option><option value="today">Bugün</option><option value="thisWeek">Bu hafta</option><option value="thisMonth">Bu ay</option><option value="lastMonth">Geçen ay</option><option value="thisYear">Bu yıl</option><option value="custom">Özel tarih</option>'+
-      '</select>'+
-      '<select id="alkamTxnTypeMode" style="border:1px solid #cbd5e1;border-radius:9px;padding:7px 9px;font-weight:900;background:white">'+
-        '<option value="all">Tüm tipler</option><option value="debit">Tahakkuk / Borç</option><option value="credit">Tahsilat / Alacak</option><option value="other">Düzeltme / Diğer</option>'+
-      '</select>'+
+    ensureStyle();
+    var table=findTable(); if(!table)return; if(document.getElementById('alkamPeriodFilterBar')){applyFilter();return;}
+    var bar=document.createElement('div'); bar.id='alkamPeriodFilterBar';
+    bar.innerHTML=''+
+      '<span class="alkam-filter-title" style="color:#1d4ed8">Dönem filtresi</span>'+
+      '<select id="alkamPeriodMode" style="border:1px solid #cbd5e1;border-radius:9px;padding:7px 9px;font-weight:900;background:white"><option value="all">Tüm kayıtlar</option><option value="today">Bugün</option><option value="thisWeek">Bu hafta</option><option value="thisMonth">Bu ay</option><option value="lastMonth">Geçen ay</option><option value="thisYear">Bu yıl</option><option value="custom">Özel tarih</option></select>'+
+      '<select id="alkamTxnTypeMode" style="border:1px solid #cbd5e1;border-radius:9px;padding:7px 9px;font-weight:900;background:white"><option value="all">Tüm tipler</option><option value="debit">Tahakkuk / Borç</option><option value="credit">Tahsilat / Alacak</option><option value="other">Düzeltme / Diğer</option></select>'+
       '<input id="alkamPeriodStart" type="date" style="border:1px solid #cbd5e1;border-radius:9px;padding:6px 8px;font-weight:900;background:white">'+
       '<input id="alkamPeriodEnd" type="date" style="border:1px solid #cbd5e1;border-radius:9px;padding:6px 8px;font-weight:900;background:white">'+
       '<button id="alkamPeriodApply" type="button" style="border:0;border-radius:9px;background:#1769e8;color:white;padding:8px 11px;font-weight:950">Uygula</button>'+
       '<button id="alkamPeriodReset" type="button" style="border:1px solid #cbd5e1;border-radius:9px;background:white;color:#0f172a;padding:8px 11px;font-weight:950">Temizle</button>'+
       '<span id="alkamPeriodCount" style="color:#64748b"></span>'+
-      '<span style="border-left:1px solid #cbd5e1;padding-left:8px;color:#991b1b">Borç: <b id="alkamFilteredDebit">0,00 TL</b></span>'+
-      '<span style="color:#047857">Alacak: <b id="alkamFilteredCredit">0,00 TL</b></span>'+
-      '<span style="color:#0f172a">Net: <b id="alkamFilteredNet">0,00 TL</b></span>';
-    var wrap = table.closest('.cari-detail-scroll,.section,#selectedCariDetail');
-    if(wrap) wrap.insertBefore(bar, table.parentElement || table);
-    var now = new Date();
-    var s = document.getElementById('alkamPeriodStart');
-    var e = document.getElementById('alkamPeriodEnd');
-    if(s) s.value = fmt(startOfMonth(now));
-    if(e) e.value = fmt(endOfMonth(now));
-    var mode = document.getElementById('alkamPeriodMode');
-    var type = document.getElementById('alkamTxnTypeMode');
-    var btn = document.getElementById('alkamPeriodApply');
-    var reset = document.getElementById('alkamPeriodReset');
-    if(mode) mode.addEventListener('change', applyFilter);
-    if(type) type.addEventListener('change', applyFilter);
-    if(btn) btn.addEventListener('click', applyFilter);
-    if(reset) reset.addEventListener('click', resetFilter);
-    if(s) s.addEventListener('change', function(){ if(mode) mode.value='custom'; applyFilter(); });
-    if(e) e.addEventListener('change', function(){ if(mode) mode.value='custom'; applyFilter(); });
-    applyFilter();
+      '<span class="alkam-filter-summary"><span style="border-left:1px solid #cbd5e1;padding-left:8px;color:#991b1b">Borç: <b id="alkamFilteredDebit">0,00 TL</b></span><span style="color:#047857">Alacak: <b id="alkamFilteredCredit">0,00 TL</b></span><span style="color:#0f172a">Net: <b id="alkamFilteredNet">0,00 TL</b></span></span>';
+    var wrap=table.closest('.cari-detail-scroll,.section,#selectedCariDetail'); if(wrap)wrap.insertBefore(bar,table.parentElement||table);
+    var now=new Date(); var s=document.getElementById('alkamPeriodStart'), e=document.getElementById('alkamPeriodEnd'); if(s)s.value=fmt(startOfMonth(now)); if(e)e.value=fmt(endOfMonth(now));
+    var mode=document.getElementById('alkamPeriodMode'), type=document.getElementById('alkamTxnTypeMode'), btn=document.getElementById('alkamPeriodApply'), reset=document.getElementById('alkamPeriodReset');
+    if(mode)mode.addEventListener('change',applyFilter); if(type)type.addEventListener('change',applyFilter); if(btn)btn.addEventListener('click',applyFilter); if(reset)reset.addEventListener('click',resetFilter); if(s)s.addEventListener('change',function(){if(mode)mode.value='custom';applyFilter();}); if(e)e.addEventListener('change',function(){if(mode)mode.value='custom';applyFilter();}); applyFilter();
   }
-
-  var timer = null;
-  function schedule(){ clearTimeout(timer); timer = setTimeout(install, 100); }
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', schedule); else schedule();
-  var target = document.getElementById('selectedCariDetail') || document.body;
-  if(target && window.MutationObserver) new MutationObserver(schedule).observe(target, { childList:true, subtree:true });
-  document.addEventListener('click', function(){ setTimeout(schedule, 140); }, true);
-  var tries = 0;
-  var boot = setInterval(function(){ install(); tries += 1; if(tries >= 40) clearInterval(boot); }, 500);
+  var timer=null; function schedule(){clearTimeout(timer);timer=setTimeout(install,100);} if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule); else schedule(); var target=document.getElementById('selectedCariDetail')||document.body; if(target&&window.MutationObserver)new MutationObserver(schedule).observe(target,{childList:true,subtree:true}); document.addEventListener('click',function(){setTimeout(schedule,140);},true); var tries=0; var boot=setInterval(function(){install();tries+=1;if(tries>=40)clearInterval(boot);},500);
 })();
