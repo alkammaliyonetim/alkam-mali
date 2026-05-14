@@ -15,7 +15,8 @@ export default {
       '/alkam-hotfix-selected-cari-sticky.js?v=20260514a',
       '/alkam-hotfix-mobile-statement-cards.js?v=20260514a',
       '/alkam-bank-import-v1.js?v=20260514a',
-      '/alkam-bank-approval-v1.js?v=20260514a'
+      '/alkam-bank-approval-v1.js?v=20260514a',
+      '/alkam-bank-onay-center-v1.js?v=20260514a'
     ];
 
     for (const src of scripts) {
