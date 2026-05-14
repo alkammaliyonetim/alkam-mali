@@ -2,8 +2,8 @@
 // Guvenli DOM katmani: tablo verisine dokunmaz, sadece gorunen satirlari filtreler.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_PERIOD_FILTER_V2__) return;
-  window.__ALKAM_CARI_PERIOD_FILTER_V2__ = true;
+  if(window.__ALKAM_CARI_PERIOD_FILTER_V3__) return;
+  window.__ALKAM_CARI_PERIOD_FILTER_V3__ = true;
 
   function textOf(el){ return (el && el.textContent || '').replace(/\s+/g,' ').trim(); }
 
@@ -21,10 +21,14 @@
     return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   }
 
+  function startOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function endOfDay(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999); }
+  function startOfWeek(d){ var x=startOfDay(d); var day=x.getDay(); var diff=(day===0?-6:1-day); x.setDate(x.getDate()+diff); return x; }
+  function endOfWeek(d){ var x=startOfWeek(d); x.setDate(x.getDate()+6); return endOfDay(x); }
   function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
-  function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0); }
+  function endOfMonth(d){ return new Date(d.getFullYear(), d.getMonth()+1, 0, 23, 59, 59, 999); }
   function startOfYear(d){ return new Date(d.getFullYear(), 0, 1); }
-  function endOfYear(d){ return new Date(d.getFullYear(), 11, 31); }
+  function endOfYear(d){ return new Date(d.getFullYear(), 11, 31, 23, 59, 59, 999); }
 
   function isCariStatementTable(table){
     var h = (table && table.tHead ? table.tHead.innerText : table && table.innerText || '').toLocaleLowerCase('tr-TR');
@@ -40,12 +44,15 @@
   function getRange(mode){
     var now = new Date();
     var start = null, end = null;
+    if(mode === 'today') { start = startOfDay(now); end = endOfDay(now); }
+    if(mode === 'thisWeek') { start = startOfWeek(now); end = endOfWeek(now); }
     if(mode === 'thisMonth') { start = startOfMonth(now); end = endOfMonth(now); }
     if(mode === 'lastMonth') { var lm = new Date(now.getFullYear(), now.getMonth()-1, 1); start = startOfMonth(lm); end = endOfMonth(lm); }
     if(mode === 'thisYear') { start = startOfYear(now); end = endOfYear(now); }
     if(mode === 'custom') {
       start = parseDate(document.getElementById('alkamPeriodStart') && document.getElementById('alkamPeriodStart').value);
       end = parseDate(document.getElementById('alkamPeriodEnd') && document.getElementById('alkamPeriodEnd').value);
+      if(end) end = endOfDay(end);
     }
     return {start:start, end:end};
   }
@@ -96,6 +103,8 @@
       '<span style="color:#1d4ed8">Dönem filtresi</span>'+
       '<select id="alkamPeriodMode" style="border:1px solid #cbd5e1;border-radius:9px;padding:7px 9px;font-weight:900;background:white">'+
         '<option value="all">Tüm kayıtlar</option>'+
+        '<option value="today">Bugün</option>'+
+        '<option value="thisWeek">Bu hafta</option>'+
         '<option value="thisMonth">Bu ay</option>'+
         '<option value="lastMonth">Geçen ay</option>'+
         '<option value="thisYear">Bu yıl</option>'+
