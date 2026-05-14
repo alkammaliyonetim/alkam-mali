@@ -1969,6 +1969,89 @@ function exportYearTransitionJson(){
   };
   downloadJson(payload, `alkam_acilis_tahakkuk_kontrol_${new Date().toISOString().slice(0,10)}.json`);
 }
+function buildOpeningEntries2026(){
+  const y=state.year2026||{};
+  const rows=(state.cariler||[]).map(c=>{
+    const raw=num(c.opening_balance||c.acilis_bakiyesi||c.bakiye_2025||0);
+    return {
+      id:uid('open2026'),
+      cari_id:c.cari_id,
+      cari_name:c.cari_name||'-',
+      source_field:'manual_review',
+      strict_source:Math.abs(raw)>0.01,
+      debit:raw>0?raw:0,
+      credit:raw<0?Math.abs(raw):0,
+      opening_date:'2025-12-31',
+      status:Math.abs(raw)>0.01?'ready':'zero_or_review'
+    };
+  }).filter(r=>r.strict_source || r.status==='zero_or_review');
+  y.opening_entries=rows;
+  state.year2026=y;
+  writeLocalJson(LOCAL_2026_OPENING_KEY, rows);
+  renderYearTransitionPanel();
+  notify(`Açılış önerileri hazırlandı: ${rows.length} kayıt.`);
+  return rows;
+}
+async function applyOpeningEntries2026(){
+  const y=state.year2026||{};
+  const rows=(y.opening_entries&&y.opening_entries.length)?y.opening_entries:buildOpeningEntries2026();
+  const stamp=new Date().toISOString();
+  const written=rows.map(r=>({...r,written_at:stamp,status:r.strict_source?'written':'review_only'}));
+  y.opening_entries=written;
+  y.openings_written_at=stamp;
+  state.year2026=y;
+  writeLocalJson(LOCAL_2026_OPENING_KEY, written);
+  addAuditEvent('opening_entries_2026_marked',{count:written.length,created_at:stamp});
+  renderYearTransitionPanel();
+  notify(`Açılış listesi işaretlendi: ${written.length} kayıt. Canlı yazım için operatör onayı gerekir.`);
+  return written;
+}
+function buildAccrualSuggestions2026(){
+  const y=state.year2026||{};
+  const missing=(y.missing_rows&&y.missing_rows.length)?y.missing_rows:[];
+  const rows=missing.map(r=>({
+    id:uid('acc2026'),
+    cari_id:r.cari_id,
+    cari_name:r.cari_name||'-',
+    month_no:r.month_no,
+    month_token:r.month_token||r.month_label||'-',
+    document_type:'Muhasebe Ucreti Tahakkuku',
+    suggested_amount:num(r.expected_fee||0),
+    approval_status:'draft',
+    source:'acilis_tahakkuk_kontrol'
+  }));
+  y.accrual_suggestions=rows;
+  state.year2026=y;
+  writeLocalJson(LOCAL_2026_ACCRUAL_KEY, rows);
+  renderYearTransitionPanel();
+  notify(`Tahakkuk önerileri hazırlandı: ${rows.length} kayıt.`);
+  return rows;
+}
+function pushAccrualSuggestionsToApprovals(){
+  const y=state.year2026||{};
+  const rows=(y.accrual_suggestions&&y.accrual_suggestions.length)?y.accrual_suggestions:buildAccrualSuggestions2026();
+  const stamp=new Date().toISOString();
+  state.approvalOps=state.approvalOps||{processed:[],rejected:[],handled_pending_ids:[]};
+  state.bankOps=state.bankOps||{pending:[],row_status:{},history:[]};
+  const pending=rows.map(r=>({
+    id:uid('apr2026'),
+    created_at:stamp,
+    source_module:'acilis_tahakkuk_kontrol',
+    source_type:'accrual_suggestion',
+    approval_required:true,
+    approval_status:'pending',
+    cari_id:r.cari_id,
+    cari_name:r.cari_name,
+    amount:r.suggested_amount,
+    note:`${r.month_token} tahakkuk önerisi`
+  }));
+  state.bankOps.pending=[...(state.bankOps.pending||[]),...pending];
+  writeLocalJson(LOCAL_BANK_OPS_KEY,state.bankOps);
+  addAuditEvent('accrual_suggestions_queued',{count:pending.length,created_at:stamp});
+  notify(`Öneriler onay kuyruğuna alındı: ${pending.length} kayıt.`);
+  renderApprovals();
+  return pending;
+}
 
 async function loadApprovals(){
   const [p,pr,r]=await Promise.all([
