@@ -1,11 +1,24 @@
-// ALKAM Mali - Cari Ekstre Donem ve Hareket Tipi Filtresi
+// ALKAM Mali - Cari Ekstre Donem, Hareket Tipi ve Mini Ozet Filtresi
 // Guvenli DOM katmani: tablo verisine dokunmaz, sadece gorunen satirlari filtreler.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_PERIOD_FILTER_V3__) return;
-  window.__ALKAM_CARI_PERIOD_FILTER_V3__ = true;
+  if(window.__ALKAM_CARI_PERIOD_FILTER_V4__) return;
+  window.__ALKAM_CARI_PERIOD_FILTER_V4__ = true;
 
   function textOf(el){ return (el && el.textContent || '').replace(/\s+/g,' ').trim(); }
+
+  function parseMoney(value){
+    var s = String(value || '').replace(/\s/g,'').replace(/TL|₺/gi,'');
+    if(!s || s === '-') return 0;
+    if(s.indexOf(',') >= 0 && s.indexOf('.') >= 0) s = s.replace(/\./g,'').replace(',','.');
+    else if(s.indexOf(',') >= 0) s = s.replace(',','.');
+    var n = Number(s.replace(/[^0-9.-]/g,''));
+    return isFinite(n) ? n : 0;
+  }
+
+  function money(n){
+    return (Number(n)||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' TL';
+  }
 
   function parseDate(value){
     var s = String(value || '').replace(/\s+/g,' ').trim();
@@ -65,6 +78,17 @@
     return 'other';
   }
 
+  function setSummary(shown, debit, credit){
+    var count = document.getElementById('alkamPeriodCount');
+    if(count) count.textContent = shown + ' kayıt gösteriliyor';
+    var debitEl = document.getElementById('alkamFilteredDebit');
+    var creditEl = document.getElementById('alkamFilteredCredit');
+    var netEl = document.getElementById('alkamFilteredNet');
+    if(debitEl) debitEl.textContent = money(debit);
+    if(creditEl) creditEl.textContent = money(credit);
+    if(netEl) netEl.textContent = money(debit - credit);
+  }
+
   function applyFilter(){
     var table = findTable();
     if(!table || !table.tBodies || !table.tBodies[0]) return;
@@ -74,7 +98,7 @@
     var typeMode = typeEl ? typeEl.value : 'all';
     var range = getRange(mode);
     var rows = Array.prototype.slice.call(table.tBodies[0].rows || []);
-    var shown = 0;
+    var shown = 0, debit = 0, credit = 0;
 
     rows.forEach(function(row){
       var d = parseDate(textOf(row.cells[1]));
@@ -84,11 +108,13 @@
       var typeVisible = typeMode === 'all' || typeMode === rt;
       var visible = dateVisible && typeVisible;
       row.style.display = visible ? '' : 'none';
-      if(visible) shown += 1;
+      if(visible) {
+        shown += 1;
+        debit += parseMoney(textOf(row.cells[5]));
+        credit += parseMoney(textOf(row.cells[6]));
+      }
     });
-
-    var count = document.getElementById('alkamPeriodCount');
-    if(count) count.textContent = shown + ' kayıt gösteriliyor';
+    setSummary(shown, debit, credit);
   }
 
   function install(){
@@ -119,7 +145,10 @@
       '<input id="alkamPeriodStart" type="date" style="border:1px solid #cbd5e1;border-radius:9px;padding:6px 8px;font-weight:900;background:white">'+
       '<input id="alkamPeriodEnd" type="date" style="border:1px solid #cbd5e1;border-radius:9px;padding:6px 8px;font-weight:900;background:white">'+
       '<button id="alkamPeriodApply" type="button" style="border:0;border-radius:9px;background:#1769e8;color:white;padding:8px 11px;font-weight:950">Uygula</button>'+
-      '<span id="alkamPeriodCount" style="color:#64748b"></span>';
+      '<span id="alkamPeriodCount" style="color:#64748b"></span>'+
+      '<span style="border-left:1px solid #cbd5e1;padding-left:8px;color:#991b1b">Borç: <b id="alkamFilteredDebit">0,00 TL</b></span>'+
+      '<span style="color:#047857">Alacak: <b id="alkamFilteredCredit">0,00 TL</b></span>'+
+      '<span style="color:#0f172a">Net: <b id="alkamFilteredNet">0,00 TL</b></span>';
 
     var wrap = table.closest('.cari-detail-scroll,.section,#selectedCariDetail');
     if(wrap) wrap.insertBefore(bar, table.parentElement || table);
