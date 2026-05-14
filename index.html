@@ -1835,7 +1835,7 @@ async function loadCariMovementSnapshot(){
   try{
     const {data,error}=await supabaseClient
       .from("v_cari_hareket_dokumu")
-      .select("id,txn_id,operation_no,cari_id,cari_name,line_date,movement_type,description,debit,credit,amount,source_module,document_no")
+      .select("*")
       .order("line_date",{ascending:false})
       .limit(50000);
     if(error) throw error;
@@ -1845,6 +1845,52 @@ async function loadCariMovementSnapshot(){
     state.allCariMovementRows=[];
   }
   return state.allCariMovementRows;
+}
+function normalizeCariLookupText(v=''){
+  return String(v||'')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/[ıİ]/g,'i')
+    .replace(/[şŞ]/g,'s')
+    .replace(/[ğĞ]/g,'g')
+    .replace(/[üÜ]/g,'u')
+    .replace(/[öÖ]/g,'o')
+    .replace(/[çÇ]/g,'c')
+    .replace(/\b(as|aş|anonim|sirket|şirket|sirketi|şirketi|ltd|limited|sti|şti|san|tic|ticaret|sanayi|hukuk|burosu|bürosu)\b/g,' ')
+    .replace(/[^a-z0-9]+/g,' ')
+    .trim()
+    .replace(/\s+/g,' ');
+}
+function cariIdentity(cariId){
+  const row=(state.cariler||[]).find(c=>String(c.cari_id)===String(cariId))
+    || (state.cariCards||[]).find(c=>String(c.cari_id||c.id)===String(cariId));
+  return {id:String(cariId||''), name:row?.cari_name || row?.name || ''};
+}
+function rowMatchesCariIdentity(row, identity){
+  if(!row || !identity) return false;
+  if(identity.id && String(row.cari_id||'')===identity.id) return true;
+  const a=normalizeCariLookupText(row.cari_name || row.target_name || row.description || '');
+  const b=normalizeCariLookupText(identity.name || '');
+  if(!a || !b) return false;
+  return a===b || a.includes(b) || b.includes(a);
+}
+function readLocalLedgerRows(){
+  try{return JSON.parse(localStorage.getItem(LOCAL_LEDGER_KEY)||'[]')||[];}catch(_){return [];}
+}
+function allCariLedgerRows(){
+  const seen=new Set(), rows=[];
+  const add=(row,prefix)=>{
+    if(!row) return;
+    const stamped={...row, txn_id:txnId(row,prefix)};
+    const key=String(stamped.id||stamped.txn_id||stamped.operation_no||`${stamped.cari_id}|${getRowDateValue(stamped)}|${stamped.description}|${num(stamped.amount).toFixed(2)}|${stamped.source_module}`);
+    if(key && seen.has(key)) return;
+    if(key) seen.add(key);
+    rows.push(stamped);
+  };
+  (state.allCariMovementRows||[]).forEach(r=>add(r,'HRK'));
+  (state.operationalLedger||[]).forEach(r=>add(r,'LGR'));
+  (window.__liveCaches?.account_ops||[]).forEach(r=>add(r,'LAC'));
+  readLocalLedgerRows().forEach(r=>add(r,'LGR'));
+  return rows;
 }
 function aggregateCariMovements(rows=[]){
   const map=new Map();
@@ -1875,23 +1921,54 @@ function aggregateCariMovements(rows=[]){
   });
   return map;
 }
-function enrichCariRowsFromMovements(rows=[]){
-  const byId=aggregateCariMovements(state.allCariMovementRows||[]);
-  return rows.map(c=>{
-    const agg=byId.get(String(c.cari_id||''));
-    if(!agg) return c;
-    return {...c,
-      bakiye:agg.bakiye,
-      bu_ay_tahakkuk:agg.bu_ay_tahakkuk,
-      bu_ay_tahsilat:agg.bu_ay_tahsilat,
-      bu_yil_tahakkuk:agg.bu_yil_tahakkuk,
-      bu_yil_tahsilat:agg.bu_yil_tahsilat,
-      son_tahakkuk_tarihi:agg.son_tahakkuk_tarihi || c.son_tahakkuk_tarihi,
-      son_tahakkuk_tutari:agg.son_tahakkuk_tutari || c.son_tahakkuk_tutari,
-      son_tahsilat_tarihi:agg.son_tahsilat_tarihi || c.son_tahsilat_tarihi,
-      son_tahsilat_tutari:agg.son_tahsilat_tutari || c.son_tahsilat_tutari
-    };
+function aggregateRowsForCari(cariId, cariRow=null){
+  const baseIdentity=cariIdentity(cariId);
+  const identity={id:String(cariId||''), name:cariRow?.cari_name || cariRow?.name || baseIdentity.name || ''};
+  const rows=allCariLedgerRows().filter(r=>rowMatchesCariIdentity(r, identity));
+  const agg=aggregateCariMovements(rows).get(String(cariId||''));
+  if(agg) return agg;
+  const fallback={cari_id:String(cariId||''),cari_name:identity.name||'',count:0,bakiye:0,bu_ay_tahakkuk:0,bu_ay_tahsilat:0,bu_yil_tahakkuk:0,bu_yil_tahsilat:0,son_tahakkuk_tarihi:null,son_tahakkuk_tutari:0,son_tahsilat_tarihi:null,son_tahsilat_tutari:0};
+  rows.forEach(row=>{
+    const mv=normalizeMovementAmounts(row);
+    const lineDate=String(getRowDateValue(row)||'').slice(0,10);
+    const keyMonth=lineDate.slice(0,7), keyYear=lineDate.slice(0,4);
+    const type=String(row.movement_type||'').toLocaleLowerCase('tr-TR');
+    const isCredit=mv.credit>0 || type.includes('tahsilat') || type.includes('alacak');
+    const isDebit=mv.debit>0 || type.includes('tahakkuk') || type.includes('borç') || type.includes('borc');
+    fallback.count++;
+    fallback.bakiye+=mv.debit-mv.credit;
+    if(isDebit){
+      if(keyMonth===ym) fallback.bu_ay_tahakkuk+=mv.debit;
+      if(keyYear===y) fallback.bu_yil_tahakkuk+=mv.debit;
+      if(lineDate && (!fallback.son_tahakkuk_tarihi || lineDate>fallback.son_tahakkuk_tarihi)){ fallback.son_tahakkuk_tarihi=lineDate; fallback.son_tahakkuk_tutari=mv.debit; }
+    }
+    if(isCredit){
+      if(keyMonth===ym) fallback.bu_ay_tahsilat+=mv.credit;
+      if(keyYear===y) fallback.bu_yil_tahsilat+=mv.credit;
+      if(lineDate && (!fallback.son_tahsilat_tarihi || lineDate>fallback.son_tahsilat_tarihi)){ fallback.son_tahsilat_tarihi=lineDate; fallback.son_tahsilat_tutari=mv.credit; }
+    }
   });
+  return fallback;
+}
+function applyCariAggregate(row, agg){
+  if(!agg || !agg.count) return row;
+  return {...row,
+    bakiye:agg.bakiye,
+    bu_ay_tahakkuk:agg.bu_ay_tahakkuk,
+    bu_ay_tahsilat:agg.bu_ay_tahsilat,
+    bu_yil_tahakkuk:agg.bu_yil_tahakkuk,
+    bu_yil_tahsilat:agg.bu_yil_tahsilat,
+    son_tahakkuk_tarihi:agg.son_tahakkuk_tarihi || row.son_tahakkuk_tarihi,
+    son_tahakkuk_tutari:agg.son_tahakkuk_tutari || row.son_tahakkuk_tutari,
+    son_tahsilat_tarihi:agg.son_tahsilat_tarihi || row.son_tahsilat_tarihi,
+    son_tahsilat_tutari:agg.son_tahsilat_tutari || row.son_tahsilat_tutari
+  };
+}
+function refreshCariComputedFields(){
+  state.cariler=(state.cariler||[]).map(c=>applyCariAggregate(c, aggregateRowsForCari(c.cari_id, c)));
+}
+function enrichCariRowsFromMovements(rows=[]){
+  return rows.map(c=>applyCariAggregate(c, aggregateRowsForCari(c.cari_id, c)));
 }
 async function loadDashboard(){
   const [d,r]=await Promise.all([
@@ -1909,13 +1986,15 @@ async function loadCariler(){
   if(state.cariler.length&&!state.selectedCariId) state.selectedCariId=state.cariler[0].cari_id;
   const c=await supabaseClient.from("v_cari_card_management").select("*").order("cari_name",{ascending:true});
   state.cariCards=c.data||[];
+  refreshCariComputedFields();
   await loadSelectedCariHareketler(); renderCariList(); renderSelectedCariDetail(); safeRun(()=>renderCariBulkAccruals(),'Cari Toplu Tahakkuk');
 }
 async function loadSelectedCariHareketler(){
   await hydrateLiveSyncCaches();
   if(!state.selectedCariId){state.hareketler=[];return}
   const {data}=await supabaseClient.from("v_cari_hareket_dokumu").select("*").eq("cari_id",state.selectedCariId).order("line_date",{ascending:false}).limit(500);
-  const snapshotRows=(state.allCariMovementRows||[]).filter(x=>String(x.cari_id)===String(state.selectedCariId));
+  const identity=cariIdentity(state.selectedCariId);
+  const snapshotRows=(state.allCariMovementRows||[]).filter(x=>rowMatchesCariIdentity(x, identity));
   const baseRows=(data&&data.length)?data:snapshotRows;
   const localRows=buildLocalCariMovementRows(state.selectedCariId);
   const localFeeRows=feeAccrualRowsForCari(state.selectedCariId);
@@ -3674,9 +3753,10 @@ function feeAccrualRowsForCari(id){
   let localLedger = [];
   try { localLedger = JSON.parse(localStorage.getItem('alkam_local_ledger_v1') || '[]'); } catch(e) { localLedger = []; }
   const rows = [...(state.operationalLedger||[]), ...liveRows, ...localLedger];
+  const identity = cariIdentity(id);
   const seen = new Set();
   return rows.filter(x=>{
-    const ok = String(x.cari_id)===String(id)
+    const ok = rowMatchesCariIdentity(x, identity)
       && ['fee_auto','fee_bulk_manual','manual_contract_2026'].includes(String(x.source_module||''))
       && String(x.movement_type||'').toLocaleLowerCase('tr-TR')==='tahakkuk';
     if(!ok) return false;
@@ -3686,7 +3766,7 @@ function feeAccrualRowsForCari(id){
     return true;
   });
 }
-function tahsilatRowsForCari(id){ const local=(state.operationalLedger||[]).filter(x=>String(x.cari_id)===String(id) && String(x.source_module||'')==='local_cari_collection'); return local; }
+function tahsilatRowsForCari(id){ const identity=cariIdentity(id); const local=(state.operationalLedger||[]).filter(x=>rowMatchesCariIdentity(x, identity) && String(x.source_module||'')==='local_cari_collection'); return local; }
 function hasSimilarTahsilat(id,date,amount){ return tahsilatRowsForCari(id).some(r=>String((r.line_date||r.entry_date||r.created_at||'')).slice(0,10)===String(date).slice(0,10) && Math.abs(num(r.amount||r.net_amount)-num(amount))<0.01); }
 function hasSimilarTahakkuk(id, date, amount, desc){ return feeAccrualRowsForCari(id).some(r=>String((r.line_date||r.entry_date||'')).slice(0,10)===String(date).slice(0,10) && Math.abs(num(r.amount)-num(amount))<0.01 && String(r.description||'').trim()===String(desc||'').trim()); }
 function yearEndFromDate(v){ const d=new Date(v); if(Number.isNaN(d.getTime())) return ''; return `${d.getFullYear()}-12-31`; }
@@ -7993,9 +8073,9 @@ function toast(m){try{if(typeof notify==='function')notify(m);else console.log(m
 function srcInfo(r){if(typeof alkamStatementSourceInfo==='function')return alkamStatementSourceInfo(r);return{kind:'main',label:'Ana Veri',detail:'Yüklenen cari ekstresi / Supabase'}}
 function sb(r){const s=srcInfo(r);return `<span class="source-badge ${s.kind}" title="${esc(s.detail)}">${esc(s.label)}</span>`}
 function sc(label,lines){return `<div class="cari-summary-card"><div class="summary-label">${label}</div>${lines.map(x=>`<div class="summary-line"><div class="summary-key">${x.k}</div><div class="summary-val ${x.money?'money':''}">${x.v}</div></div>`).join('')}</div>`}
-window.renderCariList=function(){const list=document.getElementById('cariList'), rows=typeof filteredCariler==='function'?filteredCariler():[], s=typeof getGlobalOpsSummary==='function'?getGlobalOpsSummary():null, wrap=document.getElementById('cariSummaryWrap');if(wrap&&s)wrap.innerHTML=`<div class="cari-summary-grid">`+sc('Mükellef Dağılımı',[{k:'İşletme',v:String(s.taxpayer?.isletme_defteri??0)},{k:'Bilanço',v:String(s.taxpayer?.bilanco??0)}])+sc('Şirket Yapısı',[{k:'Ltd',v:String(s.taxpayer?.limited_sirket??0)},{k:'A.Ş.',v:String(s.taxpayer?.anonim_sirket??0)}])+sc('Bu Ay Tahakkuk / Tahsilat',[{k:'Tahakkuk',v:mon(s.thisMonthTahakkuk),money:true},{k:'Tahsilat',v:mon(s.thisMonthTahsilat),money:true}])+sc('Bu Yıl Tahakkuk / Tahsilat',[{k:'Tahakkuk',v:mon(s.thisYearTahakkuk),money:true},{k:'Tahsilat',v:mon(s.thisYearTahsilat),money:true}])+sc('Bu Ay Gider',[{k:'Tahakkuk',v:mon(s.thisMonthExpenseAcc),money:true},{k:'Ödeme',v:mon(s.thisMonthExpensePay),money:true}])+sc('Bu Yıl Gider',[{k:'Tahakkuk',v:mon(s.thisYearExpenseAcc),money:true},{k:'Ödeme',v:mon(s.thisYearExpensePay),money:true}])+`</div>`;if(!list)return;list.innerHTML=rows.length?rows.map(c=>`<div class="list-item ${state.selectedCariId===c.cari_id?'active':''} ${c.is_tahsilat_3_ay_gecikmis?'risk':''}" data-cari-id="${esc(c.cari_id)}"><div><div class="list-title">${esc(c.cari_name)} ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''} ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}</div><div class="list-meta">Tür: ${esc(c.taxpayer_type||'-')} · Defter Ücreti: ${mon(c.defter_ucreti||0)} · Skor: ${Number(c.score_total||0).toFixed(0)}<br>Son tahakkuk: ${sd(c.son_tahakkuk_tarihi)} · ${mon(c.son_tahakkuk_tutari||0)}<br>Son tahsilat: ${sd(c.son_tahsilat_tarihi)} · ${mon(c.son_tahsilat_tutari||0)}</div></div><div class="list-balance-pill ${Number(c.bakiye||0)>0?'red':'green'}">${mon(c.bakiye||0)}</div></div>`).join(''):'<div class="empty">Cari bulunamadı.</div>';list.querySelectorAll('[data-cari-id]').forEach(el=>el.addEventListener('click',async()=>{state.selectedCariId=el.dataset.cariId;if(typeof loadSelectedCariHareketler==='function')await loadSelectedCariHareketler();renderCariList();if(typeof renderSelectedCariDetail==='function')renderSelectedCariDetail()}))};renderCariList=window.renderCariList;
+window.renderCariList=function(){if(typeof refreshCariComputedFields==='function')refreshCariComputedFields();const list=document.getElementById('cariList'), rows=typeof filteredCariler==='function'?filteredCariler():[], s=typeof getGlobalOpsSummary==='function'?getGlobalOpsSummary():null, wrap=document.getElementById('cariSummaryWrap');if(wrap&&s)wrap.innerHTML=`<div class="cari-summary-grid">`+sc('Mükellef Dağılımı',[{k:'İşletme',v:String(s.taxpayer?.isletme_defteri??0)},{k:'Bilanço',v:String(s.taxpayer?.bilanco??0)}])+sc('Şirket Yapısı',[{k:'Ltd',v:String(s.taxpayer?.limited_sirket??0)},{k:'A.Ş.',v:String(s.taxpayer?.anonim_sirket??0)}])+sc('Bu Ay Tahakkuk / Tahsilat',[{k:'Tahakkuk',v:mon(s.thisMonthTahakkuk),money:true},{k:'Tahsilat',v:mon(s.thisMonthTahsilat),money:true}])+sc('Bu Yıl Tahakkuk / Tahsilat',[{k:'Tahakkuk',v:mon(s.thisYearTahakkuk),money:true},{k:'Tahsilat',v:mon(s.thisYearTahsilat),money:true}])+sc('Bu Ay Gider',[{k:'Tahakkuk',v:mon(s.thisMonthExpenseAcc),money:true},{k:'Ödeme',v:mon(s.thisMonthExpensePay),money:true}])+sc('Bu Yıl Gider',[{k:'Tahakkuk',v:mon(s.thisYearExpenseAcc),money:true},{k:'Ödeme',v:mon(s.thisYearExpensePay),money:true}])+`</div>`;if(!list)return;list.innerHTML=rows.length?rows.map(c=>`<div class="list-item ${state.selectedCariId===c.cari_id?'active':''} ${c.is_tahsilat_3_ay_gecikmis?'risk':''}" data-cari-id="${esc(c.cari_id)}"><div><div class="list-title">${esc(c.cari_name)} ${c.is_tahsilat_3_ay_gecikmis?'<span class="tag red">3+ AY TAHSİLAT YOK</span>':''} ${c.aktif_odeme_sozu_var?'<span class="tag amber">ÖDEME SÖZÜ</span>':''}</div><div class="list-meta">Tür: ${esc(c.taxpayer_type||'-')} · Defter Ücreti: ${mon(c.defter_ucreti||0)} · Skor: ${Number(c.score_total||0).toFixed(0)}<br>Son tahakkuk: ${sd(c.son_tahakkuk_tarihi)} · ${mon(c.son_tahakkuk_tutari||0)}<br>Son tahsilat: ${sd(c.son_tahsilat_tarihi)} · ${mon(c.son_tahsilat_tutari||0)}</div></div><div class="list-balance-pill ${Number(c.bakiye||0)>0?'red':'green'}">${mon(c.bakiye||0)}</div></div>`).join(''):'<div class="empty">Cari bulunamadı.</div>';list.querySelectorAll('[data-cari-id]').forEach(el=>el.addEventListener('click',async()=>{state.selectedCariId=el.dataset.cariId;if(typeof loadSelectedCariHareketler==='function')await loadSelectedCariHareketler();renderCariList();if(typeof renderSelectedCariDetail==='function')renderSelectedCariDetail()}))};renderCariList=window.renderCariList;
 window.buildStandardStatementTable=function(rowsDesc,options={}){if(!rowsDesc||!rowsDesc.length)return '<div class="empty">Seçili aralıkta hareket yok.</div>';const editable=!!options.editable;return `<div class="statement-shell"><div class="statement-shell-header"><div><div class="statement-title">Cari Hareket Ekstresi</div><div class="statement-caption">Kaynak kolonu açık: otomatik, manuel, banka/ana veri ve düzeltme kayıtları ayrı görünür.</div></div><div class="statement-badge">Kaynak Kontrollü</div></div><div class="statement-scroll"><table class="statement-table"><colgroup><col class="col-no"><col class="col-date"><col class="col-source"><col class="col-type"><col class="col-desc"><col class="col-money"><col class="col-money"><col class="col-money"><col class="col-money">${editable?'<col class="col-action">':''}</colgroup><thead><tr><th>İşlem No</th><th>Tarih</th><th>Kaynak</th><th>İşlem</th><th>Açıklama</th><th>Borç</th><th>Alacak</th><th>Bakiye B</th><th>Bakiye A</th>${editable?'<th>İşlem</th>':''}</tr></thead><tbody>${rowsDesc.map(r=>{const b=typeof balanceColumns==='function'?balanceColumns(r.running_balance):{bakiye_b:'-',bakiye_a:'-'};const rowNo=typeof displayTxnNo==='function'?displayTxnNo(r,'HRK'):(r.id||'-');const canEdit=editable&&state.selectedLedgerView!=='allhistory'&&(typeof cariMovementEditable!=='function'||cariMovementEditable(r));const act=editable?`<td>${canEdit?`<button class="btn btn-soft" data-cari-edit-id="${esc(r.id||r._alkam_universal_key||'')}" data-cari-edit-source="${esc(r.source_module||'')}">Düzenle</button>`:`<span class="tag gray">Read-Only</span>`}</td>`:'';return `<tr><td>${esc(rowNo)}</td><td>${sd(r.line_date||r.entry_date)}</td><td>${sb(r)}<div class="muted-note">${esc(srcInfo(r).detail)}</div></td><td>${typeof renderTag==='function'?renderTag(r.movement_type||r.final_movement_type||r.suggested_movement_type||'-'):esc(r.movement_type||'-')}</td><td class="statement-desc">${esc(r.description||r.content_summary||'-')}</td><td class="statement-num">${mon(r.debit||0)}</td><td class="statement-num">${mon(r.credit||0)}</td><td class="statement-balance">${b.bakiye_b||'-'}</td><td class="statement-balance">${b.bakiye_a||'-'}</td>${act}</tr>`}).join('')}</tbody></table></div></div>`};buildStandardStatementTable=window.buildStandardStatementTable;
-window.renderSelectedCariDetail=function(){if(typeof oldDetail==='function')oldDetail();const t=document.getElementById('selectedCariDetail');if(t&&!t.classList.contains('empty'))t.classList.add('vmain-cari-detail')};renderSelectedCariDetail=window.renderSelectedCariDetail;
+window.renderSelectedCariDetail=function(){if(typeof refreshCariComputedFields==='function')refreshCariComputedFields();if(typeof oldDetail==='function')oldDetail();const t=document.getElementById('selectedCariDetail');if(t&&!t.classList.contains('empty'))t.classList.add('vmain-cari-detail')};renderSelectedCariDetail=window.renderSelectedCariDetail;
 function localAuto(){return(window.state?.operationalLedger||[]).filter(x=>['fee_auto','fee_bulk_manual'].includes(String(x.source_module||'')))}function localColl(){if(typeof getLocalCariCollections==='function')return getLocalCariCollections();return parse('alkam_local_cari_collections_v1',[])}function over(){return parse(OV,{})}
 function backup(reason){try{const key='alkam_cleanup_backups_main';const hist=parse(key,[]);hist.unshift({created_at:new Date().toISOString(),reason,auto_count:localAuto().length,collection_count:localColl().length,override_count:Object.keys(over()).length,operationalLedger:window.state?.operationalLedger||[],localCariCollections:localColl(),correctionOverrides:over()});localStorage.setItem(key,JSON.stringify(hist.slice(0,20)))}catch(e){console.warn(e)}}
 window.renderCleanupCenterMain=function(){const root=document.getElementById('cleanupRowsMain');if(!root)return;const sel=window.state?.hareketler||[], br={};sel.forEach(r=>{const s=srcInfo(r),k=s.label+'|||'+s.detail;if(!br[k])br[k]={...s,count:0,debit:0,credit:0};br[k].count++;br[k].debit+=nn(r.debit||0);br[k].credit+=nn(r.credit||0)});const auto=localAuto(), coll=localColl(), ov=over();document.getElementById('cleanupStatsMain').innerHTML=`<div class="metric-mini"><div class="k">Seçili Cari Hareket</div><div class="v">${sel.length}</div></div><div class="metric-mini"><div class="k">Temizlenecek Otomatik/Toplu</div><div class="v">${auto.length}</div></div><div class="metric-mini"><div class="k">Yerel Tahsilat</div><div class="v">${coll.length}</div></div><div class="metric-mini"><div class="k">Düzeltme Override</div><div class="v">${Object.keys(ov).length}</div></div>`;root.innerHTML=`<div class="cleanup-preview-card cleanup-preview-danger"><div class="cleanup-preview-title">Otomatik/Toplu Tahakkuk Temizleme</div><div class="cleanup-preview-note">Temizlenecek kayıt: <strong>${auto.length}</strong>. Sadece yerel fee_auto / fee_bulk_manual kayıtları temizlenir. Ana veri silinmez.</div></div><div class="cleanup-preview-card cleanup-preview-safe"><div class="cleanup-preview-title">Ana Veri Koruma</div><div class="cleanup-preview-note">Ana Veri kayıtları yüklenen cari ekstresi/Supabase tarafındadır; bu butonla silinmez.</div></div>`+(Object.values(br).length?`<table><thead><tr><th>Kaynak</th><th>Açıklama</th><th>Adet</th><th>Borç</th><th>Alacak</th><th>Yorum</th></tr></thead><tbody>${Object.values(br).map(x=>`<tr><td><span class="source-badge ${x.kind}">${esc(x.label)}</span></td><td>${esc(x.detail)}</td><td>${x.count}</td><td>${mon(x.debit)}</td><td>${mon(x.credit)}</td><td>${x.kind==='auto'?'Programın ürettiği otomatik/toplu kayıt.':x.kind==='supabase'?'Ana veri/Supabase kaydı.':'Manuel veya düzeltme kaydı.'}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">Seçili caride hareket yok.</div>')}
