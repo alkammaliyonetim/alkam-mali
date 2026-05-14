@@ -1,9 +1,9 @@
-// ALKAM Mali - Cari Listesi Risk Etiketleri, Filtresi ve Sayaci
+// ALKAM Mali - Cari Listesi Risk Etiketleri, Filtresi, Sayaci ve Dagilim Ozeti
 // Liste kartlarini gorunen metne gore isaretler; veri kaydina dokunmaz.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_LIST_RISK_V3__) return;
-  window.__ALKAM_CARI_LIST_RISK_V3__ = true;
+  if(window.__ALKAM_CARI_LIST_RISK_V4__) return;
+  window.__ALKAM_CARI_LIST_RISK_V4__ = true;
 
   function ensureStyle(){
     if(document.getElementById('alkamCariListRiskStyle')) return;
@@ -19,7 +19,13 @@
       '#cariList .list-item.alkam-warn-row{border-color:#fed7aa;background:#fffdf7}' +
       '#alkamRiskFilter{width:100%;border:1px solid #d8e1ef;border-radius:9px;min-height:40px;padding:9px 11px;font-size:12px;font-weight:900;background:#fff;color:#0f172a}' +
       '#alkamRiskCount{border:1px solid #dbeafe;background:#eff6ff;color:#1d4ed8;border-radius:999px;padding:8px 10px;font-size:11px;font-weight:950;text-align:center;align-self:center}' +
-      '@media(max-width:760px){#tab-cariler .toolbar{grid-template-columns:1fr!important}#alkamRiskCount{width:100%;border-radius:10px}}';
+      '#alkamRiskDistribution{grid-column:1/-1;display:flex;gap:7px;flex-wrap:wrap;margin-top:2px}' +
+      '#alkamRiskDistribution .pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:7px 9px;font-size:11px;font-weight:950;border:1px solid #e2e8f0;background:#fff;color:#334155}' +
+      '#alkamRiskDistribution .risk{border-color:#fecaca;background:#fef2f2;color:#b91c1c}' +
+      '#alkamRiskDistribution .warn{border-color:#fed7aa;background:#fff7ed;color:#c2410c}' +
+      '#alkamRiskDistribution .good{border-color:#a7f3d0;background:#ecfdf5;color:#047857}' +
+      '#alkamRiskDistribution .check{border-color:#e2e8f0;background:#f1f5f9;color:#475569}' +
+      '@media(max-width:760px){#tab-cariler .toolbar{grid-template-columns:1fr!important}#alkamRiskCount{width:100%;border-radius:10px}#alkamRiskDistribution{display:grid;grid-template-columns:1fr 1fr}.pill{justify-content:center}}';
     document.head.appendChild(st);
   }
 
@@ -64,9 +70,23 @@
       count.textContent = '0 cari';
       toolbar.appendChild(count);
     }
+    if(!document.getElementById('alkamRiskDistribution')){
+      var dist = document.createElement('div');
+      dist.id = 'alkamRiskDistribution';
+      toolbar.appendChild(dist);
+    }
     toolbar.style.gridTemplateColumns = '1.1fr .72fr .72fr .72fr .55fr';
   }
-  function applyRiskFilter(items){
+  function updateDistribution(totals){
+    var dist = document.getElementById('alkamRiskDistribution');
+    if(!dist) return;
+    dist.innerHTML = ''+
+      '<span class="pill risk">Riskli: <b>'+totals.risk+'</b></span>'+
+      '<span class="pill warn">Takip: <b>'+totals.warn+'</b></span>'+
+      '<span class="pill good">Güncel: <b>'+totals.good+'</b></span>'+
+      '<span class="pill check">Kontrol: <b>'+totals.check+'</b></span>';
+  }
+  function applyRiskFilter(items, totals){
     var sel = document.getElementById('alkamRiskFilter');
     var mode = sel ? sel.value : 'all';
     var visible = 0;
@@ -78,6 +98,7 @@
     });
     var count = document.getElementById('alkamRiskCount');
     if(count) count.textContent = visible + ' / ' + items.length + ' cari';
+    updateDistribution(totals);
   }
   function markList(){
     ensureStyle();
@@ -85,6 +106,7 @@
     var list = document.getElementById('cariList');
     if(!list) return;
     var items = Array.prototype.slice.call(list.querySelectorAll('.list-item'));
+    var totals = {risk:0,warn:0,good:0,check:0};
     items.forEach(function(item){
       var title = item.querySelector('.list-title') || item;
       var old = item.querySelector('.alkam-risk-badge');
@@ -93,6 +115,7 @@
       var d = parseDate(textOf(item));
       var gap = daysSince(d);
       var info = riskForDays(gap);
+      totals[info.cls] = (totals[info.cls] || 0) + 1;
       item.dataset.alkamRisk = info.cls;
       var badge = document.createElement('span');
       badge.className = 'alkam-risk-badge ' + info.cls;
@@ -102,7 +125,7 @@
       if(info.cls === 'risk') item.classList.add('alkam-risk-row');
       if(info.cls === 'warn') item.classList.add('alkam-warn-row');
     });
-    applyRiskFilter(items);
+    applyRiskFilter(items, totals);
   }
 
   var timer = null;
