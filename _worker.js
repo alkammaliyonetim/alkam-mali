@@ -10,6 +10,7 @@ export default {
     const periodFilter = '<script src="/alkam-hotfix-period-filter.js?v=20260514a"></script>';
     const cariSummary = '<script src="/alkam-hotfix-cari-summary.js?v=20260514a"></script>';
     const cariListRisk = '<script src="/alkam-hotfix-cari-list-risk.js?v=20260514a"></script>';
+    const mobileCariJump = '<script src="/alkam-hotfix-mobile-cari-jump.js?v=20260514a"></script>';
     if (!html.includes('alkam-hotfix-newest-first.js')) {
       html = html.replace('</body>', newestFirst + '</body>');
     }
@@ -21,6 +22,9 @@ export default {
     }
     if (!html.includes('alkam-hotfix-cari-list-risk.js')) {
       html = html.replace('</body>', cariListRisk + '</body>');
+    }
+    if (!html.includes('alkam-hotfix-mobile-cari-jump.js')) {
+      html = html.replace('</body>', mobileCariJump + '</body>');
     }
 
     headers.set('content-type', 'text/html; charset=utf-8');
