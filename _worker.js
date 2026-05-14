@@ -8,11 +8,15 @@ export default {
     let html = await response.text();
     const newestFirst = '<script src="/alkam-hotfix-newest-first.js?v=20260514b"></script>';
     const periodFilter = '<script src="/alkam-hotfix-period-filter.js?v=20260514a"></script>';
+    const cariSummary = '<script src="/alkam-hotfix-cari-summary.js?v=20260514a"></script>';
     if (!html.includes('alkam-hotfix-newest-first.js')) {
       html = html.replace('</body>', newestFirst + '</body>');
     }
     if (!html.includes('alkam-hotfix-period-filter.js')) {
       html = html.replace('</body>', periodFilter + '</body>');
+    }
+    if (!html.includes('alkam-hotfix-cari-summary.js')) {
+      html = html.replace('</body>', cariSummary + '</body>');
     }
 
     headers.set('content-type', 'text/html; charset=utf-8');
