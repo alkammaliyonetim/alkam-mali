@@ -19,7 +19,8 @@ export default {
       '/alkam-bank-onay-center-v1.js?v=20260514a',
       '/alkam-bank-cari-suggest-v1.js?v=20260514a',
       '/alkam-bank-cari-prepare-v1.js?v=20260514a',
-      '/alkam-bank-prepared-list-v1.js?v=20260514a'
+      '/alkam-bank-prepared-list-v1.js?v=20260514a',
+      '/alkam-bank-post-ledger-v1.js?v=20260514a'
     ];
 
     for (const src of scripts) {
