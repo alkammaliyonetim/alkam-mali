@@ -77,15 +77,6 @@
       }
     });
   }
-  function rerender(){
-    try{ if(typeof renderOpsHealthPanel === 'function') renderOpsHealthPanel(); }catch(e){}
-    try{ if(typeof renderProdHardeningPanel === 'function') renderProdHardeningPanel(); }catch(e){}
-    try{ if(typeof renderGlobalAuditLog === 'function') renderGlobalAuditLog(); }catch(e){}
-    try{ if(typeof renderDeleteArchive === 'function') renderDeleteArchive(); }catch(e){}
-    try{ if(typeof renderDashboard === 'function') renderDashboard(); }catch(e){}
-    try{ if(typeof renderCariList === 'function') renderCariList(); }catch(e){}
-    try{ if(window.state && state.selectedCariId && typeof renderSelectedCariDetail === 'function') renderSelectedCariDetail(); }catch(e){}
-  }
   function tameFloating(){
     var p = q('#alkamBusinessAuditPanel');
     if(p && !p.dataset.recoveryMinimized){
