@@ -2,8 +2,8 @@
 // Tablo verisini okumaz/yazmaz; sadece gorunen cari ekstre tablosundan ozet uretir.
 (function(){
   'use strict';
-  if(window.__ALKAM_CARI_SUMMARY_V2__) return;
-  window.__ALKAM_CARI_SUMMARY_V2__ = true;
+  if(window.__ALKAM_CARI_SUMMARY_V3__) return;
+  window.__ALKAM_CARI_SUMMARY_V3__ = true;
 
   function ensureStyle(){
     if(document.getElementById('alkamCariSummaryStyle')) return;
@@ -18,7 +18,7 @@
       '#alkamCariRiskBanner.risk{border:1px solid #fecaca;background:#fff7f7;color:#991b1b}' +
       '#alkamCariRiskBanner.warn{border:1px solid #fed7aa;background:#fff7ed;color:#9a3412}' +
       '#alkamCariRiskBanner.good{border:1px solid #bbf7d0;background:#f0fdf4;color:#166534}' +
-      '@media(max-width:760px){#alkamCariMiniSummary{grid-template-columns:1fr 1fr}.alkam-cari-mini-card .v{font-size:13px}#alkamCariRiskBanner{font-size:11px}}';
+      '@media(max-width:760px){#alkamCariMiniSummary{grid-template-columns:1fr 1fr!important;gap:6px!important;margin-bottom:7px!important}.alkam-cari-mini-card{padding:7px 8px!important;border-radius:10px!important;box-shadow:none!important}.alkam-cari-mini-card .k{font-size:9px!important;margin-bottom:2px!important;letter-spacing:.02em!important}.alkam-cari-mini-card .v{font-size:12px!important;line-height:1.1!important}#alkamCariRiskBanner{font-size:10.5px!important;line-height:1.3!important;padding:7px 9px!important;border-radius:10px!important;margin-bottom:7px!important}}';
     document.head.appendChild(st);
   }
 
