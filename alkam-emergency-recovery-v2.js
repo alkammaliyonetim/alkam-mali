@@ -2,7 +2,7 @@
   'use strict';
   if(window.__ALKAM_EMERGENCY_RECOVERY_V2_BOOTED) return;
   window.__ALKAM_EMERGENCY_RECOVERY_V2_BOOTED = true;
-  var VERSION = 'ALKAM Emergency Recovery v2.1';
+  var VERSION = 'ALKAM Emergency Recovery v2.2';
   function q(sel, root){ return (root || document).querySelector(sel); }
   function qa(sel, root){ return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
   function css(){
@@ -28,7 +28,12 @@
       '.cards{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;margin-bottom:14px!important}.card{min-width:0!important;padding:14px!important;border-radius:10px!important}.card-value{font-size:24px!important;line-height:1.1!important;white-space:normal!important;overflow-wrap:anywhere!important}',
       '.grid-2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:14px!important}.grid-3,.grid-4,.form-grid,.form-grid-3{gap:12px!important}.section{min-width:0!important;width:100%!important;max-width:100%!important;margin:0 0 14px!important;padding:16px!important;border-radius:12px!important;overflow:hidden!important}.section-title{font-size:22px!important;line-height:1.2!important}',
       '#tab-cariler>.grid-2{grid-template-columns:minmax(320px,380px) minmax(0,1fr)!important;gap:14px!important;align-items:start!important}',
-      '#tab-cariler .section:first-child{position:sticky!important;top:68px!important}.cari-list-scroll{max-height:calc(100vh - 310px)!important;overflow:auto!important}.cari-detail-scroll{max-height:none!important;overflow:visible!important}',
+      '#tab-cariler .section:first-child{position:sticky!important;top:68px!important;height:calc(100vh - 86px)!important;display:flex!important;flex-direction:column!important;min-height:0!important;overflow:hidden!important}',
+      '#tab-cariler .section:first-child .toolbar{flex:0 0 auto!important}',
+      '#cariSummaryWrap{flex:0 0 auto!important;max-height:420px!important;overflow:visible!important}',
+      '#cariList,.cari-list-scroll{flex:1 1 auto!important;min-height:180px!important;max-height:none!important;height:auto!important;overflow-y:auto!important;overflow-x:hidden!important;padding-right:6px!important;overscroll-behavior:contain!important;scrollbar-gutter:stable!important}',
+      '#cariList .list-item{min-height:auto!important}',
+      '.cari-detail-scroll{max-height:none!important;overflow:visible!important}',
       '#selectedCariDetail .grid-4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;gap:10px!important}#selectedCariDetail .metric-mini{min-height:76px!important}',
       '.statement-shell,.statement-scroll,#selectedCariDetail .statement-scroll{width:100%!important;max-width:100%!important;overflow-x:auto!important}.statement-table,.source-statement,#selectedCariDetail table.source-statement{min-width:980px!important}',
       '#selectedCariDetail{display:block!important;min-width:0!important;max-width:100%!important;overflow:visible!important}',
@@ -44,7 +49,7 @@
       'table{max-width:100%!important}th,td{overflow-wrap:anywhere!important}',
       '#alkamBusinessAuditPanel{right:18px!important;bottom:18px!important;width:330px!important;max-width:calc(100vw - 36px)!important;z-index:60!important;border-radius:14px!important}',
       '#alkamBusinessAuditPanel:not(.force-open) .audit-body{display:none!important}#alkamBusinessAuditPanel .audit-head{padding:10px 12px!important}#alkamBusinessAuditPanel .audit-title{font-size:13px!important}',
-      '#alkamCariCoreBanner{position:static!important;display:block!important;float:none!important;clear:both!important;width:min(430px,calc(100% - 36px))!important;max-width:430px!important;margin:10px 18px 14px auto!important;z-index:1!important;box-shadow:0 8px 22px rgba(15,23,42,.08)!important}',
+      '#alkamCariCoreBanner{position:static!important;display:block!important;float:none!important;clear:both!important;width:min(430px,calc(100% - 36px))!important;max-width:430px!important;margin:10px 18px 14px auto!important;z-index:1!important;box-shadow:0 8px 22px rgba(15,23,42,.08)!important;pointer-events:none!important}',
       '#alkamCariCoreBanner .alkam-cari-core-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}',
       '.control-center-floating,.floating-control-center,#controlCenterFloating,#alkamAutomationControlBtn{right:18px!important;bottom:74px!important;z-index:55!important}',
       '#alkamAutomationControlPanel{right:18px!important;bottom:126px!important;z-index:56!important;max-width:calc(100vw - 36px)!important}',
