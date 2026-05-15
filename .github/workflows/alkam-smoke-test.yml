@@ -33,11 +33,10 @@ jobs:
           npm install -D playwright
           npx playwright install --with-deps chromium
 
-      - name: Run IstasyonALKAM bot test
+      - name: Run IstasyonALKAM bank check
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
-          ALKAM_EXPECT_BANK_IMPORT: 'true'
-        run: node tools/alkam-smoke-test.mjs
+        run: node tools/istasyonalkam-bank-check.mjs
 
       - name: Upload bot output
         if: always()
