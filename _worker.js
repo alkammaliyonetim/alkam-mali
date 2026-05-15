@@ -12,7 +12,8 @@ export default {
       'alkam-hotfix-cari-list-risk.js?v=20260514a',
       'alkam-hotfix-mobile-cari-jump.js?v=20260514a',
       'alkam-bank-import-v1.js?v=safe-bank-import-20260515a',
-      'alkam-bank-onay-center-v1.js?v=safe-bank-onay-20260515a'
+      'alkam-bank-onay-center-v1.js?v=safe-bank-onay-20260515a',
+      'alkam-bank-cari-suggest-v1.js?v=safe-bank-cari-suggest-20260515a'
     ];
     for (const item of list) {
       const file = item.split('?')[0];
