@@ -38,6 +38,11 @@ jobs:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-bank-check.mjs
 
+      - name: Run IstasyonALKAM operation check
+        env:
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
+        run: node tools/istasyonalkam-operation-check.mjs
+
       - name: Upload bot output
         if: always()
         uses: actions/upload-artifact@v4
