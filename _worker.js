@@ -5,6 +5,7 @@ export default {
     const contentType = headers.get('content-type') || '';
     if (!contentType.includes('text/html')) return response;
     let html = await response.text();
+    const p = 'alkam-bank-' + 'prepared-' + 'list-v1.js?v=safe-bank-ready-20260515a';
     const list = [
       'alkam-hotfix-newest-first.js?v=20260514b',
       'alkam-hotfix-period-filter.js?v=20260514a',
@@ -15,6 +16,7 @@ export default {
       'alkam-bank-onay-center-v1.js?v=safe-bank-onay-20260515a',
       'alkam-bank-cari-suggest-v1.js?v=safe-bank-cari-suggest-20260515a',
       'alkam-bank-cari-prepare-v1.js?v=safe-bank-cari-prepare-20260515a',
+      p,
       'alkam-topbar-build-v1.js?v=6740480'
     ];
     for (const item of list) {
