@@ -1,4 +1,4 @@
-name: ALKAM Preview Smoke Test
+name: IstasyonALKAM Bot Preview Test
 
 on:
   push:
@@ -12,10 +12,10 @@ on:
       test_url:
         description: 'Test edilecek ALKAM preview linki'
         required: false
-        default: 'https://alkam-mali.pages.dev/'
+        default: 'https://safe-bank-import-v1.alkam-mali.pages.dev/'
 
 jobs:
-  smoke-test:
+  istasyonalkam-bot:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -33,14 +33,15 @@ jobs:
           npm install -D playwright
           npx playwright install --with-deps chromium
 
-      - name: Run ALKAM smoke test
+      - name: Run IstasyonALKAM bot test
         env:
-          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
+          ALKAM_EXPECT_BANK_IMPORT: 'true'
         run: node tools/alkam-smoke-test.mjs
 
-      - name: Upload test output
+      - name: Upload bot output
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: alkam-preview-smoke-test-output
+          name: istasyonalkam-bot-output
           path: test-output
