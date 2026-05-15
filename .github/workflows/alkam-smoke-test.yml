@@ -1,0 +1,38 @@
+name: ALKAM Smoke Test
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install -D playwright
+          npx playwright install --with-deps chromium
+
+      - name: Run ALKAM smoke test
+        env:
+          ALKAM_TEST_URL: https://alkam-mali.pages.dev/
+        run: node tools/alkam-smoke-test.mjs
+
+      - name: Upload test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alkam-smoke-test-output
+          path: test-output
