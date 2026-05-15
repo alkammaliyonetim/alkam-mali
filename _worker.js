@@ -14,6 +14,7 @@ export default {
       'alkam-bank-import-v1.js?v=safe-bank-import-20260515a',
       'alkam-bank-onay-center-v1.js?v=safe-bank-onay-20260515a',
       'alkam-bank-cari-suggest-v1.js?v=safe-bank-cari-suggest-20260515a',
+      'alkam-bank-cari-prepare-v1.js?v=safe-bank-cari-prepare-20260515a',
       'alkam-topbar-build-v1.js?v=6740480'
     ];
     for (const item of list) {
