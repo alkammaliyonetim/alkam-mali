@@ -7,6 +7,7 @@ export default {
 
     let html = await response.text();
     const scripts = [
+      '/alkam-login-focus-only-v1.js?v=20260515a',
       '/alkam-hotfix-newest-first.js?v=20260514b',
       '/alkam-hotfix-period-filter.js?v=20260514a',
       '/alkam-hotfix-cari-summary.js?v=20260514a',
