@@ -46,6 +46,7 @@ try {
   result.checks.activeTrackingVisible = bodyText.includes('Aktif takip');
   result.checks.alarmCariVisible = bodyText.includes('Ungan Mobilya');
   result.checks.alarmDueVisible = bodyText.includes('Vade: 30.06.2026');
+  result.checks.cariLinkVisible = bodyText.includes('Cari bağlantısı') && bodyText.includes('Cari kartına bağlanmaya hazır');
 
   if (!result.checks.sampleVisible) result.errors.push('Cari adı görünmedi.');
   if (!result.checks.amountVisible) result.errors.push('Tutar görünmedi.');
@@ -55,10 +56,11 @@ try {
   if (!result.checks.alarmListVisible) result.errors.push('Takip / Alarm Listesi görünmedi.');
   if (!result.checks.activeTrackingVisible) result.errors.push('Aktif takip görünmedi.');
   if (!result.checks.alarmDueVisible) result.errors.push('Alarm vadesi görünmedi.');
+  if (!result.checks.cariLinkVisible) result.errors.push('Cari bağlantısı görünmedi.');
 
   await page.screenshot({ path: screenshotPath, fullPage: true });
   result.screenshot = screenshotPath;
-  result.ok = result.checks.sampleVisible && result.checks.amountVisible && result.checks.typeVisible && result.checks.waitingVisible && result.checks.dueAlarmVisible && result.checks.alarmListVisible && result.checks.activeTrackingVisible && result.checks.alarmDueVisible;
+  result.ok = result.checks.sampleVisible && result.checks.amountVisible && result.checks.typeVisible && result.checks.waitingVisible && result.checks.dueAlarmVisible && result.checks.alarmListVisible && result.checks.activeTrackingVisible && result.checks.alarmDueVisible && result.checks.cariLinkVisible;
   result.finishedAt = new Date().toISOString();
   fs.writeFileSync(jsonPath, JSON.stringify(result, null, 2), 'utf8');
   console.log(JSON.stringify(result, null, 2));
