@@ -7,6 +7,7 @@ export default {
     let html = await response.text();
     const readyList = 'alkam-bank-' + 'prepared-' + 'list-v1.js?v=safe-bank-ready-20260515a';
     const postLayer = 'alkam-bank-' + 'post-' + 'ledger-v1.js?v=safe-bank-post-20260515a';
+    const opCenter = 'alkam-operation-' + 'suggest-v1.js?v=op-suggest-20260515a';
     const list = [
       'alkam-hotfix-newest-first.js?v=20260514b',
       'alkam-hotfix-period-filter.js?v=20260514a',
@@ -19,6 +20,7 @@ export default {
       'alkam-bank-cari-prepare-v1.js?v=safe-bank-cari-prepare-20260515a',
       readyList,
       postLayer,
+      opCenter,
       'alkam-topbar-build-v1.js?v=6740480'
     ];
     for (const item of list) {
