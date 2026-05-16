@@ -1,0 +1,41 @@
+name: Telegram Evrak Test
+
+on:
+  push:
+    branches:
+      - telegram-evrak
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  telegram-evrak:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Playwright
+        run: |
+          npm init -y
+          npm install -D playwright
+          npx playwright install --with-deps chromium
+
+      - name: Run Telegram evrak check
+        env:
+          ALKAM_TEST_URL: https://telegram-evrak.alkam-mali.pages.dev/
+        run: node tools/istasyonalkam-telegram-evrak-check.mjs
+
+      - name: Upload output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: telegram-evrak-output
+          path: test-output
