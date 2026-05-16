@@ -11,6 +11,7 @@ export default {
     const opDue = 'alkam-operation-' + 'due-v1.js?v=op-due-20260515a';
     const opAlarm = 'alkam-operation-' + 'alarm-v1.js?v=op-alarm-20260515a';
     const stickyCari = 'alkam-hotfix-' + 'sticky-' + 'cari-header.js?v=20260516b';
+    const lucaSync = 'alkam-luca-' + 'sync-v1.js?v=20260516a';
     const list = [
       'alkam-hotfix-newest-first.js?v=20260514b',
       'alkam-hotfix-period-filter.js?v=20260514a',
@@ -18,6 +19,7 @@ export default {
       'alkam-hotfix-cari-list-risk.js?v=20260514a',
       'alkam-hotfix-mobile-cari-jump.js?v=20260516a',
       stickyCari,
+      lucaSync,
       'alkam-bank-import-v1.js?v=safe-bank-import-20260515a',
       'alkam-bank-onay-center-v1.js?v=safe-bank-onay-20260515a',
       'alkam-bank-cari-suggest-v1.js?v=safe-bank-cari-suggest-20260515a',
