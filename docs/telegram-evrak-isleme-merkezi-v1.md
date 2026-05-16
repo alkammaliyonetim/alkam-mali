@@ -121,3 +121,7 @@ Gelen dosya ALKAM Mali Onay Merkezi'ne düşecek.
 ## Kritik Not
 
 Bu modül ALKAM Mali'nin en önemli otomasyon merkezlerinden biridir. Hız değil, doğru cari ve doğru onay önceliklidir.
+
+## PR Durumu
+
+Bu dosya PR merge hesaplamasını yenilemek için güncellendi.
