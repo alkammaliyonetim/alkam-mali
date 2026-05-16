@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - safe-bank-import-v1
+      - luca-sync
   pull_request:
     branches:
       - main
@@ -17,7 +18,7 @@ on:
 jobs:
   istasyonalkam-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,6 +63,12 @@ jobs:
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-automation-check.mjs
+
+      - name: Run IstasyonALKAM Luca sync check
+        if: github.ref_name == 'luca-sync' || github.head_ref == 'luca-sync'
+        env:
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://luca-sync.alkam-mali.pages.dev/' }}
+        run: node tools/istasyonalkam-luca-sync-check.mjs
 
       - name: Upload bot output
         if: always()
