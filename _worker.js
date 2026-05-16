@@ -12,6 +12,7 @@ export default {
     const opAlarm = 'alkam-operation-' + 'alarm-v1.js?v=op-alarm-20260515a';
     const stickyCari = 'alkam-hotfix-' + 'sticky-' + 'cari-header.js?v=20260516b';
     const lucaSync = 'alkam-luca-' + 'sync-v1.js?v=20260516b';
+    const tgMini = 'alkam-tg-v1.js?v=20260516a';
     const list = [
       'alkam-hotfix-newest-first.js?v=20260514b',
       'alkam-hotfix-period-filter.js?v=20260514a',
@@ -29,6 +30,7 @@ export default {
       opCenter,
       opDue,
       opAlarm,
+      tgMini,
       'alkam-topbar-build-v1.js?v=6740480'
     ];
     for (const item of list) {
