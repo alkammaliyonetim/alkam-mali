@@ -65,7 +65,7 @@ jobs:
         run: node tools/istasyonalkam-automation-check.mjs
 
       - name: Run IstasyonALKAM lab stress check
-        if: github.ref_name == 'lab-pr15'
+        if: github.ref_name == 'lab-pr15' || github.head_ref == 'lab-pr15'
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://lab-pr15.alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-lab-stress-check.mjs
