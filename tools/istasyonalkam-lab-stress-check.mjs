@@ -71,17 +71,23 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(3000);
 
-  const bodyText = await page.locator('body').innerText({ timeout: 20000 });
+  let bodyText = await page.locator('body').innerText({ timeout: 20000 });
   result.checks.stressCounts = stress;
   result.checks.dashboardOk = bodyText.includes('ALKAM Mali Yönetim Paneli');
   result.checks.carilerOk = bodyText.includes('Cariler');
-  result.checks.onayOk = bodyText.includes('Onay Merkezi');
-  result.checks.telegramOk = bodyText.includes('Telegram Gelen Kutusu');
-  result.checks.automationOk = bodyText.includes('Otomasyon Kontrol Merkezi');
   result.checks.noVisibleCrash = !/TypeError|ReferenceError|Cannot read|undefined is not/i.test(bodyText);
 
+  await page.locator('[data-tab="onay"]').first().click({ timeout: 10000 });
+  await page.waitForTimeout(1200);
+  bodyText = await page.locator('body').innerText({ timeout: 20000 });
+  result.checks.onayOk = bodyText.includes('Onay Merkezi');
+  result.checks.telegramOk = bodyText.includes('Telegram Gelen Kutusu');
+  result.checks.labTelegramRowsVisible = bodyText.includes('TG-LAB-') || bodyText.includes('Lab Telegram');
+
   await page.locator('[data-tab="otomasyon"]').first().click({ timeout: 10000 });
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(1200);
+  bodyText = await page.locator('body').innerText({ timeout: 20000 });
+  result.checks.automationOk = bodyText.includes('Otomasyon Kontrol Merkezi');
   const flags = await page.evaluate(() => ({
     requireApproval: window.ALKAM_REQUIRE_APPROVAL_FOR_FINANCIAL_MUTATION === true,
     openCount: window.ALKAM_AUTOMATION_FLAGS ? Object.values(window.ALKAM_AUTOMATION_FLAGS).filter(Boolean).length : -1
@@ -93,6 +99,7 @@ try {
   if (!result.checks.carilerOk) result.errors.push('Cariler görünmedi.');
   if (!result.checks.onayOk) result.errors.push('Onay Merkezi görünmedi.');
   if (!result.checks.telegramOk) result.errors.push('Telegram Gelen Kutusu görünmedi.');
+  if (!result.checks.labTelegramRowsVisible) result.errors.push('Lab Telegram satırları görünmedi.');
   if (!result.checks.automationOk) result.errors.push('Otomasyon Kontrol Merkezi görünmedi.');
   if (!result.checks.noVisibleCrash) result.errors.push('Ekranda JS hata metni göründü.');
   if (!result.checks.requireApproval) result.errors.push('Finansal mutasyon onay zorunlu değil.');
