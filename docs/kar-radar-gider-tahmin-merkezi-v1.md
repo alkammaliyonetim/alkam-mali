@@ -32,6 +32,39 @@ Gerçekleşen tahsilatlar
 Gerçekleşen kâr - Bugüne düşen hedef kâr = Önde / Geride durumu
 ```
 
+## Nakit / Moka / Kasa / Banka Karşılama Göstergesi
+
+Finans tarafında ayrıca şu gösterge zorunlu olacaktır:
+
+```text
+Nakit kasa
++ Banka bakiyesi
++ Ay sonuna kadar Moka'dan bankaya geçecek tutar
++ Ay sonuna kadar beklenen tahsilatlar
+- Ay sonuna kadar ödenecek giderler
+= Nakit karşılama farkı
+```
+
+Bu gösterge, mevcut nakit ve beklenen para girişlerinin ay sonuna kadar giderlerin ne kadarını karşıladığını gösterecektir.
+
+Örnek:
+
+```text
+Nakit kasa: 45.000 TL
+Banka: 120.000 TL
+Moka'dan gelecek: 180.000 TL
+Beklenen tahsilat: 250.000 TL
+Ay sonuna kadar gider: 510.000 TL
+Karşılama oranı: %117
+Durum: +85.000 TL rahatız
+```
+
+Negatif durumda:
+
+```text
+Durum: -75.000 TL açık var
+```
+
 ## Gider Sınıfları
 
 ### Sabit Giderler
@@ -94,6 +127,12 @@ Yeni satış geldi
 → Mal maliyeti hesaplanır
 → Brüt kâr güncellenir
 → Değişken gider payı yeniden hesaplanır
+
+Moka'dan bankaya geçecek tutar güncellendi
+→ Ay sonu nakit karşılama farkı güncellenir
+
+Yeni beklenen tahsilat girildi
+→ Gider karşılama oranı güncellenir
 ```
 
 ## Ana Dashboard Kartları
@@ -109,13 +148,15 @@ Programın en önemli yerinde şu kartlar olacak:
 6. Tahsilat Hedefine Kalan
 7. Mal Maliyeti Etkisi
 8. Değişken Gider Etkisi
+9. Nakit + Banka + Moka Karşılama
+10. Ay Sonuna Kadar Gider Karşılama Oranı
 ```
 
 ## Renk Mantığı
 
 ```text
-Yeşil: Öndeyiz / pozitif fark
-Kırmızı: Gerideyiz / negatif fark
+Yeşil: Öndeyiz / pozitif fark / giderleri karşılıyor
+Kırmızı: Gerideyiz / negatif fark / açık var
 Sarı: Riskli ama toparlanabilir
 Mavi: Tahmin / öngörü bilgisi
 ```
@@ -138,6 +179,8 @@ Tahmin kesin kayıt değildir.
 Onaysız gider kesinleşmez.
 Onaysız satış / tahsilat cari ekstresine işlenmez.
 Her hesaplamada kaynak gösterilir.
+Moka bekleyen tahsilat ayrı izlenir.
+Moka'dan bankaya geçen tutar gerçekleşen banka girişi olarak ayrıca doğrulanır.
 ```
 
 ## Production Notu
