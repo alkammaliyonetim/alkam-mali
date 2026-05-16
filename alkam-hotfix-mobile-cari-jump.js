@@ -1,87 +1,83 @@
-// ALKAM Mali - Mobil Cari Secince Detaya Kaydir + Mini Gezinme
-// Mobilde cari kartina tiklandiginda kullaniciyi secili cari detayina otomatik indirir.
+// ALKAM Mali - Mobil Cari Secince Detaya Kontrollu Kaydir
 (function(){
   'use strict';
-  if(window.__ALKAM_MOBILE_CARI_JUMP_V2__) return;
-  window.__ALKAM_MOBILE_CARI_JUMP_V2__ = true;
+  if(window.__ALKAM_MOBILE_CARI_JUMP_V3__) return;
+  window.__ALKAM_MOBILE_CARI_JUMP_V3__ = true;
 
-  function isMobileWidth(){ return window.matchMedia && window.matchMedia('(max-width: 900px)').matches; }
-  function findDetailTarget(){ return document.getElementById('selectedCariDetail') || document.querySelector('.cari-detail-scroll'); }
-  function findDetailWrap(){ var detail=findDetailTarget(); return detail ? (detail.closest('.cari-detail-scroll,.section,#selectedCariDetail') || detail) : null; }
-  function findFirstTable(){ var wrap=findDetailWrap() || document; return wrap.querySelector('table.source-statement, table'); }
+  var pendingJump = false;
+  var lastJumpAt = 0;
 
-  function scrollToEl(el){
-    if(!el) return;
-    try { el.scrollIntoView({ behavior:'smooth', block:'start' }); }
-    catch(e) { el.scrollIntoView(true); }
+  function isMobile(){ return window.matchMedia && window.matchMedia('(max-width: 900px)').matches; }
+  function detailTarget(){ return document.querySelector('.hero-name') || document.getElementById('selectedCariDetail') || document.querySelector('.cari-detail-scroll'); }
+  function detailWrap(){ var t=detailTarget(); return t ? (t.closest('.section,.cari-detail-scroll,#selectedCariDetail') || t) : null; }
+  function listSection(){ var list=document.getElementById('cariList'); return list ? (list.closest('.section') || list) : document.querySelector('#tab-cariler .section'); }
+
+  function go(el){
+    if(!el || !isMobile()) return;
+    try { el.scrollIntoView({behavior:'auto', block:'start'}); }
+    catch(e){ el.scrollIntoView(true); }
   }
 
-  function scrollToDetail(){
-    if(!isMobileWidth()) return;
-    var target = findDetailTarget();
-    if(!target) return;
-    setTimeout(function(){ scrollToEl(target); }, 220);
+  function jumpToDetail(){
+    if(!isMobile()) return;
+    pendingJump = true;
+    lastJumpAt = Date.now();
+    [180, 520, 950].forEach(function(ms){
+      setTimeout(function(){
+        if(!pendingJump) return;
+        var t = detailTarget();
+        if(t){ go(t); if(Date.now()-lastJumpAt > 850) pendingJump=false; }
+      }, ms);
+    });
   }
 
-  function scrollToList(){
-    var list = document.getElementById('cariList');
-    var section = list ? (list.closest('.section') || list) : document.querySelector('#tab-cariler .section');
-    scrollToEl(section);
+  function jumpToList(){ go(listSection()); }
+  function jumpToMoves(){
+    var filter=document.getElementById('alkamPeriodFilterBar');
+    var table=(detailWrap()||document).querySelector('table.source-statement, table');
+    go(filter || table || detailTarget());
   }
 
-  function scrollToMovements(){
-    var filter = document.getElementById('alkamPeriodFilterBar');
-    var table = findFirstTable();
-    scrollToEl(filter || table || findDetailTarget());
-  }
-
-  function markClickArea(){
-    var list = document.getElementById('cariList');
-    if(!list || list.dataset.alkamMobileJumpBound === '1') return;
-    list.dataset.alkamMobileJumpBound = '1';
+  function bindList(){
+    var list=document.getElementById('cariList');
+    if(!list || list.dataset.alkamMobileJumpV3==='1') return;
+    list.dataset.alkamMobileJumpV3='1';
     list.addEventListener('click', function(e){
-      var item = e.target && e.target.closest ? e.target.closest('.list-item') : null;
-      if(!item) return;
-      scrollToDetail();
+      var item=e.target && e.target.closest ? e.target.closest('.list-item') : null;
+      if(item) jumpToDetail();
     }, true);
   }
 
-  function ensureStyle(){
-    if(document.getElementById('alkamMobileCariJumpStyle')) return;
+  function style(){
+    if(document.getElementById('alkamMobileCariJumpStyleV3')) return;
     var st=document.createElement('style');
-    st.id='alkamMobileCariJumpStyle';
-    st.textContent = '#alkamMobileCariNav{display:none;gap:8px;margin:0 0 10px 0;position:sticky;top:0;z-index:50;background:rgba(248,251,255,.96);backdrop-filter:blur(6px);border:1px solid #dbeafe;border-radius:12px;padding:8px;box-shadow:0 8px 20px rgba(15,23,42,.06)}' +
-      '#alkamMobileCariNav button{border:0;border-radius:10px;min-height:38px;padding:8px 10px;font-size:12px;font-weight:950;flex:1}' +
-      '#alkamMobileCariNav .list{background:#eff6ff;color:#1d4ed8}' +
-      '#alkamMobileCariNav .move{background:#1769e8;color:white}' +
-      '@media(max-width:900px){#alkamMobileCariNav{display:flex}}';
+    st.id='alkamMobileCariJumpStyleV3';
+    st.textContent='#alkamMobileCariNav{display:none;gap:8px;margin:8px 0 12px 0;position:relative;z-index:5;background:#f8fbff;border:1px solid #dbeafe;border-radius:12px;padding:8px;box-shadow:none}#alkamMobileCariNav button{border:0;border-radius:10px;min-height:38px;padding:8px 10px;font-size:12px;font-weight:950;flex:1}#alkamMobileCariNav .list{background:#eff6ff;color:#1d4ed8}#alkamMobileCariNav .move{background:#1769e8;color:white}@media(max-width:900px){#alkamMobileCariNav{display:flex}}';
     document.head.appendChild(st);
   }
 
-  function addMobileNav(){
-    ensureStyle();
-    if(document.getElementById('alkamMobileCariNav')) return;
-    var wrap = findDetailWrap();
+  function nav(){
+    style();
+    var wrap=detailWrap();
     if(!wrap) return;
-    var nav = document.createElement('div');
-    nav.id = 'alkamMobileCariNav';
-    nav.innerHTML = '<button type="button" class="list">← Cari listesi</button><button type="button" class="move">Hareketlere git ↓</button>';
-    nav.querySelector('.list').addEventListener('click', scrollToList);
-    nav.querySelector('.move').addEventListener('click', scrollToMovements);
-    wrap.insertBefore(nav, wrap.firstChild);
+    var old=document.getElementById('alkamMobileCariNav');
+    if(old){ old.style.display=isMobile()?'flex':'none'; return; }
+    var n=document.createElement('div');
+    n.id='alkamMobileCariNav';
+    n.innerHTML='<button type="button" class="list">← Cari listesi</button><button type="button" class="move">Hareketlere git ↓</button>';
+    n.querySelector('.list').onclick=jumpToList;
+    n.querySelector('.move').onclick=jumpToMoves;
+    wrap.insertBefore(n, wrap.firstChild);
   }
 
-  function updateMobileButton(){
-    var nav = document.getElementById('alkamMobileCariNav');
-    if(nav) nav.style.display = isMobileWidth() ? 'flex' : 'none';
+  function run(){ bindList(); nav(); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', run); else run();
+  window.addEventListener('resize', run);
+  var root=document.getElementById('tab-cariler') || document.body;
+  if(root && window.MutationObserver){
+    var timer=null;
+    new MutationObserver(function(){ clearTimeout(timer); timer=setTimeout(run,180); }).observe(root,{childList:true,subtree:true});
   }
-
-  function run(){ markClickArea(); addMobileNav(); updateMobileButton(); }
-
-  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
-  window.addEventListener('resize', updateMobileButton);
-  var observerTarget = document.getElementById('tab-cariler') || document.body;
-  if(observerTarget && window.MutationObserver){ new MutationObserver(function(){ run(); }).observe(observerTarget, { childList:true, subtree:true }); }
-  var tries = 0;
-  var boot = setInterval(function(){ run(); tries += 1; if(tries >= 40) clearInterval(boot); }, 500);
+  var tries=0;
+  var boot=setInterval(function(){ run(); tries++; if(tries>=12) clearInterval(boot); },500);
 })();

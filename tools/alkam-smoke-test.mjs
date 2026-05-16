@@ -2,18 +2,12 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 
-const url = process.env.ALKAM_TEST_URL || 'https://alkam-mali.pages.dev/';
+const url = process.env.ALKAM_TEST_URL || 'https://safe-bank-import-v1.alkam-mali.pages.dev/';
+const expectBankImport = String(process.env.ALKAM_EXPECT_BANK_IMPORT || 'false') === 'true';
 const outDir = path.resolve('test-output');
 fs.mkdirSync(outDir, { recursive: true });
 
-const result = {
-  url,
-  startedAt: new Date().toISOString(),
-  ok: false,
-  checks: {},
-  errors: []
-};
-
+const result = { url, startedAt: new Date().toISOString(), ok: false, checks: {}, errors: [] };
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const screenshotPath = path.join(outDir, `alkam-smoke-${stamp}.png`);
 const jsonPath = path.join(outDir, `alkam-smoke-${stamp}.json`);
@@ -22,7 +16,6 @@ let browser;
 try {
   browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(2500);
 
@@ -47,13 +40,15 @@ try {
   }
 
   result.checks.bankImportVisible = bodyText.includes('Banka Ekstresi İşleme Merkezi');
+  if (expectBankImport && !result.checks.bankImportVisible) {
+    result.errors.push('Banka Ekstresi İşleme Merkezi görünmedi.');
+  }
 
   await page.screenshot({ path: screenshotPath, fullPage: true });
   result.screenshot = screenshotPath;
-  result.ok = result.checks.bodyHasContent && (result.checks.loginInputWritable === true || result.checks.dashboardTextVisible === true);
+  result.ok = result.checks.bodyHasContent && (result.checks.loginInputWritable === true || result.checks.dashboardTextVisible === true) && (!expectBankImport || result.checks.bankImportVisible === true);
   result.finishedAt = new Date().toISOString();
   fs.writeFileSync(jsonPath, JSON.stringify(result, null, 2), 'utf8');
-
   console.log(JSON.stringify(result, null, 2));
   if (!result.ok) process.exitCode = 1;
 } catch (err) {
