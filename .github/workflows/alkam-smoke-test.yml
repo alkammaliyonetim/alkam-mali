@@ -5,6 +5,7 @@ on:
     branches:
       - safe-bank-import-v1
       - luca-sync
+      - luca-fix
   pull_request:
     branches:
       - main
@@ -65,9 +66,9 @@ jobs:
         run: node tools/istasyonalkam-automation-check.mjs
 
       - name: Run IstasyonALKAM Luca sync check
-        if: github.ref_name == 'luca-sync' || github.head_ref == 'luca-sync'
+        if: github.ref_name == 'luca-sync' || github.head_ref == 'luca-sync' || github.ref_name == 'luca-fix' || github.head_ref == 'luca-fix'
         env:
-          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://luca-sync.alkam-mali.pages.dev/' }}
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://luca-fix.alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-luca-sync-check.mjs
 
       - name: Upload bot output

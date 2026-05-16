@@ -1,8 +1,8 @@
-// ALKAM Mali - Luca Cari Senkron Paneli v1
+// ALKAM Mali - Luca Cari Senkron Paneli v2
 (function(){
   'use strict';
-  if(window.__ALKAM_LUCA_SYNC_V1__) return;
-  window.__ALKAM_LUCA_SYNC_V1__=true;
+  if(window.__ALKAM_LUCA_SYNC_V2__) return;
+  window.__ALKAM_LUCA_SYNC_V2__=true;
 
   const LS_CARILER='ALKAM_FINAL_CARILER_V1';
   const esc=x=>String(x||'').replace(/[&<>]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[s]));
@@ -43,6 +43,12 @@
     luca.forEach(r=>{ if(findMatch(cariler,r)) matched++; else missing.push(r); });
     return {luca,cariler,matched,missing};
   }
+  function publishCurrentCariler(cariler){
+    write(LS_CARILER,cariler);
+    window.ALKAM_CARILER_DATA=cariler;
+    window.ALKAM_CARILER_77_DATA=cariler;
+    window.ALKAM_CARILER_META={firma:'ALKAM Mali Müşavirlik',kaynak:'Luca senkron sonrası güncel cari listesi',cariSayisi:cariler.length,hareketSayisi:cariler.reduce((s,c)=>s+((c.transactions||[]).length),0),durum:'Luca Senkron'};
+  }
   function applySync(){
     const p=getPreview();
     if(!p.luca.length){ alert('Liste okunamadı. Luca müşteri listesini başlık satırıyla birlikte yapıştır.'); return; }
@@ -64,22 +70,36 @@
         added.push(r.longName);
       }
     });
-    write(LS_CARILER,cariler);
+    publishCurrentCariler(cariler);
     const paste=document.getElementById('pasteCariJson');
     if(paste && window.loadPastedCariData){ paste.value=JSON.stringify(cariler); window.loadPastedCariData(); }
-    window.dispatchEvent(new CustomEvent('alkam:cariler-loaded'));
-    localStorage.setItem('ALKAM_LUCA_SYNC_LAST',JSON.stringify({at:new Date().toISOString(),read:p.luca.length,added:added.length,updated:updated.length}));
-    render();
-    alert('Luca cari senkron tamam. Eklenen: '+added.length+' / Güncellenen: '+updated.length);
+    localStorage.setItem('ALKAM_LUCA_SYNC_LAST',JSON.stringify({at:new Date().toISOString(),read:p.luca.length,added:added.length,updated:updated.length,total:cariler.length}));
+    setTimeout(function(){publishCurrentCariler(cariler); if(window.refreshAll) window.refreshAll(); render();},200);
+    alert('Luca cari senkron tamam. Eklenen: '+added.length+' / Güncellenen: '+updated.length+' / Toplam cari: '+cariler.length);
+  }
+  function addLucaBoxToCari(){
+    const detail=document.getElementById('selectedCariDetail'); if(!detail) return;
+    if(detail.querySelector('.alkam-luca-card')) return;
+    const text=detail.textContent||'';
+    let current=null;
+    const list=read(LS_CARILER,[]);
+    for(const c of list){ if(c && c.name && text.includes(c.name) && c.luca){ current=c; break; } }
+    if(!current || !current.luca) return;
+    const l=current.luca;
+    const div=document.createElement('div');
+    div.className='alkam-luca-card';
+    div.innerHTML='<b>LUCA Bilgisi</b><br>Kısa Ad: '+esc(l.shortName)+'<br>Vergi Dairesi: '+esc(l.office)+'<br>No 1: '+esc(l.no1||'-')+' · No 2: '+esc(l.no2||'-')+'<br>Kuruluş: '+esc(l.start||'-')+(l.end?' · Kapanış: '+esc(l.end):'');
+    const hero=detail.querySelector('.hero-sub')||detail.firstChild;
+    if(hero && hero.parentNode) hero.parentNode.insertBefore(div,hero.nextSibling); else detail.insertBefore(div,detail.firstChild);
   }
   function css(){
     if(document.getElementById('lucaSyncCss')) return;
     const s=document.createElement('style');s.id='lucaSyncCss';
-    s.textContent='#lucaSyncBox{border:2px solid #bfdbfe;background:#eff6ff;border-radius:16px;padding:14px;margin:14px 0}#lucaSyncBox h2{margin:0 0 8px;font-size:19px;font-weight:950}.lsGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.lsCard{background:white;border:1px solid #dbeafe;border-radius:12px;padding:10px}.lsK{font-size:10px;color:#64748b;font-weight:950}.lsV{font-size:20px;font-weight:950;margin-top:4px}.lsText{width:100%;min-height:150px;border:1px solid #bfdbfe;border-radius:12px;padding:10px;font-size:12px}.lsBtn{border:0;border-radius:10px;padding:9px 12px;font-weight:950;background:#1769e8;color:white;margin:8px 8px 0 0}.lsDark{background:#0f172a}.lsList{font-size:12px;line-height:1.55;background:#fff;border:1px solid #dbeafe;border-radius:12px;padding:10px;max-height:190px;overflow:auto}@media(max-width:900px){.lsGrid{grid-template-columns:1fr}}';
+    s.textContent='#lucaSyncBox{border:2px solid #bfdbfe;background:#eff6ff;border-radius:16px;padding:14px;margin:14px 0}#lucaSyncBox h2{margin:0 0 8px;font-size:19px;font-weight:950}.lsGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.lsCard{background:white;border:1px solid #dbeafe;border-radius:12px;padding:10px}.lsK{font-size:10px;color:#64748b;font-weight:950}.lsV{font-size:20px;font-weight:950;margin-top:4px}.lsText{width:100%;min-height:150px;border:1px solid #bfdbfe;border-radius:12px;padding:10px;font-size:12px}.lsBtn{border:0;border-radius:10px;padding:9px 12px;font-weight:950;background:#1769e8;color:white;margin:8px 8px 0 0}.lsDark{background:#0f172a}.lsList{font-size:12px;line-height:1.55;background:#fff;border:1px solid #dbeafe;border-radius:12px;padding:10px;max-height:190px;overflow:auto}.alkam-luca-card{margin:8px 0 12px;padding:10px 12px;border:1px solid #bfdbfe;background:#eff6ff;border-radius:12px;font-size:12px;font-weight:800;color:#1e3a8a;line-height:1.55}@media(max-width:900px){.lsGrid{grid-template-columns:1fr}}';
     document.head.appendChild(s);
   }
   function mount(){
-    css();
+    css(); addLucaBoxToCari();
     const host=document.getElementById('tab-yedek')||document.getElementById('tab-cariler')||document.body;
     if(!host||document.getElementById('lucaSyncBox')) return;
     const box=document.createElement('div');box.id='lucaSyncBox';
@@ -96,5 +116,6 @@
   }
   document.addEventListener('click',()=>setTimeout(mount,250));
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',mount):mount();
+  setInterval(addLucaBoxToCari,1000);
   setTimeout(mount,1000); setTimeout(mount,2500);
 })();
