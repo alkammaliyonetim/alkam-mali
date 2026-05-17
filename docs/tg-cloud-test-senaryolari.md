@@ -2,6 +2,33 @@
 
 Bu doküman, TG Cloud Worker PR'ı production'a alınmadan önce yapılacak minimum güvenlik ve işlev testlerini listeler.
 
+## 0. Yerel Simülasyon Testi
+
+Cloudflare'a deploy yapmadan önce Worker davranışı Node ile simüle edilebilir.
+
+```bash
+npm run test:tg-cloud
+```
+
+Bu test şunları kontrol eder:
+
+- `GET /` hazır cevabı
+- Webhook secretsız 401
+- Geçersiz JSON için 400
+- Webhook doğru secret ile `Kuyrukta` kaydı
+- `/queue` secretsız 401
+- `/queue?secret=...` ile 401
+- `/queue` Bearer ile 200
+- `/queue` admin header ile 200
+- Test kaydında tutar, tarih, dosya ve güvenlik alanları
+- KV binding yoksa kontrollü `worker_error`
+
+Beklenen çıktı:
+
+```text
+TG Cloud Worker simulation tests passed
+```
+
 ## Test Ön Koşulları
 
 Cloudflare Worker ortamında şu değerler tanımlı olmalıdır:
