@@ -3,5 +3,7 @@
 node_modules/
 logs/
 tg_queue/
+hattat_exports/
+hattat_sessions/
 *.log
 .DS_Store
