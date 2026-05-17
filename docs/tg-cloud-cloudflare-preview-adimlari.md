@@ -26,7 +26,19 @@ cp wrangler.tg-cloud.example.toml wrangler.tg-cloud.toml
 
 Önemli: `.gitignore` içinde gerçek wrangler dosyası korunmalıdır. Repoda sadece `wrangler.tg-cloud.example.toml` kalmalıdır.
 
-## 2. KV Namespace Oluşturma
+## 2. Lokal Ortam Değişkeni Örneği
+
+Preview komutları için örnek dosya vardır:
+
+```bash
+cp tg-cloud.env.example .env.local
+```
+
+`.env.local` gerçek değerlerle lokal ortamda düzenlenebilir; `.env.local` repoya commitlenmemelidir.
+
+Örnek dosya sadece placeholder içerir. Gerçek secret değerleri repoya yazılmayacaktır.
+
+## 3. KV Namespace Oluşturma
 
 Örnek komut mantığı:
 
@@ -37,7 +49,7 @@ wrangler kv namespace create ALKAM_TG_QUEUE_PREVIEW --preview
 
 Dönen `id` ve `preview_id` değerleri sadece lokal `wrangler.tg-cloud.toml` içine yazılır.
 
-## 3. Secret Değerlerini Girme
+## 4. Secret Değerlerini Girme
 
 ```bash
 wrangler secret put TELEGRAM_WEBHOOK_SECRET --config wrangler.tg-cloud.toml
@@ -46,7 +58,7 @@ wrangler secret put QUEUE_READ_SECRET --config wrangler.tg-cloud.toml
 
 Bu değerler terminalden girilir, dosyaya yazılmaz.
 
-## 4. Preview / Dev Çalıştırma
+## 5. Preview / Dev Çalıştırma
 
 Önce lokal/preview davranışı kontrol edilir:
 
@@ -68,7 +80,7 @@ curl "http://localhost:8787/"
 }
 ```
 
-## 5. Preview Test Komutlarını Üretme
+## 6. Preview Test Komutlarını Üretme
 
 Test komutlarını elle yazmak yerine yardımcı script kullanılabilir.
 
@@ -89,7 +101,7 @@ npm run tg-cloud:commands
 
 Not: Gerçek secret değerleri sadece lokal terminalde kullanılmalı, repoya yazılmamalıdır.
 
-## 6. Lokal Webhook Testleri
+## 7. Lokal Webhook Testleri
 
 Secretsız webhook 401 dönmeli:
 
@@ -123,7 +135,7 @@ curl "http://localhost:8787/queue?secret=<QUEUE_READ_SECRET>"
 
 Beklenen status: `401`
 
-## 7. Gerçek Cloudflare Preview / Test Deploy
+## 8. Gerçek Cloudflare Preview / Test Deploy
 
 Production merge onayı alınmadan kalıcı production routing yapılmamalıdır.
 
@@ -137,7 +149,7 @@ Dry-run başarılı olmadan deploy yapılmamalıdır.
 
 Eğer deploy testi yapılacaksa çıkan Worker domaini not edilir ve `docs/tg-cloud-test-senaryolari.md` adımları bu domain üzerinde tekrar edilir.
 
-## 8. Telegram Webhook Bağlama
+## 9. Telegram Webhook Bağlama
 
 Gerçek Telegram webhook sadece şu şartlar sağlandıktan sonra bağlanır:
 
@@ -156,7 +168,7 @@ curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
   -d "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
 ```
 
-## 9. Başarı Kriterleri
+## 10. Başarı Kriterleri
 
 - `GET /` hazır cevabı döner.
 - Webhook secretsız 401 döner.
@@ -167,7 +179,7 @@ curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
 - Kuyruk kaydı kesin cari/banka/kasa/Moka hareketi oluşturmaz.
 - Onay Merkezi entegrasyonu ayrı faz olarak kalır.
 
-## 10. Production Kararı
+## 11. Production Kararı
 
 Bu adımlar tamamlanmadan PR ready yapılmamalı, production merge/deploy yapılmamalıdır.
 
