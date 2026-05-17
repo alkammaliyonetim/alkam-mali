@@ -65,9 +65,14 @@ jobs:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-automation-check.mjs
 
+      - name: Start local PR preview server
+        run: |
+          python3 -m http.server 8787 > /tmp/alkam-local-preview.log 2>&1 &
+          sleep 2
+
       - name: Run IstasyonALKAM safe automation visual check
         env:
-          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
+          ALKAM_TEST_URL: http://127.0.0.1:8787/
         run: node tools/istasyonalkam-safe-automation-visual-check.mjs
 
       - name: Run IstasyonALKAM Luca sync check
