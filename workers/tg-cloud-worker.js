@@ -39,6 +39,7 @@ function json(data, status = 200) {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
+      'cache-control': 'no-store',
       'access-control-allow-origin': '*',
       'access-control-allow-methods': 'GET,POST,OPTIONS',
       'access-control-allow-headers': 'content-type,x-telegram-bot-api-secret-token,x-alkam-admin-secret,authorization'
@@ -78,8 +79,7 @@ function verifyQueueReadSecret(request, env) {
 
   const bearer = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
   const headerSecret = request.headers.get('x-alkam-admin-secret') || '';
-  const querySecret = new URL(request.url).searchParams.get('secret') || '';
-  const incomingSecret = bearer || headerSecret || querySecret;
+  const incomingSecret = bearer || headerSecret;
 
   if (incomingSecret !== env.QUEUE_READ_SECRET) {
     return {
