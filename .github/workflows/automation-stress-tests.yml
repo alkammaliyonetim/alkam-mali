@@ -1,0 +1,32 @@
+name: Automation Stress Tests
+
+on:
+  pull_request:
+    paths:
+      - 'automation-safe-ui.js'
+      - 'tools/automation-stress-check.mjs'
+      - 'tools/automation-module-registry-check.mjs'
+      - 'tools/automation-safe-ui-check.mjs'
+      - 'package.json'
+      - '.github/workflows/automation-stress-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  automation-stress:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run module registry check
+        run: npm run test:automation-registry
+      - name: Run safe automation UI check
+        run: npm run test:automation-ui
+      - name: Run stress check
+        run: npm run test:automation-stress

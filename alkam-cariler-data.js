@@ -62,3 +62,37 @@ Aynı klasörde alkam-cariler-77-28-04-2026.json dosyası da olmalı.
       setEmpty(err && err.message ? err.message : String(err));
     });
 })();
+
+(function () {
+  "use strict";
+
+  if (window.ALKAM_SAFE_AUTOMATION_UI_LOADER_READY) return;
+  window.ALKAM_SAFE_AUTOMATION_UI_LOADER_READY = true;
+
+  function loadSafeAutomationUi() {
+    if (window.ALKAM_AUTOMATION_SAFE_UI_READY || document.querySelector('script[data-alkam-safe-automation-ui="1"]')) {
+      return;
+    }
+
+    var script = document.createElement("script");
+    script.src = "automation-safe-ui.js?v=safe-v1";
+    script.async = true;
+    script.dataset.alkamSafeAutomationUi = "1";
+    script.onload = function () {
+      if (typeof window.renderSafeAutomationModules === "function") {
+        window.renderSafeAutomationModules();
+      }
+      console.info("[ALKAM] Güvenli otomasyon UI yüklendi.");
+    };
+    script.onerror = function () {
+      console.warn("[ALKAM] Güvenli otomasyon UI yüklenemedi.");
+    };
+    document.head.appendChild(script);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", loadSafeAutomationUi);
+  } else {
+    loadSafeAutomationUi();
+  }
+})();
