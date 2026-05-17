@@ -65,6 +65,11 @@ jobs:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-automation-check.mjs
 
+      - name: Run IstasyonALKAM safe automation visual check
+        env:
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
+        run: node tools/istasyonalkam-safe-automation-visual-check.mjs
+
       - name: Run IstasyonALKAM Luca sync check
         if: github.ref_name == 'luca-sync' || github.head_ref == 'luca-sync' || github.ref_name == 'luca-fix' || github.head_ref == 'luca-fix'
         env:
