@@ -1,8 +1,20 @@
-import worker from '../workers/tg-cloud-worker.js';
-import sampleUpdate from '../fixtures/tg-cloud-sample-update.json' assert { type: 'json' };
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
 const TELEGRAM_WEBHOOK_SECRET = 'test-telegram-secret';
 const QUEUE_READ_SECRET = 'test-queue-secret';
+
+const worker = await loadWorkerModule();
+const sampleUpdate = JSON.parse(
+  await readFile(resolve('fixtures/tg-cloud-sample-update.json'), 'utf8')
+);
+
+async function loadWorkerModule() {
+  const workerSource = await readFile(resolve('workers/tg-cloud-worker.js'), 'utf8');
+  const dataUrl = `data:text/javascript;charset=utf-8,${encodeURIComponent(workerSource)}`;
+  const mod = await import(dataUrl);
+  return mod.default;
+}
 
 class MemoryKV {
   constructor() {
