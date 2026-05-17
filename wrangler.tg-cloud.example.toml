@@ -8,3 +8,11 @@ compatibility_date = "2026-05-17"
 binding = "TG_QUEUE"
 id = "BURAYA_KV_NAMESPACE_ID"
 preview_id = "BURAYA_PREVIEW_KV_NAMESPACE_ID"
+
+# Zorunlu Worker secret değerleri:
+# - TELEGRAM_WEBHOOK_SECRET
+# - QUEUE_READ_SECRET
+#
+# Bu değerler repoya yazılmaz. Cloudflare secret olarak girilir:
+# wrangler secret put TELEGRAM_WEBHOOK_SECRET
+# wrangler secret put QUEUE_READ_SECRET
