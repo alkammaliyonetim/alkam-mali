@@ -1,0 +1,34 @@
+name: TG Cloud Worker Tests
+
+on:
+  pull_request:
+    paths:
+      - 'workers/tg-cloud-worker.js'
+      - 'tools/test-tg-cloud-worker.mjs'
+      - 'fixtures/tg-cloud-sample-update.json'
+      - 'package.json'
+      - '.github/workflows/tg-cloud-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tg-cloud-worker-tests:
+    name: Run TG Cloud simulation tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run TG Cloud tests
+        run: npm run test:tg-cloud
