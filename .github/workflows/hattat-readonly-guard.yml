@@ -1,0 +1,28 @@
+name: Hattat Readonly Guard
+
+on:
+  pull_request:
+    paths:
+      - 'docs/hattat-readonly-plan.md'
+      - 'hattat.env.example'
+      - 'tools/hattat-readonly-guard.mjs'
+      - 'package.json'
+      - '.gitignore'
+      - '.github/workflows/hattat-readonly-guard.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run guard
+        run: npm run test:hattat-readonly
