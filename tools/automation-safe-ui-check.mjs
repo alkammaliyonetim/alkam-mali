@@ -1,6 +1,8 @@
 import fs from 'fs';
 
 const source = fs.readFileSync('automation-safe-ui.js', 'utf8');
+const loader = fs.readFileSync('alkam-cariler-data.js', 'utf8');
+
 const checks = {
   hasSafeTitle: source.includes('Güvenli Modüller'),
   hasSuggestionTitle: source.includes('Öneri Modülleri'),
@@ -14,7 +16,11 @@ const checks = {
   exposesRenderer: source.includes('window.renderSafeAutomationModules'),
   doesNotUseFetch: !source.includes('fetch('),
   doesNotUseLocalStorageSet: !source.includes('localStorage.setItem'),
-  doesNotUseDirectApproval: !source.includes('approveItem(')
+  doesNotUseDirectApproval: !source.includes('approveItem('),
+  loaderHasGuard: loader.includes('ALKAM_SAFE_AUTOMATION_UI_LOADER_READY'),
+  loaderMountsSafeUi: loader.includes('automation-safe-ui.js?v=safe-v1'),
+  loaderCallsRenderer: loader.includes('window.renderSafeAutomationModules'),
+  loaderUsesScriptTag: loader.includes('document.createElement("script")')
 };
 
 const errors = Object.entries(checks)
