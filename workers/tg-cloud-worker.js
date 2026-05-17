@@ -2,20 +2,30 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    if (request.method === 'OPTIONS') {
+      return json({ ok: true });
+    }
+
     if (request.method === 'GET' && url.pathname === '/') {
       return json({ ok: true, service: 'ALKAM TG Cloud', status: 'ready' });
     }
 
     if (request.method === 'POST' && url.pathname === '/telegram/webhook') {
+      const webhookGuard = verifyTelegramSecret(request, env);
+      if (!webhookGuard.ok) return json(webhookGuard.body, webhookGuard.status);
+
       const update = await request.json().catch(() => null);
       if (!update) return json({ ok: false, error: 'invalid_json' }, 400);
 
       const item = normalizeTelegramUpdate(update);
       await saveQueue(env, item);
-      return json({ ok: true, queued: item.id });
+      return json({ ok: true, queued: item.id, status: item.status });
     }
 
     if (request.method === 'GET' && url.pathname === '/queue') {
+      const queueGuard = verifyQueueReadSecret(request, env);
+      if (!queueGuard.ok) return json(queueGuard.body, queueGuard.status);
+
       const items = await readQueue(env);
       return json({ ok: true, items });
     }
@@ -29,9 +39,57 @@ function json(data, status = 200) {
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
-      'access-control-allow-origin': '*'
+      'access-control-allow-origin': '*',
+      'access-control-allow-methods': 'GET,POST,OPTIONS',
+      'access-control-allow-headers': 'content-type,x-telegram-bot-api-secret-token,x-alkam-admin-secret,authorization'
     }
   });
+}
+
+function verifyTelegramSecret(request, env) {
+  if (!env.TELEGRAM_WEBHOOK_SECRET) {
+    return {
+      ok: false,
+      status: 500,
+      body: { ok: false, error: 'telegram_webhook_secret_not_configured' }
+    };
+  }
+
+  const incomingSecret = request.headers.get('x-telegram-bot-api-secret-token') || '';
+  if (incomingSecret !== env.TELEGRAM_WEBHOOK_SECRET) {
+    return {
+      ok: false,
+      status: 401,
+      body: { ok: false, error: 'unauthorized_telegram_webhook' }
+    };
+  }
+
+  return { ok: true };
+}
+
+function verifyQueueReadSecret(request, env) {
+  if (!env.QUEUE_READ_SECRET) {
+    return {
+      ok: false,
+      status: 500,
+      body: { ok: false, error: 'queue_read_secret_not_configured' }
+    };
+  }
+
+  const bearer = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const headerSecret = request.headers.get('x-alkam-admin-secret') || '';
+  const querySecret = new URL(request.url).searchParams.get('secret') || '';
+  const incomingSecret = bearer || headerSecret || querySecret;
+
+  if (incomingSecret !== env.QUEUE_READ_SECRET) {
+    return {
+      ok: false,
+      status: 401,
+      body: { ok: false, error: 'unauthorized_queue_read' }
+    };
+  }
+
+  return { ok: true };
 }
 
 function normalizeTelegramUpdate(update) {
@@ -39,7 +97,7 @@ function normalizeTelegramUpdate(update) {
   const file = extractFile(msg);
   const text = msg.text || msg.caption || '';
   return {
-    id: 'TGCL-' + Date.now().toString(36).toUpperCase(),
+    id: makeQueueId(),
     source: 'Telegram Cloud',
     status: 'Kuyrukta',
     updateId: update.update_id || null,
@@ -54,13 +112,18 @@ function normalizeTelegramUpdate(update) {
     suggested: {
       cari: '',
       amount: guessAmount(text),
-      date: '',
+      date: guessDate(text),
       type: 'Telegram cloud kuyruk',
       confidence: 0,
       reason: 'Cloud webhook sadece kuyruk kaydı oluşturdu; kesin kayıt yok.'
     },
     raw: update
   };
+}
+
+function makeQueueId() {
+  const suffix = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+  return 'TGCL-' + Date.now().toString(36).toUpperCase() + '-' + suffix;
 }
 
 function extractFile(msg) {
@@ -83,17 +146,27 @@ function guessAmount(text) {
   return Number(m[1].replace(/\./g, '').replace(',', '.')) || 0;
 }
 
+function guessDate(text) {
+  const m = String(text || '').match(/\b(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})\b/);
+  if (!m) return '';
+  const day = m[1].padStart(2, '0');
+  const month = m[2].padStart(2, '0');
+  const year = m[3].length === 2 ? '20' + m[3] : m[3];
+  return `${year}-${month}-${day}`;
+}
+
 async function saveQueue(env, item) {
-  if (env.TG_QUEUE) {
-    await env.TG_QUEUE.put(item.id, JSON.stringify(item));
-    return;
+  if (!env.TG_QUEUE) {
+    throw new Error('TG_QUEUE binding is not configured');
   }
-  // Fallback for local preview without KV binding.
-  return;
+  await env.TG_QUEUE.put(item.id, JSON.stringify(item));
 }
 
 async function readQueue(env) {
-  if (!env.TG_QUEUE) return [];
+  if (!env.TG_QUEUE) {
+    throw new Error('TG_QUEUE binding is not configured');
+  }
+
   const list = await env.TG_QUEUE.list({ limit: 50 });
   const items = [];
   for (const key of list.keys) {
