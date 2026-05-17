@@ -68,7 +68,28 @@ curl "http://localhost:8787/"
 }
 ```
 
-## 5. Lokal Webhook Testleri
+## 5. Preview Test Komutlarını Üretme
+
+Test komutlarını elle yazmak yerine yardımcı script kullanılabilir.
+
+Lokal `wrangler dev` için:
+
+```bash
+npm run tg-cloud:commands
+```
+
+Cloudflare test domaini için:
+
+```bash
+TG_CLOUD_WORKER_URL="https://<WORKER_DOMAIN>" \
+TELEGRAM_WEBHOOK_SECRET="<TELEGRAM_WEBHOOK_SECRET>" \
+QUEUE_READ_SECRET="<QUEUE_READ_SECRET>" \
+npm run tg-cloud:commands
+```
+
+Not: Gerçek secret değerleri sadece lokal terminalde kullanılmalı, repoya yazılmamalıdır.
+
+## 6. Lokal Webhook Testleri
 
 Secretsız webhook 401 dönmeli:
 
@@ -102,7 +123,7 @@ curl "http://localhost:8787/queue?secret=<QUEUE_READ_SECRET>"
 
 Beklenen status: `401`
 
-## 6. Gerçek Cloudflare Preview / Test Deploy
+## 7. Gerçek Cloudflare Preview / Test Deploy
 
 Production merge onayı alınmadan kalıcı production routing yapılmamalıdır.
 
@@ -116,7 +137,7 @@ Dry-run başarılı olmadan deploy yapılmamalıdır.
 
 Eğer deploy testi yapılacaksa çıkan Worker domaini not edilir ve `docs/tg-cloud-test-senaryolari.md` adımları bu domain üzerinde tekrar edilir.
 
-## 7. Telegram Webhook Bağlama
+## 8. Telegram Webhook Bağlama
 
 Gerçek Telegram webhook sadece şu şartlar sağlandıktan sonra bağlanır:
 
@@ -135,7 +156,7 @@ curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
   -d "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
 ```
 
-## 8. Başarı Kriterleri
+## 9. Başarı Kriterleri
 
 - `GET /` hazır cevabı döner.
 - Webhook secretsız 401 döner.
@@ -146,7 +167,7 @@ curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook" \
 - Kuyruk kaydı kesin cari/banka/kasa/Moka hareketi oluşturmaz.
 - Onay Merkezi entegrasyonu ayrı faz olarak kalır.
 
-## 9. Production Kararı
+## 10. Production Kararı
 
 Bu adımlar tamamlanmadan PR ready yapılmamalı, production merge/deploy yapılmamalıdır.
 
