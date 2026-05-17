@@ -149,9 +149,23 @@ function extractFile(msg) {
 }
 
 function guessAmount(text) {
-  const m = String(text || '').match(/([0-9\.]+(?:,[0-9]{1,2})?)/);
-  if (!m) return 0;
-  return Number(m[1].replace(/\./g, '').replace(',', '.')) || 0;
+  const raw = String(text || '');
+  const currencyMatch = [...raw.matchAll(/([0-9]{1,3}(?:\.[0-9]{3})*(?:,[0-9]{1,2})?|[0-9]+(?:,[0-9]{1,2})?)\s*(?:TL|TRY|₺)/gi)].pop();
+  if (currencyMatch) return parseAmount(currencyMatch[1]);
+
+  const allMatches = [...raw.matchAll(/\b([0-9]{1,3}(?:\.[0-9]{3})*(?:,[0-9]{1,2})?|[0-9]+(?:,[0-9]{1,2})?)\b/g)]
+    .map((match) => match[1])
+    .filter((value) => !looksLikeDatePart(value));
+  if (!allMatches.length) return 0;
+  return parseAmount(allMatches[allMatches.length - 1]);
+}
+
+function parseAmount(value) {
+  return Number(String(value).replace(/\./g, '').replace(',', '.')) || 0;
+}
+
+function looksLikeDatePart(value) {
+  return /^\d{1,2}\.\d{1,2}$/.test(value) || /^\d{4}$/.test(value);
 }
 
 function guessDate(text) {
