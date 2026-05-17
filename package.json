@@ -1,1 +1,1 @@
-{"scripts":{"tg:bot":"node tools/tg-bot-v3.mjs"},"dependencies":{"dotenv":"latest","node-telegram-bot-api":"latest"},"devDependencies":{}}
+{"scripts":{"tg:bot":"node tools/tg-bot-v3.mjs","test:automation-stress":"node tools/automation-stress-check.mjs"},"dependencies":{"dotenv":"latest","node-telegram-bot-api":"latest"},"devDependencies":{}}
