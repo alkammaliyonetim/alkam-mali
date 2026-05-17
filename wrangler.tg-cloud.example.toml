@@ -1,0 +1,10 @@
+name = "alkam-tg-cloud"
+main = "workers/tg-cloud-worker.js"
+compatibility_date = "2026-05-17"
+
+# Cloudflare KV kuyruğu
+# Gerçek id değerleri Cloudflare panelinden alınacak.
+[[kv_namespaces]]
+binding = "TG_QUEUE"
+id = "BURAYA_KV_NAMESPACE_ID"
+preview_id = "BURAYA_PREVIEW_KV_NAMESPACE_ID"
