@@ -83,9 +83,9 @@ Beklenen kontrol:
 
 ## Kuyruk Okuma Kontrolü
 
-`/queue` endpointi admin secret olmadan açılmamalıdır.
+`/queue` endpointi admin secret olmadan açılmamalıdır. Secret kesinlikle URL query parametresi olarak kullanılmamalıdır; linklerde, tarayıcı geçmişinde ve loglarda görünebilir.
 
-Örnek:
+Doğru kullanım:
 
 ```bash
 curl "https://<WORKER_DOMAIN>/queue" \
@@ -103,6 +103,7 @@ curl "https://<WORKER_DOMAIN>/queue" \
 
 - Token kod içine yazılmayacak.
 - Secret değerleri GitHub'a commitlenmeyecek.
+- Secret değerleri URL içinde taşınmayacak.
 - Worker ilk fazda sadece kuyruk yazacak.
 - Onay Merkezi onayı olmadan cari/banka/kasa/Moka kaydı oluşmayacak.
 - Bilinmeyen cari otomatik açılmayacak.
@@ -114,16 +115,18 @@ curl "https://<WORKER_DOMAIN>/queue" \
 2. Cloudflare secret değerleri girilir.
 3. Sahte Telegram update ile `POST /telegram/webhook` doğru secret header ile denenir.
 4. Secret olmadan deneme yapılır; 401 dönmeli.
-5. `GET /queue` admin secret ile kontrol edilir.
+5. `GET /queue` admin secret header ile kontrol edilir.
 6. Admin secret olmadan `/queue` denenir; 401 dönmeli.
-7. Telegram gerçek webhook sadece preview testlerinden sonra set edilir.
-8. Production merge için ayrıca kullanıcı onayı alınır.
+7. URL query ile `?secret=` denenirse yine 401 dönmeli.
+8. Telegram gerçek webhook sadece preview testlerinden sonra set edilir.
+9. Production merge için ayrıca kullanıcı onayı alınır.
 
 ## Kabul Kriterleri
 
 - Mesaj kuyruğa düşmeli.
 - Secret yanlışsa veya eksikse kayıt kuyruğa düşmemeli.
 - `/queue` admin secret olmadan veri göstermemeli.
+- `/queue?secret=...` yöntemi kabul edilmemeli.
 - Dosya bilgisi varsa `fileId`, `fileName`, `mimeType`, `fileSize` alanları korunmalı.
 - Tutar sadece öneri olarak yakalanmalı.
 - Cari adayı kesin cari kaydı sayılmamalı.
