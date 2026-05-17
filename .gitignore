@@ -5,3 +5,6 @@ logs/
 tg_queue/
 *.log
 .DS_Store
+
+# TG Cloud local Cloudflare config with real KV ids / local secrets
+wrangler.tg-cloud.toml
