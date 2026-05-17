@@ -2,35 +2,43 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    if (request.method === 'OPTIONS') {
-      return json({ ok: true });
+    try {
+      if (request.method === 'OPTIONS') {
+        return json({ ok: true });
+      }
+
+      if (request.method === 'GET' && url.pathname === '/') {
+        return json({ ok: true, service: 'ALKAM TG Cloud', status: 'ready' });
+      }
+
+      if (request.method === 'POST' && url.pathname === '/telegram/webhook') {
+        const webhookGuard = verifyTelegramSecret(request, env);
+        if (!webhookGuard.ok) return json(webhookGuard.body, webhookGuard.status);
+
+        const update = await request.json().catch(() => null);
+        if (!update) return json({ ok: false, error: 'invalid_json' }, 400);
+
+        const item = normalizeTelegramUpdate(update);
+        await saveQueue(env, item);
+        return json({ ok: true, queued: item.id, status: item.status });
+      }
+
+      if (request.method === 'GET' && url.pathname === '/queue') {
+        const queueGuard = verifyQueueReadSecret(request, env);
+        if (!queueGuard.ok) return json(queueGuard.body, queueGuard.status);
+
+        const items = await readQueue(env);
+        return json({ ok: true, items });
+      }
+
+      return json({ ok: false, error: 'not_found' }, 404);
+    } catch (err) {
+      return json({
+        ok: false,
+        error: 'worker_error',
+        message: err?.message || 'Unknown worker error'
+      }, 500);
     }
-
-    if (request.method === 'GET' && url.pathname === '/') {
-      return json({ ok: true, service: 'ALKAM TG Cloud', status: 'ready' });
-    }
-
-    if (request.method === 'POST' && url.pathname === '/telegram/webhook') {
-      const webhookGuard = verifyTelegramSecret(request, env);
-      if (!webhookGuard.ok) return json(webhookGuard.body, webhookGuard.status);
-
-      const update = await request.json().catch(() => null);
-      if (!update) return json({ ok: false, error: 'invalid_json' }, 400);
-
-      const item = normalizeTelegramUpdate(update);
-      await saveQueue(env, item);
-      return json({ ok: true, queued: item.id, status: item.status });
-    }
-
-    if (request.method === 'GET' && url.pathname === '/queue') {
-      const queueGuard = verifyQueueReadSecret(request, env);
-      if (!queueGuard.ok) return json(queueGuard.body, queueGuard.status);
-
-      const items = await readQueue(env);
-      return json({ ok: true, items });
-    }
-
-    return json({ ok: false, error: 'not_found' }, 404);
   }
 };
 
