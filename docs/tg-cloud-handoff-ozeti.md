@@ -8,9 +8,10 @@ Bu doküman, TG Cloud fazında mevcut durumu kısa ve net özetler.
 - GitHub checks yeşildir.
 - TG Cloud Worker iskeleti hazırdır.
 - Tek tık lokal kurulum ve test akışı eklenmiştir.
-- Cloudflare preview/local testleri henüz tamamlanmamıştır.
+- Cloudflare preview testi henüz tamamlanmamıştır.
 - Issue #27 Cloudflare preview blocker olarak açıktır.
 - Issue #28 Onay Merkezi entegrasyonu için sonraki faz olarak açıktır.
+- Kullanıcı PC tarafında uzun terminal/klasör/komut zinciri istemediği için panel öncelikli preview yolu ayrıca eklenmiştir.
 
 ## PR #26 Ne Yapar?
 
@@ -35,6 +36,22 @@ Bu dosya sırayla şu dosyaları çalıştırır:
 3. `tools/alkam-report.ps1` — yapılanlar / kalanlar / kontrol ettiklerim raporu.
 
 Bu akış canlıya çıkarma yapmaz, webhook ayarlamaz ve kesin cari/banka/kasa/Moka/muhasebe kaydı oluşturmaz.
+
+## Panel Öncelikli Preview Yolu
+
+Ana karar: Kullanıcı terminal komutlarıyla uğraşmayacak.
+
+Panel öncelikli yol için kısa not:
+
+- `docs/tg-cloud-panel-oncelikli-preview.md`
+
+Bu notta şu kararlar sabitlenmiştir:
+
+- Cloudflare ayarları panelden ilerler.
+- Lokal kurulum yalnızca opsiyonel destek olarak kalır.
+- Gerçek gizli değerler GitHub, issue, PR yorumu veya ChatGPT mesajına yazılmaz.
+- #27 tamamlanmadan #26 ready/merge yapılmaz.
+- #28 Onay Merkezi bağlantısı ayrı ilerler.
 
 ## PR #26 Ne Yapmaz?
 
@@ -77,11 +94,11 @@ PR #26 ready/merge yapılmadan önce Issue #27 tamamlanmalıdır.
 
 Issue #27 kapsamında yapılacaklar:
 
-- Cloudflare KV namespace oluşturulacak.
-- Preview/test KV namespace oluşturulacak.
+- Doğru Cloudflare hesabı kontrol edilecek.
+- TG Cloud için test Worker alanı hazırlanacak.
 - `TG_QUEUE` binding tanımlanacak.
-- Gerekli Cloudflare gizli değerleri girilecek.
-- `wrangler dev` veya preview testleri yapılacak.
+- Gerekli Cloudflare gizli değerleri panelden girilecek.
+- Preview endpoint testleri yapılacak.
 - Webhook ve queue güvenlik testleri geçecek.
 - Test sonucu #27 şablonuna yazılacak.
 
@@ -95,7 +112,6 @@ Bu iş PR #26'ya karıştırılmamalıdır. Ayrı branch/PR ile yapılmalıdır.
 
 - Gerçek gizli değerler repoya yazılmayacak.
 - Gerçek KV ID repoya yazılmayacak.
-- `wrangler.tg-cloud.toml` lokal kalacak ve ignore edilecek.
 - Gizli değerler URL içinde taşınmayacak.
 - Onaysız kesin kayıt yok.
 - Bilinmeyen cari otomatik açılmayacak.
@@ -115,4 +131,4 @@ Detaylı plan: `docs/tg-cloud-rollback-plani.md`
 
 ## Karar
 
-Şu an karar: GitHub tarafı hazır; Cloudflare preview tamamlanmadan production'a geçilmeyecek.
+Şu an karar: GitHub tarafı hazır; Cloudflare panel preview tamamlanmadan production'a geçilmeyecek.
