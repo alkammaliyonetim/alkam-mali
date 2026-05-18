@@ -7,10 +7,25 @@ const outDir = path.resolve('test-output');
 fs.mkdirSync(outDir, { recursive: true });
 
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-const result = { url, ok: false, startedAt: new Date().toISOString(), checks: {}, errors: [] };
+const result = { url, ok: false, startedAt: new Date().toISOString(), checks: {}, preview: {}, errors: [] };
 const jsonPath = path.join(outDir, `istasyonalkam-automation-${stamp}.json`);
 const screenshotPath = path.join(outDir, `istasyonalkam-automation-${stamp}.png`);
 const mayEnginePath = path.resolve('alkam-monthly-accrual-engine-v1.js');
+
+function extractMayPreviewSummary(text) {
+  const summary = { rawText: text };
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  summary.lines = lines;
+  for (const line of lines) {
+    const normalized = line.replace(/\s+/g, ' ');
+    if (normalized.includes('Eksik Mayıs tahakkuk')) summary.missingMayAccrualLine = normalized;
+    if (normalized.includes('Toplam')) summary.totalAmountLine = normalized;
+    if (normalized.includes('Var olan Mayıs tahakkuk')) summary.existingMayAccrualLine = normalized;
+    if (normalized.includes('Atlanan cari')) summary.skippedCariLine = normalized;
+    if (normalized.includes('Bu işlem kayıt yazmadı')) summary.noWriteLine = normalized;
+  }
+  return summary;
+}
 
 async function ensureMayEngineMounted(page) {
   const engineAlreadyLoaded = await page.evaluate(() => !!window.ALKAM_MONTHLY_ACCRUAL_ENGINE_V1);
@@ -89,6 +104,8 @@ try {
     await page.locator('button:has-text("Mayıs Ön İzleme")').first().click({ timeout: 10000 });
     await page.waitForTimeout(700);
     bodyText = await page.locator('body').innerText({ timeout: 15000 });
+    const previewText = await page.locator('#monthlyAccrualPreviewBox').innerText({ timeout: 15000 });
+    result.preview = extractMayPreviewSummary(previewText);
     result.checks.mayPreviewRuns = bodyText.includes('Ön İzleme') && bodyText.includes('Bu işlem kayıt yazmadı.');
     result.checks.mayPreviewShowsCounts = bodyText.includes('Eksik Mayıs tahakkuk') && bodyText.includes('Var olan Mayıs tahakkuk') && bodyText.includes('Atlanan cari');
   } else {
@@ -116,6 +133,10 @@ try {
   if (!result.checks.mayStressRuns) result.errors.push('Mayıs stres testi preview ortamında GEÇTİ sonucu vermedi.');
   if (!result.checks.mayPreviewRuns) result.errors.push('Mayıs ön izleme kayıt yazmadan çalışmadı.');
   if (!result.checks.mayPreviewShowsCounts) result.errors.push('Mayıs ön izleme sayım alanlarını göstermedi.');
+  if (!result.preview.missingMayAccrualLine) result.errors.push('Mayıs ön izleme eksik tahakkuk satırını raporlamadı.');
+  if (!result.preview.totalAmountLine) result.errors.push('Mayıs ön izleme toplam tutar satırını raporlamadı.');
+  if (!result.preview.existingMayAccrualLine) result.errors.push('Mayıs ön izleme var olan tahakkuk satırını raporlamadı.');
+  if (!result.preview.skippedCariLine) result.errors.push('Mayıs ön izleme atlanan cari satırını raporlamadı.');
   if (!result.checks.disableAllWorks) result.errors.push('Tüm otomatik işleri kapat çalışmadı.');
 
   await page.screenshot({ path: screenshotPath, fullPage: true });
