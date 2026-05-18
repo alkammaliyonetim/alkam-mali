@@ -10,6 +10,27 @@ const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const result = { url, ok: false, startedAt: new Date().toISOString(), checks: {}, errors: [] };
 const jsonPath = path.join(outDir, `istasyonalkam-automation-${stamp}.json`);
 const screenshotPath = path.join(outDir, `istasyonalkam-automation-${stamp}.png`);
+const mayEnginePath = path.resolve('alkam-monthly-accrual-engine-v1.js');
+
+async function ensureMayEngineMounted(page) {
+  const engineAlreadyLoaded = await page.evaluate(() => !!window.ALKAM_MONTHLY_ACCRUAL_ENGINE_V1);
+  result.checks.mayEngineAlreadyLoadedOnPreview = engineAlreadyLoaded;
+
+  if (!engineAlreadyLoaded && fs.existsSync(mayEnginePath)) {
+    await page.addScriptTag({ path: mayEnginePath });
+    result.checks.mayEngineInjectedFromPrBranch = true;
+  } else {
+    result.checks.mayEngineInjectedFromPrBranch = false;
+  }
+
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => {
+    if (window.ALKAM_MONTHLY_ACCRUAL_ENGINE_V1 && typeof window.ALKAM_MONTHLY_ACCRUAL_ENGINE_V1.mountAutomationActions === 'function') {
+      window.ALKAM_MONTHLY_ACCRUAL_ENGINE_V1.mountAutomationActions();
+    }
+  });
+  await page.waitForTimeout(1200);
+}
 
 let browser;
 try {
@@ -22,6 +43,7 @@ try {
 
   await page.locator('[data-tab="otomasyon"]').first().click({ timeout: 10000 });
   await page.waitForTimeout(2500);
+  await ensureMayEngineMounted(page);
 
   let bodyText = await page.locator('body').innerText({ timeout: 15000 });
   const switchCount = await page.locator('[data-auto]').count();
@@ -51,7 +73,7 @@ try {
   result.checks.monthlyAccrualInlineActionsVisible = await page.locator('#monthlyAccrualInlineActions').count() > 0;
   result.checks.mayPreviewButtonVisible = await page.locator('button:has-text("Mayıs Ön İzleme")').count() > 0;
   result.checks.mayStressButtonVisible = await page.locator('button:has-text("Stres Testi")').count() > 0;
-  result.checks.mayApplyButtonVisible = await page.locator('button:has-text("Uygula")').count() > 0;
+  result.checks.mayApplyButtonVisible = await page.locator('#monthlyAccrualInlineActions button:has-text("Uygula")').count() > 0;
   result.checks.mayPreviewBoxVisible = await page.locator('#monthlyAccrualPreviewBox').count() > 0;
 
   if (result.checks.mayStressButtonVisible) {
@@ -89,7 +111,7 @@ try {
   if (!result.checks.monthlyAccrualInlineActionsVisible) result.errors.push('Mayıs tahakkuk inline aksiyonları görünmedi.');
   if (!result.checks.mayPreviewButtonVisible) result.errors.push('Mayıs Ön İzleme butonu görünmedi.');
   if (!result.checks.mayStressButtonVisible) result.errors.push('Stres Testi butonu görünmedi.');
-  if (!result.checks.mayApplyButtonVisible) result.errors.push('Uygula butonu görünmedi.');
+  if (!result.checks.mayApplyButtonVisible) result.errors.push('Mayıs Uygula butonu görünmedi.');
   if (!result.checks.mayPreviewBoxVisible) result.errors.push('Mayıs preview kutusu görünmedi.');
   if (!result.checks.mayStressRuns) result.errors.push('Mayıs stres testi preview ortamında GEÇTİ sonucu vermedi.');
   if (!result.checks.mayPreviewRuns) result.errors.push('Mayıs ön izleme kayıt yazmadan çalışmadı.');
