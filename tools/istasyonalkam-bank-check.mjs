@@ -11,6 +11,16 @@ const result = { url, ok: false, startedAt: new Date().toISOString(), checks: {}
 const jsonPath = path.join(outDir, `istasyonalkam-bank-${stamp}.json`);
 const screenshotPath = path.join(outDir, `istasyonalkam-bank-${stamp}.png`);
 
+async function injectDailyOps(page){
+  const loaded = await page.evaluate(() => !!window.ALKAM_DAILY_OPS);
+  result.checks.dailyOpsAlreadyLoaded = loaded;
+  if(!loaded && fs.existsSync('alkam-daily-ops-v1.js')){
+    await page.addScriptTag({ path: path.resolve('alkam-daily-ops-v1.js') });
+    result.checks.dailyOpsInjectedFromPrBranch = true;
+  }else result.checks.dailyOpsInjectedFromPrBranch = false;
+  await page.waitForTimeout(1200);
+}
+
 let browser;
 try {
   browser = await chromium.launch({ headless: true });
@@ -19,16 +29,32 @@ try {
   await page.evaluate(() => localStorage.setItem('alkam_local_session_v2', 'ok'));
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2500);
+  await injectDailyOps(page);
   await page.locator('[data-tab="hesaplar"]').first().click({ timeout: 10000 });
   await page.waitForTimeout(2500);
-  const bodyText = await page.locator('body').innerText({ timeout: 15000 });
-  result.checks.bankImportVisible = bodyText.includes('Banka Ekstresi İşleme Merkezi');
+
+  let bodyText = await page.locator('body').innerText({ timeout: 15000 });
+  result.checks.bankImportVisible = bodyText.includes('Banka Ekstre Yükleme') || bodyText.includes('Banka Ekstresi İşleme Merkezi');
+  result.checks.bankTextAreaVisible = await page.locator('#alkamBankText').count() > 0;
+  result.checks.bankPreviewButtonVisible = bodyText.includes('Yapıştırılanı Ön İzle') || bodyText.includes('Ön İzle');
   result.checks.accountsVisible = bodyText.includes('Hesaplar') || bodyText.includes('Hesap Hareketleri');
-  result.checks.commitBadgeVisible = bodyText.includes('COMMIT:');
-  if (!result.checks.bankImportVisible) result.errors.push('Banka Ekstresi İşleme Merkezi görünmedi.');
+
+  if(result.checks.bankTextAreaVisible){
+    await page.locator('#alkamBankText').fill('18.05.2026;Gamze Eczanesi EFT tahsilat;12500,00', { timeout: 10000 });
+    await page.locator('button:has-text("Yapıştırılanı Ön İzle")').click({ timeout: 10000 });
+    await page.waitForTimeout(1000);
+    bodyText = await page.locator('body').innerText({ timeout: 15000 });
+  }
+  result.checks.bankPreviewWorks = bodyText.includes('Ön izleme') && bodyText.includes('12.500,00 TL');
+
+  if (!result.checks.bankImportVisible) result.errors.push('Banka Ekstre Yükleme kutusu görünmedi.');
+  if (!result.checks.bankTextAreaVisible) result.errors.push('Banka yapıştırma alanı görünmedi.');
+  if (!result.checks.bankPreviewButtonVisible) result.errors.push('Banka ön izleme butonu görünmedi.');
+  if (!result.checks.bankPreviewWorks) result.errors.push('Banka yapıştırılan ekstre ön izlemesi çalışmadı.');
+
   await page.screenshot({ path: screenshotPath, fullPage: true });
   result.screenshot = screenshotPath;
-  result.ok = result.checks.bankImportVisible === true;
+  result.ok = result.errors.length === 0;
   result.finishedAt = new Date().toISOString();
   fs.writeFileSync(jsonPath, JSON.stringify(result, null, 2), 'utf8');
   console.log(JSON.stringify(result, null, 2));
