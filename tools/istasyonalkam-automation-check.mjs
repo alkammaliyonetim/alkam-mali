@@ -21,7 +21,7 @@ try {
   await page.waitForTimeout(2500);
 
   await page.locator('[data-tab="otomasyon"]').first().click({ timeout: 10000 });
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2500);
 
   let bodyText = await page.locator('body').innerText({ timeout: 15000 });
   const switchCount = await page.locator('[data-auto]').count();
@@ -48,6 +48,32 @@ try {
   result.checks.defaultMutationsDisabled = flags.disableAccrual && flags.disableBankMatch && flags.disableBankPost && flags.disableMoka;
   result.checks.openAutomationCount = flags.openCount;
 
+  result.checks.monthlyAccrualInlineActionsVisible = await page.locator('#monthlyAccrualInlineActions').count() > 0;
+  result.checks.mayPreviewButtonVisible = await page.locator('button:has-text("Mayıs Ön İzleme")').count() > 0;
+  result.checks.mayStressButtonVisible = await page.locator('button:has-text("Stres Testi")').count() > 0;
+  result.checks.mayApplyButtonVisible = await page.locator('button:has-text("Uygula")').count() > 0;
+  result.checks.mayPreviewBoxVisible = await page.locator('#monthlyAccrualPreviewBox').count() > 0;
+
+  if (result.checks.mayStressButtonVisible) {
+    await page.locator('button:has-text("Stres Testi")').first().click({ timeout: 10000 });
+    await page.waitForTimeout(700);
+    bodyText = await page.locator('body').innerText({ timeout: 15000 });
+    result.checks.mayStressRuns = bodyText.includes('Stres Testi:') && bodyText.includes('GEÇTİ');
+  } else {
+    result.checks.mayStressRuns = false;
+  }
+
+  if (result.checks.mayPreviewButtonVisible) {
+    await page.locator('button:has-text("Mayıs Ön İzleme")').first().click({ timeout: 10000 });
+    await page.waitForTimeout(700);
+    bodyText = await page.locator('body').innerText({ timeout: 15000 });
+    result.checks.mayPreviewRuns = bodyText.includes('Ön İzleme') && bodyText.includes('Bu işlem kayıt yazmadı.');
+    result.checks.mayPreviewShowsCounts = bodyText.includes('Eksik Mayıs tahakkuk') && bodyText.includes('Var olan Mayıs tahakkuk') && bodyText.includes('Atlanan cari');
+  } else {
+    result.checks.mayPreviewRuns = false;
+    result.checks.mayPreviewShowsCounts = false;
+  }
+
   await page.locator('button:has-text("Tüm otomatik işleri kapat")').click({ timeout: 10000 });
   await page.waitForTimeout(1000);
   const afterFlags = await page.evaluate(() => window.ALKAM_AUTOMATION_FLAGS ? Object.values(window.ALKAM_AUTOMATION_FLAGS).filter(Boolean).length : -1);
@@ -60,11 +86,19 @@ try {
   if (!result.checks.flagsExists) result.errors.push('Otomasyon bayrakları yayımlanmadı.');
   if (!result.checks.requireApproval) result.errors.push('Finansal mutasyon onay zorunlu bayrağı true değil.');
   if (!result.checks.defaultMutationsDisabled) result.errors.push('Riskli otomasyonlar varsayılan kapalı değil.');
+  if (!result.checks.monthlyAccrualInlineActionsVisible) result.errors.push('Mayıs tahakkuk inline aksiyonları görünmedi.');
+  if (!result.checks.mayPreviewButtonVisible) result.errors.push('Mayıs Ön İzleme butonu görünmedi.');
+  if (!result.checks.mayStressButtonVisible) result.errors.push('Stres Testi butonu görünmedi.');
+  if (!result.checks.mayApplyButtonVisible) result.errors.push('Uygula butonu görünmedi.');
+  if (!result.checks.mayPreviewBoxVisible) result.errors.push('Mayıs preview kutusu görünmedi.');
+  if (!result.checks.mayStressRuns) result.errors.push('Mayıs stres testi preview ortamında GEÇTİ sonucu vermedi.');
+  if (!result.checks.mayPreviewRuns) result.errors.push('Mayıs ön izleme kayıt yazmadan çalışmadı.');
+  if (!result.checks.mayPreviewShowsCounts) result.errors.push('Mayıs ön izleme sayım alanlarını göstermedi.');
   if (!result.checks.disableAllWorks) result.errors.push('Tüm otomatik işleri kapat çalışmadı.');
 
   await page.screenshot({ path: screenshotPath, fullPage: true });
   result.screenshot = screenshotPath;
-  result.ok = result.checks.automationTabVisible && result.checks.panelVisible && result.checks.ruleTextVisible && result.checks.hasAtLeastTenRules && result.checks.flagsExists && result.checks.requireApproval && result.checks.defaultMutationsDisabled && result.checks.disableAllWorks;
+  result.ok = result.errors.length === 0;
   result.finishedAt = new Date().toISOString();
   fs.writeFileSync(jsonPath, JSON.stringify(result, null, 2), 'utf8');
   console.log(JSON.stringify(result, null, 2));
