@@ -8,16 +8,28 @@ Yeni otomasyon kutusu eklenmeyecek. Mevcut düğmeler korunacak.
 
 | No | Anahtar | Başlık | Risk | Durum |
 |---:|---|---|---|---|
-| 1 | monthlyAccrual | Aylık Muhasebe Ücreti Tahakkuku | Yüksek | Denetlenecek |
-| 2 | retroAccrual | Geçmiş Ay Tahakkuk Tamamlama | Yüksek | Denetlenecek |
-| 3 | bankAutoMatch | Banka Hareketi Otomatik Eşleştirme | Orta | Denetlenecek |
-| 4 | bankAutoPost | Banka Hareketini Otomatik Cari İşleme | Kritik | Denetlenecek |
-| 5 | approvalAutoConfirm | %100 Emin Eşleşmeyi Otomatik Onaylama | Kritik | Denetlenecek |
-| 6 | mokaAutoCollection | Moka United Tahsilatını Otomatik Cari İşleme | Kritik | Denetlenecek |
-| 7 | mokaAutoSettlement | Moka United Banka Aktarımını Otomatik İşleme | Kritik | Denetlenecek |
-| 8 | invoiceAutoCreate | Fatura / Defter / Dijital Defter Otomatik Tahakkuk | Yüksek | Denetlenecek |
-| 9 | importAutoProcess | İçe Aktarılan Dosyayı Otomatik İşleme | Yüksek | Denetlenecek |
-| 10 | bulkAutoUpdate | Toplu Otomatik Güncelleme | Kritik | Denetlenecek |
+| 1 | monthlyAccrual | Aylık Muhasebe Ücreti Tahakkuku | Yüksek | İlk bağlanacak |
+| 2 | retroAccrual | Geçmiş Ay Tahakkuk Tamamlama | Yüksek | Beklemede |
+| 3 | bankAutoMatch | Banka Hareketi Otomatik Eşleştirme | Orta | Beklemede |
+| 4 | bankAutoPost | Banka Hareketini Otomatik Cari İşleme | Kritik | Beklemede |
+| 5 | approvalAutoConfirm | %100 Emin Eşleşmeyi Otomatik Onaylama | Kritik | Kapalı kalacak |
+| 6 | mokaAutoCollection | Moka United Tahsilatını Otomatik Cari İşleme | Kritik | Beklemede |
+| 7 | mokaAutoSettlement | Moka United Banka Aktarımını Otomatik İşleme | Kritik | Beklemede |
+| 8 | invoiceAutoCreate | Fatura / Defter / Dijital Defter Otomatik Tahakkuk | Yüksek | Beklemede |
+| 9 | importAutoProcess | İçe Aktarılan Dosyayı Otomatik İşleme | Yüksek | Beklemede |
+| 10 | bulkAutoUpdate | Toplu Otomatik Güncelleme | Kritik | Kapalı kalacak |
+
+## Güncel Teknik Tespit
+
+- `index.html` içinde gömülü Otomasyon Kontrol Merkezi zaten vardır.
+- Bu gömülü panel 10 otomasyon düğmesini gösterir.
+- Düğmeler varsayılan kapalıdır.
+- Düğmeler `ALKAM_AUTOMATION_FLAGS` bayraklarını yayınlar.
+- `ALKAM_REQUIRE_APPROVAL_FOR_FINANCIAL_MUTATION = true` kuralı aktiftir.
+- `alkam-otomasyon-kontrol.js` ayrıca harici koruma katmanı olarak vardır.
+- Harici koruma katmanı bilinen fonksiyon adlarını sarıp kapalıysa onay bekleyenlere alacak şekilde tasarlanmıştır.
+- Ana program içinde ayrıca gömülü otomasyon paneli olduğu için ikinci panel eklenmeyecek.
+- Öncelik: mevcut gömülü panelin 10 düğmesini gerçek işlem fonksiyonlarına güvenli şekilde bağlamak.
 
 ## Denetim Kuralı
 
