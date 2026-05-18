@@ -5,6 +5,9 @@ on:
     paths:
       - 'workers/tg-cloud-worker.js'
       - 'tools/test-tg-cloud-worker.mjs'
+      - 'tools/check-pc-setup-helper.mjs'
+      - 'ALKAM-PC-KURULUM.bat'
+      - 'tools/alkam-pc-setup.ps1'
       - 'fixtures/tg-cloud-sample-update.json'
       - 'package.json'
       - '.github/workflows/tg-cloud-tests.yml'
@@ -32,3 +35,6 @@ jobs:
 
       - name: Run TG Cloud tests
         run: npm run test:tg-cloud
+
+      - name: Run PC setup helper safety check
+        run: npm run test:pc-setup
