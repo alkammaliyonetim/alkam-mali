@@ -71,12 +71,22 @@ Kural: Otomatik kayıt yazmaz. Ön izleme + kullanıcı onayı olmadan cari hare
   function showPreview(){ var target=document.getElementById('monthlyAccrualPreviewBox'); var p=previewMay2026(); var html='<div class="empty" style="text-align:left"><strong>Ön İzleme</strong><br>Eksik Mayıs tahakkuk: '+p.missingCount+' kayıt / '+money(p.missingTotal)+'<br>Var olan Mayıs tahakkuk: '+p.existingCount+'<br>Atlanan cari: '+p.skippedCount+'<br>Bu işlem kayıt yazmadı.</div>'; if(target) target.innerHTML=html; return p; }
   function runStressTest(){ var target=document.getElementById('monthlyAccrualPreviewBox'); var r=stressTestMay2026(); if(target) target.innerHTML='<div class="empty" style="text-align:left"><strong>Stres Testi:</strong> '+(r.ok?'GEÇTİ':'KALDI')+'<br>Eksik: '+r.preview.missingCount+' kayıt / '+money(r.preview.missingTotal)+'<br>Hatalar: '+(r.errors.length?r.errors.join(', '):'-')+'</div>'; return r; }
 
+  function loadDailySimpleMode(){
+    if(document.getElementById('alkamSimpleDailyOpsLoader')) return;
+    var s=document.createElement('script');
+    s.id='alkamSimpleDailyOpsLoader';
+    s.src='alkam-daily-ops-simple-v1.js?v=basit-gunluk-1';
+    s.defer=true;
+    document.body.appendChild(s);
+  }
+
   window.createMonthlyAccruals = runFromAutomationButton;
   window.runMonthlyAccruals = runFromAutomationButton;
   window.aylikTahakkukOlustur = runFromAutomationButton;
   window.ALKAM_MONTHLY_ACCRUAL_ENGINE_V1={ version:VERSION, previewMay2026:previewMay2026, applyMay2026:applyMay2026, stressTestMay2026:stressTestMay2026, runFromAutomationButton:runFromAutomationButton, mountAutomationActions:mountAutomationActions, showPreview:showPreview, runStressTest:runStressTest };
 
-  document.addEventListener('DOMContentLoaded',function(){ setInterval(mountAutomationActions,1200); });
-  window.addEventListener('alkam:cariler-loaded',function(){ setTimeout(mountAutomationActions,800); });
+  document.addEventListener('DOMContentLoaded',function(){ setInterval(mountAutomationActions,1200); setTimeout(loadDailySimpleMode,600); });
+  window.addEventListener('alkam:cariler-loaded',function(){ setTimeout(mountAutomationActions,800); setTimeout(loadDailySimpleMode,900); });
+  setTimeout(loadDailySimpleMode,1200);
   console.info('[ALKAM] Monthly accrual engine ready:',VERSION);
 })();
