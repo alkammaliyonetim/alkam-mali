@@ -13,6 +13,15 @@ Bu kontrol listesi tamamlanmadan PR ready/merge yapılmamalıdır.
 - [ ] Worker hata durumunda düz JSON hata cevabı dönüyor.
 - [ ] Response header içinde `cache-control: no-store` var.
 
+## Tek Tık Kurulum Kontrolü
+
+- [ ] `ALKAM-KUR.bat` mevcut.
+- [ ] `tools/alkam-check.ps1` mevcut.
+- [ ] `tools/alkam-test.ps1` mevcut.
+- [ ] `tools/alkam-report.ps1` mevcut.
+- [ ] `npm run test:pc-setup` başarılı.
+- [ ] Kurulum akışı sadece lokal kontrol, test ve rapor üretimi yapıyor.
+
 ## Muhasebe / Operasyon Güvenliği
 
 - [ ] Kesin cari kaydı oluşturmuyor.
@@ -27,14 +36,12 @@ Bu kontrol listesi tamamlanmadan PR ready/merge yapılmamalıdır.
 
 - [ ] KV namespace oluşturuldu.
 - [ ] `TG_QUEUE` binding tanımlandı.
-- [ ] `TELEGRAM_WEBHOOK_SECRET` Cloudflare secret olarak girildi.
-- [ ] `QUEUE_READ_SECRET` Cloudflare secret olarak girildi.
+- [ ] Gerekli Cloudflare gizli değerleri girildi.
 - [ ] `GET /` hazır cevabı veriyor.
-- [ ] Sahte update fixture ile doğru secret header kullanılarak webhook testi geçti.
-- [ ] Webhook secretsız 401 verdi.
-- [ ] `/queue` Bearer token ile okundu.
-- [ ] `/queue` admin header ile okundu.
-- [ ] `/queue` secretsız 401 verdi.
+- [ ] Sahte update fixture ile doğru header kullanılarak webhook testi geçti.
+- [ ] Webhook yetkisiz istekte 401 verdi.
+- [ ] `/queue` yetkili header ile okundu.
+- [ ] `/queue` yetkisiz istekte 401 verdi.
 - [ ] `/queue?secret=...` 401 verdi.
 
 ## Veri Kontrolü
