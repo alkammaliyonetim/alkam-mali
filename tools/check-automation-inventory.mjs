@@ -23,6 +23,13 @@ const checks = Object.fromEntries(expectedKeys.map((key) => [
   index.includes(`key:"${key}"`) && inventory.includes(key)
 ]));
 
+const domReadyHandlerMatch = accrualEngine.match(/document\.addEventListener\('DOMContentLoaded',[\s\S]*?\}\);/);
+const carilerLoadedHandlerMatch = accrualEngine.match(/window\.addEventListener\('alkam:cariler-loaded',[\s\S]*?\}\);/);
+const loadHandlers = [
+  domReadyHandlerMatch ? domReadyHandlerMatch[0] : '',
+  carilerLoadedHandlerMatch ? carilerLoadedHandlerMatch[0] : ''
+].join('\n');
+
 const safetyChecks = {
   automationDefaultsClosed: index.includes('enabled:false'),
   publishesFlags: index.includes('ALKAM_AUTOMATION_FLAGS'),
@@ -38,7 +45,7 @@ const safetyChecks = {
   monthlyEngineHasStressTest: accrualEngine.includes('stressTestMay2026'),
   monthlyEngineRequiresConfirm: accrualEngine.includes('confirm(message)'),
   monthlyEngineBlocksWhenToggleClosed: accrualEngine.includes('monthlyAccrual kapalı'),
-  monthlyEngineNoAutoApplyOnLoad: !accrualEngine.includes('setTimeout(applyMay2026') && !accrualEngine.includes('applyMay2026();'),
+  monthlyEngineNoAutoApplyOnLoad: !loadHandlers.includes('applyMay2026') && !loadHandlers.includes('runFromAutomationButton'),
   mayDateCorrect: accrualEngine.includes("var LINE_DATE = '2026-05-01'"),
   mayDescriptionCorrect: accrualEngine.includes('MAYIS 2026 YILI AYLIK MUHASEBE ÜCRETİ')
 };
