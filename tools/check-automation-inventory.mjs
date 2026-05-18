@@ -2,6 +2,8 @@ import fs from 'fs';
 
 const index = fs.readFileSync('index.html', 'utf8');
 const inventory = fs.readFileSync('docs/otomasyon-denetim-envanteri.md', 'utf8');
+const dataLayer = fs.readFileSync('alkam-cariler-data.js', 'utf8');
+const accrualEngine = fs.readFileSync('alkam-monthly-accrual-engine-v1.js', 'utf8');
 
 const expectedKeys = [
   'monthlyAccrual',
@@ -27,7 +29,18 @@ const safetyChecks = {
   requiresApproval: index.includes('ALKAM_REQUIRE_APPROVAL_FOR_FINANCIAL_MUTATION = true'),
   canDisableAll: index.includes('disableAllAutomation'),
   hasInventoryFile: inventory.includes('Otomasyon Denetim Envanteri'),
-  noExtraManualPanel: !inventory.includes('manualMayFinanceBox')
+  noDuplicateManualPanel: !accrualEngine.includes('manualMayFinanceBox'),
+  noSecondAutomationPanel: !accrualEngine.includes('automationPanel') || accrualEngine.includes('querySelector'),
+  loadsMayEngineFromDataLayer: dataLayer.includes('alkam-monthly-accrual-engine-v1.js'),
+  monthlyEngineExists: accrualEngine.includes('ALKAM_MONTHLY_ACCRUAL_ENGINE_V1'),
+  monthlyEngineTargetsExistingRow: accrualEngine.includes('[data-auto="monthlyAccrual"]'),
+  monthlyEngineHasPreview: accrualEngine.includes('previewMay2026'),
+  monthlyEngineHasStressTest: accrualEngine.includes('stressTestMay2026'),
+  monthlyEngineRequiresConfirm: accrualEngine.includes('confirm(message)'),
+  monthlyEngineBlocksWhenToggleClosed: accrualEngine.includes('monthlyAccrual kapalı'),
+  monthlyEngineNoAutoApplyOnLoad: !accrualEngine.includes('setTimeout(applyMay2026') && !accrualEngine.includes('applyMay2026();'),
+  mayDateCorrect: accrualEngine.includes("var LINE_DATE = '2026-05-01'"),
+  mayDescriptionCorrect: accrualEngine.includes('MAYIS 2026 YILI AYLIK MUHASEBE ÜCRETİ')
 };
 
 const all = { ...checks, ...safetyChecks };
