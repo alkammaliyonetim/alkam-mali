@@ -18,8 +18,14 @@ function extractMayPreviewSummary(text) {
   summary.lines = lines;
   for (const line of lines) {
     const normalized = line.replace(/\s+/g, ' ');
-    if (normalized.includes('Eksik Mayıs tahakkuk')) summary.missingMayAccrualLine = normalized;
-    if (normalized.includes('Toplam')) summary.totalAmountLine = normalized;
+    if (normalized.includes('Eksik Mayıs tahakkuk')) {
+      summary.missingMayAccrualLine = normalized;
+      summary.totalAmountLine = normalized;
+      const count = normalized.match(/(\d+)\s*kayıt/i);
+      const amount = normalized.match(/\/\s*([^/]+TL)/i);
+      if (count) summary.missingMayAccrualCount = Number(count[1]);
+      if (amount) summary.totalAmountText = amount[1].trim();
+    }
     if (normalized.includes('Var olan Mayıs tahakkuk')) summary.existingMayAccrualLine = normalized;
     if (normalized.includes('Atlanan cari')) summary.skippedCariLine = normalized;
     if (normalized.includes('Bu işlem kayıt yazmadı')) summary.noWriteLine = normalized;
@@ -134,7 +140,7 @@ try {
   if (!result.checks.mayPreviewRuns) result.errors.push('Mayıs ön izleme kayıt yazmadan çalışmadı.');
   if (!result.checks.mayPreviewShowsCounts) result.errors.push('Mayıs ön izleme sayım alanlarını göstermedi.');
   if (!result.preview.missingMayAccrualLine) result.errors.push('Mayıs ön izleme eksik tahakkuk satırını raporlamadı.');
-  if (!result.preview.totalAmountLine) result.errors.push('Mayıs ön izleme toplam tutar satırını raporlamadı.');
+  if (!result.preview.totalAmountText) result.errors.push('Mayıs ön izleme toplam tutarı ayrıştırmadı.');
   if (!result.preview.existingMayAccrualLine) result.errors.push('Mayıs ön izleme var olan tahakkuk satırını raporlamadı.');
   if (!result.preview.skippedCariLine) result.errors.push('Mayıs ön izleme atlanan cari satırını raporlamadı.');
   if (!result.checks.disableAllWorks) result.errors.push('Tüm otomatik işleri kapat çalışmadı.');
