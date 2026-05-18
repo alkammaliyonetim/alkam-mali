@@ -1,0 +1,44 @@
+name: TG Cloud Worker Tests
+
+on:
+  pull_request:
+    paths:
+      - 'workers/tg-cloud-worker.js'
+      - 'tools/test-tg-cloud-worker.mjs'
+      - 'tools/check-pc-setup-helper.mjs'
+      - 'ALKAM-KUR.bat'
+      - 'ALKAM-PC-KURULUM.bat'
+      - 'tools/alkam-check.ps1'
+      - 'tools/alkam-test.ps1'
+      - 'tools/alkam-report.ps1'
+      - 'tools/alkam-pc-setup.ps1'
+      - 'fixtures/tg-cloud-sample-update.json'
+      - 'package.json'
+      - '.github/workflows/tg-cloud-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tg-cloud-worker-tests:
+    name: Run TG Cloud simulation tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run TG Cloud tests
+        run: npm run test:tg-cloud
+
+      - name: Run one-click setup safety check
+        run: npm run test:pc-setup

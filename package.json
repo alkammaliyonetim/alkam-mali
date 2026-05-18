@@ -1,1 +1,1 @@
-{"scripts":{"tg:bot":"node tools/tg-bot-v3.mjs"},"dependencies":{"dotenv":"latest","node-telegram-bot-api":"latest"},"devDependencies":{}}
+{"scripts":{"tg:bot":"node tools/tg-bot-v3.mjs","test:tg-cloud":"node tools/test-tg-cloud-worker.mjs","tg-cloud:commands":"node tools/print-tg-cloud-preview-commands.mjs","test:pc-setup":"node tools/check-pc-setup-helper.mjs"},"dependencies":{"dotenv":"latest","node-telegram-bot-api":"latest"},"devDependencies":{}}

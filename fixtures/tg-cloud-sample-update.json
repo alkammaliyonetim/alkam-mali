@@ -1,0 +1,28 @@
+{
+  "update_id": 100000001,
+  "message": {
+    "message_id": 501,
+    "date": 1779020400,
+    "chat": {
+      "id": 123456789,
+      "type": "private",
+      "first_name": "Test"
+    },
+    "from": {
+      "id": 123456789,
+      "is_bot": false,
+      "first_name": "Test",
+      "last_name": "Kullanıcı",
+      "username": "test_kullanici",
+      "language_code": "tr"
+    },
+    "caption": "Gamze Eczanesi 17.05.2026 tahsilat 1.250,75 TL dekont",
+    "document": {
+      "file_id": "TEST_FILE_ID_DO_NOT_USE_REAL",
+      "file_unique_id": "TEST_UNIQUE_ID_DO_NOT_USE_REAL",
+      "file_name": "test-dekont.pdf",
+      "mime_type": "application/pdf",
+      "file_size": 12345
+    }
+  }
+}
