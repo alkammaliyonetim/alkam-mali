@@ -46,6 +46,12 @@ const safetyChecks = {
   monthlyEngineRequiresConfirm: accrualEngine.includes('confirm(message)'),
   monthlyEngineBlocksWhenToggleClosed: accrualEngine.includes('monthlyAccrual kapalı'),
   monthlyEngineNoAutoApplyOnLoad: !loadHandlers.includes('applyMay2026') && !loadHandlers.includes('runFromAutomationButton'),
+  monthlyEngineMountsInlineActions: accrualEngine.includes('monthlyAccrualInlineActions'),
+  monthlyEngineHasPreviewButton: accrualEngine.includes('Mayıs Ön İzleme') && accrualEngine.includes('showPreview()'),
+  monthlyEngineHasStressButton: accrualEngine.includes('Stres Testi') && accrualEngine.includes('runStressTest()'),
+  monthlyEngineHasApplyButton: accrualEngine.includes('Uygula') && accrualEngine.includes('runFromAutomationButton()'),
+  monthlyEngineHasPreviewBox: accrualEngine.includes('monthlyAccrualPreviewBox'),
+  monthlyPreviewDoesNotWrite: accrualEngine.includes('writesData:false'),
   mayDateCorrect: accrualEngine.includes("var LINE_DATE = '2026-05-01'"),
   mayDescriptionCorrect: accrualEngine.includes('MAYIS 2026 YILI AYLIK MUHASEBE ÜCRETİ')
 };
