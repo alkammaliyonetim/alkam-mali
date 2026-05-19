@@ -71,13 +71,17 @@ Kural: Otomatik kayıt yazmaz. Ön izleme + kullanıcı onayı olmadan cari hare
   function showPreview(){ var target=document.getElementById('monthlyAccrualPreviewBox'); var p=previewMay2026(); var html='<div class="empty" style="text-align:left"><strong>Ön İzleme</strong><br>Eksik Mayıs tahakkuk: '+p.missingCount+' kayıt / '+money(p.missingTotal)+'<br>Var olan Mayıs tahakkuk: '+p.existingCount+'<br>Atlanan cari: '+p.skippedCount+'<br>Bu işlem kayıt yazmadı.</div>'; if(target) target.innerHTML=html; return p; }
   function runStressTest(){ var target=document.getElementById('monthlyAccrualPreviewBox'); var r=stressTestMay2026(); if(target) target.innerHTML='<div class="empty" style="text-align:left"><strong>Stres Testi:</strong> '+(r.ok?'GEÇTİ':'KALDI')+'<br>Eksik: '+r.preview.missingCount+' kayıt / '+money(r.preview.missingTotal)+'<br>Hatalar: '+(r.errors.length?r.errors.join(', '):'-')+'</div>'; return r; }
 
-  function loadDailySimpleMode(){
-    if(document.getElementById('alkamSimpleDailyOpsLoader')) return;
+  function loadScriptOnce(id,src){
+    if(document.getElementById(id)) return;
     var s=document.createElement('script');
-    s.id='alkamSimpleDailyOpsLoader';
-    s.src='alkam-daily-ops-simple-v1.js?v=basit-gunluk-1';
+    s.id=id;
+    s.src=src;
     s.defer=true;
     document.body.appendChild(s);
+  }
+  function loadDailySimpleMode(){
+    loadScriptOnce('alkamSimpleDailyOpsLoader','alkam-daily-ops-simple-v1.js?v=basit-gunluk-1');
+    loadScriptOnce('alkamTelegramLiveLoader','alkam-telegram-live-v1.js?v=telegram-canli-1');
   }
 
   window.createMonthlyAccruals = runFromAutomationButton;
