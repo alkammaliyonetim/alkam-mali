@@ -82,6 +82,7 @@ Kural: Otomatik kayıt yazmaz. Ön izleme + kullanıcı onayı olmadan cari hare
   function loadDailySimpleMode(){
     loadScriptOnce('alkamSimpleDailyOpsLoader','alkam-daily-ops-simple-v1.js?v=basit-gunluk-1');
     loadScriptOnce('alkamTelegramLiveLoader','alkam-telegram-live-v1.js?v=telegram-canli-1');
+    loadScriptOnce('alkamCariTestGuardLoader','alkam-cari-test-guard-v1.js?v=alkam-cari-guard-1');
   }
 
   window.createMonthlyAccruals = runFromAutomationButton;
