@@ -10,6 +10,15 @@ Aynı klasörde alkam-cariler-77-28-04-2026.json dosyası da olmalı.
 
   const JSON_FILE = "alkam-cariler-77-28-04-2026.json";
 
+  function loadScriptOnce(src, id) {
+    if (document.getElementById(id)) return;
+    const script = document.createElement("script");
+    script.id = id;
+    script.src = src;
+    script.defer = true;
+    document.body.appendChild(script);
+  }
+
   function setEmpty(reason) {
     window.ALKAM_CARILER_DATA = [];
     window.ALKAM_CARILER_77_DATA = [];
@@ -23,6 +32,9 @@ Aynı klasörde alkam-cariler-77-28-04-2026.json dosyası da olmalı.
     };
     console.error("[ALKAM] Cari veri yüklenemedi:", reason);
   }
+
+  loadScriptOnce("alkam-monthly-accrual-engine-v1.js?v=mayis-2026-1", "alkamMonthlyAccrualEngineV1");
+  loadScriptOnce("alkam-daily-ops-v1.js?v=gunluk-operasyon-1", "alkamDailyOpsV1");
 
   fetch(JSON_FILE, { cache: "no-store" })
     .then(function (response) {

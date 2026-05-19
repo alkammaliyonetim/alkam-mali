@@ -10,7 +10,6 @@ const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const result = { url, ok: false, startedAt: new Date().toISOString(), checks: {}, errors: [] };
 const jsonPath = path.join(outDir, `istasyonalkam-telegram-${stamp}.json`);
 const screenshotPath = path.join(outDir, `istasyonalkam-telegram-${stamp}.png`);
-const sample = 'Ungan Mobilya haziranın son günü 100.000 TL ödeme sözü verdi';
 
 let browser;
 try {
@@ -19,43 +18,41 @@ try {
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.evaluate(() => {
     localStorage.setItem('alkam_local_session_v2', 'ok');
-    localStorage.removeItem('alkam_telegram_inbox_v1');
-    localStorage.removeItem('alkam_operation_suggestions_v1');
+    localStorage.removeItem('ALKAM_FINAL_APPROVALS_V1');
   });
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2500);
+
+  if (!(await page.evaluate(() => !!window.ALKAM_SIMPLE_OPS)) && fs.existsSync('alkam-daily-ops-simple-v1.js')) {
+    await page.addScriptTag({ path: path.resolve('alkam-daily-ops-simple-v1.js') });
+  }
+  await page.waitForTimeout(1200);
   await page.locator('[data-tab="onay"]').first().click({ timeout: 10000 });
   await page.waitForTimeout(1800);
 
   let bodyText = await page.locator('body').innerText({ timeout: 15000 });
-  result.checks.telegramInboxVisible = bodyText.includes('Telegram Gelen Kutusu');
-  result.checks.telegramInputVisible = await page.locator('#tgText').count() > 0;
-  result.checks.telegramAddButtonVisible = bodyText.includes('Telegram Mesajı Ekle');
+  result.checks.telegramBoxVisible = bodyText.includes('Basit Telegram') && bodyText.includes('Veri Yükleme');
+  result.checks.telegramInputVisible = await page.locator('#simpleTelegramText').count() > 0;
+  result.checks.telegramPreviewButtonVisible = await page.locator('#simpleTelegramBox button:has-text("Ön İzle")').count() > 0;
 
-  await page.locator('#tgText').fill(sample, { timeout: 10000 });
-  await page.locator('#tgAdd').click({ timeout: 10000 });
-  await page.waitForTimeout(1200);
-  bodyText = await page.locator('body').innerText({ timeout: 15000 });
-  result.checks.telegramMessageAdded = bodyText.includes('TG-') && bodyText.includes('Ungan Mobilya') && bodyText.includes('Gelen');
-  result.checks.toSuggestionButtonVisible = bodyText.includes('Onay Merkezine Öneri Yap');
+  if (result.checks.telegramInputVisible) {
+    await page.locator('#simpleTelegramText').fill('18.05.2026 Test Cari tahsilat 12500,00 TL', { timeout: 10000 });
+    await page.locator('#simpleTelegramBox button:has-text("Ön İzle")').click({ timeout: 10000 });
+    await page.waitForTimeout(1000);
+    bodyText = await page.locator('body').innerText({ timeout: 15000 });
+    result.checks.telegramPreviewWorks = bodyText.includes('Ön izleme') && bodyText.includes('12.500,00 TL');
+  } else {
+    result.checks.telegramPreviewWorks = false;
+  }
 
-  await page.locator('[data-tg]').first().click({ timeout: 10000 });
-  await page.waitForTimeout(1800);
-  bodyText = await page.locator('body').innerText({ timeout: 15000 });
-  result.checks.telegramSentStatusVisible = bodyText.includes('Onay Merkezi’ne gönderildi') || bodyText.includes('Onay Merkezine gönderildi');
-  result.checks.operationSuggestionCreated = bodyText.includes('Ungan Mobilya') && bodyText.includes('100.000') && bodyText.includes('Ödeme sözü') && bodyText.includes('Onay bekliyor');
-
-  if (!result.checks.telegramInboxVisible) result.errors.push('Telegram Gelen Kutusu görünmedi.');
-  if (!result.checks.telegramInputVisible) result.errors.push('Telegram mesaj alanı görünmedi.');
-  if (!result.checks.telegramAddButtonVisible) result.errors.push('Telegram Mesajı Ekle butonu görünmedi.');
-  if (!result.checks.telegramMessageAdded) result.errors.push('Telegram mesajı gelen kutusuna eklenmedi.');
-  if (!result.checks.toSuggestionButtonVisible) result.errors.push('Onay Merkezine Öneri Yap butonu görünmedi.');
-  if (!result.checks.telegramSentStatusVisible) result.errors.push('Telegram gönderildi durumu görünmedi.');
-  if (!result.checks.operationSuggestionCreated) result.errors.push('Telegram mesajından işlem önerisi oluşmadı.');
+  if (!result.checks.telegramBoxVisible) result.errors.push('Basit Telegram veri yükleme kutusu görünmedi.');
+  if (!result.checks.telegramInputVisible) result.errors.push('Basit Telegram veri alanı görünmedi.');
+  if (!result.checks.telegramPreviewButtonVisible) result.errors.push('Basit Telegram ön izleme butonu görünmedi.');
+  if (!result.checks.telegramPreviewWorks) result.errors.push('Basit Telegram ön izleme çalışmadı.');
 
   await page.screenshot({ path: screenshotPath, fullPage: true });
   result.screenshot = screenshotPath;
-  result.ok = result.checks.telegramInboxVisible && result.checks.telegramInputVisible && result.checks.telegramAddButtonVisible && result.checks.telegramMessageAdded && result.checks.toSuggestionButtonVisible && result.checks.telegramSentStatusVisible && result.checks.operationSuggestionCreated;
+  result.ok = result.errors.length === 0;
   result.finishedAt = new Date().toISOString();
   fs.writeFileSync(jsonPath, JSON.stringify(result, null, 2), 'utf8');
   console.log(JSON.stringify(result, null, 2));

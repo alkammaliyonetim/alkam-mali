@@ -7,9 +7,51 @@ const outDir = path.resolve('test-output');
 fs.mkdirSync(outDir, { recursive: true });
 
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-const result = { url, ok: false, startedAt: new Date().toISOString(), checks: {}, errors: [] };
+const result = { url, ok: false, startedAt: new Date().toISOString(), checks: {}, preview: {}, errors: [] };
 const jsonPath = path.join(outDir, `istasyonalkam-automation-${stamp}.json`);
 const screenshotPath = path.join(outDir, `istasyonalkam-automation-${stamp}.png`);
+const mayEnginePath = path.resolve('alkam-monthly-accrual-engine-v1.js');
+
+function extractMayPreviewSummary(text) {
+  const summary = { rawText: text };
+  const lines = text.split('\n').map((line) => line.trim()).filter(Boolean);
+  summary.lines = lines;
+  for (const line of lines) {
+    const normalized = line.replace(/\s+/g, ' ');
+    if (normalized.includes('Eksik Mayıs tahakkuk')) {
+      summary.missingMayAccrualLine = normalized;
+      summary.totalAmountLine = normalized;
+      const count = normalized.match(/(\d+)\s*kayıt/i);
+      const amount = normalized.match(/\/\s*([^/]+TL)/i);
+      if (count) summary.missingMayAccrualCount = Number(count[1]);
+      if (amount) summary.totalAmountText = amount[1].trim();
+    }
+    if (normalized.includes('Var olan Mayıs tahakkuk')) summary.existingMayAccrualLine = normalized;
+    if (normalized.includes('Atlanan cari')) summary.skippedCariLine = normalized;
+    if (normalized.includes('Bu işlem kayıt yazmadı')) summary.noWriteLine = normalized;
+  }
+  return summary;
+}
+
+async function ensureMayEngineMounted(page) {
+  const engineAlreadyLoaded = await page.evaluate(() => !!window.ALKAM_MONTHLY_ACCRUAL_ENGINE_V1);
+  result.checks.mayEngineAlreadyLoadedOnPreview = engineAlreadyLoaded;
+
+  if (!engineAlreadyLoaded && fs.existsSync(mayEnginePath)) {
+    await page.addScriptTag({ path: mayEnginePath });
+    result.checks.mayEngineInjectedFromPrBranch = true;
+  } else {
+    result.checks.mayEngineInjectedFromPrBranch = false;
+  }
+
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => {
+    if (window.ALKAM_MONTHLY_ACCRUAL_ENGINE_V1 && typeof window.ALKAM_MONTHLY_ACCRUAL_ENGINE_V1.mountAutomationActions === 'function') {
+      window.ALKAM_MONTHLY_ACCRUAL_ENGINE_V1.mountAutomationActions();
+    }
+  });
+  await page.waitForTimeout(1200);
+}
 
 let browser;
 try {
@@ -21,7 +63,8 @@ try {
   await page.waitForTimeout(2500);
 
   await page.locator('[data-tab="otomasyon"]').first().click({ timeout: 10000 });
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(2500);
+  await ensureMayEngineMounted(page);
 
   let bodyText = await page.locator('body').innerText({ timeout: 15000 });
   const switchCount = await page.locator('[data-auto]').count();
@@ -48,6 +91,34 @@ try {
   result.checks.defaultMutationsDisabled = flags.disableAccrual && flags.disableBankMatch && flags.disableBankPost && flags.disableMoka;
   result.checks.openAutomationCount = flags.openCount;
 
+  result.checks.monthlyAccrualInlineActionsVisible = await page.locator('#monthlyAccrualInlineActions').count() > 0;
+  result.checks.mayPreviewButtonVisible = await page.locator('button:has-text("Mayıs Ön İzleme")').count() > 0;
+  result.checks.mayStressButtonVisible = await page.locator('button:has-text("Stres Testi")').count() > 0;
+  result.checks.mayApplyButtonVisible = await page.locator('#monthlyAccrualInlineActions button:has-text("Uygula")').count() > 0;
+  result.checks.mayPreviewBoxVisible = await page.locator('#monthlyAccrualPreviewBox').count() > 0;
+
+  if (result.checks.mayStressButtonVisible) {
+    await page.locator('button:has-text("Stres Testi")').first().click({ timeout: 10000 });
+    await page.waitForTimeout(700);
+    bodyText = await page.locator('body').innerText({ timeout: 15000 });
+    result.checks.mayStressRuns = bodyText.includes('Stres Testi:') && bodyText.includes('GEÇTİ');
+  } else {
+    result.checks.mayStressRuns = false;
+  }
+
+  if (result.checks.mayPreviewButtonVisible) {
+    await page.locator('button:has-text("Mayıs Ön İzleme")').first().click({ timeout: 10000 });
+    await page.waitForTimeout(700);
+    bodyText = await page.locator('body').innerText({ timeout: 15000 });
+    const previewText = await page.locator('#monthlyAccrualPreviewBox').innerText({ timeout: 15000 });
+    result.preview = extractMayPreviewSummary(previewText);
+    result.checks.mayPreviewRuns = bodyText.includes('Ön İzleme') && bodyText.includes('Bu işlem kayıt yazmadı.');
+    result.checks.mayPreviewShowsCounts = bodyText.includes('Eksik Mayıs tahakkuk') && bodyText.includes('Var olan Mayıs tahakkuk') && bodyText.includes('Atlanan cari');
+  } else {
+    result.checks.mayPreviewRuns = false;
+    result.checks.mayPreviewShowsCounts = false;
+  }
+
   await page.locator('button:has-text("Tüm otomatik işleri kapat")').click({ timeout: 10000 });
   await page.waitForTimeout(1000);
   const afterFlags = await page.evaluate(() => window.ALKAM_AUTOMATION_FLAGS ? Object.values(window.ALKAM_AUTOMATION_FLAGS).filter(Boolean).length : -1);
@@ -60,11 +131,23 @@ try {
   if (!result.checks.flagsExists) result.errors.push('Otomasyon bayrakları yayımlanmadı.');
   if (!result.checks.requireApproval) result.errors.push('Finansal mutasyon onay zorunlu bayrağı true değil.');
   if (!result.checks.defaultMutationsDisabled) result.errors.push('Riskli otomasyonlar varsayılan kapalı değil.');
+  if (!result.checks.monthlyAccrualInlineActionsVisible) result.errors.push('Mayıs tahakkuk inline aksiyonları görünmedi.');
+  if (!result.checks.mayPreviewButtonVisible) result.errors.push('Mayıs Ön İzleme butonu görünmedi.');
+  if (!result.checks.mayStressButtonVisible) result.errors.push('Stres Testi butonu görünmedi.');
+  if (!result.checks.mayApplyButtonVisible) result.errors.push('Mayıs Uygula butonu görünmedi.');
+  if (!result.checks.mayPreviewBoxVisible) result.errors.push('Mayıs preview kutusu görünmedi.');
+  if (!result.checks.mayStressRuns) result.errors.push('Mayıs stres testi preview ortamında GEÇTİ sonucu vermedi.');
+  if (!result.checks.mayPreviewRuns) result.errors.push('Mayıs ön izleme kayıt yazmadan çalışmadı.');
+  if (!result.checks.mayPreviewShowsCounts) result.errors.push('Mayıs ön izleme sayım alanlarını göstermedi.');
+  if (!result.preview.missingMayAccrualLine) result.errors.push('Mayıs ön izleme eksik tahakkuk satırını raporlamadı.');
+  if (!result.preview.totalAmountText) result.errors.push('Mayıs ön izleme toplam tutarı ayrıştırmadı.');
+  if (!result.preview.existingMayAccrualLine) result.errors.push('Mayıs ön izleme var olan tahakkuk satırını raporlamadı.');
+  if (!result.preview.skippedCariLine) result.errors.push('Mayıs ön izleme atlanan cari satırını raporlamadı.');
   if (!result.checks.disableAllWorks) result.errors.push('Tüm otomatik işleri kapat çalışmadı.');
 
   await page.screenshot({ path: screenshotPath, fullPage: true });
   result.screenshot = screenshotPath;
-  result.ok = result.checks.automationTabVisible && result.checks.panelVisible && result.checks.ruleTextVisible && result.checks.hasAtLeastTenRules && result.checks.flagsExists && result.checks.requireApproval && result.checks.defaultMutationsDisabled && result.checks.disableAllWorks;
+  result.ok = result.errors.length === 0;
   result.finishedAt = new Date().toISOString();
   fs.writeFileSync(jsonPath, JSON.stringify(result, null, 2), 'utf8');
   console.log(JSON.stringify(result, null, 2));

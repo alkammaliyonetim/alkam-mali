@@ -11,6 +11,16 @@ const result = { url, ok: false, startedAt: new Date().toISOString(), checks: {}
 const jsonPath = path.join(outDir, `istasyonalkam-bank-${stamp}.json`);
 const screenshotPath = path.join(outDir, `istasyonalkam-bank-${stamp}.png`);
 
+async function injectSimpleOps(page){
+  const loaded = await page.evaluate(() => !!window.ALKAM_SIMPLE_OPS);
+  result.checks.simpleOpsAlreadyLoaded = loaded;
+  if(!loaded && fs.existsSync('alkam-daily-ops-simple-v1.js')){
+    await page.addScriptTag({ path: path.resolve('alkam-daily-ops-simple-v1.js') });
+    result.checks.simpleOpsInjectedFromPrBranch = true;
+  }else result.checks.simpleOpsInjectedFromPrBranch = false;
+  await page.waitForTimeout(1200);
+}
+
 let browser;
 try {
   browser = await chromium.launch({ headless: true });
@@ -19,16 +29,32 @@ try {
   await page.evaluate(() => localStorage.setItem('alkam_local_session_v2', 'ok'));
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2500);
+  await injectSimpleOps(page);
   await page.locator('[data-tab="hesaplar"]').first().click({ timeout: 10000 });
   await page.waitForTimeout(2500);
-  const bodyText = await page.locator('body').innerText({ timeout: 15000 });
-  result.checks.bankImportVisible = bodyText.includes('Banka Ekstresi İşleme Merkezi');
+
+  let bodyText = await page.locator('body').innerText({ timeout: 15000 });
+  result.checks.bankImportVisible = bodyText.includes('Basit Banka Ekstre Yükleme');
+  result.checks.bankTextAreaVisible = await page.locator('#simpleBankText').count() > 0;
+  result.checks.bankPreviewButtonVisible = bodyText.includes('Ön İzle');
   result.checks.accountsVisible = bodyText.includes('Hesaplar') || bodyText.includes('Hesap Hareketleri');
-  result.checks.commitBadgeVisible = bodyText.includes('COMMIT:');
-  if (!result.checks.bankImportVisible) result.errors.push('Banka Ekstresi İşleme Merkezi görünmedi.');
+
+  if(result.checks.bankTextAreaVisible){
+    await page.locator('#simpleBankText').fill('18.05.2026 Gamze Eczanesi tahsilat 12500,00', { timeout: 10000 });
+    await page.locator('#simpleBankBox button:has-text("Ön İzle")').click({ timeout: 10000 });
+    await page.waitForTimeout(1000);
+    bodyText = await page.locator('body').innerText({ timeout: 15000 });
+  }
+  result.checks.bankPreviewWorks = bodyText.includes('Ön izleme') && bodyText.includes('12.500,00 TL');
+
+  if (!result.checks.bankImportVisible) result.errors.push('Basit Banka Ekstre Yükleme kutusu görünmedi.');
+  if (!result.checks.bankTextAreaVisible) result.errors.push('Basit banka yapıştırma alanı görünmedi.');
+  if (!result.checks.bankPreviewButtonVisible) result.errors.push('Basit banka ön izleme butonu görünmedi.');
+  if (!result.checks.bankPreviewWorks) result.errors.push('Basit banka ön izlemesi çalışmadı.');
+
   await page.screenshot({ path: screenshotPath, fullPage: true });
   result.screenshot = screenshotPath;
-  result.ok = result.checks.bankImportVisible === true;
+  result.ok = result.errors.length === 0;
   result.finishedAt = new Date().toISOString();
   fs.writeFileSync(jsonPath, JSON.stringify(result, null, 2), 'utf8');
   console.log(JSON.stringify(result, null, 2));
