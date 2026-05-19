@@ -66,10 +66,11 @@ jobs:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/alkam-live-visual-check.mjs
 
-      - name: Run IstasyonALKAM approval posting stress
-        env:
-          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
-        run: node tools/istasyonalkam-approval-posting-stress.mjs
+      - name: Run IstasyonALKAM approval posting stress on checked-out branch
+        run: |
+          python3 -m http.server 4173 > /tmp/alkam-local-server.log 2>&1 &
+          sleep 2
+          ALKAM_TEST_URL=http://127.0.0.1:4173/ node tools/istasyonalkam-approval-posting-stress.mjs
 
       - name: Run IstasyonALKAM automation check
         env:
