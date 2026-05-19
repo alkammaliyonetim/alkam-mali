@@ -23,21 +23,21 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2500);
 
-  if (!(await page.evaluate(() => !!window.ALKAM_DAILY_OPS)) && fs.existsSync('alkam-daily-ops-v1.js')) {
-    await page.addScriptTag({ path: path.resolve('alkam-daily-ops-v1.js') });
+  if (!(await page.evaluate(() => !!window.ALKAM_SIMPLE_OPS)) && fs.existsSync('alkam-daily-ops-simple-v1.js')) {
+    await page.addScriptTag({ path: path.resolve('alkam-daily-ops-simple-v1.js') });
   }
   await page.waitForTimeout(1200);
   await page.locator('[data-tab="onay"]').first().click({ timeout: 10000 });
   await page.waitForTimeout(1800);
 
   let bodyText = await page.locator('body').innerText({ timeout: 15000 });
-  result.checks.telegramBoxVisible = bodyText.includes('Telegram') && bodyText.includes('Veri Yükleme');
-  result.checks.telegramInputVisible = await page.locator('#alkamTelegramText').count() > 0;
-  result.checks.telegramPreviewButtonVisible = bodyText.includes('Ön İzle');
+  result.checks.telegramBoxVisible = bodyText.includes('Basit Telegram') && bodyText.includes('Veri Yükleme');
+  result.checks.telegramInputVisible = await page.locator('#simpleTelegramText').count() > 0;
+  result.checks.telegramPreviewButtonVisible = await page.locator('#simpleTelegramBox button:has-text("Ön İzle")').count() > 0;
 
   if (result.checks.telegramInputVisible) {
-    await page.locator('#alkamTelegramText').fill('18.05.2026 Test Cari tahsilat 12500,00 TL', { timeout: 10000 });
-    await page.locator('button:has-text("Ön İzle")').first().click({ timeout: 10000 });
+    await page.locator('#simpleTelegramText').fill('18.05.2026 Test Cari tahsilat 12500,00 TL', { timeout: 10000 });
+    await page.locator('#simpleTelegramBox button:has-text("Ön İzle")').click({ timeout: 10000 });
     await page.waitForTimeout(1000);
     bodyText = await page.locator('body').innerText({ timeout: 15000 });
     result.checks.telegramPreviewWorks = bodyText.includes('Ön izleme') && bodyText.includes('12.500,00 TL');
@@ -45,10 +45,10 @@ try {
     result.checks.telegramPreviewWorks = false;
   }
 
-  if (!result.checks.telegramBoxVisible) result.errors.push('Telegram veri yükleme kutusu görünmedi.');
-  if (!result.checks.telegramInputVisible) result.errors.push('Telegram veri alanı görünmedi.');
-  if (!result.checks.telegramPreviewButtonVisible) result.errors.push('Telegram ön izleme butonu görünmedi.');
-  if (!result.checks.telegramPreviewWorks) result.errors.push('Telegram ön izleme çalışmadı.');
+  if (!result.checks.telegramBoxVisible) result.errors.push('Basit Telegram veri yükleme kutusu görünmedi.');
+  if (!result.checks.telegramInputVisible) result.errors.push('Basit Telegram veri alanı görünmedi.');
+  if (!result.checks.telegramPreviewButtonVisible) result.errors.push('Basit Telegram ön izleme butonu görünmedi.');
+  if (!result.checks.telegramPreviewWorks) result.errors.push('Basit Telegram ön izleme çalışmadı.');
 
   await page.screenshot({ path: screenshotPath, fullPage: true });
   result.screenshot = screenshotPath;
