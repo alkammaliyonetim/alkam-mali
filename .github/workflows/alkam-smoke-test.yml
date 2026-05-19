@@ -3,6 +3,7 @@ name: IstasyonALKAM Bot Preview Test
 on:
   push:
     branches:
+      - main
       - safe-bank-import-v1
       - luca-sync
       - luca-fix
@@ -12,9 +13,9 @@ on:
   workflow_dispatch:
     inputs:
       test_url:
-        description: 'Test edilecek ALKAM preview linki'
+        description: 'Test edilecek ALKAM linki'
         required: false
-        default: 'https://safe-bank-import-v1.alkam-mali.pages.dev/'
+        default: 'https://alkam-mali.pages.dev/'
 
 jobs:
   istasyonalkam-bot:
@@ -37,32 +38,32 @@ jobs:
 
       - name: Run IstasyonALKAM bank check
         env:
-          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-bank-check.mjs
 
       - name: Run IstasyonALKAM operation check
         env:
-          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-operation-check.mjs
 
       - name: Run IstasyonALKAM sample flow
         env:
-          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-operation-flow-check.mjs
 
       - name: Run IstasyonALKAM mobile cari check
         env:
-          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-mobile-cari-check.mjs
 
       - name: Run IstasyonALKAM Telegram check
         env:
-          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-telegram-check.mjs
 
       - name: Run IstasyonALKAM automation check
         env:
-          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://safe-bank-import-v1.alkam-mali.pages.dev/' }}
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-automation-check.mjs
 
       - name: Run IstasyonALKAM Luca sync check
