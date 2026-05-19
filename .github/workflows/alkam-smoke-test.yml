@@ -61,6 +61,11 @@ jobs:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-telegram-check.mjs
 
+      - name: Run ALKAM live visual check
+        env:
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
+        run: node tools/alkam-live-visual-check.mjs
+
       - name: Run IstasyonALKAM automation check
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
