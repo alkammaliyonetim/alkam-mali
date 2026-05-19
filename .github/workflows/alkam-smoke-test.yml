@@ -72,6 +72,10 @@ jobs:
           sleep 2
           ALKAM_TEST_URL=http://127.0.0.1:4173/ node tools/istasyonalkam-approval-posting-stress.mjs
 
+      - name: Run IstasyonALKAM approval end-to-end check on checked-out branch
+        run: |
+          ALKAM_TEST_URL=http://127.0.0.1:4173/ node tools/istasyonalkam-approval-end-to-end-check.mjs
+
       - name: Run IstasyonALKAM automation check
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
