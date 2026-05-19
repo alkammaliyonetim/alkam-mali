@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 
-const url = process.env.ALKAM_TEST_URL || 'https://safe-bank-import-v1.alkam-mali.pages.dev/';
+const url = process.env.ALKAM_TEST_URL || 'https://alkam-mali.pages.dev/';
 const outDir = path.resolve('test-output');
 fs.mkdirSync(outDir, { recursive: true });
 
@@ -21,34 +21,41 @@ try {
     localStorage.removeItem('ALKAM_FINAL_APPROVALS_V1');
   });
   await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(3500);
+
+  await page.locator('[data-tab="onay"]').first().click({ timeout: 10000 });
   await page.waitForTimeout(2500);
 
-  if (!(await page.evaluate(() => !!window.ALKAM_SIMPLE_OPS)) && fs.existsSync('alkam-daily-ops-simple-v1.js')) {
-    await page.addScriptTag({ path: path.resolve('alkam-daily-ops-simple-v1.js') });
-  }
-  await page.waitForTimeout(1200);
-  await page.locator('[data-tab="onay"]').first().click({ timeout: 10000 });
-  await page.waitForTimeout(1800);
-
   let bodyText = await page.locator('body').innerText({ timeout: 15000 });
-  result.checks.telegramBoxVisible = bodyText.includes('Basit Telegram') && bodyText.includes('Veri Yükleme');
-  result.checks.telegramInputVisible = await page.locator('#simpleTelegramText').count() > 0;
-  result.checks.telegramPreviewButtonVisible = await page.locator('#simpleTelegramBox button:has-text("Ön İzle")').count() > 0;
+  result.checks.liveTelegramBoxVisible = bodyText.includes('Telegram Canlı Mesaj Alma');
+  result.checks.liveTelegramKeyInputVisible = await page.locator('#tgBotKey').count() > 0;
+  result.checks.liveTelegramPullButtonVisible = await page.locator('#tgLiveBox button:has-text("Mesajları Çek")').count() > 0;
+  result.checks.liveTelegramPullPreviewButtonVisible = await page.locator('#tgLiveBox button:has-text("Çek ve Ön İzle")').count() > 0;
 
-  if (result.checks.telegramInputVisible) {
-    await page.locator('#simpleTelegramText').fill('18.05.2026 Test Cari tahsilat 12500,00 TL', { timeout: 10000 });
+  result.checks.simpleTelegramBoxVisible = bodyText.includes('Basit Telegram') && bodyText.includes('Veri Yükleme');
+  result.checks.simpleTelegramInputVisible = await page.locator('#simpleTelegramText').count() > 0;
+  result.checks.simpleTelegramPreviewButtonVisible = await page.locator('#simpleTelegramBox button:has-text("Ön İzle")').count() > 0;
+  result.checks.gamzeExampleRemoved = !(await page.locator('#simpleTelegramText').getAttribute('placeholder').catch(() => '') || '').includes('Gamze');
+
+  if (result.checks.simpleTelegramInputVisible) {
+    await page.locator('#simpleTelegramText').fill('18.05.2026 ORNEK CARI tahsilat 12500,00 TL', { timeout: 10000 });
     await page.locator('#simpleTelegramBox button:has-text("Ön İzle")').click({ timeout: 10000 });
     await page.waitForTimeout(1000);
     bodyText = await page.locator('body').innerText({ timeout: 15000 });
-    result.checks.telegramPreviewWorks = bodyText.includes('Ön izleme') && bodyText.includes('12.500,00 TL');
+    result.checks.simpleTelegramPreviewWorks = bodyText.includes('Ön izleme') && bodyText.includes('12.500,00 TL');
   } else {
-    result.checks.telegramPreviewWorks = false;
+    result.checks.simpleTelegramPreviewWorks = false;
   }
 
-  if (!result.checks.telegramBoxVisible) result.errors.push('Basit Telegram veri yükleme kutusu görünmedi.');
-  if (!result.checks.telegramInputVisible) result.errors.push('Basit Telegram veri alanı görünmedi.');
-  if (!result.checks.telegramPreviewButtonVisible) result.errors.push('Basit Telegram ön izleme butonu görünmedi.');
-  if (!result.checks.telegramPreviewWorks) result.errors.push('Basit Telegram ön izleme çalışmadı.');
+  if (!result.checks.liveTelegramBoxVisible) result.errors.push('Telegram Canlı Mesaj Alma kutusu görünmedi.');
+  if (!result.checks.liveTelegramKeyInputVisible) result.errors.push('Telegram canlı bot anahtarı alanı görünmedi.');
+  if (!result.checks.liveTelegramPullButtonVisible) result.errors.push('Mesajları Çek butonu görünmedi.');
+  if (!result.checks.liveTelegramPullPreviewButtonVisible) result.errors.push('Çek ve Ön İzle butonu görünmedi.');
+  if (!result.checks.simpleTelegramBoxVisible) result.errors.push('Basit Telegram veri yükleme kutusu görünmedi.');
+  if (!result.checks.simpleTelegramInputVisible) result.errors.push('Basit Telegram veri alanı görünmedi.');
+  if (!result.checks.simpleTelegramPreviewButtonVisible) result.errors.push('Basit Telegram ön izleme butonu görünmedi.');
+  if (!result.checks.gamzeExampleRemoved) result.errors.push('Gamze Eczanesi örneği ALKAM ekranında kalmış.');
+  if (!result.checks.simpleTelegramPreviewWorks) result.errors.push('Basit Telegram ön izleme çalışmadı.');
 
   await page.screenshot({ path: screenshotPath, fullPage: true });
   result.screenshot = screenshotPath;
