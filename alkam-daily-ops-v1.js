@@ -47,7 +47,16 @@
   function log(action,detail,level='Kaydedildi'){
     const list=readJson(LS.audit,[]); list.unshift({at:new Date().toISOString(),action,detail,level}); writeJson(LS.audit,list.slice(0,500));
   }
-  function refresh(){try{window.refreshAll?.();}catch(e){} try{window.renderCariList?.();}catch(e){}}
+  function refresh(){try{window.refreshAll?.();}catch(e){} try{window.renderCariList?.();}catch(e){} fixCariListIfStuck();}
+  function fixCariListIfStuck(){
+    const search=byId('cariSearch');
+    const list=byId('cariList');
+    const dataCount=Array.isArray(window.ALKAM_CARILER_DATA)?window.ALKAM_CARILER_DATA.length:readJson(LS.cariler,[]).length;
+    if(dataCount>0 && search && list && search.value && /bulunamad/i.test(list.textContent||'')){
+      search.value='';
+      try{window.renderCariList?.();}catch(e){}
+    }
+  }
 
   function ensureAccount(){
     const accounts=readJson(LS.accounts,[]);
@@ -84,6 +93,7 @@
   }
 
   function injectUi(){
+    fixCariListIfStuck();
     if(byId('alkamDailyOpsStyle')) return;
     const st=document.createElement('style'); st.id='alkamDailyOpsStyle';
     st.textContent='.alkam-ops-box{border:1px solid #dbe5f3;background:#fff;border-radius:14px;padding:14px;margin:0 0 16px;box-shadow:0 12px 28px rgba(15,23,42,.06)}.alkam-ops-box h2{margin:0 0 8px;font-size:18px;font-weight:950}.alkam-ops-help{font-size:12px;color:#64748b;font-weight:750;line-height:1.5;margin-bottom:10px}.alkam-ops-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.alkam-ops-area{width:100%;min-height:92px;border:1px solid #d8e1ef;border-radius:10px;padding:10px;font-weight:750}.alkam-ops-result{margin-top:10px;font-size:12px;line-height:1.55}.alkam-ops-warning{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;padding:9px;margin-top:8px;font-size:12px;font-weight:850}@media(max-width:900px){.alkam-ops-grid{grid-template-columns:1fr}}';
@@ -98,7 +108,7 @@
     const onay=byId('tab-onay');
     if(onay && !byId('alkamTelegramBox')){
       const box=document.createElement('div'); box.id='alkamTelegramBox'; box.className='alkam-ops-box';
-      box.innerHTML=`<h2>📩 Telegram / WhatsApp Veri Yükleme</h2><div class="alkam-ops-help">Mesajları satır satır yapıştır veya TXT dosyası yükle. Cari adı ve tutar yakalanır; kesin işlem Onay Merkezi'ne düşer.</div><div class="alkam-ops-grid"><div><textarea id="alkamTelegramText" class="alkam-ops-area" placeholder="Örn: Gamze Eczanesi 24 adet ... / tahsilat 12.500 TL"></textarea><div class="btn-row" style="margin-top:8px"><button class="btn btn-blue" onclick="ALKAM_DAILY_OPS.previewTelegram()">Ön İzle</button><button class="btn btn-green" onclick="ALKAM_DAILY_OPS.importTelegram()">Onaya Al</button></div></div><div><input id="alkamTelegramFile" type="file" accept=".txt,.csv" class="search-input"><button class="btn btn-soft" style="margin-top:8px" onclick="ALKAM_DAILY_OPS.loadTelegramFile()">Dosyayı Oku</button></div></div><div id="alkamTelegramResult" class="alkam-ops-result"></div>`;
+      box.innerHTML=`<h2>📩 Telegram / WhatsApp Veri Yükleme</h2><div class="alkam-ops-help">Mesajları satır satır yapıştır veya TXT dosyası yükle. Cari adı ve tutar yakalanır; kesin işlem Onay Merkezi'ne düşer.</div><div class="alkam-ops-grid"><div><textarea id="alkamTelegramText" class="alkam-ops-area" placeholder="ALKAM CARİ tahsilat 12.500 TL"></textarea><div class="btn-row" style="margin-top:8px"><button class="btn btn-blue" onclick="ALKAM_DAILY_OPS.previewTelegram()">Ön İzle</button><button class="btn btn-green" onclick="ALKAM_DAILY_OPS.importTelegram()">Onaya Al</button></div></div><div><input id="alkamTelegramFile" type="file" accept=".txt,.csv" class="search-input"><button class="btn btn-soft" style="margin-top:8px" onclick="ALKAM_DAILY_OPS.loadTelegramFile()">Dosyayı Oku</button></div></div><div id="alkamTelegramResult" class="alkam-ops-result"></div>`;
       const list=byId('approvalList'); onay.insertBefore(box,list||onay.firstChild);
     }
   }
@@ -156,8 +166,9 @@
     writeJson(LS.approvals,ap); log('Telegram verisi onaya alındı',`${ops.telegramRows.length} öneri`); refresh(); toast('Telegram verisi Onay Merkezi’ne alındı.');
   }
 
-  function boot(){injectUi(); refresh();}
-  document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,800));
+  function boot(){injectUi(); refresh(); fixCariListIfStuck();}
+  document.addEventListener('DOMContentLoaded',()=>{setTimeout(boot,800);setInterval(fixCariListIfStuck,1500);});
   window.addEventListener('alkam:cariler-loaded',()=>setTimeout(boot,500));
   document.addEventListener('click',()=>setTimeout(injectUi,50),true);
+  document.addEventListener('input',()=>setTimeout(fixCariListIfStuck,120),true);
 })();
