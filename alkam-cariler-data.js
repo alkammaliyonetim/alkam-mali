@@ -35,6 +35,7 @@ Aynı klasörde alkam-cariler-77-28-04-2026.json dosyası da olmalı.
 
   loadScriptOnce("alkam-monthly-accrual-engine-v1.js?v=mayis-2026-1", "alkamMonthlyAccrualEngineV1");
   loadScriptOnce("alkam-daily-ops-v1.js?v=gunluk-operasyon-1", "alkamDailyOpsV1");
+  loadScriptOnce("alkam-approval-posting-guard-v1.js?v=1", "alkamApprovalPostingGuardV1");
 
   fetch(JSON_FILE, { cache: "no-store" })
     .then(function (response) {
