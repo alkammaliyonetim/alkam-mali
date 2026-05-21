@@ -1295,12 +1295,15 @@
   window.toggleAuditPanel=function(){const p=byId("auditPanel");p.classList.toggle("open");renderAuditList();};
 
   function balancePrintClass(v){const n=num(v);return n>0.01?"debit":n<-0.01?"credit":"zero";}
+  function balanceSideText(v){const n=num(v);if(Math.abs(n)<0.01)return"Bakiye";return n>=0?"Bakiye B":"Bakiye A";}
   function printDateTime(){return new Date().toLocaleString("tr-TR",{dateStyle:"short",timeStyle:"short"});}
   function buildCariStatementPrintHtml(c){
     const rows=statementRowsNewestFirst(c), meta=totals(c), finalClass=balancePrintClass(meta.bal);
     const logoUrl=new URL("alkamlogo-v2.jpeg", location.href).href;
+    const refNo=`ALKAM-${String(c.code||c.id||"CARI").replace(/[^A-Za-z0-9]/g,"").slice(0,12)}-${today().replaceAll("-","")}`;
     const periodStart=rows.length?rows[rows.length-1].date:"-";
     const periodEnd=rows.length?rows[0].date:"-";
+    const finalSide=balanceSideText(meta.bal);
     const rowHtml=rows.map(t=>`<tr>
       <td>${esc(t.docNo||t.id||t.statementIndex||"-")}</td>
       <td>${esc(t.date)}</td>
@@ -1322,15 +1325,18 @@
       .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}.metric{border:1px solid #d8e1ee;border-radius:8px;padding:9px;background:#fff}.metric .k{font-size:10px;color:#64748b;text-transform:uppercase;font-weight:900}.metric .v{font-size:15px;font-weight:900;margin-top:5px;color:#0f172a}.metric.final{border:2px solid #0b2d57;background:#eef6ff}.metric.final.debit{border-color:#dc2626;background:#fff1f2}.metric.final.credit{border-color:#059669;background:#ecfdf5}.metric.final .v{font-size:20px}
       .note{border:1px solid #d8e1ee;border-radius:8px;padding:8px;margin-bottom:10px;text-align:center;font-weight:800;color:#334155;background:#f8fafc}
       table{width:100%;border-collapse:collapse;table-layout:fixed}th{background:#0b2d57;color:white;padding:7px 6px;font-size:10px;text-align:left}td{padding:7px 6px;border-bottom:1px solid #e4ebf5;vertical-align:top;font-weight:700;color:#334155}tbody tr:nth-child(even){background:#fbfdff}.num{text-align:right;white-space:nowrap}.desc{word-break:break-word}.strong{font-weight:900;color:#0f172a}.source{display:inline-block;border:1px solid #bfdbfe;background:#eff6ff;color:#0b57d0;border-radius:999px;padding:2px 6px;font-size:9px;font-weight:900}
-      .foot{display:flex;justify-content:space-between;gap:12px;margin-top:14px;border-top:1px solid #d8e1ee;padding-top:8px;color:#64748b;font-weight:700}.sign{margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}.sign div{border-top:1px solid #94a3b8;text-align:center;padding-top:6px;color:#475569;font-weight:800}
-      @media print{.page{max-width:none}tr{break-inside:avoid}.top{break-after:avoid}.summary,.party{break-inside:avoid}}
+      .mutabakat{margin-top:12px;border:1px solid #d8e1ee;border-left:4px solid #0b2d57;border-radius:8px;padding:10px;background:#fbfdff;color:#334155;font-weight:800;line-height:1.45}.mutabakat b{color:#0f172a}
+      .foot{display:flex;justify-content:space-between;gap:12px;margin-top:14px;border-top:1px solid #d8e1ee;padding-top:8px;color:#64748b;font-weight:700}.sign{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:28px}.sign div{border-top:1px solid #94a3b8;text-align:center;padding-top:6px;color:#475569;font-weight:800}
+      .page-no:after{content:counter(page)}
+      @media print{.page{max-width:none}tr{break-inside:avoid}.top{break-after:avoid}.summary,.party,.mutabakat{break-inside:avoid}}
     </style></head><body><div class="page">
-      <header class="top"><div class="brand"><img src="${logoUrl}" alt="ALKAM Mali Müşavirlik"><div><h1>ALKAM Mali Müşavirlik</h1><p>Profesyonel cari hesap ekstresi</p></div></div><div class="doc-title"><h2>CARİ EKSTRE</h2><p>Düzenleme: ${esc(printDateTime())}</p></div></header>
-      <section class="party"><div class="box"><h3>Cari Bilgileri</h3><div class="name">${esc(c.name)}</div><div class="line"><span>Cari Kod</span><b>${esc(c.code||"-")}</b></div><div class="line"><span>Tür</span><b>${esc(c.type||"Cari Ekstre")}</b></div><div class="line"><span>Durum</span><b>${esc(c.status||"Aktif")}</b></div></div><div class="box"><h3>Ekstre Bilgileri</h3><div class="line"><span>Dönem</span><b>${esc(periodStart)} / ${esc(periodEnd)}</b></div><div class="line"><span>Hareket Sayısı</span><b>${rows.length}</b></div><div class="line"><span>Son İşlem</span><b>${esc(meta.last||"-")}</b></div><div class="line"><span>Aylık Ücret</span><b>${money(c.monthlyFee)}</b></div></div></section>
-      <section class="summary"><div class="metric final ${finalClass}"><div class="k">Son Bakiye</div><div class="v">${balanceLabel(meta.bal)}</div></div><div class="metric"><div class="k">Toplam Borç</div><div class="v">${money(meta.debit)}</div></div><div class="metric"><div class="k">Toplam Alacak</div><div class="v">${money(meta.credit)}</div></div><div class="metric"><div class="k">Kayıt Kaynağı</div><div class="v">${esc(state.dataSource||"-")}</div></div></section>
+      <header class="top"><div class="brand"><img src="${logoUrl}" alt="ALKAM Mali Müşavirlik"><div><h1>ALKAM Mali Müşavirlik</h1><p>Profesyonel cari hesap ekstresi</p></div></div><div class="doc-title"><h2>CARİ EKSTRE</h2><p>Ref: ${esc(refNo)}</p><p>Düzenleme: ${esc(printDateTime())}</p></div></header>
+      <section class="party"><div class="box"><h3>Cari Bilgileri</h3><div class="name">${esc(c.name)}</div><div class="line"><span>Cari Kod</span><b>${esc(c.code||"-")}</b></div><div class="line"><span>Tür</span><b>${esc(c.type||"Cari Ekstre")}</b></div><div class="line"><span>Durum</span><b>${esc(c.status||"Aktif")}</b></div></div><div class="box"><h3>Ekstre Bilgileri</h3><div class="line"><span>Dönem</span><b>${esc(periodStart)} / ${esc(periodEnd)}</b></div><div class="line"><span>Hareket Sayısı</span><b>${rows.length}</b></div><div class="line"><span>Son İşlem</span><b>${esc(meta.last||"-")}</b></div><div class="line"><span>Bakiye Türü</span><b>${esc(finalSide)}</b></div><div class="line"><span>Aylık Ücret</span><b>${money(c.monthlyFee)}</b></div></div></section>
+      <section class="summary"><div class="metric final ${finalClass}"><div class="k">Son ${esc(finalSide)}</div><div class="v">${balanceLabel(meta.bal)}</div></div><div class="metric"><div class="k">Toplam Borç</div><div class="v">${money(meta.debit)}</div></div><div class="metric"><div class="k">Toplam Alacak</div><div class="v">${money(meta.credit)}</div></div><div class="metric"><div class="k">Kayıt Kaynağı</div><div class="v">${esc(state.dataSource||"-")}</div></div></section>
       <div class="note">Kaynak kolonu zorunludur. En yakın tarih en üstte gösterilir. Bakiye işarete göre Bakiye B veya Bakiye A gösterilir.</div>
       <table><thead><tr><th style="width:13%">İşlem No</th><th style="width:10%">Tarih</th><th style="width:11%">Kaynak</th><th style="width:10%">Tip</th><th>Açıklama</th><th style="width:12%" class="num">Borç</th><th style="width:12%" class="num">Alacak</th><th style="width:14%" class="num">Bakiye</th></tr></thead><tbody>${rowHtml||`<tr><td colspan="8" style="text-align:center;padding:20px">Hareket yok.</td></tr>`}</tbody></table>
-      <div class="foot"><span>Bu ekstre ALKAM Mali sistemi tarafından hazırlanmıştır.</span><span>${esc(c.name)} · ${rows.length} kayıt</span></div><div class="sign"><div>Hazırlayan</div><div>Kontrol / Onay</div></div>
+      <div class="mutabakat">Mutabakat notu: Bu cari ekstre, sistemde kayıtlı ana veri ve onaylı hareketlere göre hazırlanmıştır. Son durum <b>${esc(balanceLabel(meta.bal))}</b> olarak görünmektedir. Farklılık varsa belge ve dekontlarla birlikte kontrol edilmelidir.</div>
+      <div class="foot"><span>Bu ekstre ALKAM Mali sistemi tarafından hazırlanmıştır.</span><span>${esc(c.name)} · ${rows.length} kayıt · Sayfa <span class="page-no"></span></span></div><div class="sign"><div>Hazırlayan</div><div>Kontrol / Onay</div></div>
     </div><script>window.addEventListener("load",()=>setTimeout(()=>window.print(),250));<\/script></body></html>`;
   }
   window.printSelectedCari=function(){
