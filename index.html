@@ -64,6 +64,7 @@
     .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.62);backdrop-filter:blur(8px);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}.modal-card{width:min(920px,96vw);max-height:90vh;overflow:auto;background:#fff;border:1px solid var(--line);box-shadow:0 35px 90px rgba(15,23,42,.34);border-radius:22px;padding:20px}.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}.modal-head h2{margin:0;font-size:24px;font-weight:950}
     .toast{position:fixed;right:16px;bottom:16px;z-index:999999;background:#0f172a;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);font-size:13px;font-weight:850;display:none;max-width:420px}
     .auto-row{border:1px solid #e2e8f0;border-radius:13px;background:#fbfdff;padding:11px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:8px}.auto-name{font-size:13px;font-weight:950;color:#0f172a}.auto-desc{font-size:11.5px;font-weight:750;color:#64748b;line-height:1.45;margin-top:4px}.auto-risk{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;margin-top:7px;font-size:10px;font-weight:950;border:1px solid #fed7aa;background:#fff7ed;color:#c2410c}
+    .ops-panel{display:grid;gap:12px;margin-bottom:14px}.ops-panel textarea{min-height:96px}.inline-check{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:850;color:#334155;margin:0 0 12px}.inline-check input{width:auto;min-height:auto}.mini-list{display:grid;gap:7px}.mini-row{border:1px solid #e2e8f0;background:#fbfdff;border-radius:11px;padding:9px;font-size:12px;font-weight:750;color:#334155;line-height:1.45}
     .switch{position:relative;display:inline-block;width:78px;height:34px}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;border-radius:999px;transition:.18s}.slider:before{position:absolute;content:"";height:26px;width:26px;left:4px;top:4px;background:white;border-radius:50%;transition:.18s;box-shadow:0 3px 10px rgba(15,23,42,.18)}.switch input:checked+.slider{background:#059669}.switch input:checked+.slider:before{transform:translateX(44px)}.switch-text{display:block;text-align:center;font-size:10px;font-weight:950;margin-top:4px;color:#475569}
     .audit-panel{position:fixed;left:14px;bottom:14px;width:410px;max-width:calc(100vw - 28px);max-height:360px;overflow:auto;background:rgba(255,255,255,.97);border:1px solid #dbe5f3;border-radius:16px;box-shadow:0 20px 55px rgba(15,23,42,.22);z-index:80;padding:12px;display:none}.audit-panel.open{display:block}.audit-title{font-size:14px;font-weight:950;margin-bottom:8px}.audit-item{font-size:11px;border-top:1px solid #edf2f7;padding:7px 0;line-height:1.35}
     @media(max-width:1280px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto;width:auto;min-width:0}.grid-2,.grid-3,.grid-4,.cards,.toolbar{grid-template-columns:1fr}.cari-list-scroll,.cari-detail-scroll{max-height:none}.erp-modulebar{position:relative}.login-shell{grid-template-columns:1fr}.login-side-brand{min-height:250px}}
@@ -190,6 +191,7 @@
         <div class="page-head"><h1>Onay Merkezi</h1><p>Önerilen cari, hareket tipi, tutar, güven puanı ve eşleşme sebebi görünür. Emin olunmayan kayıt cariye yazılmaz.</p></div>
         <div class="btn-row"><button class="btn btn-blue" onclick="openApprovalModal()">Onay Kaydı Ekle</button><button class="btn btn-soft" onclick="clearApproved()">Onaylananları Temizle</button></div>
       </div>
+      <div id="telegramPanel" class="section"></div>
       <div id="approvalList" class="section"></div>
     </section>
 
@@ -198,6 +200,7 @@
         <div class="page-head"><h1>Otomasyon Kontrol Merkezi</h1><p>Varsayılan durum: finansal/muhasebesel otomatik işler kapalıdır. Bir tıkla “Otomatik” veya “Kapalı” yapılabilir.</p></div>
         <div class="btn-row"><button class="btn btn-red" onclick="disableAllAutomation()">Tüm otomatik işleri kapat</button><button class="btn btn-blue" onclick="renderAutomation()">Paneli yenile</button><button class="btn btn-soft" onclick="clearAutomationPending()">Onay bekleyenleri temizle</button></div>
       </div>
+      <div class="section" id="accrualPanel"></div>
       <div class="section" id="automationPanel"></div>
     </section>
 
@@ -276,6 +279,11 @@
       <div class="field"><label>Kaynak</label><select id="accSource"><option>Manuel</option><option>Banka</option><option>Moka United</option><option>Kasa</option></select></div>
       <div class="field"><label>Açıklama</label><input id="accDesc" /></div>
     </div>
+    <div class="grid-3">
+      <div class="field"><label>Cari Bağlantısı</label><select id="accCari"><option value="">Cari seçilmedi</option></select></div>
+      <div class="field"><label>Cari İşlem Tipi</label><select id="accCariType"><option value="Tahsilat">Tahsilat / Alacak</option><option value="Tahakkuk">Tahakkuk / Borç</option></select></div>
+      <div class="field"><label>Güvenli Aktarım</label><label class="inline-check"><input id="accPostCari" type="checkbox" /> Bu hesap hareketini cariye de işle</label></div>
+    </div>
     <button class="btn btn-blue" onclick="saveAccountTxn()">Kaydet</button>
   </div>
 </div>
@@ -312,6 +320,7 @@
     accounts:"ALKAM_FINAL_ACCOUNTS_V1",
     accountTxns:"ALKAM_FINAL_ACCOUNT_TXNS_V1",
     approvals:"ALKAM_FINAL_APPROVALS_V1",
+    telegram:"ALKAM_FINAL_TELEGRAM_INBOX_V1",
     automation:"ALKAM_FINAL_AUTOMATION_V1",
     pendingAuto:"ALKAM_FINAL_AUTOMATION_PENDING_V1",
     audit:"ALKAM_FINAL_AUDIT_V1",
@@ -352,6 +361,7 @@
     accounts: readJson(LS.accounts, defaultAccounts),
     accountTxns: readJson(LS.accountTxns, []),
     approvals: readJson(LS.approvals, []),
+    telegramMessages: readJson(LS.telegram, []),
     automation: readJson(LS.automation, initAutomation()),
     selectedCariId: null,
     dataSource: "Yükleniyor",
@@ -516,7 +526,7 @@
   };
 
   window.refreshAll = function(){
-    renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderApprovals(); renderAutomation(); renderReports(); renderAuditList(); fillSelects();
+    renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderTelegramPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects();
   };
 
   function renderDashboard(){
@@ -591,6 +601,7 @@
   function fillSelects(){
     const cariOpts=state.cariler.filter(c=>!c.deleted).map(c=>`<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
     ["txCari","apCari"].forEach(id=>{const el=byId(id); if(el) el.innerHTML=cariOpts;});
+    const accCari=byId("accCari"); if(accCari) accCari.innerHTML=`<option value="">Cari seçilmedi</option>${cariOpts}`;
     const accOpts=state.accounts.map(a=>`<option value="${esc(a.id)}">${esc(a.name)}</option>`).join("");
     const acc=byId("accName"); if(acc) acc.innerHTML=accOpts;
   }
@@ -713,14 +724,26 @@
       const bal=tx.filter(t=>t.accountId===a.id).reduce((s,t)=>s+(t.dir==="giris"?num(t.amount):-num(t.amount)),0);
       return `<div class="card"><div class="card-label">${esc(a.type)}</div><div class="card-value">${money(bal)}</div><p class="muted-note">${esc(a.name)}</p></div>`;
     }).join("");
-    byId("accountTxns").innerHTML=tx.length?`<table><thead><tr><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Kaynak</th><th>Açıklama</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${tx.slice().reverse().map(t=>`<tr><td>${esc(t.date)}</td><td>${esc((state.accounts.find(a=>a.id===t.accountId)||{}).name||t.accountId)}</td><td>${esc(t.dir)}</td><td>${esc(t.source||"-")}</td><td>${esc(t.desc||"")}</td><td class="text-right money">${money(t.amount)}</td><td><button class="btn btn-red" onclick="deleteAccountTxn('${t.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Hesap hareketi yok.</div>`;
+    byId("accountTxns").innerHTML=tx.length?`<table><thead><tr><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Kaynak</th><th>Cari</th><th>Açıklama</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${tx.slice().reverse().map(t=>{const linked=state.cariler.find(c=>c.id===t.cariId);return`<tr><td>${esc(t.date)}</td><td>${esc((state.accounts.find(a=>a.id===t.accountId)||{}).name||t.accountId)}</td><td>${esc(t.dir)}</td><td>${esc(t.source||"-")}</td><td>${linked?esc(linked.name):"-"} ${t.postedToCari?'<span class="tag green">Cariye işlendi</span>':""}</td><td>${esc(t.desc||"")}</td><td class="text-right money">${money(t.amount)}</td><td><button class="btn btn-red" onclick="deleteAccountTxn('${t.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Hesap hareketi yok.</div>`;
   }
 
   window.seedMoka=function(){if(!state.accounts.some(a=>a.id==="moka-united"))state.accounts.push({id:"moka-united",name:"Moka United",type:"moka_united"});writeJson(LS.accounts,state.accounts);renderAccounts();notify("Moka United hesabı hazır.");};
-  window.openAccountModal=function(){fillSelects();byId("accDate").value=today();byId("accAmount").value="";byId("accDesc").value="";openModal("accountModal");};
+  window.openAccountModal=function(){fillSelects();byId("accDate").value=today();byId("accAmount").value="";byId("accDesc").value="";byId("accCari").value="";byId("accPostCari").checked=false;byId("accCariType").value="Tahsilat";openModal("accountModal");};
   window.saveAccountTxn=function(){
-    const row={id:uid("ACC"),accountId:byId("accName").value,date:byId("accDate").value||today(),dir:byId("accDir").value,amount:num(byId("accAmount").value),source:byId("accSource").value,desc:byId("accDesc").value};
+    const row={id:uid("ACC"),accountId:byId("accName").value,date:byId("accDate").value||today(),dir:byId("accDir").value,amount:num(byId("accAmount").value),source:byId("accSource").value,desc:byId("accDesc").value,cariId:byId("accCari").value||"",postedToCari:false};
+    if(row.amount<=0) return notify("Hesap hareketi tutarı sıfır olamaz.");
     state.accountTxns.push(row); writeJson(LS.accountTxns,state.accountTxns);
+    if(byId("accPostCari").checked && row.cariId){
+      const cariType=byId("accCariType").value;
+      const credit = cariType==="Tahsilat" ? row.amount : 0;
+      const debit = cariType==="Tahakkuk" ? row.amount : 0;
+      state.manualTxns.push({id:uid("ACC-CARI"),cariId:row.cariId,date:row.date,type:cariType.toUpperCase(),debit,credit,source:row.source||"Hesap Hareketi",description:row.desc||"Hesap hareketinden cari aktarım",docNo:row.id});
+      row.postedToCari=true;
+      writeJson(LS.manual,state.manualTxns);
+      writeJson(LS.accountTxns,state.accountTxns);
+      state.selectedCariId=row.cariId;
+      logAudit("Hesap hareketi cariye işlendi", `${row.source} · ${money(row.amount)}`);
+    }
     logAudit("Hesap hareketi kaydedildi", `${row.accountId} · ${money(row.amount)}`);
     closeModal("accountModal"); refreshAll(); notify("Hesap hareketi kaydedildi.");
   };
@@ -733,11 +756,74 @@
     logAudit("Onay kaydı eklendi", `${row.type} · ${money(row.amount)} · ${row.score}%`);
     closeModal("approvalModal"); refreshAll();
   };
+
+  function cleanText(v){
+    return String(v||"").toLocaleLowerCase("tr-TR").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim();
+  }
+  function detectAmount(text){
+    const matches = String(text||"").match(/\d{1,3}(?:[.\s]\d{3})*(?:,\d{2})?|\d+(?:[.,]\d{2})?/g) || [];
+    const values = matches.map(x=>num(x)).filter(x=>x>0 && x<100000000);
+    return values.length ? Math.max(...values) : 0;
+  }
+  function detectCari(text){
+    const cleaned = cleanText(text);
+    let best = null;
+    for(const c of state.cariler.filter(x=>!x.deleted)){
+      const name = cleanText(c.name);
+      const code = cleanText(c.code);
+      const tokens = name.split(" ").filter(x=>x.length>2);
+      let score = 0;
+      if(name && cleaned.includes(name)) score = 95;
+      else if(code && cleaned.includes(code)) score = 90;
+      else if(tokens.length >= 2 && cleaned.includes(tokens[0]) && cleaned.includes(tokens[1])) score = 82;
+      else if(tokens[0] && cleaned.includes(tokens[0])) score = 58;
+      if(score && (!best || score > best.score)) best = {cari:c, score};
+    }
+    return best;
+  }
+  function detectApprovalType(text){
+    const s = cleanText(text);
+    if(/tahakkuk|fatura|ucret|defter/.test(s)) return "Tahakkuk";
+    if(/moka|pos/.test(s)) return "Moka United";
+    return "Tahsilat";
+  }
+  function renderTelegramPanel(){
+    const el=byId("telegramPanel"); if(!el) return;
+    const recent=state.telegramMessages.slice(0,8);
+    el.innerHTML=`
+      <h2 class="section-title">Telegram İletişim Kutusu</h2>
+      <div class="rule-box" style="margin-bottom:12px">Telegram mesajı buraya yapıştırılır; sistem cari, tutar, hareket tipi ve güven puanını önerir. Onay verilmeden cariye yazılmaz.</div>
+      <div class="ops-panel">
+        <textarea id="telegramText" class="search-input" placeholder="Örnek: Ahmet Tamer 4000 TL ödeme yaptı / dekont gönderdi"></textarea>
+        <div class="btn-row"><button class="btn btn-blue" onclick="addTelegramApproval()">Mesajı Onaya Çevir</button><button class="btn btn-soft" onclick="clearTelegramBox()">Kutuyu Temizle</button></div>
+      </div>
+      <div class="mini-list">${recent.length?recent.map(m=>`<div class="mini-row"><strong>${esc(m.type)}</strong> · ${money(m.amount)} · Güven ${m.score}%<br>${esc(m.cariName||"Cari eşleşmedi")}<br><span class="muted-note">${esc(m.text)}</span></div>`).join(""):`<div class="empty">Telegram mesaj geçmişi yok.</div>`}</div>`;
+  }
+  window.addTelegramApproval=function(){
+    const text=(byId("telegramText")?.value||"").trim();
+    if(!text) return notify("Telegram mesajı gir.");
+    const amount=detectAmount(text);
+    const match=detectCari(text);
+    const type=detectApprovalType(text);
+    const score=Math.min(100,(match?.score||35)+(amount>0?10:0));
+    const row={id:uid("TG"),text,amount,score,type,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",createdAt:new Date().toLocaleString("tr-TR")};
+    state.telegramMessages.unshift(row); state.telegramMessages=state.telegramMessages.slice(0,100); writeJson(LS.telegram,state.telegramMessages);
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:"Telegram",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt});
+    writeJson(LS.approvals,state.approvals);
+    logAudit("Telegram mesajı onaya aktarıldı", `${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)} · ${row.score}%`);
+    byId("telegramText").value="";
+    refreshAll();
+    notify("Telegram mesajı Onay Merkezi'ne eklendi.");
+  };
+  window.clearTelegramBox=function(){state.telegramMessages=[];writeJson(LS.telegram,state.telegramMessages);renderTelegramPanel();logAudit("Telegram kutusu temizlendi","Yerel mesaj geçmişi");};
+
   function renderApprovals(){
     byId("approvalList").innerHTML=state.approvals.length?`<table><thead><tr><th>Tarih</th><th>Önerilen Cari</th><th>Tip</th><th>Kaynak</th><th>Güven</th><th class="text-right">Tutar</th><th>Sebep</th><th>İşlem</th></tr></thead><tbody>${state.approvals.map(a=>{const c=state.cariler.find(x=>x.id===a.cariId);return`<tr><td>${esc(a.createdAt)}</td><td>${esc(c?.name||"-")}</td><td>${esc(a.type)}</td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td>${esc(a.reason||"")}</td><td>${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button> <button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`;
   }
   window.approveItem=function(id){
     const a=state.approvals.find(x=>x.id===id); if(!a) return;
+    if(!a.cariId || !state.cariler.some(c=>c.id===a.cariId && !c.deleted)) return notify("Onay için geçerli cari seçilmeli.");
+    if(num(a.amount)<=0) return notify("Onay tutarı sıfır olamaz.");
     const debit = a.type==="Tahakkuk" ? a.amount : 0;
     const credit = a.type==="Tahsilat" || a.type==="Moka United" ? a.amount : 0;
     state.manualTxns.push({id:uid("APP"),cariId:a.cariId,date:a.date||today(),type:a.type.toUpperCase(),debit,credit,source:a.source||"Onay Merkezi",description:a.reason||"Onay merkezi kaydı",docNo:"ONAY"});
@@ -748,6 +834,52 @@
   };
   window.rejectItem=function(id){const a=state.approvals.find(x=>x.id===id);if(!a)return;a.status="Reddedildi";writeJson(LS.approvals,state.approvals);logAudit("Onay kaydı reddedildi", a.reason||id, "Reddedildi");refreshAll();};
   window.clearApproved=function(){state.approvals=state.approvals.filter(a=>a.status==="Bekliyor");writeJson(LS.approvals,state.approvals);refreshAll();};
+
+  function periodInputDefault(){return today().slice(0,7);}
+  function periodDate(period){return (period||periodInputDefault())+"-01";}
+  function periodName(period){
+    const d=new Date(periodDate(period)+"T12:00:00");
+    return d.toLocaleDateString("tr-TR",{month:"long",year:"numeric"}).toLocaleUpperCase("tr-TR");
+  }
+  function accrualExists(c, period, amount){
+    return allTxns(c).some(t=>{
+      const samePeriod=String(t.date||"").slice(0,7)===period;
+      const sameAmount=Math.abs(num(t.debit)-num(amount))<0.01;
+      const isAccrual=String(t.type||"").toLocaleLowerCase("tr-TR").includes("tahakkuk") || String(t.source||"").toLocaleLowerCase("tr-TR").includes("tahakkuk");
+      return samePeriod && sameAmount && isAccrual;
+    }) || state.approvals.some(a=>a.status==="Bekliyor" && a.cariId===c.id && a.type==="Tahakkuk" && String(a.date||"").slice(0,7)===period && Math.abs(num(a.amount)-num(amount))<0.01);
+  }
+  function monthlyAccrualCandidates(){
+    const period=byId("accrualPeriod")?.value || periodInputDefault();
+    return state.cariler.filter(c=>!c.deleted).map(c=>({c,amount:num(c.monthlyFee),period})).filter(x=>x.amount>0 && !accrualExists(x.c,x.period,x.amount));
+  }
+  function renderAccrualPanel(){
+    const el=byId("accrualPanel"); if(!el) return;
+    const period=byId("accrualPeriod")?.value || periodInputDefault();
+    const rows=monthlyAccrualCandidates();
+    const total=rows.reduce((s,x)=>s+x.amount,0);
+    el.innerHTML=`
+      <h2 class="section-title">Aylık Tahakkuk Önizleme</h2>
+      <div class="rule-box" style="margin-bottom:12px">Bu işlem doğrudan cari ekstresine yazmaz. Aktif ücret bulunan cariler için ${esc(periodName(period))} tahakkuk adaylarını Onay Merkezi'ne gönderir; mükerrer dönem/tutar kontrolü yapılır.</div>
+      <div class="grid-3">
+        <div class="field"><label>Dönem</label><input id="accrualPeriod" type="month" value="${esc(period)}" onchange="renderAccrualPanel()" /></div>
+        <div class="metric-mini"><div class="k">Aday Cari</div><div class="v">${rows.length}</div></div>
+        <div class="metric-mini"><div class="k">Toplam Tahakkuk</div><div class="v">${money(total)}</div></div>
+      </div>
+      <div class="btn-row" style="margin:10px 0 12px"><button class="btn btn-green" onclick="sendMonthlyAccrualsToApproval()">Önizlemeyi Onaya Gönder</button><button class="btn btn-soft" onclick="renderAccrualPanel()">Yenile</button></div>
+      <div class="mini-list">${rows.length?rows.slice(0,12).map(x=>`<div class="mini-row"><strong>${esc(x.c.name)}</strong><br>${esc(periodName(x.period))} aylık muhasebe ücreti · ${money(x.amount)}</div>`).join(""):`<div class="empty">Bu dönem için yeni tahakkuk adayı yok. Ücretler sıfır olabilir veya kayıtlar zaten hazırlanmış olabilir.</div>`}</div>`;
+  }
+  window.sendMonthlyAccrualsToApproval=function(){
+    const rows=monthlyAccrualCandidates();
+    if(!rows.length) return notify("Onaya gönderilecek tahakkuk adayı yok.");
+    rows.forEach(x=>{
+      state.approvals.unshift({id:uid("APR-TAH"),cariId:x.c.id,amount:x.amount,score:100,type:"Tahakkuk",source:"Otomasyon Tahakkuk",date:periodDate(x.period),reason:`${periodName(x.period)} aylık muhasebe ücreti tahakkuku`,status:"Bekliyor",createdAt:new Date().toLocaleString("tr-TR")});
+    });
+    writeJson(LS.approvals,state.approvals);
+    logAudit("Aylık tahakkuk önizlemesi onaya aktarıldı", `${rows.length} cari · ${money(rows.reduce((s,x)=>s+x.amount,0))}`);
+    refreshAll();
+    notify(`${rows.length} tahakkuk adayı Onay Merkezi'ne eklendi.`);
+  };
 
   function renderAutomation(){
     const pending = readJson(LS.pendingAuto,[]);
