@@ -23,6 +23,7 @@
     .nav{display:flex;flex-direction:column;gap:7px}.nav:before{content:"ANA MENÜ";display:block;color:rgba(255,255,255,.55);font-size:10px;font-weight:950;letter-spacing:.08em;margin:2px 7px 3px}
     .nav-btn{height:38px;border:0;border-radius:9px;background:rgba(255,255,255,.08);color:#fff;font-size:12px;font-weight:850;text-align:left;padding:0 10px;cursor:pointer;display:flex;align-items:center;gap:8px}
     .nav-btn.active,.nav-btn:hover{background:var(--blue);box-shadow:0 8px 18px rgba(23,105,232,.22)}
+    .nav-group-title{margin:12px 7px 4px;color:#67e8a5;font-size:12px;font-weight:950;display:flex;justify-content:space-between}.nav-sub{height:32px;padding-left:24px;background:rgba(255,255,255,.045)}
     .side-box{margin-top:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:10px}
     .mini{font-size:10px;color:rgba(255,255,255,.68);font-weight:950;letter-spacing:.04em}.big{font-size:12px;font-weight:900;line-height:1.45;margin-top:5px;word-break:break-word}
     .main{min-width:0;overflow:hidden;padding:0 20px 22px}
@@ -107,7 +108,16 @@
     <nav class="nav">
       <button class="nav-btn active" data-tab="dashboard" onclick="switchTab('dashboard')"><span class="nav-ico">📊</span> Dashboard</button>
       <button class="nav-btn" data-tab="cariler" onclick="switchTab('cariler')"><span class="nav-ico">👥</span> Cariler</button>
-      <button class="nav-btn" data-tab="hesaplar" onclick="switchTab('hesaplar')"><span class="nav-ico">🏦</span> Hesaplar</button>
+      <div class="nav-group-title"><span>₺ Nakit Yönetimi</span><span>-</span></div>
+      <button class="nav-btn nav-sub" data-tab="hesaplar" onclick="switchTab('hesaplar')">Hesaplarım</button>
+      <button class="nav-btn nav-sub" data-tab="calisanlar" onclick="switchTab('calisanlar')">Çalışanlar</button>
+      <button class="nav-btn nav-sub" data-tab="masraflar" onclick="switchTab('masraflar')">Masraflar</button>
+      <button class="nav-btn nav-sub" data-tab="efaturalar" onclick="switchTab('efaturalar')">Gelen E-Faturalar</button>
+      <button class="nav-btn nav-sub" data-tab="krediler" onclick="switchTab('krediler')">Krediler</button>
+      <button class="nav-btn nav-sub" data-tab="demirbaslar" onclick="switchTab('demirbaslar')">Demirbaşlar</button>
+      <button class="nav-btn nav-sub" data-tab="projeler" onclick="switchTab('projeler')">Projeler</button>
+      <button class="nav-btn nav-sub" data-tab="cekler" onclick="switchTab('cekler')">Çek Portföyü</button>
+      <button class="nav-btn nav-sub" data-tab="senetler" onclick="switchTab('senetler')">Senet Portföyü</button>
       <button class="nav-btn" data-tab="onay" onclick="switchTab('onay')"><span class="nav-ico">✅</span> Onay Merkezi</button>
       <button class="nav-btn" data-tab="otomasyon" onclick="switchTab('otomasyon')"><span class="nav-ico">⚙</span> Otomasyon</button>
       <button class="nav-btn" data-tab="raporlar" onclick="switchTab('raporlar')"><span class="nav-ico">📑</span> Raporlar</button>
@@ -186,6 +196,15 @@
       <div id="accountCards" class="cards"></div>
       <div class="section"><h2 class="section-title">Hesap Hareketleri</h2><div id="accountTxns"></div></div>
     </section>
+
+    <section id="tab-calisanlar" class="tab-page"><div id="cashModule-calisanlar"></div></section>
+    <section id="tab-masraflar" class="tab-page"><div id="cashModule-masraflar"></div></section>
+    <section id="tab-efaturalar" class="tab-page"><div id="cashModule-efaturalar"></div></section>
+    <section id="tab-krediler" class="tab-page"><div id="cashModule-krediler"></div></section>
+    <section id="tab-demirbaslar" class="tab-page"><div id="cashModule-demirbaslar"></div></section>
+    <section id="tab-projeler" class="tab-page"><div id="cashModule-projeler"></div></section>
+    <section id="tab-cekler" class="tab-page"><div id="cashModule-cekler"></div></section>
+    <section id="tab-senetler" class="tab-page"><div id="cashModule-senetler"></div></section>
 
     <section id="tab-onay" class="tab-page">
       <div class="topbar">
@@ -325,6 +344,7 @@
     telegramOffset:"ALKAM_FINAL_TELEGRAM_OFFSET_V1",
     telegramPoll:"ALKAM_FINAL_TELEGRAM_POLL_V1",
     opsTasks:"ALKAM_FINAL_OPS_TASKS_V1",
+    cashModules:"ALKAM_FINAL_CASH_MODULES_V1",
     automation:"ALKAM_FINAL_AUTOMATION_V1",
     pendingAuto:"ALKAM_FINAL_AUTOMATION_PENDING_V1",
     audit:"ALKAM_FINAL_AUDIT_V1",
@@ -344,6 +364,17 @@
     {id:"cek", name:"Çek", type:"cek"},
     {id:"senet", name:"Senet", type:"senet"},
     {id:"diger-kasa", name:"Diğer Kasa", type:"diger_kasa"}
+  ];
+
+  const cashModules = [
+    {key:"calisanlar", title:"Çalışanlar", party:"Çalışan", amount:"Net Ödeme / Maaş", statuses:["Aktif","Ödenecek","Ödendi","Pasif"]},
+    {key:"masraflar", title:"Masraflar", party:"Masraf Yeri / Tedarikçi", amount:"Tutar", statuses:["Bekliyor","Onaya Hazır","Ödendi","Reddedildi"]},
+    {key:"efaturalar", title:"Gelen E-Faturalar", party:"Gönderen", amount:"Fatura Tutarı", statuses:["Geldi","Kontrolde","Onaya Hazır","Ödendi"]},
+    {key:"krediler", title:"Krediler", party:"Banka / Kredi", amount:"Taksit / Borç", statuses:["Aktif","Ödenecek","Ödendi","Kapandı"]},
+    {key:"demirbaslar", title:"Demirbaşlar", party:"Demirbaş / Satıcı", amount:"Değer", statuses:["Aktif","Amortisman","Satıldı","Hurda"]},
+    {key:"projeler", title:"Projeler", party:"Proje / Müşteri", amount:"Bütçe / Hakediş", statuses:["Açık","Devam","Tamamlandı","Beklemede"]},
+    {key:"cekler", title:"Çek Portföyü", party:"Çek Sahibi / Banka", amount:"Çek Tutarı", statuses:["Portföyde","Tahsil Edildi","Ciro Edildi","Karşılıksız"]},
+    {key:"senetler", title:"Senet Portföyü", party:"Senet Borçlusu", amount:"Senet Tutarı", statuses:["Portföyde","Tahsil Edildi","Ciro Edildi","Protestolu"]}
   ];
 
   const automationRules = [
@@ -371,6 +402,7 @@
     telegramPoll: localStorage.getItem(LS.telegramPoll)==="1",
     telegramStatus: "Canlı bot kontrol edilmedi",
     opsTasks: readJson(LS.opsTasks, []),
+    cashRecords: readJson(LS.cashModules, {}),
     automation: readJson(LS.automation, initAutomation()),
     selectedCariId: null,
     selectedAccountId: "kasa",
@@ -549,7 +581,7 @@
   };
 
   window.refreshAll = function(){
-    renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderTelegramPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects();
+    renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderCashModules(); renderTelegramPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects();
   };
 
   function renderDashboard(){
@@ -798,6 +830,64 @@
     const a=state.accounts.find(x=>x.id===state.selectedAccountId); if(!a)return notify("Hesap seç.");
     const data=accountStatementRows(a.id).map(t=>({"Tarih":t.date,"Hesap":a.name,"Yön":t.dir==="giris"?"Giriş":"Çıkış","Kaynak":t.source,"Cari":(state.cariler.find(c=>c.id===t.cariId)||{}).name||"","Açıklama":t.desc,"Tutar":num(t.amount),"Bakiye":t.runningBalance}));
     downloadBlob(slug(a.name)+"-hesap-ekstresi.csv", toCsv(data), "text/csv;charset=utf-8");
+  };
+
+  function cashModuleRows(key){return Array.isArray(state.cashRecords[key]) ? state.cashRecords[key] : [];}
+  function renderCashModules(){cashModules.forEach(renderCashModule);}
+  function renderCashModule(mod){
+    const el=byId("cashModule-"+mod.key); if(!el) return;
+    const rows=cashModuleRows(mod.key).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    const total=rows.reduce((s,r)=>s+num(r.amount),0);
+    const open=rows.filter(r=>!/(ödendi|tamamlandı|kapandı|tahsil edildi|satıldı|hurda)/i.test(String(r.status||""))).reduce((s,r)=>s+num(r.amount),0);
+    el.innerHTML=`
+      <div class="topbar">
+        <div class="page-head"><h1>${esc(mod.title)}</h1><p>Nakit Yönetimi altında sistemli kayıt, durum takibi, toplam ve işlem iziyle çalışır.</p></div>
+        <div class="btn-row"><button class="btn btn-blue" onclick="exportCashModuleCsv('${mod.key}')">CSV</button></div>
+      </div>
+      <div class="cards">
+        <div class="card"><div class="card-label">Kayıt</div><div class="card-value">${rows.length}</div></div>
+        <div class="card"><div class="card-label">Toplam</div><div class="card-value">${money(total)}</div></div>
+        <div class="card"><div class="card-label">Açık / Takip</div><div class="card-value">${money(open)}</div></div>
+        <div class="card"><div class="card-label">Son Tarih</div><div class="card-value" style="font-size:20px">${esc(rows[0]?.date||"-")}</div></div>
+      </div>
+      <div class="section">
+        <h2 class="section-title">Yeni Kayıt</h2>
+        <div class="grid-4">
+          <div class="field"><label>Tarih</label><input id="${mod.key}-date" type="date" value="${today()}" /></div>
+          <div class="field"><label>${esc(mod.party)}</label><input id="${mod.key}-party" placeholder="${esc(mod.party)}" /></div>
+          <div class="field"><label>${esc(mod.amount)}</label><input id="${mod.key}-amount" type="number" step="0.01" /></div>
+          <div class="field"><label>Durum</label><select id="${mod.key}-status">${mod.statuses.map(s=>`<option>${esc(s)}</option>`).join("")}</select></div>
+        </div>
+        <div class="field"><label>Not / Açıklama</label><input id="${mod.key}-note" placeholder="Kısa açıklama, belge no, vade veya takip notu" /></div>
+        <div class="btn-row"><button class="btn btn-green" onclick="addCashRecord('${mod.key}')">Kaydet</button></div>
+      </div>
+      <div class="section">
+        <h2 class="section-title">${esc(mod.title)} Kayıtları</h2>
+        ${rows.length?`<table><thead><tr><th>Tarih</th><th>${esc(mod.party)}</th><th>Durum</th><th>Not</th><th class="text-right">${esc(mod.amount)}</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.party)}</td><td><span class="tag ${/(ödendi|tamamlandı|kapandı|tahsil edildi)/i.test(r.status)?"green":"amber"}">${esc(r.status)}</span></td><td>${esc(r.note||"")}</td><td class="text-right money">${money(r.amount)}</td><td><button class="btn btn-red" onclick="deleteCashRecord('${mod.key}','${r.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz kayıt yok.</div>`}
+      </div>`;
+  }
+  window.addCashRecord=function(key){
+    const mod=cashModules.find(m=>m.key===key); if(!mod)return;
+    const row={id:uid("CASH"),date:byId(key+"-date").value||today(),party:byId(key+"-party").value.trim(),amount:num(byId(key+"-amount").value),status:byId(key+"-status").value,note:byId(key+"-note").value.trim(),createdAt:new Date().toLocaleString("tr-TR")};
+    if(!row.party) return notify("Kayıt adı boş olamaz.");
+    if(!state.cashRecords[key]) state.cashRecords[key]=[];
+    state.cashRecords[key].unshift(row);
+    writeJson(LS.cashModules,state.cashRecords);
+    logAudit(`${mod.title} kaydı eklendi`, `${row.party} · ${money(row.amount)} · ${row.status}`);
+    renderCashModule(mod);
+    notify(`${mod.title} kaydı eklendi.`);
+  };
+  window.deleteCashRecord=function(key,id){
+    const mod=cashModules.find(m=>m.key===key); if(!mod)return;
+    state.cashRecords[key]=cashModuleRows(key).filter(r=>r.id!==id);
+    writeJson(LS.cashModules,state.cashRecords);
+    logAudit(`${mod.title} kaydı silindi`, id, "Silindi");
+    renderCashModule(mod);
+  };
+  window.exportCashModuleCsv=function(key){
+    const mod=cashModules.find(m=>m.key===key); if(!mod)return;
+    const data=cashModuleRows(key).map(r=>({"Tarih":r.date,"Kayıt":r.party,"Durum":r.status,"Not":r.note,"Tutar":num(r.amount)}));
+    downloadBlob(slug(mod.title)+".csv", toCsv(data), "text/csv;charset=utf-8");
   };
 
   window.openApprovalModal=function(){fillSelects();byId("apDate").value=today();openModal("approvalModal");};
@@ -1153,19 +1243,19 @@
   function toCsv(rows){if(!rows.length)return"";const keys=Object.keys(rows[0]);return keys.join(";")+"\n"+rows.map(r=>keys.map(k=>`"${String(r[k]??"").replace(/"/g,'""')}"`).join(";")).join("\n");}
 
   window.downloadState=function(){
-    const data={version:"ALKAM_FINAL_ESKI_GOVDE_CARI_OTOMASYON",exportedAt:new Date().toISOString(),cariler:state.cariler,manualTxns:state.manualTxns,deletedTxns:state.deletedTxns,accounts:state.accounts,accountTxns:state.accountTxns,approvals:state.approvals,opsTasks:state.opsTasks,automation:state.automation,audit:readJson(LS.audit,[])};
+    const data={version:"ALKAM_FINAL_ESKI_GOVDE_CARI_OTOMASYON",exportedAt:new Date().toISOString(),cariler:state.cariler,manualTxns:state.manualTxns,deletedTxns:state.deletedTxns,accounts:state.accounts,accountTxns:state.accountTxns,approvals:state.approvals,opsTasks:state.opsTasks,cashRecords:state.cashRecords,automation:state.automation,audit:readJson(LS.audit,[])};
     downloadBlob("alkam-mali-final-yedek-"+today()+".json",JSON.stringify(data,null,2),"application/json");
   };
   function downloadBlob(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
   window.importStateFile=function(e){
     const f=e.target.files[0]; if(!f)return;
     const r=new FileReader();
-    r.onload=()=>{try{const d=JSON.parse(r.result); if(d.cariler)state.cariler=d.cariler.map(normalizeCari); if(d.manualTxns)state.manualTxns=d.manualTxns; if(d.deletedTxns)state.deletedTxns=d.deletedTxns; if(d.accounts)state.accounts=d.accounts; if(d.accountTxns)state.accountTxns=d.accountTxns; if(d.approvals)state.approvals=d.approvals; if(d.opsTasks)state.opsTasks=d.opsTasks; if(d.automation)state.automation=d.automation; if(d.audit)writeJson(LS.audit,d.audit); persistAll();logAudit("Yedek yüklendi",f.name);refreshAll();notify("Yedek yüklendi.");}catch(err){notify("Yedek okunamadı: "+err.message);}};
+    r.onload=()=>{try{const d=JSON.parse(r.result); if(d.cariler)state.cariler=d.cariler.map(normalizeCari); if(d.manualTxns)state.manualTxns=d.manualTxns; if(d.deletedTxns)state.deletedTxns=d.deletedTxns; if(d.accounts)state.accounts=d.accounts; if(d.accountTxns)state.accountTxns=d.accountTxns; if(d.approvals)state.approvals=d.approvals; if(d.opsTasks)state.opsTasks=d.opsTasks; if(d.cashRecords)state.cashRecords=d.cashRecords; if(d.automation)state.automation=d.automation; if(d.audit)writeJson(LS.audit,d.audit); persistAll();logAudit("Yedek yüklendi",f.name);refreshAll();notify("Yedek yüklendi.");}catch(err){notify("Yedek okunamadı: "+err.message);}};
     r.readAsText(f);
   };
-  function persistAll(){writeJson(LS.cariler,state.cariler);writeJson(LS.manual,state.manualTxns);writeJson(LS.deleted,state.deletedTxns);writeJson(LS.accounts,state.accounts);writeJson(LS.accountTxns,state.accountTxns);writeJson(LS.approvals,state.approvals);writeJson(LS.opsTasks,state.opsTasks);writeJson(LS.automation,state.automation);}
+  function persistAll(){writeJson(LS.cariler,state.cariler);writeJson(LS.manual,state.manualTxns);writeJson(LS.deleted,state.deletedTxns);writeJson(LS.accounts,state.accounts);writeJson(LS.accountTxns,state.accountTxns);writeJson(LS.approvals,state.approvals);writeJson(LS.opsTasks,state.opsTasks);writeJson(LS.cashModules,state.cashRecords);writeJson(LS.automation,state.automation);}
   window.loadPastedCariData=function(){try{const data=JSON.parse(byId("pasteCariJson").value);if(!Array.isArray(data))throw new Error("Liste formatında değil.");state.cariler=data.map(normalizeCari);state.dataSource="Yapıştırılan JSON";state.loadError="";writeJson(LS.cariler,state.cariler);logAudit("Yapıştırılan cari verisi yüklendi",`${state.cariler.length} cari`);refreshAll();notify(state.cariler.length+" cari yüklendi.");}catch(err){notify("Cari verisi okunamadı: "+err.message);}};
-  window.resetLocalOnly=function(){if(!confirm("Yerel localStorage verileri sıfırlansın mı? GitHub dosyalarına dokunmaz."))return;[LS.cariler,LS.manual,LS.deleted,LS.accounts,LS.accountTxns,LS.approvals,LS.opsTasks,LS.automation,LS.pendingAuto,LS.audit].forEach(k=>localStorage.removeItem(k));location.reload();};
+  window.resetLocalOnly=function(){if(!confirm("Yerel localStorage verileri sıfırlansın mı? GitHub dosyalarına dokunmaz."))return;[LS.cariler,LS.manual,LS.deleted,LS.accounts,LS.accountTxns,LS.approvals,LS.opsTasks,LS.cashModules,LS.automation,LS.pendingAuto,LS.audit].forEach(k=>localStorage.removeItem(k));location.reload();};
 
   function openModal(id){byId(id).style.display="flex";}
   window.closeModal=function(id){byId(id).style.display="none";};
