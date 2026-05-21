@@ -999,6 +999,7 @@
           <button class="btn btn-green" onclick="addTelegramAccountsAndApproval()">Hesaplara + Onaya Al</button>
           <button class="btn btn-amber" onclick="addTelegramTask()">Söz / Yapılacak Kaydet</button>
           <button class="btn btn-purple" onclick="syncTelegramBot()">Bot Mesajlarını Çek</button>
+          <button class="btn btn-soft" onclick="testTelegramStatus()">Bağlantı Testi</button>
           <button class="btn btn-soft" onclick="clearTelegramBox()">Kutuyu Temizle</button>
         </div>
         <label class="inline-check"><input id="tgAutoPoll" type="checkbox" ${state.telegramPoll?"checked":""} onchange="toggleTelegramPolling(this.checked)" /> Telegram botunu 60 saniyede bir otomatik kontrol et</label>
@@ -1007,7 +1008,7 @@
       <div class="grid-2">
         <div>
           <h3 class="section-title" style="font-size:16px">Telegram Geçmişi</h3>
-          <div class="mini-list">${recent.length?recent.map(m=>`<div class="mini-row"><strong>${esc(m.type)}</strong> · ${esc(m.source||"Operasyon")} · ${money(m.amount)} · Güven ${m.score}%<br>${esc(m.cariName||"Cari eşleşmedi")} ${m.dueDate?`· Vade ${esc(m.dueDate)}`:""}<br><span class="muted-note">${esc(m.text)}</span></div>`).join(""):`<div class="empty">Telegram mesaj geçmişi yok.</div>`}</div>
+          <div class="mini-list">${recent.length?recent.map(m=>`<div class="mini-row"><strong>${esc(m.type)}</strong> · ${esc(m.source||"Operasyon")} · ${money(m.amount)} · Güven ${m.score}%<br>${esc(m.cariName||"Cari eşleşmedi")} ${m.dueDate?`· Vade ${esc(m.dueDate)}`:""}<br><span class="muted-note">${esc(m.text)}</span>${m.chatId?`<br><button class="btn btn-soft" onclick="replyTelegramMessage('${esc(m.id)}')">Telegram Cevap Yaz</button>`:""}</div>`).join(""):`<div class="empty">Telegram mesaj geçmişi yok.</div>`}</div>
         </div>
         <div>
           <h3 class="section-title" style="font-size:16px">Ödeme Sözü / Yapılacaklar</h3>
@@ -1067,6 +1068,53 @@
     logAudit("Operasyon kaydı tamamlandı", t.text);
     refreshAll();
   };
+  async function sendTelegramMessage(chatId,text){
+    const res=await fetch("/api/telegram/send",{
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body:JSON.stringify({chatId,text})
+    });
+    const data=await res.json();
+    if(!data.ok) throw new Error(data.error||"Telegram gönderim hatası");
+    return data;
+  }
+  function telegramAckText(row){
+    const target=row.type==="Operasyon" ? "operasyon listesine" : "Onay Merkezi'ne";
+    const cari=row.cariName ? `Cari: ${row.cariName}` : "Cari eşleşmesi bekliyor";
+    return `ALKAM Mali: Mesajınız kayda alındı ve ${target} düştü.\n${cari}\nTutar: ${money(row.amount)}\nKaynak: ${row.source||"Telegram"}`;
+  }
+  window.testTelegramStatus=async function(){
+    try{
+      state.telegramStatus="Telegram bağlantısı test ediliyor...";
+      renderTelegramPanel();
+      const res=await fetch(`/api/telegram/status?v=${Date.now()}`,{cache:"no-store"});
+      const data=await res.json();
+      if(!data.ok){
+        state.telegramStatus=data.configured===false ? "Bot bağlı değil: Cloudflare TELEGRAM_BOT_TOKEN gerekli." : "Telegram hata: "+(data.error||"Bilinmeyen hata");
+      }else{
+        state.telegramStatus=`Bot bağlı: @${data.bot.username||data.bot.firstName||data.bot.id}`;
+      }
+      renderTelegramPanel();
+      notify(state.telegramStatus);
+    }catch(err){
+      state.telegramStatus="Telegram bağlantı testi başarısız: "+(err?.message||err);
+      renderTelegramPanel();
+      notify(state.telegramStatus);
+    }
+  };
+  window.replyTelegramMessage=async function(id){
+    const msg=state.telegramMessages.find(x=>String(x.id)===String(id));
+    if(!msg || !msg.chatId) return notify("Bu Telegram mesajında chat bilgisi yok.");
+    const text=prompt("Telegram cevabı:", "ALKAM Mali: Mesajınız alındı, işleme alınmıştır.");
+    if(!text) return;
+    try{
+      await sendTelegramMessage(msg.chatId,text);
+      logAudit("Telegram cevabı gönderildi", `${msg.chatTitle||msg.fromName||msg.chatId} · ${text}`);
+      notify("Telegram cevabı gönderildi.");
+    }catch(err){
+      notify("Telegram cevabı gönderilemedi: "+(err?.message||err));
+    }
+  };
   window.syncTelegramBot=async function(){
     try{
       state.telegramStatus="Telegram bot kontrol ediliyor...";
@@ -1083,7 +1131,10 @@
       (data.updates||[]).forEach(u=>{
         const row=buildTelegramRecord(u.text);
         Object.assign(row,{id:uid("TG-LIVE"),updateId:u.updateId,messageId:u.messageId,chatId:u.chatId,chatTitle:u.chatTitle,fromName:u.fromName,telegramDate:u.date,createdAt:new Date(u.date||Date.now()).toLocaleString("tr-TR")});
-        if(queueTelegramRecord(row)) added++;
+        if(queueTelegramRecord(row)){
+          added++;
+          if(row.chatId) sendTelegramMessage(row.chatId,telegramAckText(row)).catch(()=>{});
+        }
       });
       state.telegramOffset=num(data.nextOffset||state.telegramOffset||0);
       localStorage.setItem(LS.telegramOffset,String(state.telegramOffset));
