@@ -37,6 +37,7 @@
     .card,.section,.metric-mini,.rule-box,.empty{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
     .card{padding:16px}.section{padding:16px;margin-bottom:16px}.section-title{margin:0 0 14px;font-size:21px;font-weight:950}
     .card-label{color:var(--muted);font-size:11px;font-weight:950;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}.card-value{font-size:28px;font-weight:950;line-height:1.08;letter-spacing:-.035em}
+    .account-card{cursor:pointer;transition:.14s}.account-card:hover,.account-card.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(23,105,232,.16),var(--shadow);background:#f8fbff}.account-flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
     .grid-2{display:grid;grid-template-columns:minmax(330px,var(--leftcol)) minmax(0,1fr);gap:18px;align-items:start}.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
     .toolbar{display:grid;grid-template-columns:1.1fr .72fr .72fr;gap:9px;margin-bottom:12px}
     .search-input,.select-input,.field input,.field select,.field textarea{width:100%;border:1px solid #d8e1ef;border-radius:9px;min-height:40px;padding:9px 11px;font-size:12px;font-weight:800;outline:none;background:#fff}
@@ -276,7 +277,7 @@
     </div>
     <div class="grid-3">
       <div class="field"><label>Tutar</label><input id="accAmount" type="number" step="0.01" /></div>
-      <div class="field"><label>Kaynak</label><select id="accSource"><option>Manuel</option><option>Banka</option><option>Moka United</option><option>Kasa</option></select></div>
+      <div class="field"><label>Kaynak</label><select id="accSource"><option>Manuel</option><option>Banka</option><option>Moka United</option><option>Kasa</option><option>Çek</option><option>Senet</option><option>Diğer Kasa</option></select></div>
       <div class="field"><label>Açıklama</label><input id="accDesc" /></div>
     </div>
     <div class="grid-3">
@@ -338,7 +339,8 @@
     {id:"banka", name:"Banka", type:"banka"},
     {id:"moka-united", name:"Moka United", type:"moka_united"},
     {id:"cek", name:"Çek", type:"cek"},
-    {id:"senet", name:"Senet", type:"senet"}
+    {id:"senet", name:"Senet", type:"senet"},
+    {id:"diger-kasa", name:"Diğer Kasa", type:"diger_kasa"}
   ];
 
   const automationRules = [
@@ -364,9 +366,11 @@
     telegramMessages: readJson(LS.telegram, []),
     automation: readJson(LS.automation, initAutomation()),
     selectedCariId: null,
+    selectedAccountId: "kasa",
     dataSource: "Yükleniyor",
     loadError: ""
   };
+  ensureDefaultAccounts();
 
   function initAutomation(){
     const out = {};
@@ -376,6 +380,11 @@
   function byId(id){return document.getElementById(id);}
   function readJson(key, fallback){try{const raw=localStorage.getItem(key);return raw?JSON.parse(raw):fallback;}catch(e){return fallback;}}
   function writeJson(key, value){try{localStorage.setItem(key, JSON.stringify(value));}catch(e){console.warn("localStorage yazılamadı", key, e);}}
+  function ensureDefaultAccounts(){
+    const existing = new Set((state.accounts||[]).map(a=>a.id));
+    defaultAccounts.forEach(a=>{ if(!existing.has(a.id)) state.accounts.push({...a}); });
+    writeJson(LS.accounts,state.accounts);
+  }
   function uid(prefix){return prefix+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);}
   function num(v){if(typeof v==="number") return Number.isFinite(v)?v:0; let s=String(v??"").trim().replace(/\s/g,"").replace(/TL|₺/gi,""); if(!s) return 0; if(s.includes(",")&&s.includes(".")) s=s.replace(/\./g,"").replace(",","."); else if(s.includes(",")) s=s.replace(",","."); return Number(s)||0;}
   function money(v){return num(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" TL";}
@@ -726,19 +735,43 @@
 
   function renderAccounts(){
     const tx=state.accountTxns;
+    if(!state.accounts.some(a=>a.id===state.selectedAccountId)) state.selectedAccountId=state.accounts[0]?.id||"kasa";
     byId("accountCards").innerHTML=state.accounts.map(a=>{
-      const bal=tx.filter(t=>t.accountId===a.id).reduce((s,t)=>s+(t.dir==="giris"?num(t.amount):-num(t.amount)),0);
-      return `<div class="card"><div class="card-label">${esc(a.type)}</div><div class="card-value">${money(bal)}</div><p class="muted-note">${esc(a.name)}</p></div>`;
+      const rows=tx.filter(t=>t.accountId===a.id);
+      const bal=accountBalance(a.id);
+      const giris=rows.filter(t=>t.dir==="giris").reduce((s,t)=>s+num(t.amount),0);
+      const cikis=rows.filter(t=>t.dir==="cikis").reduce((s,t)=>s+num(t.amount),0);
+      return `<div class="card account-card ${state.selectedAccountId===a.id?"active":""}" onclick="selectAccount('${esc(a.id)}')"><div class="card-label">${esc(accountTypeLabel(a.type))}</div><div class="card-value">${money(bal)}</div><p class="muted-note">${esc(a.name)} · Giriş ${money(giris)} · Çıkış ${money(cikis)}</p></div>`;
     }).join("");
-    byId("accountTxns").innerHTML=tx.length?`<table><thead><tr><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Kaynak</th><th>Cari</th><th>Açıklama</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${tx.slice().reverse().map(t=>{const linked=state.cariler.find(c=>c.id===t.cariId);return`<tr><td>${esc(t.date)}</td><td>${esc((state.accounts.find(a=>a.id===t.accountId)||{}).name||t.accountId)}</td><td>${esc(t.dir)}</td><td>${esc(t.source||"-")}</td><td>${linked?esc(linked.name):"-"} ${t.postedToCari?'<span class="tag green">Cariye işlendi</span>':""}</td><td>${esc(t.desc||"")}</td><td class="text-right money">${money(t.amount)}</td><td><button class="btn btn-red" onclick="deleteAccountTxn('${t.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Hesap hareketi yok.</div>`;
+    const selected=state.accounts.find(a=>a.id===state.selectedAccountId) || state.accounts[0] || {id:"",name:"Hesap"};
+    const selectedRows=tx.filter(t=>t.accountId===selected.id).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    const giris=selectedRows.filter(t=>t.dir==="giris").reduce((s,t)=>s+num(t.amount),0);
+    const cikis=selectedRows.filter(t=>t.dir==="cikis").reduce((s,t)=>s+num(t.amount),0);
+    byId("accountTxns").innerHTML=`
+      <div class="btn-row" style="margin-bottom:10px"><button class="btn btn-blue" onclick="openAccountModal('${esc(selected.id)}')">Bu Hesaba Hareket Ekle</button><button class="btn btn-soft" onclick="exportSelectedAccountCsv()">Hesap CSV</button></div>
+      <h2 class="section-title">${esc(selected.name)} Hesap Ekstresi</h2>
+      <div class="account-flow">
+        <div class="metric-mini"><div class="k">Giriş</div><div class="v">${money(giris)}</div></div>
+        <div class="metric-mini"><div class="k">Çıkış</div><div class="v">${money(cikis)}</div></div>
+        <div class="metric-mini"><div class="k">Bakiye</div><div class="v">${money(accountBalance(selected.id))}</div></div>
+      </div>
+      ${selectedRows.length?`<table><thead><tr><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Kaynak</th><th>Cari</th><th>Açıklama</th><th class="text-right">Tutar</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${accountStatementRows(selected.id).map(t=>{const linked=state.cariler.find(c=>c.id===t.cariId);return`<tr><td>${esc(t.date)}</td><td>${esc(selected.name)}</td><td><span class="tag ${t.dir==="giris"?"green":"red"}">${t.dir==="giris"?"Giriş":"Çıkış"}</span></td><td>${esc(t.source||"-")}</td><td>${linked?esc(linked.name):"-"} ${t.postedToCari?'<span class="tag green">Cariye işlendi</span>':""}</td><td>${esc(t.desc||"")}</td><td class="text-right money">${money(t.amount)}</td><td class="text-right money">${money(t.runningBalance)}</td><td><button class="btn btn-red" onclick="deleteAccountTxn('${t.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Bu hesaba ait hareket yok.</div>`}`;
   }
 
   window.seedMoka=function(){if(!state.accounts.some(a=>a.id==="moka-united"))state.accounts.push({id:"moka-united",name:"Moka United",type:"moka_united"});writeJson(LS.accounts,state.accounts);renderAccounts();notify("Moka United hesabı hazır.");};
-  window.openAccountModal=function(){fillSelects();byId("accDate").value=today();byId("accAmount").value="";byId("accDesc").value="";byId("accCari").value="";byId("accPostCari").checked=false;byId("accCariType").value="Tahsilat";openModal("accountModal");};
+  function accountTypeLabel(type){return ({kasa:"Kasa",banka:"Banka",moka_united:"Moka United",cek:"Çek",senet:"Senet",diger_kasa:"Diğer Kasa"}[type]||type||"Hesap");}
+  function accountBalance(accountId){return state.accountTxns.filter(t=>t.accountId===accountId).reduce((s,t)=>s+(t.dir==="giris"?num(t.amount):-num(t.amount)),0);}
+  function accountStatementRows(accountId){
+    let running=0;
+    return state.accountTxns.filter(t=>t.accountId===accountId).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(t=>{running += t.dir==="giris"?num(t.amount):-num(t.amount); return {...t,runningBalance:running};}).reverse();
+  }
+  window.selectAccount=function(id){state.selectedAccountId=id;renderAccounts();};
+  window.openAccountModal=function(accountId){fillSelects();byId("accName").value=accountId||state.selectedAccountId||"kasa";byId("accDate").value=today();byId("accAmount").value="";byId("accDesc").value="";byId("accCari").value="";byId("accPostCari").checked=false;byId("accCariType").value="Tahsilat";openModal("accountModal");};
   window.saveAccountTxn=function(){
     const row={id:uid("ACC"),accountId:byId("accName").value,date:byId("accDate").value||today(),dir:byId("accDir").value,amount:num(byId("accAmount").value),source:byId("accSource").value,desc:byId("accDesc").value,cariId:byId("accCari").value||"",postedToCari:false};
     if(row.amount<=0) return notify("Hesap hareketi tutarı sıfır olamaz.");
     state.accountTxns.push(row); writeJson(LS.accountTxns,state.accountTxns);
+    state.selectedAccountId=row.accountId;
     if(byId("accPostCari").checked && row.cariId){
       const cariType=byId("accCariType").value;
       const credit = cariType==="Tahsilat" ? row.amount : 0;
@@ -754,6 +787,11 @@
     closeModal("accountModal"); refreshAll(); notify("Hesap hareketi kaydedildi.");
   };
   window.deleteAccountTxn=function(id){state.accountTxns=state.accountTxns.filter(x=>x.id!==id);writeJson(LS.accountTxns,state.accountTxns);logAudit("Hesap hareketi silindi", id, "Silindi");refreshAll();};
+  window.exportSelectedAccountCsv=function(){
+    const a=state.accounts.find(x=>x.id===state.selectedAccountId); if(!a)return notify("Hesap seç.");
+    const data=accountStatementRows(a.id).map(t=>({"Tarih":t.date,"Hesap":a.name,"Yön":t.dir==="giris"?"Giriş":"Çıkış","Kaynak":t.source,"Cari":(state.cariler.find(c=>c.id===t.cariId)||{}).name||"","Açıklama":t.desc,"Tutar":num(t.amount),"Bakiye":t.runningBalance}));
+    downloadBlob(slug(a.name)+"-hesap-ekstresi.csv", toCsv(data), "text/csv;charset=utf-8");
+  };
 
   window.openApprovalModal=function(){fillSelects();byId("apDate").value=today();openModal("approvalModal");};
   window.saveApproval=function(){
