@@ -46,7 +46,8 @@
     .btn{border:0;border-radius:9px;min-height:36px;padding:8px 12px;font-size:12px;font-weight:950;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
     .btn-blue{background:var(--blue);color:#fff}.btn-soft{background:#e8eef9;color:#0f172a}.btn-red{background:var(--red);color:#fff}.btn-green{background:var(--green);color:#fff}.btn-amber{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}.btn-purple{background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe}
     .btn-row{display:flex;gap:8px;flex-wrap:wrap}.btn[disabled]{opacity:.55;cursor:not-allowed}
-    .list{display:grid;gap:8px}.cari-list-scroll{max-height:calc(100vh - 318px);overflow:auto;padding-right:4px}.cari-detail-scroll{max-height:calc(100vh - 210px);overflow:auto;padding-right:2px}
+    .list{display:grid;gap:8px}.cari-list-scroll{max-height:calc(100vh - 318px);overflow:auto;padding-right:4px}.cari-detail-scroll{height:calc(100vh - 210px);overflow:hidden;padding-right:2px}
+    #selectedCariDetail{height:100%;display:flex;flex-direction:column;min-height:0}.cari-sticky-header{flex:0 0 auto;background:#fff;border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:10px;z-index:5}.statement-scroll{flex:1 1 auto;min-height:220px;overflow:auto;border:1px solid #eef2f7;border-radius:12px}
     .list-item{border:1px solid var(--line);background:#fbfdff;border-radius:12px;padding:11px;cursor:pointer;transition:.14s}.list-item:hover,.list-item.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(23,105,232,.16);background:#f6f9ff}.list-item.deleted{opacity:.55;background:#f8fafc}
     .list-title{font-size:13px;font-weight:950;margin-bottom:6px}.list-meta{font-size:11px;font-weight:750;color:var(--muted);line-height:1.48}
     table{width:100%;border-collapse:separate;border-spacing:0;table-layout:auto}
@@ -69,7 +70,7 @@
     .ops-panel{display:grid;gap:12px;margin-bottom:14px}.ops-panel textarea{min-height:96px}.inline-check{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:850;color:#334155;margin:0 0 12px}.inline-check input{width:auto;min-height:auto}.mini-list{display:grid;gap:7px}.mini-row{border:1px solid #e2e8f0;background:#fbfdff;border-radius:11px;padding:9px;font-size:12px;font-weight:750;color:#334155;line-height:1.45}
     .switch{position:relative;display:inline-block;width:78px;height:34px}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;border-radius:999px;transition:.18s}.slider:before{position:absolute;content:"";height:26px;width:26px;left:4px;top:4px;background:white;border-radius:50%;transition:.18s;box-shadow:0 3px 10px rgba(15,23,42,.18)}.switch input:checked+.slider{background:#059669}.switch input:checked+.slider:before{transform:translateX(44px)}.switch-text{display:block;text-align:center;font-size:10px;font-weight:950;margin-top:4px;color:#475569}
     .audit-panel{position:fixed;left:14px;bottom:14px;width:410px;max-width:calc(100vw - 28px);max-height:360px;overflow:auto;background:rgba(255,255,255,.97);border:1px solid #dbe5f3;border-radius:16px;box-shadow:0 20px 55px rgba(15,23,42,.22);z-index:80;padding:12px;display:none}.audit-panel.open{display:block}.audit-title{font-size:14px;font-weight:950;margin-bottom:8px}.audit-item{font-size:11px;border-top:1px solid #edf2f7;padding:7px 0;line-height:1.35}
-    @media(max-width:1280px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto;width:auto;min-width:0}.grid-2,.grid-3,.grid-4,.cards,.toolbar{grid-template-columns:1fr}.cari-list-scroll,.cari-detail-scroll{max-height:none}.erp-modulebar{position:relative}.login-shell{grid-template-columns:1fr}.login-side-brand{min-height:250px}}
+    @media(max-width:1280px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto;width:auto;min-width:0}.grid-2,.grid-3,.grid-4,.cards,.toolbar{grid-template-columns:1fr}.cari-list-scroll{max-height:none}.cari-detail-scroll{height:auto;overflow:visible}.statement-scroll{max-height:none;overflow:auto}.erp-modulebar{position:relative}.login-shell{grid-template-columns:1fr}.login-side-brand{min-height:250px}}
   </style>
 </head>
 <body>
@@ -630,24 +631,26 @@
       return `<tr class="${klass}"><td>${esc(t.docNo||t.id||t.statementIndex||i+1)}</td><td>${esc(t.date)}</td><td><span class="source-badge ${sourceClass(t.source)}">${esc(t.source||"Ana Veri")}</span></td><td>${esc(t.type||"-")}</td><td class="desc">${esc(t.description||"-")}</td><td class="text-right money">${money(t.debit)}</td><td class="text-right money">${money(t.credit)}</td><td class="text-right money">${balanceLabel(t.runningBalance)}</td><td><button class="btn btn-soft" onclick="editTxn('${t.id}')">Düzenle</button> <button class="btn btn-red" onclick="deleteTxn('${t.id}')">Sil</button></td></tr>`;
     }).join("");
     byId("selectedCariDetail").innerHTML = `
-      <div class="btn-row alkam-cari-toolbar">
-        <button class="btn btn-blue" onclick="openTxnModal('${c.id}')">Hareket Ekle</button>
-        <button class="btn btn-soft" onclick="openCariModal('${c.id}')">Cariyi Düzenle</button>
-        ${c.deleted ? `<button class="btn btn-green" onclick="restoreSelectedCari()">Cariyi Geri Al</button>` : `<button class="btn btn-red" onclick="deleteSelectedCari()">Cariyi Sil</button>`}
-        <button class="btn btn-soft" onclick="printSelectedCari()">Yazdır</button>
-        <button class="btn btn-soft" onclick="exportSelectedCariExcel()">Excel</button>
+      <div class="cari-sticky-header">
+        <div class="btn-row alkam-cari-toolbar">
+          <button class="btn btn-blue" onclick="openTxnModal('${c.id}')">Hareket Ekle</button>
+          <button class="btn btn-soft" onclick="openCariModal('${c.id}')">Cariyi Düzenle</button>
+          ${c.deleted ? `<button class="btn btn-green" onclick="restoreSelectedCari()">Cariyi Geri Al</button>` : `<button class="btn btn-red" onclick="deleteSelectedCari()">Cariyi Sil</button>`}
+          <button class="btn btn-soft" onclick="printSelectedCari()">Yazdır</button>
+          <button class="btn btn-soft" onclick="exportSelectedCariExcel()">Excel</button>
+        </div>
+        <h2 class="hero-name">${esc(c.name)}</h2>
+        <div class="hero-sub"><span>${esc(c.code||"-")}</span><span>${esc(c.status||"Aktif")}</span><span>Aylık Ücret: ${money(c.monthlyFee)}</span><span>${c.deleted?'<span class="tag red">SİLİNMİŞ</span>':""}</span></div>
+        <div class="grid-4" style="margin-bottom:12px">
+          <div class="metric-mini"><div class="k">Güncel Bakiye</div><div class="v">${balanceLabel(meta.bal)}</div></div>
+          <div class="metric-mini"><div class="k">Toplam Borç</div><div class="v">${money(meta.debit)}</div></div>
+          <div class="metric-mini"><div class="k">Toplam Alacak</div><div class="v">${money(meta.credit)}</div></div>
+          <div class="metric-mini"><div class="k">Son İşlem</div><div class="v">${esc(meta.last||"-")}</div></div>
+        </div>
+        <div class="v119-legend"><span><i class="v119-dot v119-red"></i>Tahakkuk / Borç</span><span><i class="v119-dot v119-green"></i>Tahsilat / Alacak</span><span><i class="v119-dot v119-blue"></i>Düzeltme / Diğer</span></div>
+        <div class="rule-box">Bu extrede <strong>Kaynak</strong> kolonu zorunludur. En yakın tarih en üstte gösterilir. Bakiye işarete göre <strong>Bakiye B</strong> veya <strong>Bakiye A</strong> gösterilir.</div>
       </div>
-      <h2 class="hero-name">${esc(c.name)}</h2>
-      <div class="hero-sub"><span>${esc(c.code||"-")}</span><span>${esc(c.status||"Aktif")}</span><span>Aylık Ücret: ${money(c.monthlyFee)}</span><span>${c.deleted?'<span class="tag red">SİLİNMİŞ</span>':""}</span></div>
-      <div class="grid-4" style="margin-bottom:12px">
-        <div class="metric-mini"><div class="k">Güncel Bakiye</div><div class="v">${balanceLabel(meta.bal)}</div></div>
-        <div class="metric-mini"><div class="k">Toplam Borç</div><div class="v">${money(meta.debit)}</div></div>
-        <div class="metric-mini"><div class="k">Toplam Alacak</div><div class="v">${money(meta.credit)}</div></div>
-        <div class="metric-mini"><div class="k">Son İşlem</div><div class="v">${esc(meta.last||"-")}</div></div>
-      </div>
-      <div class="v119-legend"><span><i class="v119-dot v119-red"></i>Tahakkuk / Borç</span><span><i class="v119-dot v119-green"></i>Tahsilat / Alacak</span><span><i class="v119-dot v119-blue"></i>Düzeltme / Diğer</span></div>
-      <div class="rule-box" style="margin-bottom:12px">Bu extrede <strong>Kaynak</strong> kolonu zorunludur. En yakın tarih en üstte gösterilir. Bakiye işarete göre <strong>Bakiye B</strong> veya <strong>Bakiye A</strong> gösterilir.</div>
-      <div style="overflow:auto"><table class="source-statement"><colgroup><col class="col-no"><col class="col-date"><col class="col-source"><col class="col-type"><col class="col-desc"><col class="col-money"><col class="col-money"><col class="col-money"><col class="col-action"></colgroup><thead><tr><th>İşlem No</th><th>Tarih</th><th>Kaynak</th><th>Tip</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${tableRows || `<tr><td colspan="9" class="empty">Hareket yok.</td></tr>`}</tbody></table></div>`;
+      <div class="statement-scroll"><table class="source-statement"><colgroup><col class="col-no"><col class="col-date"><col class="col-source"><col class="col-type"><col class="col-desc"><col class="col-money"><col class="col-money"><col class="col-money"><col class="col-action"></colgroup><thead><tr><th>İşlem No</th><th>Tarih</th><th>Kaynak</th><th>Tip</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${tableRows || `<tr><td colspan="9" class="empty">Hareket yok.</td></tr>`}</tbody></table></div>`;
   }
 
   function sourceClass(s){s=String(s||"").toLowerCase(); if(s.includes("banka")||s.includes("moka")||s.includes("hesap"))return"bank"; if(s.includes("manuel"))return"manual"; if(s.includes("düzelt")||s.includes("duzelt"))return"correction"; if(s.includes("auto")||s.includes("otomatik"))return"auto"; return"";}
