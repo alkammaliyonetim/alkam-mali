@@ -322,6 +322,8 @@
     accountTxns:"ALKAM_FINAL_ACCOUNT_TXNS_V1",
     approvals:"ALKAM_FINAL_APPROVALS_V1",
     telegram:"ALKAM_FINAL_TELEGRAM_INBOX_V1",
+    telegramOffset:"ALKAM_FINAL_TELEGRAM_OFFSET_V1",
+    telegramPoll:"ALKAM_FINAL_TELEGRAM_POLL_V1",
     opsTasks:"ALKAM_FINAL_OPS_TASKS_V1",
     automation:"ALKAM_FINAL_AUTOMATION_V1",
     pendingAuto:"ALKAM_FINAL_AUTOMATION_PENDING_V1",
@@ -365,6 +367,9 @@
     accountTxns: readJson(LS.accountTxns, []),
     approvals: readJson(LS.approvals, []),
     telegramMessages: readJson(LS.telegram, []),
+    telegramOffset: num(localStorage.getItem(LS.telegramOffset) || 0),
+    telegramPoll: localStorage.getItem(LS.telegramPoll)==="1",
+    telegramStatus: "Canlı bot kontrol edilmedi",
     opsTasks: readJson(LS.opsTasks, []),
     automation: readJson(LS.automation, initAutomation()),
     selectedCariId: null,
@@ -411,7 +416,7 @@
   window.emergencyLogin=emergencyLogin;
   window.forceAlkamLogin=openApp;
   window.logout=function(){localStorage.removeItem(LS.session); location.reload();};
-  function openApp(){const o=byId("loginOverlay"); if(o){o.style.display="none";o.classList.add("force-hidden");} document.body.classList.add("alkam-unlocked"); refreshAll();}
+  function openApp(){const o=byId("loginOverlay"); if(o){o.style.display="none";o.classList.add("force-hidden");} document.body.classList.add("alkam-unlocked"); refreshAll(); setupTelegramPolling();}
   document.addEventListener("DOMContentLoaded", function(){
     const f=byId("loginForm"), i=byId("loginPassword");
     if(f) f.onsubmit=emergencyLogin;
@@ -835,6 +840,7 @@
   function detectApprovalType(text){
     const s = cleanText(text);
     if(/odeme sozu|soz verdi|odeyecek|hatirlat|yapilacak|ara|takip/.test(s)) return "Operasyon";
+    if(detectDueDate(text) && /verdi|odeyecek|odeme|deme|soz/.test(s)) return "Operasyon";
     if(/tahakkuk|fatura|ucret|defter/.test(s)) return "Tahakkuk";
     if(/moka|pos/.test(s)) return "Moka United";
     return "Tahsilat";
@@ -866,9 +872,25 @@
     return {id:uid("TG"),text,amount,score,type,accountId:acc.id,source:acc.source,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",dueDate:detectDueDate(text),createdAt:new Date().toLocaleString("tr-TR")};
   }
   function rememberTelegram(row){
+    if(row.updateId && state.telegramMessages.some(x=>String(x.updateId)===String(row.updateId))) return false;
     state.telegramMessages.unshift(row);
     state.telegramMessages=state.telegramMessages.slice(0,100);
     writeJson(LS.telegram,state.telegramMessages);
+    return true;
+  }
+  function queueTelegramRecord(row){
+    const fresh=rememberTelegram(row);
+    if(!fresh) return false;
+    if(row.type==="Operasyon"){
+      const cleaned=cleanText(row.text);
+      const kind=cleaned.includes("odeme") || cleaned.includes("odeyecek") || cleaned.includes("soz") || (row.amount>0 && row.dueDate && cleaned.includes("verdi")) ? "Ödeme Sözü" : "Yapılacak";
+      state.opsTasks.unshift({id:uid("OPS"),kind,text:row.text,cariId:row.cariId,cariName:row.cariName,amount:row.amount,dueDate:row.dueDate,status:"Açık",telegramUpdateId:row.updateId||"",createdAt:row.createdAt});
+      writeJson(LS.opsTasks,state.opsTasks);
+      return true;
+    }
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:row.text,status:"Bekliyor",createdAt:row.createdAt});
+    writeJson(LS.approvals,state.approvals);
+    return true;
   }
   function renderTelegramPanel(){
     const el=byId("telegramPanel"); if(!el) return;
@@ -883,8 +905,11 @@
           <button class="btn btn-blue" onclick="addTelegramApproval()">Onaya Al</button>
           <button class="btn btn-green" onclick="addTelegramAccountsAndApproval()">Hesaplara + Onaya Al</button>
           <button class="btn btn-amber" onclick="addTelegramTask()">Söz / Yapılacak Kaydet</button>
+          <button class="btn btn-purple" onclick="syncTelegramBot()">Bot Mesajlarını Çek</button>
           <button class="btn btn-soft" onclick="clearTelegramBox()">Kutuyu Temizle</button>
         </div>
+        <label class="inline-check"><input id="tgAutoPoll" type="checkbox" ${state.telegramPoll?"checked":""} onchange="toggleTelegramPolling(this.checked)" /> Telegram botunu 60 saniyede bir otomatik kontrol et</label>
+        <div class="rule-box"><strong>Bot durumu:</strong> ${esc(state.telegramStatus)}<br><span class="muted-note">Token HTML içinde tutulmaz; Cloudflare ortam değişkeni <strong>TELEGRAM_BOT_TOKEN</strong> ile okunur.</span></div>
       </div>
       <div class="grid-2">
         <div>
@@ -903,7 +928,7 @@
     const row=buildTelegramRecord(text);
     if(row.type==="Operasyon") return addTelegramTask();
     rememberTelegram(row);
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt});
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt});
     writeJson(LS.approvals,state.approvals);
     logAudit("Telegram mesajı onaya aktarıldı", `${row.source} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)} · ${row.score}%`);
     byId("telegramText").value="";
@@ -921,7 +946,7 @@
       state.selectedAccountId=row.accountId;
       writeJson(LS.accountTxns,state.accountTxns);
     }
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source,date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt});
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source,accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt});
     writeJson(LS.approvals,state.approvals);
     logAudit("Telegram mesajı hesaplara ve onaya aktarıldı", `${row.source} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)}`);
     byId("telegramText").value="";
@@ -949,6 +974,48 @@
     logAudit("Operasyon kaydı tamamlandı", t.text);
     refreshAll();
   };
+  window.syncTelegramBot=async function(){
+    try{
+      state.telegramStatus="Telegram bot kontrol ediliyor...";
+      renderTelegramPanel();
+      const res=await fetch(`/api/telegram/updates?offset=${encodeURIComponent(state.telegramOffset||0)}&v=${Date.now()}`,{cache:"no-store"});
+      const data=await res.json();
+      if(!data.ok){
+        state.telegramStatus=data.configured===false ? "Bot bağlı değil: Cloudflare TELEGRAM_BOT_TOKEN gerekli." : "Telegram hata: "+(data.error||"Bilinmeyen hata");
+        renderTelegramPanel();
+        notify(state.telegramStatus);
+        return;
+      }
+      let added=0;
+      (data.updates||[]).forEach(u=>{
+        const row=buildTelegramRecord(u.text);
+        Object.assign(row,{id:uid("TG-LIVE"),updateId:u.updateId,messageId:u.messageId,chatId:u.chatId,chatTitle:u.chatTitle,fromName:u.fromName,telegramDate:u.date,createdAt:new Date(u.date||Date.now()).toLocaleString("tr-TR")});
+        if(queueTelegramRecord(row)) added++;
+      });
+      state.telegramOffset=num(data.nextOffset||state.telegramOffset||0);
+      localStorage.setItem(LS.telegramOffset,String(state.telegramOffset));
+      state.telegramStatus=`Canlı bot kontrol edildi. Yeni kayıt: ${added}`;
+      logAudit("Telegram bot eşitlemesi", `${added} yeni kayıt · offset ${state.telegramOffset}`);
+      refreshAll();
+      notify(state.telegramStatus);
+    }catch(err){
+      state.telegramStatus="Telegram bağlantısı kurulamadı: "+(err?.message||err);
+      renderTelegramPanel();
+      notify(state.telegramStatus);
+    }
+  };
+  window.toggleTelegramPolling=function(val){
+    state.telegramPoll=!!val;
+    localStorage.setItem(LS.telegramPoll,state.telegramPoll?"1":"0");
+    setupTelegramPolling();
+    renderTelegramPanel();
+  };
+  function setupTelegramPolling(){
+    clearInterval(window.__alkamTelegramPollTimer);
+    if(state.telegramPoll){
+      window.__alkamTelegramPollTimer=setInterval(()=>{ if(document.visibilityState!=="hidden") syncTelegramBot(); },60000);
+    }
+  }
   window.clearTelegramBox=function(){state.telegramMessages=[];writeJson(LS.telegram,state.telegramMessages);renderTelegramPanel();logAudit("Telegram kutusu temizlendi","Yerel mesaj geçmişi");};
 
   function renderApprovals(){
@@ -961,6 +1028,11 @@
     const debit = a.type==="Tahakkuk" ? a.amount : 0;
     const credit = a.type==="Tahsilat" || a.type==="Moka United" ? a.amount : 0;
     state.manualTxns.push({id:uid("APP"),cariId:a.cariId,date:a.date||today(),type:a.type.toUpperCase(),debit,credit,source:a.source||"Onay Merkezi",description:a.reason||"Onay merkezi kaydı",docNo:"ONAY"});
+    if(a.accountId && credit>0){
+      state.accountTxns.push({id:uid("APP-ACC"),accountId:a.accountId,date:a.date||today(),dir:"giris",amount:a.amount,source:a.source||"Onay Merkezi",desc:a.reason||"Onay merkezi tahsilat kaydı",cariId:a.cariId,postedToCari:true});
+      state.selectedAccountId=a.accountId;
+      writeJson(LS.accountTxns,state.accountTxns);
+    }
     a.status="Onaylandı"; a.approvedAt=new Date().toLocaleString("tr-TR");
     writeJson(LS.manual,state.manualTxns); writeJson(LS.approvals,state.approvals);
     logAudit("Onay kaydı cariye işlendi", `${a.type} · ${money(a.amount)}`);
