@@ -1108,8 +1108,15 @@
   }
   window.clearTelegramBox=function(){state.telegramMessages=[];writeJson(LS.telegram,state.telegramMessages);renderTelegramPanel();logAudit("Telegram kutusu temizlendi","Yerel mesaj geçmişi");};
 
+  function firstDayOfMonth(dateText){
+    const d=isoDate(dateText)||today();
+    return d.slice(0,7)+"-01";
+  }
+  function approvalLedgerDate(a){
+    return String(a.source||"").toLocaleLowerCase("tr-TR").includes("otomasyon tahakkuk") ? firstDayOfMonth(a.date||today()) : (isoDate(a.date)||today());
+  }
   function renderApprovals(){
-    byId("approvalList").innerHTML=state.approvals.length?`<table><thead><tr><th>Tarih</th><th>Önerilen Cari</th><th>Tip</th><th>Kaynak</th><th>Güven</th><th class="text-right">Tutar</th><th>Sebep</th><th>İşlem</th></tr></thead><tbody>${state.approvals.map(a=>{const c=state.cariler.find(x=>x.id===a.cariId);return`<tr><td>${esc(a.createdAt)}</td><td>${esc(c?.name||"-")}</td><td>${esc(a.type)}</td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td>${esc(a.reason||"")}</td><td>${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button> <button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`;
+    byId("approvalList").innerHTML=state.approvals.length?`<table><thead><tr><th>İşlem Tarihi</th><th>Önerilen Cari</th><th>Tip</th><th>Kaynak</th><th>Güven</th><th class="text-right">Tutar</th><th>Sebep</th><th>İşlem</th></tr></thead><tbody>${state.approvals.map(a=>{const c=state.cariler.find(x=>x.id===a.cariId);const ledgerDate=approvalLedgerDate(a);return`<tr><td>${esc(ledgerDate)}<br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td>${esc(c?.name||"-")}</td><td>${esc(a.type)}</td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td>${esc(a.reason||"")}</td><td>${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button> <button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`;
   }
   window.approveItem=function(id){
     const a=state.approvals.find(x=>x.id===id); if(!a) return;
@@ -1117,9 +1124,10 @@
     if(num(a.amount)<=0) return notify("Onay tutarı sıfır olamaz.");
     const debit = a.type==="Tahakkuk" ? a.amount : 0;
     const credit = a.type==="Tahsilat" || a.type==="Moka United" ? a.amount : 0;
-    state.manualTxns.push({id:uid("APP"),cariId:a.cariId,date:a.date||today(),type:a.type.toUpperCase(),debit,credit,source:a.source||"Onay Merkezi",description:a.reason||"Onay merkezi kaydı",docNo:"ONAY"});
+    const ledgerDate=approvalLedgerDate(a);
+    state.manualTxns.push({id:uid("APP"),cariId:a.cariId,date:ledgerDate,type:a.type.toUpperCase(),debit,credit,source:a.source||"Onay Merkezi",description:a.reason||"Onay merkezi kaydı",docNo:"ONAY"});
     if(a.accountId && credit>0){
-      state.accountTxns.push({id:uid("APP-ACC"),accountId:a.accountId,date:a.date||today(),dir:"giris",amount:a.amount,source:a.source||"Onay Merkezi",desc:a.reason||"Onay merkezi tahsilat kaydı",cariId:a.cariId,postedToCari:true});
+      state.accountTxns.push({id:uid("APP-ACC"),accountId:a.accountId,date:ledgerDate,dir:"giris",amount:a.amount,source:a.source||"Onay Merkezi",desc:a.reason||"Onay merkezi tahsilat kaydı",cariId:a.cariId,postedToCari:true});
       state.selectedAccountId=a.accountId;
       writeJson(LS.accountTxns,state.accountTxns);
     }
