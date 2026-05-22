@@ -69,6 +69,7 @@
     .toast{position:fixed;right:16px;bottom:16px;z-index:999999;background:#0f172a;color:#fff;padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);font-size:13px;font-weight:850;display:none;max-width:420px}
     .auto-row{border:1px solid #e2e8f0;border-radius:13px;background:#fbfdff;padding:11px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin-bottom:8px}.auto-name{font-size:13px;font-weight:950;color:#0f172a}.auto-desc{font-size:11.5px;font-weight:750;color:#64748b;line-height:1.45;margin-top:4px}.auto-risk{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;margin-top:7px;font-size:10px;font-weight:950;border:1px solid #fed7aa;background:#fff7ed;color:#c2410c}
     .ops-panel{display:grid;gap:12px;margin-bottom:14px}.ops-panel textarea{min-height:96px}.inline-check{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:850;color:#334155;margin:0 0 12px}.inline-check input{width:auto;min-height:auto}.mini-list{display:grid;gap:7px}.mini-row{border:1px solid #e2e8f0;background:#fbfdff;border-radius:11px;padding:9px;font-size:12px;font-weight:750;color:#334155;line-height:1.45}
+    .import-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}.import-table-wrap{max-height:360px;overflow:auto;border:1px solid #edf2f7;border-radius:12px}.match-waiting{background:#fff7ed}.match-ready{background:#ecfdf5}.match-duplicate{background:#f1f5f9;color:#64748b}
     .switch{position:relative;display:inline-block;width:78px;height:34px}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;border-radius:999px;transition:.18s}.slider:before{position:absolute;content:"";height:26px;width:26px;left:4px;top:4px;background:white;border-radius:50%;transition:.18s;box-shadow:0 3px 10px rgba(15,23,42,.18)}.switch input:checked+.slider{background:#059669}.switch input:checked+.slider:before{transform:translateX(44px)}.switch-text{display:block;text-align:center;font-size:10px;font-weight:950;margin-top:4px;color:#475569}
     .audit-panel{position:fixed;left:14px;bottom:14px;width:410px;max-width:calc(100vw - 28px);max-height:360px;overflow:auto;background:rgba(255,255,255,.97);border:1px solid #dbe5f3;border-radius:16px;box-shadow:0 20px 55px rgba(15,23,42,.22);z-index:80;padding:12px;display:none}.audit-panel.open{display:block}.audit-title{font-size:14px;font-weight:950;margin-bottom:8px}.audit-item{font-size:11px;border-top:1px solid #edf2f7;padding:7px 0;line-height:1.35}
     @media(max-width:1280px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto;width:auto;min-width:0}.grid-2,.grid-3,.grid-4,.cards,.toolbar{grid-template-columns:1fr}.cari-list-scroll{max-height:none}.cari-detail-scroll{height:auto;overflow:visible}.statement-scroll{max-height:none;overflow:auto}.erp-modulebar{position:relative}.login-shell{grid-template-columns:1fr}.login-side-brand{min-height:250px}}
@@ -214,6 +215,7 @@
         <div class="btn-row"><button class="btn btn-blue" onclick="openApprovalModal()">Onay Kaydı Ekle</button><button class="btn btn-soft" onclick="clearApproved()">Onaylananları Temizle</button></div>
       </div>
       <div id="telegramPanel" class="section"></div>
+      <div id="historyImportPanel" class="section"></div>
       <div id="approvalList" class="section"></div>
     </section>
 
@@ -349,6 +351,9 @@
     cashModules:"ALKAM_FINAL_CASH_MODULES_V1",
     automation:"ALKAM_FINAL_AUTOMATION_V1",
     pendingAuto:"ALKAM_FINAL_AUTOMATION_PENDING_V1",
+    importPreview:"ALKAM_FINAL_IMPORT_PREVIEW_V1",
+    importHashes:"ALKAM_FINAL_IMPORT_HASHES_V1",
+    mokaPlans:"ALKAM_FINAL_MOKA_PLANS_V1",
     audit:"ALKAM_FINAL_AUDIT_V1",
     session:"alkam_local_session_v2"
   };
@@ -404,6 +409,9 @@
     telegramPoll: localStorage.getItem(LS.telegramPoll)==="1",
     telegramStatus: "Canlı bot kontrol edilmedi",
     opsTasks: readJson(LS.opsTasks, []),
+    importPreview: readJson(LS.importPreview, []),
+    importHashes: readJson(LS.importHashes, []),
+    mokaPlans: readJson(LS.mokaPlans, []),
     cashRecords: readJson(LS.cashModules, {}),
     automation: readJson(LS.automation, initAutomation()),
     selectedCariId: null,
@@ -605,7 +613,7 @@
   };
 
   window.refreshAll = function(){
-    renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderCashModules(); renderTelegramPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects(); cleanupLegacyTelegramPanels();
+    renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderCashModules(); renderTelegramPanel(); renderHistoryImportPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects(); cleanupLegacyTelegramPanels();
   };
 
   function renderDashboard(){
@@ -1291,6 +1299,67 @@
   }
   window.clearTelegramBox=function(){state.telegramMessages=[];writeJson(LS.telegram,state.telegramMessages);renderTelegramPanel();logAudit("Telegram kutusu temizlendi","Yerel mesaj geçmişi");};
 
+  function normalizeImportDate(v){
+    if(v instanceof Date && !Number.isNaN(v.getTime())) return v.toISOString().slice(0,10);
+    if(typeof v==="number" && v>20000 && v<70000){const d=new Date(Math.round((v-25569)*86400*1000));return Number.isNaN(d.getTime())?"":d.toISOString().slice(0,10);}
+    const s=String(v||"").trim(); if(!s)return"";
+    const tr=s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})/); if(tr)return`${tr[3]}-${String(tr[2]).padStart(2,"0")}-${String(tr[1]).padStart(2,"0")}`;
+    return isoDate(s);
+  }
+  function importHash(parts){const base=parts.map(x=>String(x??"").trim()).join("|").toLocaleLowerCase("tr-TR");let h=0;for(let i=0;i<base.length;i++)h=((h<<5)-h+base.charCodeAt(i))|0;return"IMP-"+Math.abs(h).toString(36);}
+  function knownImportHashes(){const set=new Set(state.importHashes||[]);state.accountTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);});state.approvals.forEach(x=>{if(x.importHash)set.add(x.importHash);});state.manualTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);});return set;}
+  function importPreviewStatus(row){if(row.duplicate)return"Mükerrer";if(!row.cariId||row.score<70)return"EŞLEŞME BEKLEYEN";return"Onaya Hazır";}
+  function readWorkbookFromInput(inputId, callback){
+    const file=byId(inputId)?.files?.[0]; if(!file)return notify("Önce Excel dosyası seç."); if(!window.XLSX)return notify("Excel okuyucu yüklenmedi. Sayfayı yenileyin.");
+    const reader=new FileReader(); reader.onload=()=>{try{callback(XLSX.read(reader.result,{type:"array",cellDates:true}),file.name);}catch(err){notify("Excel okunamadı: "+err.message);}}; reader.readAsArrayBuffer(file);
+  }
+  function sheetRows(ws){return XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true});}
+  function cellText(v){return String(v??"").trim();}
+  function findHeaderRow(rows){for(let i=0;i<Math.min(rows.length,40);i++){const txt=rows[i].map(cellText).join(" ").toLocaleLowerCase("tr-TR");if(txt.includes("tarih")&&(txt.includes("açıklama")||txt.includes("aciklama")||txt.includes("tutar")))return i;}return-1;}
+  function colIndex(headers,tests,fallback){const norm=headers.map(h=>cleanText(h));for(const test of tests){const idx=norm.findIndex(h=>h.includes(test));if(idx>=0)return idx;}return fallback;}
+  function parseHalkbankWorkbook(wb){
+    const known=knownImportHashes(), out=[];
+    wb.SheetNames.forEach(sheetName=>{
+      const rows=sheetRows(wb.Sheets[sheetName]), headerAt=findHeaderRow(rows), headers=headerAt>=0?rows[headerAt]:[], start=headerAt>=0?headerAt+1:0;
+      const dateCol=headerAt>=0?colIndex(headers,["islem tarihi","tarih"],0):0, descCol=headerAt>=0?colIndex(headers,["aciklama","açiklama","açıklama"],1):1, amountCol=headerAt>=0?colIndex(headers,["islem tutari","işlem tutarı","tutar"],2):2, balanceCol=headerAt>=0?colIndex(headers,["yeni bakiye","bakiye"],3):3;
+      for(let i=start;i<rows.length;i++){const r=rows[i]||[], date=normalizeImportDate(r[dateCol]), desc=cellText(r[descCol]), rawAmount=num(r[amountCol]), balance=num(r[balanceCol]); if(!date||!desc||Math.abs(rawAmount)<0.01)continue; const credit=rawAmount>0?rawAmount:0, debit=rawAmount<0?Math.abs(rawAmount):0, match=detectCari(desc), hash=importHash(["HALKBANK",date,desc,rawAmount,balance,sheetName]); out.push({id:uid("HKB-PREV"),kind:"bank",source:"Halkbank",accountId:"banka",date,desc,amount:Math.abs(rawAmount),debit,credit,balance,sheetName,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",score:match?.score||25,type:credit>0?"Tahsilat":"Hesap Hareketi",status:"Ön İzleme",duplicate:known.has(hash),importHash:hash});}
+    });
+    return out;
+  }
+  function installmentCount(v){const m=cleanText(v).match(/(\d+)/);return Math.max(1,Math.min(36,m?num(m[1]):1));}
+  function addDays(dateText,days){const d=new Date((normalizeImportDate(dateText)||today())+"T12:00:00");d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
+  function parseMokaWorkbook(wb){
+    const known=knownImportHashes(), out=[], plans=[];
+    wb.SheetNames.forEach(sheetName=>{
+      const rows=sheetRows(wb.Sheets[sheetName]), headerAt=findHeaderRow(rows); if(headerAt<0)return; const headers=rows[headerAt];
+      const c={id:colIndex(headers,["id"],1),counter:colIndex(headers,["karsi islem","karşı işlem"],2),date:colIndex(headers,["islem tarihi","işlem tarihi"],3),amount:colIndex(headers,["islem tutari","işlem tutarı"],12),gross:colIndex(headers,["tutar"],10),commission:colIndex(headers,["komisyon tutari","komisyon tutarı"],14),installment:colIndex(headers,["taksit"],16),bank:colIndex(headers,["kart bankasi","kart bankası"],17),holder:colIndex(headers,["kart sahibi"],18),card:colIndex(headers,["kart numarasi","kart numarası"],19)};
+      for(let i=headerAt+1;i<rows.length;i++){const r=rows[i]||[], date=normalizeImportDate(r[c.date]), holder=cellText(r[c.holder]), txId=cellText(r[c.id])||cellText(r[c.counter]), gross=num(r[c.gross]), net=num(r[c.amount])||gross, commission=num(r[c.commission]), inst=installmentCount(r[c.installment]); if(!date||!txId||Math.abs(gross)<0.01)continue; const match=detectCari([holder,cellText(r[c.bank]),txId].join(" ")), hash=importHash(["MOKA",date,txId,gross,net,holder]), schedule=[]; for(let n=1;n<=inst;n++){const dueDate=addDays(date,40*n), netPart=net/inst, scheduleHash=importHash(["MOKA-TAKSIT",txId,n,dueDate,netPart]); schedule.push({id:uid("MOKA-SCH"),txId,installment:n,installmentCount:inst,dueDate,amount:netPart,bankMatched:false,bankHash:"",scheduleHash});} out.push({id:uid("MOKA-PREV"),kind:"moka",source:"Moka United",accountId:"moka-united",date,desc:`Moka POS ${holder} ${inst>1?inst+" taksit":"tek çekim"}`,amount:net,debit:0,credit:net,gross,commission,installmentCount:inst,cardHolder:holder,cardBank:cellText(r[c.bank]),txId,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",score:match?.score||35,type:"Moka United",status:"Ön İzleme",duplicate:known.has(hash),importHash:hash,schedule}); schedule.forEach(s=>plans.push({...s,sourceImportHash:hash,cardHolder:holder,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",gross,net,txDate:date,txId}));}
+    });
+    return {rows:out,plans};
+  }
+  function matchMokaSchedules(){
+    const bankRows=[...state.accountTxns,...state.importPreview.filter(x=>x.kind==="bank")].filter(x=>String(x.source||"").toLocaleLowerCase("tr-TR").includes("halkbank")||x.accountId==="banka");
+    state.mokaPlans=state.mokaPlans.map(p=>{if(p.bankMatched)return p;const m=bankRows.find(b=>{const amount=Math.abs(num(b.amount||b.credit||b.debit)), desc=cleanText(b.desc||b.description||"");const dayDiff=Math.abs((new Date((normalizeImportDate(b.date)||today())+"T00:00:00")-new Date((p.dueDate||today())+"T00:00:00"))/86400000);return Math.abs(amount-num(p.amount))<1&&dayDiff<=7&&/moka|pos|batch|valor/.test(desc);});return m?{...p,bankMatched:true,bankHash:m.importHash||m.id,matchedAt:new Date().toLocaleString("tr-TR")}:p;});
+    writeJson(LS.mokaPlans,state.mokaPlans);
+  }
+  function renderHistoryImportPanel(){
+    const el=byId("historyImportPanel"); if(!el)return; matchMokaSchedules();
+    const rows=state.importPreview||[], moka=state.mokaPlans||[], now=new Date(today()+"T00:00:00");
+    const todayDue=moka.filter(x=>!x.bankMatched&&x.dueDate===today()).reduce((s,x)=>s+num(x.amount),0), weekDue=moka.filter(x=>{const d=new Date((x.dueDate||today())+"T00:00:00"), diff=(d-now)/86400000;return !x.bankMatched&&diff>=0&&diff<=7;}).reduce((s,x)=>s+num(x.amount),0), monthDue=moka.filter(x=>!x.bankMatched&&monthKey(x.dueDate)===monthKey(today())).reduce((s,x)=>s+num(x.amount),0), totalPending=moka.filter(x=>!x.bankMatched).reduce((s,x)=>s+num(x.amount),0);
+    const table=rows.slice(0,180).map(r=>`<tr class="${r.duplicate?"match-duplicate":(!r.cariId||r.score<70?"match-waiting":"match-ready")}"><td>${esc(r.source)}</td><td>${esc(r.date)}</td><td>${esc(r.cariName||"-")}</td><td>${esc(r.type)}</td><td><span class="tag ${r.score>=90?"green":r.score>=70?"amber":"red"}">${r.score}%</span><br>${esc(importPreviewStatus(r))}</td><td>${esc(r.desc)}</td><td class="text-right money">${money(r.amount)}</td></tr>`).join("");
+    const planRows=moka.slice().sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate))).slice(0,80).map(p=>`<tr><td>${esc(p.dueDate)}</td><td>${esc(p.cardHolder||p.cariName||"-")}</td><td>${esc(p.installment)}/${esc(p.installmentCount)}</td><td class="text-right money">${money(p.amount)}</td><td>${p.bankMatched?'<span class="tag green">Bankaya geçti</span>':'<span class="tag amber">Bekliyor</span>'}</td></tr>`).join("");
+    el.innerHTML=`<h2 class="section-title">Geçmiş Banka / Moka İçe Aktarma</h2><div class="rule-box" style="margin-bottom:12px">Halkbank ve Moka dosyaları önce ön izlemeye alınır. Kayıtlar mükerrer kontrolünden geçer; cari hareketi sadece Onay Merkezi onayıyla oluşur.</div><div class="import-preview-grid"><div class="field"><label>Halkbank Excel</label><input id="halkbankFile" type="file" accept=".xlsx,.xls" /><button class="btn btn-blue" onclick="previewHalkbankFile()">Halkbank Ön İzle</button></div><div class="field"><label>Moka POS Excel</label><input id="mokaFile" type="file" accept=".xlsx,.xls" /><button class="btn btn-purple" onclick="previewMokaFile()">Moka Ön İzle + Takvim</button></div></div><div class="btn-row" style="margin-bottom:12px"><button class="btn btn-green" onclick="sendImportPreviewToApproval()">Ön İzlemeyi Onay Merkezi'ne Aktar</button><button class="btn btn-soft" onclick="clearImportPreview()">Ön İzlemeyi Temizle</button><button class="btn btn-soft" onclick="matchMokaSchedules();renderHistoryImportPanel()">Banka-Moka Eşleştir</button></div><div class="cards"><div class="card"><div class="card-label">Moka Bugün</div><div class="card-value">${money(todayDue)}</div></div><div class="card"><div class="card-label">Moka Bu Hafta</div><div class="card-value">${money(weekDue)}</div></div><div class="card"><div class="card-label">Moka Bu Ay</div><div class="card-value">${money(monthDue)}</div></div><div class="card"><div class="card-label">Toplam Moka Alacağı</div><div class="card-value">${money(totalPending)}</div></div></div><h3 class="section-title" style="font-size:16px">Ön İzleme (${rows.length} kayıt)</h3><div class="import-table-wrap">${rows.length?`<table><thead><tr><th>Kaynak</th><th>Tarih</th><th>Önerilen Cari</th><th>Tip</th><th>Durum</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${table}</tbody></table>`:`<div class="empty">Henüz ön izleme yok.</div>`}</div><h3 class="section-title" style="font-size:16px;margin-top:14px">Moka Taksit Bazlı Ödeme Takvimi (${moka.length} satır)</h3><div class="import-table-wrap">${moka.length?`<table><thead><tr><th>Vade</th><th>Kart Sahibi / Cari</th><th>Taksit</th><th class="text-right">Net Tutar</th><th>Durum</th></tr></thead><tbody>${planRows}</tbody></table>`:`<div class="empty">Moka ödeme takvimi yok.</div>`}</div>`;
+  }
+  window.previewHalkbankFile=function(){readWorkbookFromInput("halkbankFile",(wb,name)=>{const parsed=parseHalkbankWorkbook(wb);state.importPreview=[...parsed,...state.importPreview.filter(x=>x.kind!=="bank")];writeJson(LS.importPreview,state.importPreview);logAudit("Halkbank ön izleme oluşturuldu",`${name} · ${parsed.length} kayıt`);refreshAll();notify(`${parsed.length} Halkbank kaydı ön izlemeye alındı.`);});};
+  window.previewMokaFile=function(){readWorkbookFromInput("mokaFile",(wb,name)=>{const parsed=parseMokaWorkbook(wb);state.importPreview=[...parsed.rows,...state.importPreview.filter(x=>x.kind!=="moka")];state.mokaPlans=parsed.plans;writeJson(LS.importPreview,state.importPreview);writeJson(LS.mokaPlans,state.mokaPlans);logAudit("Moka ön izleme ve ödeme takvimi oluşturuldu",`${name} · ${parsed.rows.length} işlem · ${parsed.plans.length} taksit`);refreshAll();notify(`${parsed.rows.length} Moka işlemi ve ${parsed.plans.length} taksit planı oluşturuldu.`);});};
+  window.clearImportPreview=function(){state.importPreview=[];writeJson(LS.importPreview,state.importPreview);logAudit("İçe aktarma ön izlemesi temizlendi","Halkbank/Moka");refreshAll();};
+  window.setApprovalCari=function(id,value){const a=state.approvals.find(x=>x.id===id);if(!a)return;a.cariId=value||"";writeJson(LS.approvals,state.approvals);};
+  window.sendImportPreviewToApproval=function(){
+    const known=knownImportHashes();let acc=0,apr=0,skip=0;
+    state.importPreview.forEach(r=>{if(r.duplicate||known.has(r.importHash)){skip++;return;}const dir=r.credit>0?"giris":"cikis";state.accountTxns.push({id:uid("IMP-ACC"),accountId:r.accountId,date:r.date,dir,amount:r.amount,source:r.source,desc:r.desc,cariId:r.cariId||"",postedToCari:false,importHash:r.importHash,raw:r});acc++;known.add(r.importHash);state.importHashes.push(r.importHash);if(r.credit>0||r.kind==="moka"){state.approvals.unshift({id:uid("APR-IMP"),cariId:r.cariId||"",amount:r.amount,score:r.score,type:r.type==="Moka United"?"Moka United":"Tahsilat",source:r.source,accountId:"",date:r.date,reason:r.desc,status:"Bekliyor",createdAt:new Date().toLocaleString("tr-TR"),importHash:r.importHash});apr++;}});
+    state.importHashes=[...new Set(state.importHashes)].slice(-5000);writeJson(LS.accountTxns,state.accountTxns);writeJson(LS.approvals,state.approvals);writeJson(LS.importHashes,state.importHashes);logAudit("İçe aktarma onaya aktarıldı",`Hesap ${acc} · Onay ${apr} · Mükerrer ${skip}`);refreshAll();notify(`Hesaplara ${acc}, Onay Merkezi'ne ${apr} kayıt aktarıldı. Mükerrer: ${skip}`);
+  };
+
   function firstDayOfMonth(dateText){
     const d=isoDate(dateText)||today();
     return d.slice(0,7)+"-01";
@@ -1300,6 +1369,16 @@
   }
   function renderApprovals(){
     byId("approvalList").innerHTML=state.approvals.length?`<table><thead><tr><th>İşlem Tarihi</th><th>Önerilen Cari</th><th>Tip</th><th>Kaynak</th><th>Güven</th><th class="text-right">Tutar</th><th>Sebep</th><th>İşlem</th></tr></thead><tbody>${state.approvals.map(a=>{const c=state.cariler.find(x=>x.id===a.cariId);const ledgerDate=approvalLedgerDate(a);return`<tr><td>${esc(ledgerDate)}<br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td>${esc(c?.name||"-")}</td><td>${esc(a.type)}</td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td>${esc(a.reason||"")}</td><td>${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button> <button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`;
+  }
+  function approvalCariCell(a){
+    const c=state.cariler.find(x=>x.id===a.cariId);
+    if(c) return esc(c.name);
+    const opts=`<option value="">Cari seç...</option>`+state.cariler.filter(x=>!x.deleted).map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
+    return `<select class="select-input" onchange="setApprovalCari('${esc(a.id)}',this.value)">${opts}</select><div class="muted-note">EŞLEŞME BEKLEYEN</div>`;
+  }
+  function renderApprovals(){
+    const el=byId("approvalList"); if(!el)return;
+    el.innerHTML=state.approvals.length?`<table><thead><tr><th>İşlem Tarihi</th><th>Önerilen Cari</th><th>Tip</th><th>Kaynak</th><th>Güven</th><th class="text-right">Tutar</th><th>Sebep</th><th>İşlem</th></tr></thead><tbody>${state.approvals.map(a=>{const ledgerDate=approvalLedgerDate(a);return`<tr><td>${esc(ledgerDate)}<br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td>${approvalCariCell(a)}</td><td>${esc(a.type)}</td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td>${esc(a.reason||"")}</td><td>${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button> <button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`;
   }
   window.approveItem=function(id){
     const a=state.approvals.find(x=>x.id===id); if(!a) return;
@@ -1488,7 +1567,7 @@
   function toCsv(rows){if(!rows.length)return"";const keys=Object.keys(rows[0]);return keys.join(";")+"\n"+rows.map(r=>keys.map(k=>`"${String(r[k]??"").replace(/"/g,'""')}"`).join(";")).join("\n");}
 
   window.downloadState=function(){
-    const data={version:"ALKAM_FINAL_ESKI_GOVDE_CARI_OTOMASYON",exportedAt:new Date().toISOString(),cariler:state.cariler,manualTxns:state.manualTxns,deletedTxns:state.deletedTxns,accounts:state.accounts,accountTxns:state.accountTxns,approvals:state.approvals,opsTasks:state.opsTasks,cashRecords:state.cashRecords,automation:state.automation,audit:readJson(LS.audit,[])};
+    const data={version:"ALKAM_FINAL_ESKI_GOVDE_CARI_OTOMASYON",exportedAt:new Date().toISOString(),cariler:state.cariler,manualTxns:state.manualTxns,deletedTxns:state.deletedTxns,accounts:state.accounts,accountTxns:state.accountTxns,approvals:state.approvals,opsTasks:state.opsTasks,cashRecords:state.cashRecords,automation:state.automation,importPreview:state.importPreview,importHashes:state.importHashes,mokaPlans:state.mokaPlans,audit:readJson(LS.audit,[])};
     downloadBlob("alkam-mali-final-yedek-"+today()+".json",JSON.stringify(data,null,2),"application/json");
   };
   function downloadBlob(name,text,type){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
@@ -1498,7 +1577,7 @@
     r.onload=()=>{try{const d=JSON.parse(r.result); if(d.cariler)state.cariler=d.cariler.map(normalizeCari); if(d.manualTxns)state.manualTxns=d.manualTxns; if(d.deletedTxns)state.deletedTxns=d.deletedTxns; if(d.accounts)state.accounts=d.accounts; if(d.accountTxns)state.accountTxns=d.accountTxns; if(d.approvals)state.approvals=d.approvals; if(d.opsTasks)state.opsTasks=d.opsTasks; if(d.cashRecords)state.cashRecords=d.cashRecords; if(d.automation)state.automation=d.automation; if(d.audit)writeJson(LS.audit,d.audit); persistAll();logAudit("Yedek yüklendi",f.name);refreshAll();notify("Yedek yüklendi.");}catch(err){notify("Yedek okunamadı: "+err.message);}};
     r.readAsText(f);
   };
-  function persistAll(){writeJson(LS.cariler,state.cariler);writeJson(LS.manual,state.manualTxns);writeJson(LS.deleted,state.deletedTxns);writeJson(LS.accounts,state.accounts);writeJson(LS.accountTxns,state.accountTxns);writeJson(LS.approvals,state.approvals);writeJson(LS.opsTasks,state.opsTasks);writeJson(LS.cashModules,state.cashRecords);writeJson(LS.automation,state.automation);}
+  function persistAll(){writeJson(LS.cariler,state.cariler);writeJson(LS.manual,state.manualTxns);writeJson(LS.deleted,state.deletedTxns);writeJson(LS.accounts,state.accounts);writeJson(LS.accountTxns,state.accountTxns);writeJson(LS.approvals,state.approvals);writeJson(LS.opsTasks,state.opsTasks);writeJson(LS.cashModules,state.cashRecords);writeJson(LS.automation,state.automation);writeJson(LS.importPreview,state.importPreview);writeJson(LS.importHashes,state.importHashes);writeJson(LS.mokaPlans,state.mokaPlans);}
   window.loadPastedCariData=function(){try{const data=JSON.parse(byId("pasteCariJson").value);if(!Array.isArray(data))throw new Error("Liste formatında değil.");state.cariler=data.map(normalizeCari);state.dataSource="Yapıştırılan JSON";state.loadError="";writeJson(LS.cariler,state.cariler);logAudit("Yapıştırılan cari verisi yüklendi",`${state.cariler.length} cari`);refreshAll();notify(state.cariler.length+" cari yüklendi.");}catch(err){notify("Cari verisi okunamadı: "+err.message);}};
   window.resetLocalOnly=function(){if(!confirm("Yerel localStorage verileri sıfırlansın mı? GitHub dosyalarına dokunmaz."))return;[LS.cariler,LS.manual,LS.deleted,LS.accounts,LS.accountTxns,LS.approvals,LS.opsTasks,LS.cashModules,LS.automation,LS.pendingAuto,LS.audit].forEach(k=>localStorage.removeItem(k));location.reload();};
 
