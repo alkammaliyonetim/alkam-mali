@@ -49,6 +49,7 @@
     .list{display:grid;gap:8px}.cari-list-scroll{max-height:calc(100vh - 318px);overflow:auto;padding-right:4px}.cari-detail-scroll{height:calc(100vh - 210px);overflow:hidden;padding-right:2px}
     #selectedCariDetail{height:100%;display:flex;flex-direction:column;min-height:0}.cari-sticky-header{flex:0 0 auto;background:#fff;border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:10px;z-index:5}.statement-scroll{flex:1 1 auto;min-height:220px;overflow:auto;border:1px solid #eef2f7;border-radius:12px}
     .list-item{border:1px solid var(--line);background:#fbfdff;border-radius:12px;padding:11px;cursor:pointer;transition:.14s}.list-item:hover,.list-item.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(23,105,232,.16);background:#f6f9ff}.list-item.deleted{opacity:.55;background:#f8fafc}
+    .list-item.promise-open{background:#fff7ed;border-color:#fdba74}.list-item.promise-open.active{background:#ffedd5;border-color:#f97316;box-shadow:0 0 0 2px rgba(249,115,22,.18)}.list-item.promise-overdue{background:#fff1f2;border-color:#fca5a5}.list-item.promise-overdue.active{background:#ffe4e6;border-color:#dc2626;box-shadow:0 0 0 2px rgba(220,38,38,.18)}
     .list-title{font-size:13px;font-weight:950;margin-bottom:6px}.list-meta{font-size:11px;font-weight:750;color:var(--muted);line-height:1.48}
     table{width:100%;border-collapse:separate;border-spacing:0;table-layout:auto}
     th,td{padding:9px 7px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;vertical-align:top}
@@ -426,12 +427,34 @@
     writeJson(LS.accounts,state.accounts);
   }
   function uid(prefix){return prefix+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);}
-  function num(v){if(typeof v==="number") return Number.isFinite(v)?v:0; let s=String(v??"").trim().replace(/\s/g,"").replace(/TL|₺/gi,""); if(!s) return 0; if(s.includes(",")&&s.includes(".")) s=s.replace(/\./g,"").replace(",","."); else if(s.includes(",")) s=s.replace(",","."); return Number(s)||0;}
+  function num(v){
+    if(typeof v==="number") return Number.isFinite(v)?v:0;
+    let s=String(v??"").trim().replace(/\s/g,"").replace(/TL|₺/gi,"");
+    if(!s) return 0;
+    if(s.includes(",")&&s.includes(".")) s=s.replace(/\./g,"").replace(",",".");
+    else if(s.includes(",")) s=s.replace(",",".");
+    else if(/^\d{1,3}(?:\.\d{3})+$/.test(s)) s=s.replace(/\./g,"");
+    return Number(s)||0;
+  }
   function money(v){return num(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" TL";}
   function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]));}
   function isoDate(v){if(!v)return"";const s=String(v).trim();if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);const d=new Date(s);return Number.isNaN(d.getTime())?"":d.toISOString().slice(0,10);}
   function today(){return new Date().toISOString().slice(0,10);}
   function balanceLabel(v){const n=num(v);if(Math.abs(n)<0.01)return"0,00 TL";return money(Math.abs(n))+" "+(n>=0?"Bakiye B":"Bakiye A");}
+  function monthKey(v){const d=isoDate(v)||today();return d.slice(0,7);}
+  function yearKey(v){const d=isoDate(v)||today();return d.slice(0,4);}
+  function openPaymentPromises(){return state.opsTasks.filter(t=>String(t.kind||"")==="Ödeme Sözü" && t.status!=="Tamamlandı");}
+  function donePaymentPromises(){return state.opsTasks.filter(t=>String(t.kind||"")==="Ödeme Sözü" && t.status==="Tamamlandı");}
+  function paymentPromisesForCari(cariId){return state.opsTasks.filter(t=>String(t.kind||"")==="Ödeme Sözü" && t.cariId===cariId);}
+  function promiseBudget(){
+    const open=openPaymentPromises();
+    return {
+      week: open.filter(t=>{const d=isoDate(t.dueDate); if(!d)return false; const now=new Date(today()+"T00:00:00"); const due=new Date(d+"T00:00:00"); const diff=(due-now)/86400000; return diff>=0 && diff<=7;}).reduce((s,t)=>s+num(t.amount),0),
+      month: open.filter(t=>monthKey(t.dueDate)===monthKey(today())).reduce((s,t)=>s+num(t.amount),0),
+      year: open.filter(t=>yearKey(t.dueDate)===yearKey(today())).reduce((s,t)=>s+num(t.amount),0),
+      overdue: open.filter(t=>isoDate(t.dueDate) && isoDate(t.dueDate)<today()).reduce((s,t)=>s+num(t.amount),0)
+    };
+  }
   function slug(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("cari");}
   function notify(msg){const el=byId("toast"); if(!el) return; el.textContent=msg; el.style.display="block"; clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>el.style.display="none",3000);}
   function logAudit(action, detail, level="Kaydedildi"){const list=readJson(LS.audit,[]); list.unshift({at:new Date().toISOString(), action, detail, level}); writeJson(LS.audit, list.slice(0,500)); renderAuditList();}
@@ -582,7 +605,7 @@
   };
 
   window.refreshAll = function(){
-    renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderCashModules(); renderTelegramPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects();
+    renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderCashModules(); renderTelegramPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects(); cleanupLegacyTelegramPanels();
   };
 
   function renderDashboard(){
@@ -597,7 +620,8 @@
     byId("connState").textContent = activeCariler.length ? `${activeCariler.length} cari yüklü` : "Cari bekleniyor";
     const top = rows.sort((a,b)=>Math.abs(b.bal)-Math.abs(a.bal)).slice(0,8);
     byId("dashboardTopCari").innerHTML = top.length ? `<table><thead><tr><th>Cari</th><th>Son İşlem</th><th class="text-right">Bakiye</th></tr></thead><tbody>${top.map(x=>`<tr><td>${esc(x.c.name)}</td><td>${esc(x.last||"-")}</td><td class="text-right money">${balanceLabel(x.bal)}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Cari veri yok.<br>${esc(state.loadError||"Yükleniyor...")}</div>`;
-    byId("systemStatus").innerHTML = `<strong>Veri kaynağı:</strong> ${esc(state.dataSource)}<br><strong>Aktif cari:</strong> ${activeCariler.length}<br><strong>Toplam hareket:</strong> ${activeCariler.reduce((s,c)=>s+allTxns(c).length,0)}<br><strong>Kaynak kolonu:</strong> Aktif<br><strong>Bakiye standardı:</strong> Bakiye B / Bakiye A<br><strong>Moka United:</strong> Ayrı hesap aktif<br><strong>Otomasyon:</strong> Riskli işler varsayılan KAPALI${state.loadError?`<br><span style="color:#b91c1c"><strong>Hata:</strong> ${esc(state.loadError)}</span>`:""}`;
+    const pb=promiseBudget();
+    byId("systemStatus").innerHTML = `<strong>Veri kaynağı:</strong> ${esc(state.dataSource)}<br><strong>Aktif cari:</strong> ${activeCariler.length}<br><strong>Toplam hareket:</strong> ${activeCariler.reduce((s,c)=>s+allTxns(c).length,0)}<br><strong>Beklenen ödeme sözleri:</strong> Bu hafta ${money(pb.week)} · Bu ay ${money(pb.month)} · Bu yıl ${money(pb.year)}${pb.overdue>0?`<br><span style="color:#b91c1c"><strong>Geciken ödeme sözü:</strong> ${money(pb.overdue)}</span>`:""}<br><strong>Kaynak kolonu:</strong> Aktif<br><strong>Bakiye standardı:</strong> Bakiye B / Bakiye A<br><strong>Moka United:</strong> Ayrı hesap aktif<br><strong>Otomasyon:</strong> Riskli işler varsayılan KAPALI${state.loadError?`<br><span style="color:#b91c1c"><strong>Hata:</strong> ${esc(state.loadError)}</span>`:""}`;
   }
 
   window.renderCariList = function(){
@@ -615,7 +639,7 @@
     else if(sort==="lastDateDesc") rows.sort((a,b)=>String(b.last).localeCompare(String(a.last)));
     else if(sort==="feeDesc") rows.sort((a,b)=>num(b.c.monthlyFee)-num(a.c.monthlyFee));
     else rows.sort((a,b)=>Math.abs(b.bal)-Math.abs(a.bal));
-    byId("cariList").innerHTML = rows.length ? rows.map(x=>`<div class="list-item ${state.selectedCariId===x.c.id?"active":""} ${x.c.deleted?"deleted":""}" onclick="selectCari('${String(x.c.id).replaceAll("'","")}')"><div><div class="list-title">${esc(x.c.name)}</div><div class="list-meta">${esc(x.c.code||"-")} • ${esc(x.c.type||"Cari")}<br>Son: ${esc(x.last||"-")} • ${x.count} hareket<br><strong>${balanceLabel(x.bal)}</strong> ${x.c.deleted?'<span class="tag red">SİLİNMİŞ</span>':""}</div></div></div>`).join("") : `<div class="empty">Cari bulunamadı.</div>`;
+    byId("cariList").innerHTML = rows.length ? rows.map(x=>{const promises=paymentPromisesForCari(x.c.id);const open=promises.filter(p=>p.status!=="Tamamlandı");const due=open.map(p=>isoDate(p.dueDate)).filter(Boolean).sort()[0]||"";const overdue=!!(due&&due<today());const cls=open.length?(overdue?" promise-overdue":" promise-open"):"";return `<div class="list-item${cls} ${state.selectedCariId===x.c.id?"active":""} ${x.c.deleted?"deleted":""}" onclick="selectCari('${String(x.c.id).replaceAll("'","")}')"><div><div class="list-title">${esc(x.c.name)}</div><div class="list-meta">${esc(x.c.code||"-")} • ${esc(x.c.type||"Cari")}<br>Son: ${esc(x.last||"-")} • ${x.count} hareket<br><strong>${balanceLabel(x.bal)}</strong> ${open.length?`<br><span class="tag ${overdue?"red":"amber"}">${overdue?"Geciken ödeme sözü":"Ödeme sözü"}: ${open.length} • ${money(open.reduce((s,p)=>s+num(p.amount),0))}${due?` • ${esc(due)}`:""}</span>`:""} ${x.c.deleted?'<span class="tag red">SİLİNMİŞ</span>':""}</div></div></div>`}).join("") : `<div class="empty">Cari bulunamadı.</div>`;
     if(!state.selectedCariId && rows[0]) state.selectedCariId = rows[0].c.id;
   };
 
@@ -625,6 +649,9 @@
     const c = state.cariler.find(x=>x.id===state.selectedCariId);
     if(!c){byId("selectedCariDetail").innerHTML=`<div class="empty">Bir cari seç.</div>`;return;}
     const rows=statementRowsNewestFirst(c); const meta=totals(c);
+    const promises=paymentPromisesForCari(c.id);
+    const openPromises=promises.filter(p=>p.status!=="Tamamlandı");
+    const promiseBox=openPromises.length?`<div class="rule-box" style="border-color:#fdba74;background:#fff7ed;color:#9a3412"><strong>Aktif Ödeme Sözü:</strong> ${openPromises.map(p=>`${esc(p.dueDate||"Tarih yok")} • ${money(p.amount)} • ${esc(p.text||p.note||"")}`).join("<br>")}<br><button class="btn btn-green" onclick="completeCariPromise('${c.id}')">Söz Yerine Getirildi</button></div>`:"";
     const tableRows = rows.map((t,i)=>{
       const tip = String(t.type||"").toLocaleLowerCase("tr-TR");
       const klass = tip.includes("tahakkuk") || num(t.debit)>0 ? "row-tahakkuk" : num(t.credit)>0 ? "row-tahsilat" : "row-neutral";
@@ -649,6 +676,7 @@
         </div>
         <div class="v119-legend"><span><i class="v119-dot v119-red"></i>Tahakkuk / Borç</span><span><i class="v119-dot v119-green"></i>Tahsilat / Alacak</span><span><i class="v119-dot v119-blue"></i>Düzeltme / Diğer</span></div>
         <div class="rule-box">Bu extrede <strong>Kaynak</strong> kolonu zorunludur. En yakın tarih en üstte gösterilir. Bakiye işarete göre <strong>Bakiye B</strong> veya <strong>Bakiye A</strong> gösterilir.</div>
+        ${promiseBox}
       </div>
       <div class="statement-scroll"><table class="source-statement"><colgroup><col class="col-no"><col class="col-date"><col class="col-source"><col class="col-type"><col class="col-desc"><col class="col-money"><col class="col-money"><col class="col-money"><col class="col-action"></colgroup><thead><tr><th>İşlem No</th><th>Tarih</th><th>Kaynak</th><th>Tip</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${tableRows || `<tr><td colspan="9" class="empty">Hareket yok.</td></tr>`}</tbody></table></div>`;
   }
@@ -1019,6 +1047,9 @@
     if(iso) return `${iso[1]}-${String(iso[2]).padStart(2,"0")}-${String(iso[3]).padStart(2,"0")}`;
     const tr=raw.match(/\b(\d{1,2})[-/.](\d{1,2})[-/.](20\d{2})\b/);
     if(tr) return `${tr[3]}-${String(tr[2]).padStart(2,"0")}-${String(tr[1]).padStart(2,"0")}`;
+    const months={ocak:1,subat:2,şubat:2,mart:3,nisan:4,mayis:5,mayıs:5,haziran:6,temmuz:7,agustos:8,ağustos:8,eylul:9,eylül:9,ekim:10,kasim:11,kasım:11,aralik:12,aralık:12};
+    const m=cleanText(raw).match(/\b(\d{1,2})\s+(ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik)\s*(?:da|de|ta|te)?\s*(20\d{2})?\b/);
+    if(m){const y=m[3]||today().slice(0,4);return `${y}-${String(months[m[2]]).padStart(2,"0")}-${String(m[1]).padStart(2,"0")}`;}
     return "";
   }
   function buildTelegramRecord(text){
@@ -1054,6 +1085,8 @@
     const el=byId("telegramPanel"); if(!el) return;
     const recent=state.telegramMessages.slice(0,8);
     const openTasks=state.opsTasks.filter(t=>t.status!=="Tamamlandı").slice(0,12);
+    const donePromises=donePaymentPromises().slice(0,8);
+    const pb=promiseBudget();
     el.innerHTML=`
       <h2 class="section-title">Telegram Operasyon Merkezi</h2>
       <div class="rule-box" style="margin-bottom:12px">Telegram mesajı buraya yapıştırılır; sistem banka/kasa/Moka/çek/senet, cari, tutar, ödeme sözü ve yapılacak iş ayrımını önerir. Finansal kayıtlar onaydan geçmeden cariye yazılmaz.</div>
@@ -1079,7 +1112,17 @@
           <h3 class="section-title" style="font-size:16px">Ödeme Sözü / Yapılacaklar</h3>
           <div class="mini-list">${openTasks.length?openTasks.map(t=>`<div class="mini-row"><strong>${esc(t.kind)}</strong> ${t.dueDate?`· ${esc(t.dueDate)}`:""}<br>${esc(t.cariName||"Cari eşleşmedi")} · ${money(t.amount)}<br><span class="muted-note">${esc(t.text)}</span><br><button class="btn btn-green" onclick="completeOpsTask('${t.id}')">Tamamla</button></div>`).join(""):`<div class="empty">Açık ödeme sözü / yapılacak yok.</div>`}</div>
         </div>
-      </div>`;
+      </div>
+      <div class="cards" style="margin-top:12px"><div class="card"><div class="card-label">Bu Hafta Beklenen</div><div class="card-value">${money(pb.week)}</div></div><div class="card"><div class="card-label">Bu Ay Beklenen</div><div class="card-value">${money(pb.month)}</div></div><div class="card"><div class="card-label">Bu Yıl Beklenen</div><div class="card-value">${money(pb.year)}</div></div><div class="card"><div class="card-label">Geciken</div><div class="card-value">${money(pb.overdue)}</div></div></div>
+      <div class="section" style="margin-top:12px"><h3 class="section-title" style="font-size:16px">Tamamlanan Ödeme Sözleri</h3>${donePromises.length?`<table><thead><tr><th>Tarih</th><th>Cari</th><th>Metin</th><th class="text-right">Tutar</th><th>Tamamlandı</th></tr></thead><tbody>${donePromises.map(t=>`<tr><td>${esc(t.dueDate||"-")}</td><td>${esc(t.cariName||"Cari eşleşmedi")}</td><td>${esc(t.text||"")}</td><td class="text-right money">${money(t.amount)}</td><td>${esc(t.completedAt||"-")}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Tamamlanan ödeme sözü yok.</div>`}</div>`;
+  }
+  function cleanupLegacyTelegramPanels(){
+    const legacyTitles=["Telegram / WhatsApp Veri Yükleme","Telegram Canlı Mesaj Alma","Basit Telegram / WhatsApp Veri Yükleme"];
+    document.querySelectorAll("#tab-onay .section").forEach(section=>{
+      if(section.id==="telegramPanel" || section.id==="approvalList") return;
+      const text=(section.textContent||"").trim();
+      if(legacyTitles.some(title=>text.includes(title))) section.remove();
+    });
   }
   window.addTelegramApproval=function(){
     const text=(byId("telegramText")?.value||"").trim();
@@ -1132,6 +1175,15 @@
     writeJson(LS.opsTasks,state.opsTasks);
     logAudit("Operasyon kaydı tamamlandı", t.text);
     refreshAll();
+  };
+  window.completeCariPromise=function(cariId){
+    const items=openPaymentPromises().filter(t=>t.cariId===cariId);
+    if(!items.length) return notify("Bu caride açık ödeme sözü yok.");
+    items.forEach(t=>{t.status="Tamamlandı";t.completedAt=new Date().toLocaleString("tr-TR");});
+    writeJson(LS.opsTasks,state.opsTasks);
+    logAudit("Cari ödeme sözü yerine getirildi", `${items.length} kayıt`);
+    refreshAll();
+    notify("Ödeme sözü tamamlandı listesine alındı.");
   };
   async function sendTelegramMessage(chatId,text){
     const res=await fetch("/api/telegram/send",{
