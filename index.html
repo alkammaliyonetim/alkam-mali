@@ -49,7 +49,7 @@
     .list{display:grid;gap:8px}.cari-list-scroll{max-height:calc(100vh - 318px);overflow:auto;padding-right:4px}.cari-detail-scroll{height:calc(100vh - 210px);overflow:hidden;padding-right:2px}
     #selectedCariDetail{height:100%;display:flex;flex-direction:column;min-height:0}.cari-sticky-header{flex:0 0 auto;background:#fff;border-bottom:1px solid #e2e8f0;padding-bottom:12px;margin-bottom:10px;z-index:5}.statement-scroll{flex:1 1 auto;min-height:220px;overflow:auto;border:1px solid #eef2f7;border-radius:12px}
     .list-item{border:1px solid var(--line);background:#fbfdff;border-radius:12px;padding:11px;cursor:pointer;transition:.14s}.list-item:hover,.list-item.active{border-color:var(--blue);box-shadow:0 0 0 2px rgba(23,105,232,.16);background:#f6f9ff}.list-item.deleted{opacity:.55;background:#f8fafc}
-    .list-item.promise-open{background:#fff7ed;border-color:#fdba74}.list-item.promise-open.active{background:#ffedd5;border-color:#f97316;box-shadow:0 0 0 2px rgba(249,115,22,.18)}.list-item.promise-overdue{background:#fff1f2;border-color:#fca5a5}.list-item.promise-overdue.active{background:#ffe4e6;border-color:#dc2626;box-shadow:0 0 0 2px rgba(220,38,38,.18)}
+    .list-item.promise-open{background:#fff7ed;border-color:#fdba74}.list-item.promise-open.active{background:#ffedd5;border-color:#f97316;box-shadow:0 0 0 2px rgba(249,115,22,.18)}.list-item.promise-overdue{background:#fff1f2;border-color:#fca5a5}.list-item.promise-overdue.active{background:#ffe4e6;border-color:#dc2626;box-shadow:0 0 0 2px rgba(220,38,38,.18)}.list-item.promise-done{background:#f0fdf4;border-color:#86efac}.list-item.promise-done.active{background:#dcfce7;border-color:#16a34a;box-shadow:0 0 0 2px rgba(22,163,74,.16)}
     .list-title{font-size:13px;font-weight:950;margin-bottom:6px}.list-meta{font-size:11px;font-weight:750;color:var(--muted);line-height:1.48}
     table{width:100%;border-collapse:separate;border-spacing:0;table-layout:auto}
     th,td{padding:9px 7px;border-bottom:1px solid var(--line);text-align:left;font-size:12px;vertical-align:top}
@@ -472,7 +472,7 @@
   window.emergencyLogin=emergencyLogin;
   window.forceAlkamLogin=openApp;
   window.logout=function(){localStorage.removeItem(LS.session); location.reload();};
-  function openApp(){const o=byId("loginOverlay"); if(o){o.style.display="none";o.classList.add("force-hidden");} document.body.classList.add("alkam-unlocked"); refreshAll(); setupTelegramPolling();}
+  function openApp(){const o=byId("loginOverlay"); if(o){o.style.display="none";o.classList.add("force-hidden");} document.body.classList.add("alkam-unlocked"); refreshAll(); setupTelegramPolling(); setupLegacyTelegramCleanup();}
   document.addEventListener("DOMContentLoaded", function(){
     const f=byId("loginForm"), i=byId("loginPassword");
     if(f) f.onsubmit=emergencyLogin;
@@ -639,7 +639,7 @@
     else if(sort==="lastDateDesc") rows.sort((a,b)=>String(b.last).localeCompare(String(a.last)));
     else if(sort==="feeDesc") rows.sort((a,b)=>num(b.c.monthlyFee)-num(a.c.monthlyFee));
     else rows.sort((a,b)=>Math.abs(b.bal)-Math.abs(a.bal));
-    byId("cariList").innerHTML = rows.length ? rows.map(x=>{const promises=paymentPromisesForCari(x.c.id);const open=promises.filter(p=>p.status!=="Tamamlandı");const due=open.map(p=>isoDate(p.dueDate)).filter(Boolean).sort()[0]||"";const overdue=!!(due&&due<today());const cls=open.length?(overdue?" promise-overdue":" promise-open"):"";return `<div class="list-item${cls} ${state.selectedCariId===x.c.id?"active":""} ${x.c.deleted?"deleted":""}" onclick="selectCari('${String(x.c.id).replaceAll("'","")}')"><div><div class="list-title">${esc(x.c.name)}</div><div class="list-meta">${esc(x.c.code||"-")} • ${esc(x.c.type||"Cari")}<br>Son: ${esc(x.last||"-")} • ${x.count} hareket<br><strong>${balanceLabel(x.bal)}</strong> ${open.length?`<br><span class="tag ${overdue?"red":"amber"}">${overdue?"Geciken ödeme sözü":"Ödeme sözü"}: ${open.length} • ${money(open.reduce((s,p)=>s+num(p.amount),0))}${due?` • ${esc(due)}`:""}</span>`:""} ${x.c.deleted?'<span class="tag red">SİLİNMİŞ</span>':""}</div></div></div>`}).join("") : `<div class="empty">Cari bulunamadı.</div>`;
+    byId("cariList").innerHTML = rows.length ? rows.map(x=>{const promises=paymentPromisesForCari(x.c.id);const open=promises.filter(p=>p.status!=="Tamamlandı");const done=promises.filter(p=>p.status==="Tamamlandı");const due=open.map(p=>isoDate(p.dueDate)).filter(Boolean).sort()[0]||"";const overdue=!!(due&&due<today());const cls=open.length?(overdue?" promise-overdue":" promise-open"):(done.length?" promise-done":"");return `<div class="list-item${cls} ${state.selectedCariId===x.c.id?"active":""} ${x.c.deleted?"deleted":""}" onclick="selectCari('${String(x.c.id).replaceAll("'","")}')"><div><div class="list-title">${esc(x.c.name)}</div><div class="list-meta">${esc(x.c.code||"-")} • ${esc(x.c.type||"Cari")}<br>Son: ${esc(x.last||"-")} • ${x.count} hareket<br><strong>${balanceLabel(x.bal)}</strong> ${open.length?`<br><span class="tag ${overdue?"red":"amber"}">${overdue?"Geciken ödeme sözü":"Ödeme sözü"}: ${open.length} • ${money(open.reduce((s,p)=>s+num(p.amount),0))}${due?` • ${esc(due)}`:""}</span>`:""} ${!open.length&&done.length?`<br><span class="tag green">Tamamlanan ödeme sözü: ${done.length} • ${money(done.reduce((s,p)=>s+num(p.amount),0))}</span>`:""} ${x.c.deleted?'<span class="tag red">SİLİNMİŞ</span>':""}</div></div></div>`}).join("") : `<div class="empty">Cari bulunamadı.</div>`;
     if(!state.selectedCariId && rows[0]) state.selectedCariId = rows[0].c.id;
   };
 
@@ -651,7 +651,9 @@
     const rows=statementRowsNewestFirst(c); const meta=totals(c);
     const promises=paymentPromisesForCari(c.id);
     const openPromises=promises.filter(p=>p.status!=="Tamamlandı");
+    const donePromises=promises.filter(p=>p.status==="Tamamlandı").slice(0,8);
     const promiseBox=openPromises.length?`<div class="rule-box" style="border-color:#fdba74;background:#fff7ed;color:#9a3412"><strong>Aktif Ödeme Sözü:</strong> ${openPromises.map(p=>`${esc(p.dueDate||"Tarih yok")} • ${money(p.amount)} • ${esc(p.text||p.note||"")}`).join("<br>")}<br><button class="btn btn-green" onclick="completeCariPromise('${c.id}')">Söz Yerine Getirildi</button></div>`:"";
+    const donePromiseBox=donePromises.length?`<div class="rule-box" style="border-color:#86efac;background:#f0fdf4;color:#166534"><strong>Tamamlanan Ödeme Sözleri:</strong><br>${donePromises.map(p=>`${esc(p.dueDate||"-")} • ${money(p.amount)} • ${esc(p.completedAt||"-")} • ${esc(p.text||p.note||"")}`).join("<br>")}</div>`:"";
     const tableRows = rows.map((t,i)=>{
       const tip = String(t.type||"").toLocaleLowerCase("tr-TR");
       const klass = tip.includes("tahakkuk") || num(t.debit)>0 ? "row-tahakkuk" : num(t.credit)>0 ? "row-tahsilat" : "row-neutral";
@@ -677,6 +679,7 @@
         <div class="v119-legend"><span><i class="v119-dot v119-red"></i>Tahakkuk / Borç</span><span><i class="v119-dot v119-green"></i>Tahsilat / Alacak</span><span><i class="v119-dot v119-blue"></i>Düzeltme / Diğer</span></div>
         <div class="rule-box">Bu extrede <strong>Kaynak</strong> kolonu zorunludur. En yakın tarih en üstte gösterilir. Bakiye işarete göre <strong>Bakiye B</strong> veya <strong>Bakiye A</strong> gösterilir.</div>
         ${promiseBox}
+        ${donePromiseBox}
       </div>
       <div class="statement-scroll"><table class="source-statement"><colgroup><col class="col-no"><col class="col-date"><col class="col-source"><col class="col-type"><col class="col-desc"><col class="col-money"><col class="col-money"><col class="col-money"><col class="col-action"></colgroup><thead><tr><th>İşlem No</th><th>Tarih</th><th>Kaynak</th><th>Tip</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${tableRows || `<tr><td colspan="9" class="empty">Hareket yok.</td></tr>`}</tbody></table></div>`;
   }
@@ -1123,6 +1126,15 @@
       const text=(section.textContent||"").trim();
       if(legacyTitles.some(title=>text.includes(title))) section.remove();
     });
+  }
+  function setupLegacyTelegramCleanup(){
+    if(window.__alkamLegacyTelegramCleanup) return;
+    window.__alkamLegacyTelegramCleanup=true;
+    setInterval(cleanupLegacyTelegramPanels,1500);
+    const target=byId("tab-onay");
+    if(target && window.MutationObserver){
+      new MutationObserver(()=>cleanupLegacyTelegramPanels()).observe(target,{childList:true,subtree:true});
+    }
   }
   window.addTelegramApproval=function(){
     const text=(byId("telegramText")?.value||"").trim();
