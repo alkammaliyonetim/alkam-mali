@@ -837,8 +837,35 @@
 
   function cashModuleRows(key){return Array.isArray(state.cashRecords[key]) ? state.cashRecords[key] : [];}
   function renderCashModules(){cashModules.forEach(renderCashModule);}
+  function currentMonth(){return today().slice(0,7);}
+  function firstDayOfPeriod(period){return String(period||currentMonth()).slice(0,7)+"-01";}
+  function employeeCards(){return cashModuleRows("calisanlar").filter(r=>r.recordType==="employee" || (!r.recordType && /aktif|pasif/i.test(String(r.status||""))));}
+  function employeeSalaryRows(){return cashModuleRows("calisanlar").filter(r=>r.recordType==="salary");}
+  function employeeName(r){return r.employeeName || r.party || "Çalışan";}
+  function employeeMonthlySalary(r){return num(r.monthlySalary || r.amount);}
+  function renderEmployeeModule(mod){
+    const el=byId("cashModule-"+mod.key); if(!el) return;
+    const employees=employeeCards().sort((a,b)=>employeeName(a).localeCompare(employeeName(b),"tr"));
+    const txns=employeeSalaryRows().slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    const active=employees.filter(e=>!/pasif/i.test(String(e.status||"")));
+    const monthlyTotal=active.reduce((s,e)=>s+employeeMonthlySalary(e),0);
+    const accrued=txns.filter(t=>t.payrollType==="Tahakkuk").reduce((s,t)=>s+num(t.amount),0);
+    const paid=txns.filter(t=>t.payrollType==="Ödeme").reduce((s,t)=>s+num(t.amount),0);
+    const open=accrued-paid;
+    const empOptions=employees.map(e=>`<option value="${esc(e.id)}">${esc(employeeName(e))} - ${money(employeeMonthlySalary(e))}</option>`).join("");
+    el.innerHTML=`
+      <div class="topbar"><div class="page-head"><h1>Çalışanlar</h1><p>Çalışan kartı, aylık maaş tahakkuku, manuel tahakkuk/ödeme ve takip ekstresi birlikte çalışır.</p></div><div class="btn-row"><button class="btn btn-green" onclick="postMonthlyPayrollAccruals()">Bu Ay Maaş Tahakkuklarını Oluştur</button><button class="btn btn-blue" onclick="exportCashModuleCsv('calisanlar')">CSV</button></div></div>
+      <div class="cards"><div class="card"><div class="card-label">Aktif Çalışan</div><div class="card-value">${active.length}</div></div><div class="card"><div class="card-label">Aylık Net Maaş</div><div class="card-value">${money(monthlyTotal)}</div></div><div class="card"><div class="card-label">Tahakkuk - Ödeme</div><div class="card-value">${balanceLabel(open)}</div></div><div class="card"><div class="card-label">Son İşlem</div><div class="card-value" style="font-size:20px">${esc(txns[0]?.date||"-")}</div></div></div>
+      <div class="grid-2">
+        <div class="section"><h2 class="section-title">Çalışan Kartı</h2><div class="grid-3"><div class="field"><label>Çalışan</label><input id="emp-name" placeholder="Ad Soyad" /></div><div class="field"><label>Aylık Net Maaş</label><input id="emp-salary" type="number" step="0.01" /></div><div class="field"><label>Durum</label><select id="emp-status"><option>Aktif</option><option>Pasif</option></select></div></div><div class="field"><label>Not</label><input id="emp-note" placeholder="IBAN, görev, SGK, özel not" /></div><button class="btn btn-green" onclick="saveEmployeeCard()">Çalışan Kaydet</button></div>
+        <div class="section"><h2 class="section-title">Maaş Tahakkuk / Ödeme</h2><div class="grid-4"><div class="field"><label>Dönem</label><input id="pay-period" type="month" value="${currentMonth()}" /></div><div class="field"><label>İşlem Tarihi</label><input id="pay-date" type="date" value="${firstDayOfPeriod(currentMonth())}" /></div><div class="field"><label>Çalışan</label><select id="pay-employee">${empOptions || '<option value="">Çalışan yok</option>'}</select></div><div class="field"><label>İşlem</label><select id="pay-type"><option>Tahakkuk</option><option>Ödeme</option></select></div></div><div class="grid-3"><div class="field"><label>Tutar</label><input id="pay-amount" type="number" step="0.01" placeholder="Boşsa kart maaşı" /></div><div class="field"><label>Kaynak / Hesap</label><select id="pay-account"><option>Bordro</option><option>Kasa</option><option>Banka</option><option>Diğer Kasa</option></select></div><div class="field"><label>Durum</label><select id="pay-status"><option>Onaya Hazır</option><option>Ödenecek</option><option>Ödendi</option></select></div></div><div class="field"><label>Açıklama</label><input id="pay-note" placeholder="Maaş tahakkuku, avans, ödeme dekontu vb." /></div><button class="btn btn-green" onclick="savePayrollTxn()">Manuel İşlemi Kaydet</button></div>
+      </div>
+      <div class="section"><h2 class="section-title">Çalışan Kartları</h2>${employees.length?`<table><thead><tr><th>Çalışan</th><th>Durum</th><th>Not</th><th class="text-right">Aylık Net Maaş</th><th>İşlem</th></tr></thead><tbody>${employees.map(e=>`<tr><td>${esc(employeeName(e))}</td><td><span class="tag ${/pasif/i.test(e.status)?"amber":"green"}">${esc(e.status||"Aktif")}</span></td><td>${esc(e.note||"")}</td><td class="text-right money">${money(employeeMonthlySalary(e))}</td><td><button class="btn btn-red" onclick="deleteCashRecord('calisanlar','${e.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz çalışan kartı yok.</div>`}</div>
+      <div class="section"><h2 class="section-title">Maaş Hareketleri</h2>${txns.length?`<table><thead><tr><th>Dönem</th><th>Tarih</th><th>Çalışan</th><th>İşlem</th><th>Kaynak</th><th>Durum</th><th>Not</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${txns.map(r=>`<tr><td>${esc(r.period||"-")}</td><td>${esc(r.date)}</td><td>${esc(employeeName(r))}</td><td><span class="tag ${r.payrollType==="Ödeme"?"green":"amber"}">${esc(r.payrollType)}</span></td><td>${esc(r.account||"Bordro")}</td><td>${esc(r.status||"")}</td><td>${esc(r.note||"")}</td><td class="text-right money">${money(r.amount)}</td><td><button class="btn btn-red" onclick="deleteCashRecord('calisanlar','${r.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz maaş hareketi yok.</div>`}</div>`;
+  }
   function renderCashModule(mod){
     const el=byId("cashModule-"+mod.key); if(!el) return;
+    if(mod.key==="calisanlar") return renderEmployeeModule(mod);
     const rows=cashModuleRows(mod.key).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
     const total=rows.reduce((s,r)=>s+num(r.amount),0);
     const open=rows.filter(r=>!/(ödendi|tamamlandı|kapandı|tahsil edildi|satıldı|hurda)/i.test(String(r.status||""))).reduce((s,r)=>s+num(r.amount),0);
@@ -880,6 +907,44 @@
     renderCashModule(mod);
     notify(`${mod.title} kaydı eklendi.`);
   };
+  window.saveEmployeeCard=function(){
+    const name=(byId("emp-name")?.value||"").trim();
+    if(!name) return notify("Çalışan adı boş olamaz.");
+    const salary=num(byId("emp-salary").value);
+    const row={id:uid("EMP"),recordType:"employee",date:today(),party:name,employeeName:name,monthlySalary:salary,amount:salary,status:byId("emp-status").value,note:(byId("emp-note")?.value||"").trim(),createdAt:new Date().toLocaleString("tr-TR")};
+    if(!state.cashRecords.calisanlar) state.cashRecords.calisanlar=[];
+    state.cashRecords.calisanlar.unshift(row);
+    writeJson(LS.cashModules,state.cashRecords);
+    logAudit("Çalışan kartı eklendi", `${row.employeeName} · ${money(row.monthlySalary)}`);
+    renderCashModule(cashModules.find(m=>m.key==="calisanlar"));
+    notify("Çalışan kartı kaydedildi.");
+  };
+  window.savePayrollTxn=function(){
+    const emp=employeeCards().find(e=>e.id===byId("pay-employee").value);
+    if(!emp) return notify("Çalışan seç.");
+    const type=byId("pay-type").value, period=byId("pay-period").value||currentMonth();
+    const amount=num(byId("pay-amount").value)||employeeMonthlySalary(emp);
+    if(amount<=0) return notify("Tutar gir.");
+    const row={id:uid("PAY"),recordType:"salary",period,date:byId("pay-date").value||firstDayOfPeriod(period),party:employeeName(emp),employeeId:emp.id,employeeName:employeeName(emp),payrollType:type,amount,status:byId("pay-status").value,account:byId("pay-account").value,note:(byId("pay-note")?.value||`${period} maaş ${type.toLocaleLowerCase("tr-TR")}`).trim(),createdAt:new Date().toLocaleString("tr-TR")};
+    if(!state.cashRecords.calisanlar) state.cashRecords.calisanlar=[];
+    state.cashRecords.calisanlar.unshift(row);
+    writeJson(LS.cashModules,state.cashRecords);
+    logAudit(`Maaş ${type} kaydı`, `${row.employeeName} · ${period} · ${money(amount)}`);
+    renderCashModule(cashModules.find(m=>m.key==="calisanlar"));
+    notify(`Maaş ${type} kaydı oluşturuldu.`);
+  };
+  window.postMonthlyPayrollAccruals=function(){
+    const period=currentMonth(), date=firstDayOfPeriod(period);
+    const existing=employeeSalaryRows().filter(r=>r.period===period && r.payrollType==="Tahakkuk").map(r=>r.employeeId||r.party);
+    const rows=employeeCards().filter(e=>!/pasif/i.test(String(e.status||"")) && !existing.includes(e.id) && !existing.includes(employeeName(e)));
+    if(!rows.length) return notify("Bu dönem için tahakkuk oluşturulacak aktif çalışan yok.");
+    if(!state.cashRecords.calisanlar) state.cashRecords.calisanlar=[];
+    rows.forEach(emp=>state.cashRecords.calisanlar.unshift({id:uid("PAYAUTO"),recordType:"salary",period,date,party:employeeName(emp),employeeId:emp.id,employeeName:employeeName(emp),payrollType:"Tahakkuk",amount:employeeMonthlySalary(emp),status:"Ödenecek",account:"Bordro",note:`${period} maaş tahakkuku`,createdAt:new Date().toLocaleString("tr-TR")}));
+    writeJson(LS.cashModules,state.cashRecords);
+    logAudit("Aylık çalışan maaş tahakkuku oluşturuldu", `${period} · ${rows.length} çalışan · ${money(rows.reduce((s,e)=>s+employeeMonthlySalary(e),0))}`);
+    renderCashModule(cashModules.find(m=>m.key==="calisanlar"));
+    notify(`${rows.length} çalışan için ${period} maaş tahakkuku oluşturuldu.`);
+  };
   window.deleteCashRecord=function(key,id){
     const mod=cashModules.find(m=>m.key===key); if(!mod)return;
     state.cashRecords[key]=cashModuleRows(key).filter(r=>r.id!==id);
@@ -889,7 +954,7 @@
   };
   window.exportCashModuleCsv=function(key){
     const mod=cashModules.find(m=>m.key===key); if(!mod)return;
-    const data=cashModuleRows(key).map(r=>({"Tarih":r.date,"Kayıt":r.party,"Durum":r.status,"Not":r.note,"Tutar":num(r.amount)}));
+    const data=cashModuleRows(key).map(r=>({"Tarih":r.date,"Dönem":r.period||"","Kayıt":r.party,"Tür":r.recordType||"kayıt","İşlem":r.payrollType||"","Kaynak":r.account||"","Durum":r.status,"Not":r.note,"Tutar":num(r.amount)}));
     downloadBlob(slug(mod.title)+".csv", toCsv(data), "text/csv;charset=utf-8");
   };
 
