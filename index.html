@@ -1309,6 +1309,22 @@
   function importHash(parts){const base=parts.map(x=>String(x??"").trim()).join("|").toLocaleLowerCase("tr-TR");let h=0;for(let i=0;i<base.length;i++)h=((h<<5)-h+base.charCodeAt(i))|0;return"IMP-"+Math.abs(h).toString(36);}
   function knownImportHashes(){const set=new Set(state.importHashes||[]);state.accountTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);});state.approvals.forEach(x=>{if(x.importHash)set.add(x.importHash);});state.manualTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);});return set;}
   function importPreviewStatus(row){if(row.duplicate)return"Mükerrer";if(!row.cariId||row.score<70)return"EŞLEŞME BEKLEYEN";return"Onaya Hazır";}
+  function daysBetween(a,b){const da=new Date((normalizeImportDate(a)||today())+"T00:00:00"),db=new Date((normalizeImportDate(b)||today())+"T00:00:00");return Math.abs((da-db)/86400000);}
+  function tokenSet(v){return new Set(cleanText(v).split(" ").filter(x=>x.length>2));}
+  function textOverlap(a,b){const aa=tokenSet(a),bb=tokenSet(b);if(!aa.size||!bb.size)return 0;let hit=0;aa.forEach(x=>{if(bb.has(x))hit++;});return hit/Math.max(aa.size,bb.size);}
+  function rowSide(row){return num(row.credit)>0?"credit":num(row.debit)>0?"debit":(row.type==="Tahakkuk"?"debit":"credit");}
+  function txnAmountBySide(t,side){return side==="credit"?num(t.credit):num(t.debit);}
+  function findExistingCariDuplicate(row){
+    const side=rowSide(row), amount=num(row.amount); let best=null;
+    for(const c of state.cariler){if(c.deleted)continue;if(row.cariId&&c.id!==row.cariId)continue;for(const t of allTxns(c)){const txnAmount=txnAmountBySide(t,side);if(Math.abs(txnAmount-amount)>0.01)continue;const dayDiff=daysBetween(t.date,row.date),overlap=textOverlap(t.description||t.desc||"",row.desc||"");const sourceHit=cleanText(t.source||"").includes(cleanText(row.source||""))||cleanText(row.source||"").includes(cleanText(t.source||""));if((dayDiff===0||overlap>=0.34||sourceHit)&&(!best||dayDiff<best.dayDiff||overlap>best.overlap))best={cari:c,txn:t,dayDiff,overlap};}}
+    return best;
+  }
+  function markImportDuplicate(row){
+    const hit=findExistingCariDuplicate(row);
+    if(hit){row.duplicate=true;row.duplicateReason=`Cari ekstresinde var: ${hit.cari.name} · ${hit.txn.date} · ${money(row.amount)}`;if(!row.cariId){row.cariId=hit.cari.id;row.cariName=hit.cari.name;row.score=Math.max(row.score||0,95);}}
+    return row;
+  }
+  function importPreviewStatus(row){if(row.duplicate)return row.duplicateReason||"Mükerrer";if(!row.cariId||row.score<70)return"EŞLEŞME BEKLEYEN";return"Onaya Hazır";}
   function readWorkbookFromInput(inputId, callback){
     const file=byId(inputId)?.files?.[0]; if(!file)return notify("Önce Excel dosyası seç."); if(!window.XLSX)return notify("Excel okuyucu yüklenmedi. Sayfayı yenileyin.");
     const reader=new FileReader(); reader.onload=()=>{try{callback(XLSX.read(reader.result,{type:"array",cellDates:true}),file.name);}catch(err){notify("Excel okunamadı: "+err.message);}}; reader.readAsArrayBuffer(file);
@@ -1324,7 +1340,7 @@
       const dateCol=headerAt>=0?colIndex(headers,["islem tarihi","tarih"],0):0, descCol=headerAt>=0?colIndex(headers,["aciklama","açiklama","açıklama"],1):1, amountCol=headerAt>=0?colIndex(headers,["islem tutari","işlem tutarı","tutar"],2):2, balanceCol=headerAt>=0?colIndex(headers,["yeni bakiye","bakiye"],3):3;
       for(let i=start;i<rows.length;i++){const r=rows[i]||[], date=normalizeImportDate(r[dateCol]), desc=cellText(r[descCol]), rawAmount=num(r[amountCol]), balance=num(r[balanceCol]); if(!date||!desc||Math.abs(rawAmount)<0.01)continue; const credit=rawAmount>0?rawAmount:0, debit=rawAmount<0?Math.abs(rawAmount):0, match=detectCari(desc), hash=importHash(["HALKBANK",date,desc,rawAmount,balance,sheetName]); out.push({id:uid("HKB-PREV"),kind:"bank",source:"Halkbank",accountId:"banka",date,desc,amount:Math.abs(rawAmount),debit,credit,balance,sheetName,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",score:match?.score||25,type:credit>0?"Tahsilat":"Hesap Hareketi",status:"Ön İzleme",duplicate:known.has(hash),importHash:hash});}
     });
-    return out;
+    return out.map(markImportDuplicate);
   }
   function installmentCount(v){const m=cleanText(v).match(/(\d+)/);return Math.max(1,Math.min(36,m?num(m[1]):1));}
   function addDays(dateText,days){const d=new Date((normalizeImportDate(dateText)||today())+"T12:00:00");d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
@@ -1335,7 +1351,7 @@
       const c={id:colIndex(headers,["id"],1),counter:colIndex(headers,["karsi islem","karşı işlem"],2),date:colIndex(headers,["islem tarihi","işlem tarihi"],3),amount:colIndex(headers,["islem tutari","işlem tutarı"],12),gross:colIndex(headers,["tutar"],10),commission:colIndex(headers,["komisyon tutari","komisyon tutarı"],14),installment:colIndex(headers,["taksit"],16),bank:colIndex(headers,["kart bankasi","kart bankası"],17),holder:colIndex(headers,["kart sahibi"],18),card:colIndex(headers,["kart numarasi","kart numarası"],19)};
       for(let i=headerAt+1;i<rows.length;i++){const r=rows[i]||[], date=normalizeImportDate(r[c.date]), holder=cellText(r[c.holder]), txId=cellText(r[c.id])||cellText(r[c.counter]), gross=num(r[c.gross]), net=num(r[c.amount])||gross, commission=num(r[c.commission]), inst=installmentCount(r[c.installment]); if(!date||!txId||Math.abs(gross)<0.01)continue; const match=detectCari([holder,cellText(r[c.bank]),txId].join(" ")), hash=importHash(["MOKA",date,txId,gross,net,holder]), schedule=[]; for(let n=1;n<=inst;n++){const dueDate=addDays(date,40*n), netPart=net/inst, scheduleHash=importHash(["MOKA-TAKSIT",txId,n,dueDate,netPart]); schedule.push({id:uid("MOKA-SCH"),txId,installment:n,installmentCount:inst,dueDate,amount:netPart,bankMatched:false,bankHash:"",scheduleHash});} out.push({id:uid("MOKA-PREV"),kind:"moka",source:"Moka United",accountId:"moka-united",date,desc:`Moka POS ${holder} ${inst>1?inst+" taksit":"tek çekim"}`,amount:net,debit:0,credit:net,gross,commission,installmentCount:inst,cardHolder:holder,cardBank:cellText(r[c.bank]),txId,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",score:match?.score||35,type:"Moka United",status:"Ön İzleme",duplicate:known.has(hash),importHash:hash,schedule}); schedule.forEach(s=>plans.push({...s,sourceImportHash:hash,cardHolder:holder,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",gross,net,txDate:date,txId}));}
     });
-    return {rows:out,plans};
+    return {rows:out.map(markImportDuplicate),plans};
   }
   function matchMokaSchedules(){
     const bankRows=[...state.accountTxns,...state.importPreview.filter(x=>x.kind==="bank")].filter(x=>String(x.source||"").toLocaleLowerCase("tr-TR").includes("halkbank")||x.accountId==="banka");
@@ -1387,6 +1403,15 @@
     const debit = a.type==="Tahakkuk" ? a.amount : 0;
     const credit = a.type==="Tahsilat" || a.type==="Moka United" ? a.amount : 0;
     const ledgerDate=approvalLedgerDate(a);
+    const existingCariHit=findExistingCariDuplicate({date:ledgerDate,amount:a.amount,debit,credit,type:a.type,cariId:a.cariId,desc:a.reason,source:a.source});
+    if(existingCariHit){
+      a.status="Mükerrer";
+      a.duplicateReason=`Cari ekstresinde zaten var: ${existingCariHit.cari.name} · ${existingCariHit.txn.date} · ${money(a.amount)}`;
+      writeJson(LS.approvals,state.approvals);
+      logAudit("Mükerrer onay engellendi", a.duplicateReason, "Kontrol");
+      refreshAll();
+      return notify("Mükerrer kayıt engellendi: cari ekstresinde zaten var.");
+    }
     state.manualTxns.push({id:uid("APP"),cariId:a.cariId,date:ledgerDate,type:a.type.toUpperCase(),debit,credit,source:a.source||"Onay Merkezi",description:a.reason||"Onay merkezi kaydı",docNo:"ONAY"});
     if(a.accountId && credit>0){
       state.accountTxns.push({id:uid("APP-ACC"),accountId:a.accountId,date:ledgerDate,dir:"giris",amount:a.amount,source:a.source||"Onay Merkezi",desc:a.reason||"Onay merkezi tahsilat kaydı",cariId:a.cariId,postedToCari:true});
