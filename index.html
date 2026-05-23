@@ -1552,13 +1552,16 @@
     state.mokaPlans=state.mokaPlans.map(p=>{if(p.bankMatched)return p;const m=bankRows.find(b=>{const amount=Math.abs(num(b.amount||b.credit||b.debit)), desc=cleanText(b.desc||b.description||"");const dayDiff=Math.abs((new Date((normalizeImportDate(b.date)||today())+"T00:00:00")-new Date((p.dueDate||today())+"T00:00:00"))/86400000);return Math.abs(amount-num(p.amount))<1&&dayDiff<=7&&/moka|pos|batch|valor/.test(desc);});return m?{...p,bankMatched:true,bankHash:m.importHash||m.id,matchedAt:new Date().toLocaleString("tr-TR")}:p;});
     writeJson(LS.mokaPlans,state.mokaPlans);
   }
-  function ledgerDuplicateGroups(){
+  function ledgerDuplicateGroups(scope="all"){
     const map=new Map();
     state.cariler.filter(c=>!c.deleted).forEach(c=>{
       allTxns(c).forEach(t=>{
+        const date=normalizeImportDate(t.date)||t.date||"";
+        if(scope==="live" && date < LIVE_START_DATE) return;
+        if(scope==="archive" && date >= LIVE_START_DATE) return;
         const debit=num(t.debit), credit=num(t.credit), side=credit>0?"A":"B", amount=Math.max(debit,credit);
         if(amount<=0) return;
-        const key=[c.id,normalizeImportDate(t.date)||t.date,side,amount.toFixed(2)].join("|");
+        const key=[c.id,date,side,amount.toFixed(2)].join("|");
         const list=map.get(key)||[];
         list.push({cari:c,txn:t,amount,side});
         map.set(key,list);
@@ -1569,6 +1572,8 @@
   function readinessSnapshot(){
     const preview=state.importPreview||[], approvals=state.approvals||[], accounts=state.accountTxns||[], moka=state.mokaPlans||[];
     const ledgerDups=ledgerDuplicateGroups();
+    const liveLedgerDups=ledgerDuplicateGroups("live");
+    const archiveLedgerDups=ledgerDuplicateGroups("archive");
     return {
       cariler: state.cariler.filter(c=>!c.deleted).length,
       ledgerTxns: state.cariler.filter(c=>!c.deleted).reduce((s,c)=>s+allTxns(c).length,0),
@@ -1583,11 +1588,15 @@
       mokaPending: moka.filter(x=>!x.bankMatched).length,
       mokaPendingAmount: moka.filter(x=>!x.bankMatched).reduce((s,x)=>s+num(x.amount),0),
       ledgerDuplicateGroups: ledgerDups.length,
-      ledgerDuplicateRows: ledgerDups.reduce((s,g)=>s+g.length,0)
+      ledgerDuplicateRows: ledgerDups.reduce((s,g)=>s+g.length,0),
+      liveLedgerDuplicateGroups: liveLedgerDups.length,
+      liveLedgerDuplicateRows: liveLedgerDups.reduce((s,g)=>s+g.length,0),
+      archiveLedgerDuplicateGroups: archiveLedgerDups.length,
+      archiveLedgerDuplicateRows: archiveLedgerDups.reduce((s,g)=>s+g.length,0)
     };
   }
   function readinessLevel(s){
-    if(s.ledgerDuplicateGroups>0 || s.previewWaiting>0 || s.approvalsWaiting>0) return {tag:"Kontrol Gerekli", cls:"red"};
+    if(s.liveLedgerDuplicateGroups>0 || s.previewWaiting>0 || s.approvalsWaiting>0) return {tag:"Kontrol Gerekli", cls:"red"};
     if(s.preview>0 || s.mokaPending>0 || s.accountUnposted>0) return {tag:"İzleme Aşaması", cls:"amber"};
     return {tag:"Kullanıma Hazır", cls:"green"};
   }
@@ -1611,6 +1620,9 @@
     checks.push(selfTestLine(colIndex(["İşlem Tarihi","Hizmet Alan Adı - Soyadı"],["islem tarihi"],-1)===0,"Excel tarih kolonu","Türkçe İ/ı karakterleriyle tarih kolonu yakalanıyor."));
     checks.push(selfTestLine(colIndex(["İşlem Tarihi","Hizmet Alan Adı - Soyadı"],["hizmet alan adi"],-1)===1,"Moka hizmet alan kolonu","Hizmet Alan Adı - Soyadı cari eşleşmesine giriyor."));
     checks.push(selfTestLine(importHash(["MOKA","2026-05-21","TX",100,100,"KART"])!==importHash(["MOKA","2026-05-21","TX",100,100,"KART","HIZMET"]),"Moka eski/yeni hash ayrımı","Yeni Hizmet Alan hash'i ve eski hash birlikte mükerrer kontrolde kullanılıyor."));
+    checks.push(selfTestLine(ledgerDuplicateGroups("live").length===0,"Canlı dönem mükerrer kontrolü",ledgerDuplicateGroups("live").length?`${ledgerDuplicateGroups("live").length} canlı dönem grup kontrol edilmeli.`:"01.12.2025 sonrası canlı dönemde bloklayıcı mükerrer grup yok."));
+    checks.push(selfTestLine(typeof window.ocrTelegramAttachment==="function","Telegram OCR akışı","Fotoğraf/PDF ekleri OCR ile Onay Merkezi önerisine çevrilebilir."));
+    checks.push(selfTestLine(typeof window.previewTelegramExcel==="function","Telegram Excel akışı","Telegram Excel eki Halkbank veya Moka ön izlemeye alınabilir."));
     try{
       const res=await fetch(`/api/telegram/status?v=${Date.now()}`,{cache:"no-store"});
       const data=await res.json();
@@ -1626,10 +1638,13 @@
   };
   function renderReadinessPanel(){
     const s=readinessSnapshot(), level=readinessLevel(s);
-    const dupRows=ledgerDuplicateGroups().slice(0,8).map(g=>`<div class="mini-row"><strong>${esc(g[0].cari.name)}</strong><br>${esc(g[0].txn.date)} · ${money(g[0].amount)} · ${g.length} benzer cari hareketi</div>`).join("");
-    return `<div class="rule-box" style="margin-bottom:12px"><strong>Canlı Kullanıma Alma Durumu:</strong> <span class="tag ${level.cls}">${level.tag}</span><br>Eski cari ekstresi ana defter kabul edilir. Banka, Moka ve Telegram kayıtları onay olmadan cariye yazılmaz; mükerrer görünen kayıt aktarılmaz.</div>
+    const liveDupRows=ledgerDuplicateGroups("live").slice(0,8).map(g=>`<div class="mini-row"><strong>${esc(g[0].cari.name)}</strong><br>${esc(g[0].txn.date)} · ${money(g[0].amount)} · ${g.length} benzer canlı dönem hareketi</div>`).join("");
+    const archiveDupRows=ledgerDuplicateGroups("archive").slice(0,8).map(g=>`<div class="mini-row"><strong>${esc(g[0].cari.name)}</strong><br>${esc(g[0].txn.date)} · ${money(g[0].amount)} · ${g.length} benzer arşiv hareketi</div>`).join("");
+    return `<div class="rule-box" style="margin-bottom:12px"><strong>Canlı Kullanıma Alma Durumu:</strong> <span class="tag ${level.cls}">${level.tag}</span><br>Eski cari ekstresi ana defter kabul edilir. Banka, Moka ve Telegram kayıtları onay olmadan cariye yazılmaz; mükerrer görünen canlı dönem kaydı aktarılmaz.</div>
+      <div class="rule-box" style="margin-bottom:12px"><strong>Geçiş Kurgusu:</strong> 1) 01.12.2025 öncesi arşiv korunur ve yeniden cariye yazılmaz. 2) 01.12.2025 sonrası canlı dönemdir. 3) Halkbank, Moka ve Telegram önce ön izlemeye alınır. 4) Eşleşmeyen kayıt Onay Merkezi'nde bekler. 5) Tek tık onaydan sonra Hesaplar ve Cari Ekstre güncellenir.</div>
       <div class="cards"><div class="card"><div class="card-label">Aktif Cari / Hareket</div><div class="card-value">${s.cariler} / ${s.ledgerTxns}</div></div><div class="card"><div class="card-label">Ön İzleme</div><div class="card-value">${s.preview}</div><p class="muted-note">Arşiv ${s.previewArchive} · Mükerrer ${s.previewDuplicate} · Eşleşme bekleyen ${s.previewWaiting}</p></div><div class="card"><div class="card-label">Onay Bekleyen</div><div class="card-value">${s.approvalsWaiting}</div><p class="muted-note">Engellenen mükerrer ${s.approvalsDuplicate}</p></div><div class="card"><div class="card-label">Moka Bekleyen</div><div class="card-value">${money(s.mokaPendingAmount)}</div><p class="muted-note">${s.mokaPending} taksit satırı</p></div></div>
-      ${s.ledgerDuplicateGroups?`<h3 class="section-title" style="font-size:16px">Cari Defteri Mükerrer Kontrolü</h3><div class="mini-list">${dupRows}</div>`:`<div class="empty" style="margin-bottom:12px">Cari defterinde aynı cari/tarih/tutar/yön seviyesinde mükerrer grup bulunmadı.</div>`}`;
+      ${s.liveLedgerDuplicateGroups?`<h3 class="section-title" style="font-size:16px">Canlı Dönem Mükerrer Kontrolü</h3><div class="mini-list">${liveDupRows}</div>`:`<div class="empty" style="margin-bottom:12px">Canlı dönemde aynı cari/tarih/tutar/yön seviyesinde mükerrer grup bulunmadı.</div>`}
+      ${s.archiveLedgerDuplicateGroups?`<h3 class="section-title" style="font-size:16px">Arşiv Bilgi Kontrolü</h3><div class="rule-box" style="margin-bottom:8px">Bu kayıtlar 01.12.2025 öncesi arşiv dönemindedir; canlı kullanımı engellemez, sadece geçmiş defter bilgisidir.</div><div class="mini-list">${archiveDupRows}</div>`:""}`;
   }
   function renderHistoryImportPanel(){
     const el=byId("historyImportPanel"); if(!el)return; matchMokaSchedules();
