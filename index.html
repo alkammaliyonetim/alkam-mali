@@ -1481,7 +1481,7 @@
     const s=readinessSnapshot(), level=readinessLevel(s);
     const dupRows=ledgerDuplicateGroups().slice(0,8).map(g=>`<div class="mini-row"><strong>${esc(g[0].cari.name)}</strong><br>${esc(g[0].txn.date)} · ${money(g[0].amount)} · ${g.length} benzer cari hareketi</div>`).join("");
     return `<div class="rule-box" style="margin-bottom:12px"><strong>Canlı Kullanıma Alma Durumu:</strong> <span class="tag ${level.cls}">${level.tag}</span><br>Eski cari ekstresi ana defter kabul edilir. Banka, Moka ve Telegram kayıtları onay olmadan cariye yazılmaz; mükerrer görünen kayıt aktarılmaz.</div>
-      <div class="cards"><div class="card"><div class="card-label">Aktif Cari / Hareket</div><div class="card-value">${s.cariler} / ${s.ledgerTxns}</div></div><div class="card"><div class="card-label">Ön İzleme</div><div class="card-value">${s.preview}</div><p class="muted-note">Mükerrer ${s.previewDuplicate} · Eşleşme bekleyen ${s.previewWaiting}</p></div><div class="card"><div class="card-label">Onay Bekleyen</div><div class="card-value">${s.approvalsWaiting}</div><p class="muted-note">Engellenen mükerrer ${s.approvalsDuplicate}</p></div><div class="card"><div class="card-label">Moka Bekleyen</div><div class="card-value">${money(s.mokaPendingAmount)}</div><p class="muted-note">${s.mokaPending} taksit satırı</p></div></div>
+      <div class="cards"><div class="card"><div class="card-label">Aktif Cari / Hareket</div><div class="card-value">${s.cariler} / ${s.ledgerTxns}</div></div><div class="card"><div class="card-label">Ön İzleme</div><div class="card-value">${s.preview}</div><p class="muted-note">Arşiv ${s.previewArchive} · Mükerrer ${s.previewDuplicate} · Eşleşme bekleyen ${s.previewWaiting}</p></div><div class="card"><div class="card-label">Onay Bekleyen</div><div class="card-value">${s.approvalsWaiting}</div><p class="muted-note">Engellenen mükerrer ${s.approvalsDuplicate}</p></div><div class="card"><div class="card-label">Moka Bekleyen</div><div class="card-value">${money(s.mokaPendingAmount)}</div><p class="muted-note">${s.mokaPending} taksit satırı</p></div></div>
       ${s.ledgerDuplicateGroups?`<h3 class="section-title" style="font-size:16px">Cari Defteri Mükerrer Kontrolü</h3><div class="mini-list">${dupRows}</div>`:`<div class="empty" style="margin-bottom:12px">Cari defterinde aynı cari/tarih/tutar/yön seviyesinde mükerrer grup bulunmadı.</div>`}`;
   }
   function renderHistoryImportPanel(){
@@ -1498,7 +1498,24 @@
   window.setApprovalCari=function(id,value){const a=state.approvals.find(x=>x.id===id);if(!a)return;a.cariId=value||"";writeJson(LS.approvals,state.approvals);};
   window.sendImportPreviewToApproval=function(){
     const known=knownImportHashes();let acc=0,apr=0,skip=0,archive=0;
-    state.importPreview.forEach(r=>{if(r.archive){archive++;return;}if(r.duplicate||known.has(r.importHash)){skip++;return;}const dir=r.credit>0?"giris":"cikis";state.accountTxns.push({id:uid("IMP-ACC"),accountId:r.accountId,date:r.date,dir,amount:r.amount,source:r.source,desc:r.desc,cariId:r.cariId||"",postedToCari:false,importHash:r.importHash,raw:r});acc++;known.add(r.importHash);state.importHashes.push(r.importHash);if(r.credit>0||r.kind==="moka"){state.approvals.unshift({id:uid("APR-IMP"),cariId:r.cariId||"",amount:r.amount,score:r.score,type:r.type==="Moka United"?"Moka United":"Tahsilat",source:r.source,accountId:"",date:r.date,reason:r.desc,status:"Bekliyor",createdAt:new Date().toLocaleString("tr-TR"),importHash:r.importHash});apr++;}});
+    state.importPreview.forEach(r=>{
+      const alreadyKnown=known.has(r.importHash)||known.has(r.legacyImportHash);
+      if(r.archive){archive++;return;}
+      if(r.duplicate||alreadyKnown){skip++;return;}
+      const dir=r.credit>0?"giris":"cikis";
+      state.accountTxns.push({id:uid("IMP-ACC"),accountId:r.accountId,date:r.date,dir,amount:r.amount,source:r.source,desc:r.desc,cariId:r.cariId||"",postedToCari:false,importHash:r.importHash,legacyImportHash:r.legacyImportHash||"",raw:r});
+      acc++;
+      known.add(r.importHash);
+      state.importHashes.push(r.importHash);
+      if(r.legacyImportHash){
+        known.add(r.legacyImportHash);
+        state.importHashes.push(r.legacyImportHash);
+      }
+      if(r.credit>0||r.kind==="moka"){
+        state.approvals.unshift({id:uid("APR-IMP"),cariId:r.cariId||"",amount:r.amount,score:r.score,type:r.type==="Moka United"?"Moka United":"Tahsilat",source:r.source,accountId:"",date:r.date,reason:r.desc,status:"Bekliyor",createdAt:new Date().toLocaleString("tr-TR"),importHash:r.importHash,legacyImportHash:r.legacyImportHash||""});
+        apr++;
+      }
+    });
     state.importHashes=[...new Set(state.importHashes)].slice(-5000);writeJson(LS.accountTxns,state.accountTxns);writeJson(LS.approvals,state.approvals);writeJson(LS.importHashes,state.importHashes);logAudit("İçe aktarma onaya aktarıldı",`Hesap ${acc} · Onay ${apr} · Mükerrer ${skip} · Arşiv ${archive}`);refreshAll();notify(`Hesaplara ${acc}, Onay Merkezi'ne ${apr} kayıt aktarıldı. Mükerrer: ${skip} · Arşiv: ${archive}`);
   };
 
