@@ -1366,7 +1366,7 @@
   function sheetRows(ws){return XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:true});}
   function cellText(v){return String(v??"").trim();}
   function findHeaderRow(rows){for(let i=0;i<Math.min(rows.length,40);i++){const txt=rows[i].map(cellText).join(" ").toLocaleLowerCase("tr-TR");if(txt.includes("tarih")&&(txt.includes("açıklama")||txt.includes("aciklama")||txt.includes("tutar")))return i;}return-1;}
-  function colIndex(headers,tests,fallback){const norm=headers.map(h=>cleanText(h));for(const test of tests){const idx=norm.findIndex(h=>h.includes(test));if(idx>=0)return idx;}return fallback;}
+  function colIndex(headers,tests,fallback){const norm=headers.map(h=>cleanText(h)), cleanTests=tests.map(t=>cleanText(t));for(const test of cleanTests){const idx=norm.findIndex(h=>h.includes(test));if(idx>=0)return idx;}return fallback;}
   function parseHalkbankWorkbook(wb){
     const known=knownImportHashes(), out=[];
     wb.SheetNames.forEach(sheetName=>{
@@ -1383,7 +1383,20 @@
     wb.SheetNames.forEach(sheetName=>{
       const rows=sheetRows(wb.Sheets[sheetName]), headerAt=findHeaderRow(rows); if(headerAt<0)return; const headers=rows[headerAt];
       const c={id:colIndex(headers,["id"],1),counter:colIndex(headers,["karsi islem","karşı işlem"],2),date:colIndex(headers,["islem tarihi","işlem tarihi"],3),amount:colIndex(headers,["islem tutari","işlem tutarı"],12),gross:colIndex(headers,["tutar"],10),commission:colIndex(headers,["komisyon tutari","komisyon tutarı"],14),installment:colIndex(headers,["taksit"],16),bank:colIndex(headers,["kart bankasi","kart bankası"],17),holder:colIndex(headers,["kart sahibi"],18),card:colIndex(headers,["kart numarasi","kart numarası"],19),service:colIndex(headers,["hizmet alan adi","hizmet alan adı","soyadi","soyadı"],24)};
-      for(let i=headerAt+1;i<rows.length;i++){const r=rows[i]||[], date=normalizeImportDate(r[c.date]), holder=cellText(r[c.holder]), serviceName=cellText(r[c.service]), txId=cellText(r[c.id])||cellText(r[c.counter]), gross=num(r[c.gross]), net=num(r[c.amount])||gross, commission=num(r[c.commission]), inst=installmentCount(r[c.installment]); if(!date||!txId||Math.abs(gross)<0.01)continue; const match=detectCari([serviceName,holder,cellText(r[c.bank]),txId].join(" ")), hash=importHash(["MOKA",date,txId,gross,net,holder,serviceName]), schedule=[]; for(let n=1;n<=inst;n++){const dueDate=addDays(date,40*n), netPart=net/inst, scheduleHash=importHash(["MOKA-TAKSIT",txId,n,dueDate,netPart]); schedule.push({id:uid("MOKA-SCH"),txId,installment:n,installmentCount:inst,dueDate,amount:netPart,bankMatched:false,bankHash:"",scheduleHash});} out.push({id:uid("MOKA-PREV"),kind:"moka",source:"Moka United",accountId:"moka-united",date,desc:`Moka POS ${serviceName||holder} ${holder&&serviceName?`/ Kart: ${holder}`:""} ${inst>1?inst+" taksit":"tek çekim"}`,amount:net,debit:0,credit:net,gross,commission,installmentCount:inst,cardHolder:holder,serviceName,cardBank:cellText(r[c.bank]),txId,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",score:match?.score||35,type:"Moka United",status:"Ön İzleme",duplicate:known.has(hash),importHash:hash,schedule}); schedule.forEach(s=>plans.push({...s,sourceImportHash:hash,cardHolder:holder,serviceName,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",gross,net,txDate:date,txId}));}
+      for(let i=headerAt+1;i<rows.length;i++){
+        const r=rows[i]||[], date=normalizeImportDate(r[c.date]), holder=cellText(r[c.holder]), serviceName=cellText(r[c.service]), txId=cellText(r[c.id])||cellText(r[c.counter]), gross=num(r[c.gross]), net=num(r[c.amount])||gross, commission=num(r[c.commission]), inst=installmentCount(r[c.installment]);
+        if(!date||!txId||Math.abs(gross)<0.01)continue;
+        const match=detectCari([serviceName,holder,cellText(r[c.bank]),txId].join(" "));
+        const hash=importHash(["MOKA",date,txId,gross,net,holder,serviceName]);
+        const legacyHash=importHash(["MOKA",date,txId,gross,net,holder]);
+        const schedule=[];
+        for(let n=1;n<=inst;n++){
+          const dueDate=addDays(date,40*n), netPart=net/inst, scheduleHash=importHash(["MOKA-TAKSIT",txId,n,dueDate,netPart]);
+          schedule.push({id:uid("MOKA-SCH"),txId,installment:n,installmentCount:inst,dueDate,amount:netPart,bankMatched:false,bankHash:"",scheduleHash});
+        }
+        out.push({id:uid("MOKA-PREV"),kind:"moka",source:"Moka United",accountId:"moka-united",date,desc:`Moka POS ${serviceName||holder} ${holder&&serviceName?`/ Kart: ${holder}`:""} ${inst>1?inst+" taksit":"tek çekim"}`,amount:net,debit:0,credit:net,gross,commission,installmentCount:inst,cardHolder:holder,serviceName,cardBank:cellText(r[c.bank]),txId,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",score:match?.score||35,type:"Moka United",status:"Ön İzleme",duplicate:known.has(hash)||known.has(legacyHash),importHash:hash,legacyImportHash:legacyHash,schedule});
+        schedule.forEach(s=>plans.push({...s,sourceImportHash:hash,legacyImportHash:legacyHash,cardHolder:holder,serviceName,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",gross,net,txDate:date,txId}));
+      }
     });
     return {rows:out.map(markArchiveImport).map(markImportDuplicate),plans};
   }

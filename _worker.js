@@ -44,7 +44,8 @@ async function telegramStatus(request, env) {
   if (!token) return tokenMissing();
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/getMe`, {
-      headers: { accept: "application/json" }
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(8000)
     });
     const data = await res.json();
     if (!data.ok) {
@@ -77,7 +78,10 @@ async function telegramUpdates(request, env) {
   tgUrl.searchParams.set("timeout", "0");
   tgUrl.searchParams.set("allowed_updates", JSON.stringify(["message"]));
   try {
-    const res = await fetch(tgUrl.toString(), { headers: { accept: "application/json" } });
+    const res = await fetch(tgUrl.toString(), {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(10000)
+    });
     const data = await res.json();
     if (!data.ok) {
       return json({ ok: false, configured: true, error: data.description || "Telegram API hatası" });
@@ -137,6 +141,7 @@ async function telegramSend(request, env) {
     const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: "POST",
       headers: { "content-type": "application/json" },
+      signal: AbortSignal.timeout(10000),
       body: JSON.stringify({
         chat_id: chatId,
         text,
