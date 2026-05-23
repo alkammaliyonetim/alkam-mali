@@ -6,6 +6,11 @@
   <title>ALKAM Mali Müşavirlik | Final Eski Gövde + Cari + Otomasyon</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script type="module">
+    import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
+    window.pdfjsLib = pdfjsLib;
+  </script>
   <style>
     :root{
       --bg:#f4f7fb;--panel:#fff;--line:#e2e8f0;--text:#0f172a;--muted:#64748b;
@@ -1117,10 +1122,15 @@
     if(!att||!att.fileId) return "";
     return `/api/telegram/file?id=${encodeURIComponent(att.fileId)}&name=${encodeURIComponent(att.fileName||"telegram-dosya")}`;
   }
+  function jsArg(v){return JSON.stringify(String(v??"")).replace(/"/g,"&quot;");}
+  function canOcrTelegramAttachment(a){
+    const s=`${a?.fileName||""} ${a?.mimeType||""}`.toLocaleLowerCase("tr-TR");
+    return /image|jpeg|jpg|png|pdf/.test(s);
+  }
   function telegramAttachmentButtons(list){
     const attachments=(list||[]).filter(a=>a&&a.fileId);
     if(!attachments.length) return "";
-    return `<div class="btn-row" style="margin-top:7px">${attachments.map((a,i)=>`<a class="btn btn-soft" href="${esc(telegramFileUrl(a))}" target="_blank" rel="noopener">İndir: ${esc(a.fileName||"Dosya")}</a>${/xlsx|excel|spreadsheet|xls/i.test(`${a.fileName||""} ${a.mimeType||""}`)?`<button class="btn btn-blue" onclick="previewTelegramExcel('${esc(a.fileId)}','${esc(a.fileName||"telegram.xlsx")}','bank')">Halkbank Ön İzle</button><button class="btn btn-purple" onclick="previewTelegramExcel('${esc(a.fileId)}','${esc(a.fileName||"telegram.xlsx")}','moka')">Moka Ön İzle</button>`:""}`).join("")}</div>`;
+    return `<div class="btn-row" style="margin-top:7px">${attachments.map((a,i)=>`<a class="btn btn-soft" href="${esc(telegramFileUrl(a))}" target="_blank" rel="noopener">İndir: ${esc(a.fileName||"Dosya")}</a>${canOcrTelegramAttachment(a)?`<button class="btn btn-amber" onclick="ocrTelegramAttachment(${jsArg(a.fileId)},${jsArg(a.fileName||"telegram-dosya")},${jsArg(a.mimeType||"")})">OCR Oku</button>`:""}${/xlsx|excel|spreadsheet|xls/i.test(`${a.fileName||""} ${a.mimeType||""}`)?`<button class="btn btn-blue" onclick="previewTelegramExcel(${jsArg(a.fileId)},${jsArg(a.fileName||"telegram.xlsx")},${jsArg("bank")})">Halkbank Ön İzle</button><button class="btn btn-purple" onclick="previewTelegramExcel(${jsArg(a.fileId)},${jsArg(a.fileName||"telegram.xlsx")},${jsArg("moka")})">Moka Ön İzle</button>`:""}`).join("")}</div>`;
   }
   function telegramAttachmentText(list){
     const attachments=(list||[]).filter(a=>a&&a.fileId);
@@ -1132,6 +1142,30 @@
     if(!res.ok) throw new Error("Telegram dosyası indirilemedi.");
     const buf=await res.arrayBuffer();
     return XLSX.read(buf,{type:"array",cellDates:true});
+  }
+  async function telegramAttachmentBlob(fileId,fileName){
+    const res=await fetch(`/api/telegram/file?id=${encodeURIComponent(fileId)}&name=${encodeURIComponent(fileName||"telegram-dosya")}`,{cache:"no-store"});
+    if(!res.ok) throw new Error("Telegram dosyası indirilemedi.");
+    return res.blob();
+  }
+  async function pdfFirstPageImage(blob){
+    const pdfjs=window.pdfjsLib;
+    if(!pdfjs) throw new Error("PDF okuyucu yüklenmedi.");
+    if(pdfjs.GlobalWorkerOptions) pdfjs.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+    const data=await blob.arrayBuffer();
+    const pdf=await pdfjs.getDocument({data}).promise;
+    const page=await pdf.getPage(1);
+    const viewport=page.getViewport({scale:2});
+    const canvas=document.createElement("canvas");
+    canvas.width=Math.ceil(viewport.width); canvas.height=Math.ceil(viewport.height);
+    await page.render({canvasContext:canvas.getContext("2d"),viewport}).promise;
+    return canvas;
+  }
+  async function ocrBlobText(blob,fileName,mimeType){
+    if(!window.Tesseract) throw new Error("OCR okuyucu yüklenmedi.");
+    const source=/pdf/i.test(`${fileName||""} ${mimeType||""}`) ? await pdfFirstPageImage(blob) : blob;
+    const result=await Tesseract.recognize(source,"tur+eng");
+    return (result?.data?.text||"").trim();
   }
   function rememberTelegram(row){
     if(row.updateId && state.telegramMessages.some(x=>String(x.updateId)===String(row.updateId))) return false;
@@ -1404,6 +1438,35 @@
       }
     }catch(err){
       notify("Telegram Excel okunamadı: "+(err?.message||err));
+    }
+  };
+  window.ocrTelegramAttachment=async function(fileId,fileName,mimeType){
+    try{
+      notify("Telegram eki OCR ile okunuyor...");
+      const blob=await telegramAttachmentBlob(fileId,fileName);
+      const text=await ocrBlobText(blob,fileName,mimeType);
+      if(!text) return notify("OCR metin bulamadı.");
+      const row=buildTelegramRecord(text);
+      row.source=row.source||"Telegram OCR";
+      row.type=row.type==="Operasyon"?"Operasyon":row.type;
+      row.attachments=[{kind:/pdf/i.test(`${fileName} ${mimeType}`)?"document":"photo",fileId,fileName,mimeType}];
+      row.createdAt=new Date().toLocaleString("tr-TR");
+      rememberTelegram({...row,id:uid("TG-OCR"),text:`OCR: ${text}`,source:"Telegram OCR"});
+      if(row.type==="Operasyon"){
+        const kind=cleanText(text).includes("odeme")||cleanText(text).includes("soz")?"Ödeme Sözü":"Yapılacak";
+        if(!hasOpsTaskDuplicate(row,kind)){
+          state.opsTasks.unshift({id:uid("OPS-OCR"),kind,text,cariId:row.cariId,cariName:row.cariName,amount:row.amount,dueDate:row.dueDate,status:"Açık",createdAt:row.createdAt,source:"Telegram OCR",attachments:row.attachments});
+          writeJson(LS.opsTasks,state.opsTasks);
+        }
+      }else{
+        state.approvals.unshift({id:uid("APR-OCR"),cariId:row.cariId,amount:row.amount,score:Math.max(55,row.score-10),type:row.type,source:"Telegram OCR",accountId:row.accountId,date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments});
+        writeJson(LS.approvals,state.approvals);
+      }
+      logAudit("Telegram eki OCR ile okundu", `${fileName} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)} · ${row.type}`);
+      refreshAll();
+      notify("OCR tamamlandı; sonuç Onay Merkezi/operasyon listesine alındı.");
+    }catch(err){
+      notify("OCR okunamadı: "+(err?.message||err));
     }
   };
 
