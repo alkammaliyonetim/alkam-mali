@@ -1113,6 +1113,26 @@
     const score=Math.min(100,(match?.score||35)+(amount>0?10:0)+(acc.source?5:0));
     return {id:uid("TG"),text,amount,score,type,accountId:acc.id,source:acc.source,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",dueDate:detectDueDate(text),createdAt:new Date().toLocaleString("tr-TR")};
   }
+  function telegramFileUrl(att){
+    if(!att||!att.fileId) return "";
+    return `/api/telegram/file?id=${encodeURIComponent(att.fileId)}&name=${encodeURIComponent(att.fileName||"telegram-dosya")}`;
+  }
+  function telegramAttachmentButtons(list){
+    const attachments=(list||[]).filter(a=>a&&a.fileId);
+    if(!attachments.length) return "";
+    return `<div class="btn-row" style="margin-top:7px">${attachments.map((a,i)=>`<a class="btn btn-soft" href="${esc(telegramFileUrl(a))}" target="_blank" rel="noopener">İndir: ${esc(a.fileName||"Dosya")}</a>${/xlsx|excel|spreadsheet|xls/i.test(`${a.fileName||""} ${a.mimeType||""}`)?`<button class="btn btn-blue" onclick="previewTelegramExcel('${esc(a.fileId)}','${esc(a.fileName||"telegram.xlsx")}','bank')">Halkbank Ön İzle</button><button class="btn btn-purple" onclick="previewTelegramExcel('${esc(a.fileId)}','${esc(a.fileName||"telegram.xlsx")}','moka')">Moka Ön İzle</button>`:""}`).join("")}</div>`;
+  }
+  function telegramAttachmentText(list){
+    const attachments=(list||[]).filter(a=>a&&a.fileId);
+    return attachments.length ? attachments.map(a=>`${a.kind==="photo"?"Fotoğraf":"Belge"}: ${a.fileName||"dosya"}`).join(" · ") : "";
+  }
+  async function telegramAttachmentWorkbook(fileId,fileName){
+    if(!window.XLSX) throw new Error("Excel okuyucu yüklenmedi.");
+    const res=await fetch(`/api/telegram/file?id=${encodeURIComponent(fileId)}&name=${encodeURIComponent(fileName||"telegram.xlsx")}`,{cache:"no-store"});
+    if(!res.ok) throw new Error("Telegram dosyası indirilemedi.");
+    const buf=await res.arrayBuffer();
+    return XLSX.read(buf,{type:"array",cellDates:true});
+  }
   function rememberTelegram(row){
     if(row.updateId && state.telegramMessages.some(x=>String(x.updateId)===String(row.updateId))) return false;
     state.telegramMessages.unshift(row);
@@ -1131,7 +1151,7 @@
       writeJson(LS.opsTasks,state.opsTasks);
       return true;
     }
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:row.text,status:"Bekliyor",createdAt:row.createdAt});
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:row.text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[]});
     writeJson(LS.approvals,state.approvals);
     return true;
   }
@@ -1162,7 +1182,7 @@
       <div class="grid-2">
         <div>
           <h3 class="section-title" style="font-size:16px">Telegram Geçmişi</h3>
-          <div class="mini-list">${recent.length?recent.map(m=>`<div class="mini-row"><strong>${esc(m.type)}</strong> · ${esc(m.source||"Operasyon")} · ${money(m.amount)} · Güven ${m.score}%<br>${esc(m.cariName||"Cari eşleşmedi")} ${m.dueDate?`· Vade ${esc(m.dueDate)}`:""}<br><span class="muted-note">${esc(m.text)}</span>${m.chatId?`<br><button class="btn btn-soft" onclick="replyTelegramMessage('${esc(m.id)}')">Telegram Cevap Yaz</button>`:""}</div>`).join(""):`<div class="empty">Telegram mesaj geçmişi yok.</div>`}</div>
+          <div class="mini-list">${recent.length?recent.map(m=>`<div class="mini-row"><strong>${esc(m.type)}</strong> · ${esc(m.source||"Operasyon")} · ${money(m.amount)} · Güven ${m.score}%<br>${esc(m.cariName||"Cari eşleşmedi")} ${m.dueDate?`· Vade ${esc(m.dueDate)}`:""}<br><span class="muted-note">${esc(m.text)}</span>${telegramAttachmentButtons(m.attachments)}${m.chatId?`<br><button class="btn btn-soft" onclick="replyTelegramMessage('${esc(m.id)}')">Telegram Cevap Yaz</button>`:""}</div>`).join(""):`<div class="empty">Telegram mesaj geçmişi yok.</div>`}</div>
         </div>
         <div>
           <h3 class="section-title" style="font-size:16px">Açık Ödeme Sözü / Yapılacaklar</h3>
@@ -1194,7 +1214,7 @@
     const row=buildTelegramRecord(text);
     if(row.type==="Operasyon") return addTelegramTask();
     rememberTelegram(row);
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt});
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[]});
     writeJson(LS.approvals,state.approvals);
     logAudit("Telegram mesajı onaya aktarıldı", `${row.source} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)} · ${row.score}%`);
     byId("telegramText").value="";
@@ -1212,7 +1232,7 @@
       state.selectedAccountId=row.accountId;
       writeJson(LS.accountTxns,state.accountTxns);
     }
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source,accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt});
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source,accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[]});
     writeJson(LS.approvals,state.approvals);
     logAudit("Telegram mesajı hesaplara ve onaya aktarıldı", `${row.source} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)}`);
     byId("telegramText").value="";
@@ -1280,7 +1300,8 @@
   function telegramAckText(row){
     const target=row.type==="Operasyon" ? "operasyon listesine" : "Onay Merkezi'ne";
     const cari=row.cariName ? `Cari: ${row.cariName}` : "Cari eşleşmesi bekliyor";
-    return `ALKAM Mali: Mesajınız kayda alındı ve ${target} düştü.\n${cari}\nTutar: ${money(row.amount)}\nKaynak: ${row.source||"Telegram"}`;
+    const fileLine=telegramAttachmentText(row.attachments);
+    return `ALKAM Mali: Mesajınız kayda alındı ve ${target} düştü.\n${cari}\nTutar: ${money(row.amount)}\nKaynak: ${row.source||"Telegram"}${fileLine?`\nEk: ${fileLine}`:""}`;
   }
   window.testTelegramStatus=async function(){
     try{
@@ -1329,7 +1350,7 @@
       let added=0;
       (data.updates||[]).forEach(u=>{
         const row=buildTelegramRecord(u.text);
-        Object.assign(row,{id:uid("TG-LIVE"),updateId:u.updateId,messageId:u.messageId,chatId:u.chatId,chatTitle:u.chatTitle,fromName:u.fromName,telegramDate:u.date,createdAt:new Date(u.date||Date.now()).toLocaleString("tr-TR")});
+        Object.assign(row,{id:uid("TG-LIVE"),updateId:u.updateId,messageId:u.messageId,chatId:u.chatId,chatTitle:u.chatTitle,fromName:u.fromName,telegramDate:u.date,createdAt:new Date(u.date||Date.now()).toLocaleString("tr-TR"),attachments:u.attachments||[]});
         if(queueTelegramRecord(row)){
           added++;
           if(row.chatId) sendTelegramMessage(row.chatId,telegramAckText(row)).catch(()=>{});
@@ -1360,6 +1381,31 @@
     }
   }
   window.clearTelegramBox=function(){state.telegramMessages=[];writeJson(LS.telegram,state.telegramMessages);renderTelegramPanel();logAudit("Telegram kutusu temizlendi","Yerel mesaj geçmişi");};
+  window.previewTelegramExcel=async function(fileId,fileName,kind){
+    try{
+      notify("Telegram Excel dosyası indiriliyor...");
+      const wb=await telegramAttachmentWorkbook(fileId,fileName);
+      if(kind==="moka"){
+        const parsed=parseMokaWorkbook(wb);
+        state.importPreview=[...parsed.rows,...state.importPreview.filter(x=>x.kind!=="moka")];
+        state.mokaPlans=parsed.plans;
+        writeJson(LS.importPreview,state.importPreview);
+        writeJson(LS.mokaPlans,state.mokaPlans);
+        logAudit("Telegram Moka Excel ön izleme", `${fileName} · ${parsed.rows.length} işlem · ${parsed.plans.length} taksit`);
+        refreshAll();
+        notify(`${parsed.rows.length} Moka işlemi ön izlemeye alındı.`);
+      }else{
+        const parsed=parseHalkbankWorkbook(wb);
+        state.importPreview=[...parsed,...state.importPreview.filter(x=>x.kind!=="bank")];
+        writeJson(LS.importPreview,state.importPreview);
+        logAudit("Telegram Halkbank Excel ön izleme", `${fileName} · ${parsed.length} kayıt`);
+        refreshAll();
+        notify(`${parsed.length} Halkbank kaydı ön izlemeye alındı.`);
+      }
+    }catch(err){
+      notify("Telegram Excel okunamadı: "+(err?.message||err));
+    }
+  };
 
   function normalizeImportDate(v){
     if(v instanceof Date && !Number.isNaN(v.getTime())) return v.toISOString().slice(0,10);
@@ -1369,7 +1415,7 @@
     return isoDate(s);
   }
   function importHash(parts){const base=parts.map(x=>String(x??"").trim()).join("|").toLocaleLowerCase("tr-TR");let h=0;for(let i=0;i<base.length;i++)h=((h<<5)-h+base.charCodeAt(i))|0;return"IMP-"+Math.abs(h).toString(36);}
-  function knownImportHashes(){const set=new Set(state.importHashes||[]);state.accountTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);});state.approvals.forEach(x=>{if(x.importHash)set.add(x.importHash);});state.manualTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);});return set;}
+  function knownImportHashes(){const set=new Set(state.importHashes||[]);state.accountTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);if(x.legacyImportHash)set.add(x.legacyImportHash);});state.approvals.forEach(x=>{if(x.importHash)set.add(x.importHash);if(x.legacyImportHash)set.add(x.legacyImportHash);});state.manualTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);if(x.legacyImportHash)set.add(x.legacyImportHash);});return set;}
   function markArchiveImport(row){
     if((normalizeImportDate(row.date)||"") < LIVE_START_DATE){
       row.archive = true;
@@ -1573,9 +1619,13 @@
     const opts=`<option value="">Cari seç...</option>`+state.cariler.filter(x=>!x.deleted).map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
     return `<select class="select-input" onchange="setApprovalCari('${esc(a.id)}',this.value)">${opts}</select><div class="muted-note">EŞLEŞME BEKLEYEN</div>`;
   }
+  function approvalAttachmentHtml(a){
+    const buttons=telegramAttachmentButtons(a.attachments||[]);
+    return buttons ? `<div class="muted-note" style="margin-top:6px">Telegram eki güvenli indirme/ön izleme</div>${buttons}` : "";
+  }
   function renderApprovals(){
     const el=byId("approvalList"); if(!el)return;
-    el.innerHTML=state.approvals.length?`<table><thead><tr><th>İşlem Tarihi</th><th>Önerilen Cari</th><th>Tip</th><th>Kaynak</th><th>Güven</th><th class="text-right">Tutar</th><th>Sebep</th><th>İşlem</th></tr></thead><tbody>${state.approvals.map(a=>{const ledgerDate=approvalLedgerDate(a);return`<tr><td>${esc(ledgerDate)}<br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td>${approvalCariCell(a)}</td><td>${esc(a.type)}</td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td>${esc(a.reason||"")}</td><td>${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button> <button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`;
+    el.innerHTML=state.approvals.length?`<table><thead><tr><th>İşlem Tarihi</th><th>Önerilen Cari</th><th>Tip</th><th>Kaynak</th><th>Güven</th><th class="text-right">Tutar</th><th>Sebep / Ek</th><th>İşlem</th></tr></thead><tbody>${state.approvals.map(a=>{const ledgerDate=approvalLedgerDate(a);return`<tr><td>${esc(ledgerDate)}<br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td>${approvalCariCell(a)}</td><td>${esc(a.type)}</td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td>${esc(a.reason||"")}${approvalAttachmentHtml(a)}</td><td>${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button> <button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`;
   }
   window.approveItem=function(id){
     const a=state.approvals.find(x=>x.id===id); if(!a) return;

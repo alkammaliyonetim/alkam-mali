@@ -10,6 +10,9 @@ export default {
     if (url.pathname === "/api/telegram/send") {
       return telegramSend(request, env);
     }
+    if (url.pathname === "/api/telegram/file") {
+      return telegramFile(request, env);
+    }
     const response = await env.ASSETS.fetch(request);
     const headers = new Headers(response.headers);
     headers.set("cache-control", "no-store");
@@ -37,6 +40,45 @@ function tokenMissing() {
     configured: false,
     error: "TELEGRAM_BOT_TOKEN Cloudflare ortam değişkeni bağlı değil."
   });
+}
+
+function sanitizeFileName(name) {
+  return String(name || "telegram-dosya")
+    .replace(/[\\/:*?"<>|]+/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 120) || "telegram-dosya";
+}
+
+function messageAttachments(m) {
+  const out = [];
+  if (Array.isArray(m.photo) && m.photo.length) {
+    const p = m.photo[m.photo.length - 1];
+    out.push({
+      kind: "photo",
+      fileId: p.file_id,
+      uniqueId: p.file_unique_id || "",
+      fileName: `telegram-foto-${m.message_id || Date.now()}.jpg`,
+      mimeType: "image/jpeg",
+      fileSize: p.file_size || 0
+    });
+  }
+  if (m.document && m.document.file_id) {
+    out.push({
+      kind: "document",
+      fileId: m.document.file_id,
+      uniqueId: m.document.file_unique_id || "",
+      fileName: sanitizeFileName(m.document.file_name || `telegram-belge-${m.message_id || Date.now()}`),
+      mimeType: m.document.mime_type || "application/octet-stream",
+      fileSize: m.document.file_size || 0
+    });
+  }
+  return out;
+}
+
+function attachmentSummary(attachments) {
+  if (!attachments.length) return "";
+  return attachments.map(a => `${a.kind === "photo" ? "Fotoğraf" : "Belge"}: ${a.fileName}`).join(" · ");
 }
 
 async function telegramStatus(request, env) {
@@ -90,6 +132,8 @@ async function telegramUpdates(request, env) {
       const m = u.message || {};
       const from = m.from || {};
       const chat = m.chat || {};
+      const attachments = messageAttachments(m);
+      const text = m.text || m.caption || attachmentSummary(attachments);
       return {
         updateId: u.update_id,
         messageId: m.message_id || null,
@@ -97,13 +141,50 @@ async function telegramUpdates(request, env) {
         chatTitle: chat.title || chat.username || [chat.first_name, chat.last_name].filter(Boolean).join(" ") || "",
         fromName: [from.first_name, from.last_name].filter(Boolean).join(" ") || from.username || "",
         date: m.date ? new Date(m.date * 1000).toISOString() : new Date().toISOString(),
-        text: m.text || m.caption || ""
+        text,
+        attachments
       };
-    }).filter(x => x.text);
+    }).filter(x => x.text || (x.attachments && x.attachments.length));
     const nextOffset = updates.length ? Math.max(...updates.map(x => Number(x.updateId) || 0)) + 1 : offset;
     return json({ ok: true, configured: true, nextOffset, updates });
   } catch (err) {
     return json({ ok: false, configured: true, error: err && err.message ? err.message : "Telegram bağlantı hatası" });
+  }
+}
+
+async function telegramFile(request, env) {
+  const token = env.TELEGRAM_BOT_TOKEN;
+  if (!token) return tokenMissing();
+  const url = new URL(request.url);
+  const fileId = String(url.searchParams.get("id") || "").trim();
+  const downloadName = sanitizeFileName(url.searchParams.get("name") || "telegram-dosya");
+  if (!fileId) return json({ ok: false, configured: true, error: "file id gerekli." }, 400);
+
+  try {
+    const infoRes = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(10000)
+    });
+    const info = await infoRes.json();
+    if (!info.ok || !info.result || !info.result.file_path) {
+      return json({ ok: false, configured: true, error: info.description || "Telegram dosya yolu alınamadı." }, 502);
+    }
+    const fileRes = await fetch(`https://api.telegram.org/file/bot${token}/${info.result.file_path}`, {
+      signal: AbortSignal.timeout(20000)
+    });
+    if (!fileRes.ok) {
+      return json({ ok: false, configured: true, error: "Telegram dosyası indirilemedi." }, 502);
+    }
+    const headers = new Headers(fileRes.headers);
+    headers.set("cache-control", "no-store");
+    headers.set("content-disposition", `attachment; filename="${downloadName.replace(/"/g, "")}"`);
+    return new Response(fileRes.body, {
+      status: fileRes.status,
+      statusText: fileRes.statusText,
+      headers
+    });
+  } catch (err) {
+    return json({ ok: false, configured: true, error: err && err.message ? err.message : "Telegram dosya bağlantı hatası" }, 502);
   }
 }
 
