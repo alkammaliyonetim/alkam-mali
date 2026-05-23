@@ -364,6 +364,8 @@
     "alkam-cariler-77-28-04-2026 (2).json"
   ];
 
+  const LIVE_START_DATE = "2025-12-01";
+
   const defaultAccounts = [
     {id:"kasa", name:"Kasa", type:"kasa"},
     {id:"banka", name:"Banka", type:"banka"},
@@ -597,6 +599,27 @@
     if(!rows.length && c.rawTotals){debit=num(c.rawTotals.totalDebit); credit=num(c.rawTotals.totalCredit); bal=num(c.rawTotals.balance || debit-credit);}
     return {debit, credit, bal, last:rows.length?rows[rows.length-1].date:(c.periodEnd || c.periodStart || ""), count:rows.length};
   }
+  function isLivePeriodDate(v){
+    const d = normalizeImportDate(v) || isoDate(v) || "";
+    return d >= LIVE_START_DATE;
+  }
+  function livePeriodTotals(c){
+    const rows = allTxns(c);
+    const archiveRows = rows.filter(t=>!isLivePeriodDate(t.date));
+    const liveRows = rows.filter(t=>isLivePeriodDate(t.date));
+    const opening = archiveRows.reduce((s,t)=>s+num(t.debit)-num(t.credit),0);
+    const debit = liveRows.reduce((s,t)=>s+num(t.debit),0);
+    const credit = liveRows.reduce((s,t)=>s+num(t.credit),0);
+    return {
+      opening,
+      debit,
+      credit,
+      bal: opening + debit - credit,
+      archiveCount: archiveRows.length,
+      liveCount: liveRows.length,
+      last: liveRows.length ? liveRows[liveRows.length-1].date : (archiveRows.length ? archiveRows[archiveRows.length-1].date : (c.periodEnd || c.periodStart || ""))
+    };
+  }
   function statementRowsNewestFirst(c){
     let running = 0;
     return allTxns(c).map((t,i)=>{
@@ -656,7 +679,7 @@
   function renderSelectedCariDetail(){
     const c = state.cariler.find(x=>x.id===state.selectedCariId);
     if(!c){byId("selectedCariDetail").innerHTML=`<div class="empty">Bir cari seç.</div>`;return;}
-    const rows=statementRowsNewestFirst(c); const meta=totals(c);
+    const rows=statementRowsNewestFirst(c); const meta=totals(c); const liveMeta=livePeriodTotals(c);
     const promises=paymentPromisesForCari(c.id);
     const openPromises=promises.filter(p=>p.status!=="Tamamlandı");
     const donePromises=promises.filter(p=>p.status==="Tamamlandı").slice(0,8);
@@ -679,12 +702,13 @@
         <h2 class="hero-name">${esc(c.name)}</h2>
         <div class="hero-sub"><span>${esc(c.code||"-")}</span><span>${esc(c.status||"Aktif")}</span><span>Aylık Ücret: ${money(c.monthlyFee)}</span><span>${c.deleted?'<span class="tag red">SİLİNMİŞ</span>':""}</span></div>
         <div class="grid-4" style="margin-bottom:12px">
-          <div class="metric-mini"><div class="k">Güncel Bakiye</div><div class="v">${balanceLabel(meta.bal)}</div></div>
-          <div class="metric-mini"><div class="k">Toplam Borç</div><div class="v">${money(meta.debit)}</div></div>
-          <div class="metric-mini"><div class="k">Toplam Alacak</div><div class="v">${money(meta.credit)}</div></div>
-          <div class="metric-mini"><div class="k">Son İşlem</div><div class="v">${esc(meta.last||"-")}</div></div>
+          <div class="metric-mini"><div class="k">Açılış Bakiye</div><div class="v">${balanceLabel(liveMeta.opening)}</div></div>
+          <div class="metric-mini"><div class="k">Canlı Dönem Borç</div><div class="v">${money(liveMeta.debit)}</div></div>
+          <div class="metric-mini"><div class="k">Canlı Dönem Alacak</div><div class="v">${money(liveMeta.credit)}</div></div>
+          <div class="metric-mini"><div class="k">Güncel Bakiye</div><div class="v">${balanceLabel(liveMeta.bal)}</div></div>
         </div>
         <div class="v119-legend"><span><i class="v119-dot v119-red"></i>Tahakkuk / Borç</span><span><i class="v119-dot v119-green"></i>Tahsilat / Alacak</span><span><i class="v119-dot v119-blue"></i>Düzeltme / Diğer</span></div>
+        <div class="rule-box">Canlı dönem başlangıcı: <strong>01.12.2025</strong>. Öncesi arşiv/açılış bakiyesidir ve içe aktarmadan tekrar cariye yazılmaz. Arşiv hareket: <strong>${liveMeta.archiveCount}</strong> · Canlı hareket: <strong>${liveMeta.liveCount}</strong> · Son işlem: <strong>${esc(liveMeta.last||"-")}</strong> · Tüm defter borç/alacak: <strong>${money(meta.debit)} / ${money(meta.credit)}</strong>.</div>
         <div class="rule-box">Bu extrede <strong>Kaynak</strong> kolonu zorunludur. En yakın tarih en üstte gösterilir. Bakiye işarete göre <strong>Bakiye B</strong> veya <strong>Bakiye A</strong> gösterilir.</div>
         ${promiseBox}
         ${donePromiseBox}
@@ -1308,6 +1332,15 @@
   }
   function importHash(parts){const base=parts.map(x=>String(x??"").trim()).join("|").toLocaleLowerCase("tr-TR");let h=0;for(let i=0;i<base.length;i++)h=((h<<5)-h+base.charCodeAt(i))|0;return"IMP-"+Math.abs(h).toString(36);}
   function knownImportHashes(){const set=new Set(state.importHashes||[]);state.accountTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);});state.approvals.forEach(x=>{if(x.importHash)set.add(x.importHash);});state.manualTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);});return set;}
+  function markArchiveImport(row){
+    if((normalizeImportDate(row.date)||"") < LIVE_START_DATE){
+      row.archive = true;
+      row.duplicate = true;
+      row.duplicateReason = `Arşiv dönemi (${LIVE_START_DATE} öncesi): cariye yeniden yazılmaz`;
+      row.status = "Arşiv";
+    }
+    return row;
+  }
   function importPreviewStatus(row){if(row.duplicate)return"Mükerrer";if(!row.cariId||row.score<70)return"EŞLEŞME BEKLEYEN";return"Onaya Hazır";}
   function daysBetween(a,b){const da=new Date((normalizeImportDate(a)||today())+"T00:00:00"),db=new Date((normalizeImportDate(b)||today())+"T00:00:00");return Math.abs((da-db)/86400000);}
   function tokenSet(v){return new Set(cleanText(v).split(" ").filter(x=>x.length>2));}
@@ -1320,6 +1353,7 @@
     return best;
   }
   function markImportDuplicate(row){
+    if(row.archive) return row;
     const hit=findExistingCariDuplicate(row);
     if(hit){row.duplicate=true;row.duplicateReason=`Cari ekstresinde var: ${hit.cari.name} · ${hit.txn.date} · ${money(row.amount)}`;if(!row.cariId){row.cariId=hit.cari.id;row.cariName=hit.cari.name;row.score=Math.max(row.score||0,95);}}
     return row;
@@ -1340,7 +1374,7 @@
       const dateCol=headerAt>=0?colIndex(headers,["islem tarihi","tarih"],0):0, descCol=headerAt>=0?colIndex(headers,["aciklama","açiklama","açıklama"],1):1, amountCol=headerAt>=0?colIndex(headers,["islem tutari","işlem tutarı","tutar"],2):2, balanceCol=headerAt>=0?colIndex(headers,["yeni bakiye","bakiye"],3):3;
       for(let i=start;i<rows.length;i++){const r=rows[i]||[], date=normalizeImportDate(r[dateCol]), desc=cellText(r[descCol]), rawAmount=num(r[amountCol]), balance=num(r[balanceCol]); if(!date||!desc||Math.abs(rawAmount)<0.01)continue; const credit=rawAmount>0?rawAmount:0, debit=rawAmount<0?Math.abs(rawAmount):0, match=detectCari(desc), hash=importHash(["HALKBANK",date,desc,rawAmount,balance,sheetName]); out.push({id:uid("HKB-PREV"),kind:"bank",source:"Halkbank",accountId:"banka",date,desc,amount:Math.abs(rawAmount),debit,credit,balance,sheetName,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",score:match?.score||25,type:credit>0?"Tahsilat":"Hesap Hareketi",status:"Ön İzleme",duplicate:known.has(hash),importHash:hash});}
     });
-    return out.map(markImportDuplicate);
+    return out.map(markArchiveImport).map(markImportDuplicate);
   }
   function installmentCount(v){const m=cleanText(v).match(/(\d+)/);return Math.max(1,Math.min(36,m?num(m[1]):1));}
   function addDays(dateText,days){const d=new Date((normalizeImportDate(dateText)||today())+"T12:00:00");d.setDate(d.getDate()+days);return d.toISOString().slice(0,10);}
@@ -1351,7 +1385,7 @@
       const c={id:colIndex(headers,["id"],1),counter:colIndex(headers,["karsi islem","karşı işlem"],2),date:colIndex(headers,["islem tarihi","işlem tarihi"],3),amount:colIndex(headers,["islem tutari","işlem tutarı"],12),gross:colIndex(headers,["tutar"],10),commission:colIndex(headers,["komisyon tutari","komisyon tutarı"],14),installment:colIndex(headers,["taksit"],16),bank:colIndex(headers,["kart bankasi","kart bankası"],17),holder:colIndex(headers,["kart sahibi"],18),card:colIndex(headers,["kart numarasi","kart numarası"],19)};
       for(let i=headerAt+1;i<rows.length;i++){const r=rows[i]||[], date=normalizeImportDate(r[c.date]), holder=cellText(r[c.holder]), txId=cellText(r[c.id])||cellText(r[c.counter]), gross=num(r[c.gross]), net=num(r[c.amount])||gross, commission=num(r[c.commission]), inst=installmentCount(r[c.installment]); if(!date||!txId||Math.abs(gross)<0.01)continue; const match=detectCari([holder,cellText(r[c.bank]),txId].join(" ")), hash=importHash(["MOKA",date,txId,gross,net,holder]), schedule=[]; for(let n=1;n<=inst;n++){const dueDate=addDays(date,40*n), netPart=net/inst, scheduleHash=importHash(["MOKA-TAKSIT",txId,n,dueDate,netPart]); schedule.push({id:uid("MOKA-SCH"),txId,installment:n,installmentCount:inst,dueDate,amount:netPart,bankMatched:false,bankHash:"",scheduleHash});} out.push({id:uid("MOKA-PREV"),kind:"moka",source:"Moka United",accountId:"moka-united",date,desc:`Moka POS ${holder} ${inst>1?inst+" taksit":"tek çekim"}`,amount:net,debit:0,credit:net,gross,commission,installmentCount:inst,cardHolder:holder,cardBank:cellText(r[c.bank]),txId,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",score:match?.score||35,type:"Moka United",status:"Ön İzleme",duplicate:known.has(hash),importHash:hash,schedule}); schedule.forEach(s=>plans.push({...s,sourceImportHash:hash,cardHolder:holder,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",gross,net,txDate:date,txId}));}
     });
-    return {rows:out.map(markImportDuplicate),plans};
+    return {rows:out.map(markArchiveImport).map(markImportDuplicate),plans};
   }
   function matchMokaSchedules(){
     const bankRows=[...state.accountTxns,...state.importPreview.filter(x=>x.kind==="bank")].filter(x=>String(x.source||"").toLocaleLowerCase("tr-TR").includes("halkbank")||x.accountId==="banka");
@@ -1379,8 +1413,10 @@
       cariler: state.cariler.filter(c=>!c.deleted).length,
       ledgerTxns: state.cariler.filter(c=>!c.deleted).reduce((s,c)=>s+allTxns(c).length,0),
       preview: preview.length,
+      liveStart: LIVE_START_DATE,
+      previewArchive: preview.filter(x=>x.archive).length,
       previewDuplicate: preview.filter(x=>x.duplicate).length,
-      previewWaiting: preview.filter(x=>!x.duplicate && (!x.cariId || x.score<70)).length,
+      previewWaiting: preview.filter(x=>!x.archive && !x.duplicate && (!x.cariId || x.score<70)).length,
       approvalsWaiting: approvals.filter(x=>x.status==="Bekliyor").length,
       approvalsDuplicate: approvals.filter(x=>x.status==="Mükerrer").length,
       accountUnposted: accounts.filter(x=>x.postedToCari===false && x.cariId).length,
@@ -1408,16 +1444,16 @@
     const todayDue=moka.filter(x=>!x.bankMatched&&x.dueDate===today()).reduce((s,x)=>s+num(x.amount),0), weekDue=moka.filter(x=>{const d=new Date((x.dueDate||today())+"T00:00:00"), diff=(d-now)/86400000;return !x.bankMatched&&diff>=0&&diff<=7;}).reduce((s,x)=>s+num(x.amount),0), monthDue=moka.filter(x=>!x.bankMatched&&monthKey(x.dueDate)===monthKey(today())).reduce((s,x)=>s+num(x.amount),0), totalPending=moka.filter(x=>!x.bankMatched).reduce((s,x)=>s+num(x.amount),0);
     const table=rows.slice(0,180).map(r=>`<tr class="${r.duplicate?"match-duplicate":(!r.cariId||r.score<70?"match-waiting":"match-ready")}"><td>${esc(r.source)}</td><td>${esc(r.date)}</td><td>${esc(r.cariName||"-")}</td><td>${esc(r.type)}</td><td><span class="tag ${r.score>=90?"green":r.score>=70?"amber":"red"}">${r.score}%</span><br>${esc(importPreviewStatus(r))}</td><td>${esc(r.desc)}</td><td class="text-right money">${money(r.amount)}</td></tr>`).join("");
     const planRows=moka.slice().sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate))).slice(0,80).map(p=>`<tr><td>${esc(p.dueDate)}</td><td>${esc(p.cardHolder||p.cariName||"-")}</td><td>${esc(p.installment)}/${esc(p.installmentCount)}</td><td class="text-right money">${money(p.amount)}</td><td>${p.bankMatched?'<span class="tag green">Bankaya geçti</span>':'<span class="tag amber">Bekliyor</span>'}</td></tr>`).join("");
-    el.innerHTML=`<h2 class="section-title">Geçmiş Banka / Moka İçe Aktarma</h2>${renderReadinessPanel()}<div class="rule-box" style="margin-bottom:12px">Halkbank ve Moka dosyaları önce ön izlemeye alınır. Kayıtlar mükerrer kontrolünden geçer; cari hareketi sadece Onay Merkezi onayıyla oluşur.</div><div class="import-preview-grid"><div class="field"><label>Halkbank Excel</label><input id="halkbankFile" type="file" accept=".xlsx,.xls" /><button class="btn btn-blue" onclick="previewHalkbankFile()">Halkbank Ön İzle</button></div><div class="field"><label>Moka POS Excel</label><input id="mokaFile" type="file" accept=".xlsx,.xls" /><button class="btn btn-purple" onclick="previewMokaFile()">Moka Ön İzle + Takvim</button></div></div><div class="btn-row" style="margin-bottom:12px"><button class="btn btn-green" onclick="sendImportPreviewToApproval()">Ön İzlemeyi Onay Merkezi'ne Aktar</button><button class="btn btn-soft" onclick="clearImportPreview()">Ön İzlemeyi Temizle</button><button class="btn btn-soft" onclick="matchMokaSchedules();renderHistoryImportPanel()">Banka-Moka Eşleştir</button></div><div class="cards"><div class="card"><div class="card-label">Moka Bugün</div><div class="card-value">${money(todayDue)}</div></div><div class="card"><div class="card-label">Moka Bu Hafta</div><div class="card-value">${money(weekDue)}</div></div><div class="card"><div class="card-label">Moka Bu Ay</div><div class="card-value">${money(monthDue)}</div></div><div class="card"><div class="card-label">Toplam Moka Alacağı</div><div class="card-value">${money(totalPending)}</div></div></div><h3 class="section-title" style="font-size:16px">Ön İzleme (${rows.length} kayıt)</h3><div class="import-table-wrap">${rows.length?`<table><thead><tr><th>Kaynak</th><th>Tarih</th><th>Önerilen Cari</th><th>Tip</th><th>Durum</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${table}</tbody></table>`:`<div class="empty">Henüz ön izleme yok.</div>`}</div><h3 class="section-title" style="font-size:16px;margin-top:14px">Moka Taksit Bazlı Ödeme Takvimi (${moka.length} satır)</h3><div class="import-table-wrap">${moka.length?`<table><thead><tr><th>Vade</th><th>Kart Sahibi / Cari</th><th>Taksit</th><th class="text-right">Net Tutar</th><th>Durum</th></tr></thead><tbody>${planRows}</tbody></table>`:`<div class="empty">Moka ödeme takvimi yok.</div>`}</div>`;
+    el.innerHTML=`<h2 class="section-title">Geçmiş Banka / Moka İçe Aktarma</h2>${renderReadinessPanel()}<div class="rule-box" style="margin-bottom:12px">Canlı dönem başlangıcı: <strong>01.12.2025</strong>. Bu tarihten önceki dosya satırları arşiv kabul edilir; ön izlemede görünür ama hesaplara veya Onay Merkezi'ne aktarılmaz.</div><div class="rule-box" style="margin-bottom:12px">Halkbank ve Moka dosyaları önce ön izlemeye alınır. Kayıtlar mükerrer kontrolünden geçer; cari hareketi sadece Onay Merkezi onayıyla oluşur.</div><div class="import-preview-grid"><div class="field"><label>Halkbank Excel</label><input id="halkbankFile" type="file" accept=".xlsx,.xls" /><button class="btn btn-blue" onclick="previewHalkbankFile()">Halkbank Ön İzle</button></div><div class="field"><label>Moka POS Excel</label><input id="mokaFile" type="file" accept=".xlsx,.xls" /><button class="btn btn-purple" onclick="previewMokaFile()">Moka Ön İzle + Takvim</button></div></div><div class="btn-row" style="margin-bottom:12px"><button class="btn btn-green" onclick="sendImportPreviewToApproval()">Ön İzlemeyi Onay Merkezi'ne Aktar</button><button class="btn btn-soft" onclick="clearImportPreview()">Ön İzlemeyi Temizle</button><button class="btn btn-soft" onclick="matchMokaSchedules();renderHistoryImportPanel()">Banka-Moka Eşleştir</button></div><div class="cards"><div class="card"><div class="card-label">Moka Bugün</div><div class="card-value">${money(todayDue)}</div></div><div class="card"><div class="card-label">Moka Bu Hafta</div><div class="card-value">${money(weekDue)}</div></div><div class="card"><div class="card-label">Moka Bu Ay</div><div class="card-value">${money(monthDue)}</div></div><div class="card"><div class="card-label">Toplam Moka Alacağı</div><div class="card-value">${money(totalPending)}</div></div></div><h3 class="section-title" style="font-size:16px">Ön İzleme (${rows.length} kayıt)</h3><div class="import-table-wrap">${rows.length?`<table><thead><tr><th>Kaynak</th><th>Tarih</th><th>Önerilen Cari</th><th>Tip</th><th>Durum</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${table}</tbody></table>`:`<div class="empty">Henüz ön izleme yok.</div>`}</div><h3 class="section-title" style="font-size:16px;margin-top:14px">Moka Taksit Bazlı Ödeme Takvimi (${moka.length} satır)</h3><div class="import-table-wrap">${moka.length?`<table><thead><tr><th>Vade</th><th>Kart Sahibi / Cari</th><th>Taksit</th><th class="text-right">Net Tutar</th><th>Durum</th></tr></thead><tbody>${planRows}</tbody></table>`:`<div class="empty">Moka ödeme takvimi yok.</div>`}</div>`;
   }
   window.previewHalkbankFile=function(){readWorkbookFromInput("halkbankFile",(wb,name)=>{const parsed=parseHalkbankWorkbook(wb);state.importPreview=[...parsed,...state.importPreview.filter(x=>x.kind!=="bank")];writeJson(LS.importPreview,state.importPreview);logAudit("Halkbank ön izleme oluşturuldu",`${name} · ${parsed.length} kayıt`);refreshAll();notify(`${parsed.length} Halkbank kaydı ön izlemeye alındı.`);});};
   window.previewMokaFile=function(){readWorkbookFromInput("mokaFile",(wb,name)=>{const parsed=parseMokaWorkbook(wb);state.importPreview=[...parsed.rows,...state.importPreview.filter(x=>x.kind!=="moka")];state.mokaPlans=parsed.plans;writeJson(LS.importPreview,state.importPreview);writeJson(LS.mokaPlans,state.mokaPlans);logAudit("Moka ön izleme ve ödeme takvimi oluşturuldu",`${name} · ${parsed.rows.length} işlem · ${parsed.plans.length} taksit`);refreshAll();notify(`${parsed.rows.length} Moka işlemi ve ${parsed.plans.length} taksit planı oluşturuldu.`);});};
   window.clearImportPreview=function(){state.importPreview=[];writeJson(LS.importPreview,state.importPreview);logAudit("İçe aktarma ön izlemesi temizlendi","Halkbank/Moka");refreshAll();};
   window.setApprovalCari=function(id,value){const a=state.approvals.find(x=>x.id===id);if(!a)return;a.cariId=value||"";writeJson(LS.approvals,state.approvals);};
   window.sendImportPreviewToApproval=function(){
-    const known=knownImportHashes();let acc=0,apr=0,skip=0;
-    state.importPreview.forEach(r=>{if(r.duplicate||known.has(r.importHash)){skip++;return;}const dir=r.credit>0?"giris":"cikis";state.accountTxns.push({id:uid("IMP-ACC"),accountId:r.accountId,date:r.date,dir,amount:r.amount,source:r.source,desc:r.desc,cariId:r.cariId||"",postedToCari:false,importHash:r.importHash,raw:r});acc++;known.add(r.importHash);state.importHashes.push(r.importHash);if(r.credit>0||r.kind==="moka"){state.approvals.unshift({id:uid("APR-IMP"),cariId:r.cariId||"",amount:r.amount,score:r.score,type:r.type==="Moka United"?"Moka United":"Tahsilat",source:r.source,accountId:"",date:r.date,reason:r.desc,status:"Bekliyor",createdAt:new Date().toLocaleString("tr-TR"),importHash:r.importHash});apr++;}});
-    state.importHashes=[...new Set(state.importHashes)].slice(-5000);writeJson(LS.accountTxns,state.accountTxns);writeJson(LS.approvals,state.approvals);writeJson(LS.importHashes,state.importHashes);logAudit("İçe aktarma onaya aktarıldı",`Hesap ${acc} · Onay ${apr} · Mükerrer ${skip}`);refreshAll();notify(`Hesaplara ${acc}, Onay Merkezi'ne ${apr} kayıt aktarıldı. Mükerrer: ${skip}`);
+    const known=knownImportHashes();let acc=0,apr=0,skip=0,archive=0;
+    state.importPreview.forEach(r=>{if(r.archive){archive++;return;}if(r.duplicate||known.has(r.importHash)){skip++;return;}const dir=r.credit>0?"giris":"cikis";state.accountTxns.push({id:uid("IMP-ACC"),accountId:r.accountId,date:r.date,dir,amount:r.amount,source:r.source,desc:r.desc,cariId:r.cariId||"",postedToCari:false,importHash:r.importHash,raw:r});acc++;known.add(r.importHash);state.importHashes.push(r.importHash);if(r.credit>0||r.kind==="moka"){state.approvals.unshift({id:uid("APR-IMP"),cariId:r.cariId||"",amount:r.amount,score:r.score,type:r.type==="Moka United"?"Moka United":"Tahsilat",source:r.source,accountId:"",date:r.date,reason:r.desc,status:"Bekliyor",createdAt:new Date().toLocaleString("tr-TR"),importHash:r.importHash});apr++;}});
+    state.importHashes=[...new Set(state.importHashes)].slice(-5000);writeJson(LS.accountTxns,state.accountTxns);writeJson(LS.approvals,state.approvals);writeJson(LS.importHashes,state.importHashes);logAudit("İçe aktarma onaya aktarıldı",`Hesap ${acc} · Onay ${apr} · Mükerrer ${skip} · Arşiv ${archive}`);refreshAll();notify(`Hesaplara ${acc}, Onay Merkezi'ne ${apr} kayıt aktarıldı. Mükerrer: ${skip} · Arşiv: ${archive}`);
   };
 
   function firstDayOfMonth(dateText){
