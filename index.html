@@ -1119,6 +1119,90 @@
     const score=Math.min(100,(match?.score||35)+(amount>0?10:0)+(acc.source?5:0));
     return {id:uid("TG"),text,amount,score,type,accountId:acc.id,source:acc.source,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",dueDate:detectDueDate(text),createdAt:new Date().toLocaleString("tr-TR")};
   }
+  function detectBinAmount(text){
+    const clean=cleanText(String(text||"")
+      .replace(/\b20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}\b/g," ")
+      .replace(/\b\d{1,2}[-/.]\d{1,2}[-/.]20\d{2}\b/g," "));
+    const values=[...clean.matchAll(/\b(\d+(?:[.,]\d+)?)\s*(?:bin|bın)\b/g)]
+      .map(m=>num(String(m[1]).replace(".",","))*1000)
+      .filter(x=>x>0 && x<100000000);
+    return values.length ? Math.max(...values) : 0;
+  }
+  const alkamBaseDetectAmount = detectAmount;
+  detectAmount = function(text){
+    return Math.max(alkamBaseDetectAmount(text), detectBinAmount(text));
+  };
+  const alkamBaseDetectCari = detectCari;
+  detectCari = function(text){
+    const base=alkamBaseDetectCari(text);
+    const cleaned=cleanText(text);
+    let best=base;
+    for(const c of state.cariler.filter(x=>!x.deleted)){
+      const tokens=cleanText(c.name).split(" ").filter(x=>x.length>=5);
+      const hit=tokens.find(t=>cleaned.includes(t));
+      if(hit){
+        const candidate={cari:c,score:64};
+        if(!best || candidate.score>best.score) best=candidate;
+      }
+    }
+    return best;
+  };
+  function detectInstallmentCount(text){
+    const s=cleanText(text);
+    const m=s.match(/\b(\d{1,2})\s*taksit\b/);
+    if(m) return Math.max(1,Math.min(36,num(m[1])));
+    if(/tek cekim|tekcekim/.test(s)) return 1;
+    return 1;
+  }
+  function isMokaTelegramText(text){
+    const s=cleanText(text);
+    return /moka|pos|sanal pos|taksit|tek cekim|tekcekim/.test(s);
+  }
+  const alkamBaseDetectApprovalType = detectApprovalType;
+  detectApprovalType = function(text){
+    if(isMokaTelegramText(text)) return "Moka United";
+    return alkamBaseDetectApprovalType(text);
+  };
+  const alkamBaseDetectTelegramAccount = detectTelegramAccount;
+  detectTelegramAccount = function(text){
+    if(isMokaTelegramText(text)) return {id:"moka-united", source:"Moka United"};
+    return alkamBaseDetectTelegramAccount(text);
+  };
+  const alkamBaseBuildTelegramRecord = buildTelegramRecord;
+  buildTelegramRecord = function(text){
+    const row=alkamBaseBuildTelegramRecord(text);
+    if(row.type==="Moka United"){
+      row.accountId="moka-united";
+      row.source="Moka United";
+      row.installmentCount=detectInstallmentCount(text);
+      row.txDate=row.dueDate||today();
+      row.score=Math.min(100,row.score+10);
+    }
+    return row;
+  };
+  function telegramMokaPlans(row){
+    if(!row || row.type!=="Moka United" || num(row.amount)<=0) return [];
+    const inst=Math.max(1,Math.min(36,num(row.installmentCount)||1));
+    const txDate=isoDate(row.txDate)||today();
+    const part=num(row.amount)/inst;
+    const txId=row.telegramUpdateId || row.updateId || importHash(["TG-MOKA",txDate,row.text,row.amount,inst]);
+    return Array.from({length:inst},(_,i)=>{
+      const n=i+1, dueDate=addDays(txDate,40*n), scheduleHash=importHash(["TG-MOKA-TAKSIT",txId,n,dueDate,part]);
+      return {id:uid("MOKA-TG"),txId,installment:n,installmentCount:inst,dueDate,amount:part,bankMatched:false,bankHash:"",scheduleHash,sourceImportHash:importHash(["TG-MOKA",txId,row.amount]),cardHolder:"",serviceName:row.cariName||"",cariId:row.cariId||"",cariName:row.cariName||"",gross:num(row.amount),net:num(row.amount),txDate,source:"Telegram Moka"};
+    });
+  }
+  function persistTelegramMokaPlans(row){
+    const plans=telegramMokaPlans(row);
+    if(!plans.length) return 0;
+    const known=new Set((state.mokaPlans||[]).map(x=>x.scheduleHash).filter(Boolean));
+    const fresh=plans.filter(x=>!known.has(x.scheduleHash));
+    if(fresh.length){
+      state.mokaPlans=[...state.mokaPlans,...fresh];
+      writeJson(LS.mokaPlans,state.mokaPlans);
+      logAudit("Telegram Moka taksit planı oluşturuldu", `${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)} · ${plans.length} taksit · İlk vade ${plans[0].dueDate}`);
+    }
+    return fresh.length;
+  }
   function telegramFileUrl(att){
     if(!att||!att.fileId) return "";
     return `/api/telegram/file?id=${encodeURIComponent(att.fileId)}&name=${encodeURIComponent(att.fileName||"telegram-dosya")}`;
@@ -1186,7 +1270,8 @@
       writeJson(LS.opsTasks,state.opsTasks);
       return true;
     }
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:row.text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[]});
+    persistTelegramMokaPlans(row);
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:row.text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1});
     writeJson(LS.approvals,state.approvals);
     return true;
   }
@@ -1249,7 +1334,8 @@
     const row=buildTelegramRecord(text);
     if(row.type==="Operasyon") return addTelegramTask();
     rememberTelegram(row);
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[]});
+    persistTelegramMokaPlans(row);
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1});
     writeJson(LS.approvals,state.approvals);
     logAudit("Telegram mesajı onaya aktarıldı", `${row.source} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)} · ${row.score}%`);
     byId("telegramText").value="";
@@ -1267,7 +1353,8 @@
       state.selectedAccountId=row.accountId;
       writeJson(LS.accountTxns,state.accountTxns);
     }
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source,accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[]});
+    persistTelegramMokaPlans(row);
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source,accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1});
     writeJson(LS.approvals,state.approvals);
     logAudit("Telegram mesajı hesaplara ve onaya aktarıldı", `${row.source} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)}`);
     byId("telegramText").value="";
@@ -1460,7 +1547,8 @@
           writeJson(LS.opsTasks,state.opsTasks);
         }
       }else{
-        state.approvals.unshift({id:uid("APR-OCR"),cariId:row.cariId,amount:row.amount,score:Math.max(55,row.score-10),type:row.type,source:"Telegram OCR",accountId:row.accountId,date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments});
+        persistTelegramMokaPlans(row);
+        state.approvals.unshift({id:uid("APR-OCR"),cariId:row.cariId,amount:row.amount,score:Math.max(55,row.score-10),type:row.type,source:row.type==="Moka United"?"Moka United":"Telegram OCR",accountId:row.accountId,date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments,installmentCount:row.installmentCount||1});
         writeJson(LS.approvals,state.approvals);
       }
       logAudit("Telegram eki OCR ile okundu", `${fileName} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)} · ${row.type}`);
