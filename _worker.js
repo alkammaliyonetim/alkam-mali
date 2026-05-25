@@ -232,6 +232,7 @@ async function telegramQueue(request, env) {
   if (!token) return tokenMissing();
   const queue = telegramQueueStore(env);
   if (!queue) return telegramQueueMissing();
+  const webhookEnsure = await ensureTelegramWebhook(request, env);
   const url = new URL(request.url);
   const limit = Math.max(1, Math.min(100, Number(url.searchParams.get("limit") || "50") || 50));
   const listed = await queue.list({ prefix: "tgq:", limit });
@@ -241,7 +242,7 @@ async function telegramQueue(request, env) {
     if (value) updates.push({ ...value, queueKey: item.name });
   }
   updates.sort((a, b) => (Number(a.updateId) || 0) - (Number(b.updateId) || 0));
-  return json({ ok: true, configured: true, storageConfigured: true, count: updates.length, updates });
+  return json({ ok: true, configured: true, storageConfigured: true, webhookEnsure, count: updates.length, updates });
 }
 
 async function telegramQueueAck(request, env) {
@@ -305,10 +306,36 @@ async function telegramWebhookSetup(request, env) {
   const token = env.TELEGRAM_BOT_TOKEN;
   if (!token) return tokenMissing();
   if (!telegramQueueStore(env)) return telegramQueueMissing();
+  const ensured = await ensureTelegramWebhook(request, env, true);
+  if (ensured.ok) {
+    return json({ ok: true, configured: true, storageConfigured: true, webhookUrl: ensured.webhookUrl, result: true });
+  }
+  return json({ ok: false, configured: true, storageConfigured: true, error: ensured.error || "Webhook kurulamadi." });
+}
+
+async function ensureTelegramWebhook(request, env, force = false) {
+  const token = env.TELEGRAM_BOT_TOKEN;
+  if (!token) return { ok: false, configured: false, error: "TELEGRAM_BOT_TOKEN yok." };
+  if (!telegramQueueStore(env)) return { ok: false, configured: true, storageConfigured: false, error: "TELEGRAM_QUEUE yok." };
   const origin = new URL(request.url).origin;
   const secret = String(env.TELEGRAM_WEBHOOK_SECRET || "").trim();
+  const webhookUrl = `${origin}/api/telegram/webhook`;
+  try {
+    if (!force) {
+      const infoRes = await fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`, {
+        headers: { accept: "application/json" },
+        signal: AbortSignal.timeout(8000)
+      });
+      const info = await infoRes.json();
+      if (info.ok && info.result && info.result.url === webhookUrl) {
+        return { ok: true, configured: true, storageConfigured: true, alreadyActive: true, webhookUrl };
+      }
+    }
+  } catch {
+    // Kurulum denemesi asagida devam eder.
+  }
   const payload = {
-    url: `${origin}/api/telegram/webhook`,
+    url: webhookUrl,
     allowed_updates: ["message", "edited_message", "channel_post"],
     drop_pending_updates: false
   };
@@ -321,12 +348,10 @@ async function telegramWebhookSetup(request, env) {
       body: JSON.stringify(payload)
     });
     const data = await res.json();
-    if (!data.ok) {
-      return json({ ok: false, configured: true, storageConfigured: true, error: data.description || "Webhook kurulamadi." });
-    }
-    return json({ ok: true, configured: true, storageConfigured: true, webhookUrl: payload.url, result: data.result });
+    if (!data.ok) return { ok: false, configured: true, storageConfigured: true, error: data.description || "Webhook kurulamadi." };
+    return { ok: true, configured: true, storageConfigured: true, alreadyActive: false, webhookUrl, result: data.result };
   } catch (err) {
-    return json({ ok: false, configured: true, storageConfigured: true, error: err && err.message ? err.message : "Webhook kurulum baglanti hatasi" });
+    return { ok: false, configured: true, storageConfigured: true, error: err && err.message ? err.message : "Webhook kurulum baglanti hatasi" };
   }
 }
 
