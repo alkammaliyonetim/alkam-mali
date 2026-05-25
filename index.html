@@ -77,7 +77,9 @@
     .import-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}.import-table-wrap{max-height:360px;overflow:auto;border:1px solid #edf2f7;border-radius:12px}.match-waiting{background:#fff7ed}.match-ready{background:#ecfdf5}.match-duplicate{background:#f1f5f9;color:#64748b}
     .switch{position:relative;display:inline-block;width:78px;height:34px}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;inset:0;background:#cbd5e1;border-radius:999px;transition:.18s}.slider:before{position:absolute;content:"";height:26px;width:26px;left:4px;top:4px;background:white;border-radius:50%;transition:.18s;box-shadow:0 3px 10px rgba(15,23,42,.18)}.switch input:checked+.slider{background:#059669}.switch input:checked+.slider:before{transform:translateX(44px)}.switch-text{display:block;text-align:center;font-size:10px;font-weight:950;margin-top:4px;color:#475569}
     .audit-panel{position:fixed;left:14px;bottom:14px;width:410px;max-width:calc(100vw - 28px);max-height:360px;overflow:auto;background:rgba(255,255,255,.97);border:1px solid #dbe5f3;border-radius:16px;box-shadow:0 20px 55px rgba(15,23,42,.22);z-index:80;padding:12px;display:none}.audit-panel.open{display:block}.audit-title{font-size:14px;font-weight:950;margin-bottom:8px}.audit-item{font-size:11px;border-top:1px solid #edf2f7;padding:7px 0;line-height:1.35}
+    .approval-hero{background:linear-gradient(135deg,#061d3f,#0f3b82);color:#fff;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:18px 20px;box-shadow:0 18px 50px rgba(2,6,23,.18);align-items:center}.approval-hero .page-head h1{color:#fff;font-size:34px}.approval-hero .page-head p{color:#dbeafe;max-width:820px}.approval-hero .btn-soft{background:#fff;color:#0f172a}.approval-hero .btn-blue{background:#16a34a}.approval-gate{display:grid;grid-template-columns:1.35fr .75fr;gap:12px;margin-bottom:16px}.approval-command{background:#fff;border:1px solid #bfdbfe;border-left:6px solid #2563eb;border-radius:16px;padding:15px;box-shadow:var(--shadow)}.approval-command-title{font-size:17px;font-weight:950;margin-bottom:7px;color:#0f172a}.approval-command-text{font-size:12.5px;font-weight:800;color:#475569;line-height:1.55}.approval-status-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.approval-kpi{border:1px solid #dbeafe;background:#f8fbff;border-radius:14px;padding:12px}.approval-kpi.danger{border-color:#fecaca;background:#fff1f2}.approval-kpi.ready{border-color:#a7f3d0;background:#ecfdf5}.approval-kpi .k{font-size:10px;font-weight:950;letter-spacing:.06em;text-transform:uppercase;color:#64748b}.approval-kpi .v{font-size:24px;font-weight:950;margin-top:4px;color:#0f172a}.approval-board{border:1px solid #bfdbfe;background:linear-gradient(180deg,#ffffff,#f8fbff);border-radius:18px;padding:0;overflow:hidden}.approval-board-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border-bottom:1px solid #dbeafe;background:#eff6ff}.approval-board-title{font-size:20px;font-weight:950;color:#0f172a}.approval-board-sub{font-size:12px;font-weight:800;color:#475569;margin-top:4px}.approval-table-wrap{overflow:auto;max-height:560px}.approval-table th{background:#eaf2ff;color:#0f2f66}.approval-row-pending{background:#fff}.approval-row-pending td:first-child{box-shadow:inset 5px 0 0 #2563eb}.approval-row-risk{background:#fff7ed}.approval-row-risk td:first-child{box-shadow:inset 5px 0 0 #f97316}.approval-row-blocked{background:#fff1f2}.approval-row-blocked td:first-child{box-shadow:inset 5px 0 0 #dc2626}.approval-cari-main{font-weight:950;color:#0f172a}.approval-reason{max-width:420px;line-height:1.45}.approval-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.approval-source-strip{display:flex;gap:8px;flex-wrap:wrap}.approval-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid #dbeafe;background:#fff;border-radius:999px;padding:6px 9px;font-size:11px;font-weight:950;color:#334155}
     @media(max-width:1280px){.layout{grid-template-columns:1fr}.sidebar{position:relative;height:auto;width:auto;min-width:0}.grid-2,.grid-3,.grid-4,.cards,.toolbar{grid-template-columns:1fr}.cari-list-scroll{max-height:none}.cari-detail-scroll{height:auto;overflow:visible}.statement-scroll{max-height:none;overflow:auto}.erp-modulebar{position:relative}.login-shell{grid-template-columns:1fr}.login-side-brand{min-height:250px}}
+    @media(max-width:1280px){.approval-gate,.approval-status-grid{grid-template-columns:1fr}.approval-hero{align-items:flex-start}.approval-table-wrap{max-height:none}.approval-actions{justify-content:flex-start}}
   </style>
 </head>
 <body>
@@ -215,7 +217,7 @@
     <section id="tab-senetler" class="tab-page"><div id="cashModule-senetler"></div></section>
 
     <section id="tab-onay" class="tab-page">
-      <div class="topbar">
+      <div class="topbar approval-hero">
         <div class="page-head"><h1>Onay Merkezi</h1><p>Önerilen cari, hareket tipi, tutar, güven puanı ve eşleşme sebebi görünür. Emin olunmayan kayıt cariye yazılmaz.</p></div>
         <div class="btn-row"><button class="btn btn-blue" onclick="openApprovalModal()">Onay Kaydı Ekle</button><button class="btn btn-soft" onclick="clearApproved()">Onaylananları Temizle</button></div>
       </div>
@@ -1928,9 +1930,39 @@
     const buttons=telegramAttachmentButtons(a.attachments||[]);
     return buttons ? `<div class="muted-note" style="margin-top:6px">Telegram eki güvenli indirme/ön izleme</div>${buttons}` : "";
   }
+  function approvalStatusClass(a){
+    if(a.status!=="Bekliyor") return "approval-row-blocked";
+    if(!a.cariId || num(a.score)<70 || num(a.amount)<=0) return "approval-row-risk";
+    return "approval-row-pending";
+  }
   function renderApprovals(){
     const el=byId("approvalList"); if(!el)return;
-    el.innerHTML=state.approvals.length?`<table><thead><tr><th>İşlem Tarihi</th><th>Önerilen Cari</th><th>Tip</th><th>Kaynak</th><th>Güven</th><th class="text-right">Tutar</th><th>Sebep / Ek</th><th>İşlem</th></tr></thead><tbody>${state.approvals.map(a=>{const ledgerDate=approvalLedgerDate(a);return`<tr><td>${esc(ledgerDate)}<br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td>${approvalCariCell(a)}</td><td>${esc(a.type)}</td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td>${esc(a.reason||"")}${approvalAttachmentHtml(a)}</td><td>${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button> <button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`;
+    const rows=state.approvals||[];
+    const waiting=rows.filter(a=>a.status==="Bekliyor");
+    const ready=waiting.filter(a=>a.cariId && num(a.score)>=90 && num(a.amount)>0);
+    const risk=waiting.filter(a=>!a.cariId || num(a.score)<70 || num(a.amount)<=0);
+    const total=waiting.reduce((s,a)=>s+num(a.amount),0);
+    const sources={};
+    waiting.forEach(a=>{const key=a.source||"Kaynak Yok";sources[key]=(sources[key]||0)+1;});
+    const sourceStrip=Object.entries(sources).slice(0,8).map(([k,v])=>`<span class="approval-pill">${esc(k)} <strong>${v}</strong></span>`).join("");
+    const table=rows.map(a=>{const ledgerDate=approvalLedgerDate(a);const c=state.cariler.find(x=>x.id===a.cariId);return`<tr class="${approvalStatusClass(a)}"><td><strong>${esc(ledgerDate)}</strong><br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td><div class="approval-cari-main">${c?esc(c.name):approvalCariCell(a)}</div>${!c?`<span class="tag amber">EŞLEŞME BEKLEYEN</span>`:""}</td><td><span class="tag ${a.type==="Tahsilat"?"green":a.type==="Tahakkuk"?"red":"purple"}">${esc(a.type)}</span></td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td class="approval-reason">${esc(a.reason||"")}${approvalAttachmentHtml(a)}</td><td><div class="approval-actions">${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button><button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</div></td></tr>`}).join("");
+    el.className="section approval-board";
+    el.innerHTML=`
+      <div class="approval-board-head">
+        <div><div class="approval-board-title">Finansal Onay Kapısı</div><div class="approval-board-sub">Onaylanmayan hiçbir kayıt cariye kesin hareket olarak yazılmaz.</div></div>
+        <div class="approval-source-strip">${sourceStrip||'<span class="approval-pill">Bekleyen kaynak yok</span>'}</div>
+      </div>
+      <div class="approval-gate" style="padding:16px 16px 0">
+        <div class="approval-command"><div class="approval-command-title">Karar Akışı</div><div class="approval-command-text">Banka, Moka, Telegram, tahakkuk ve manuel öneriler önce burada tutulur. Cari eşleşmesi, tutar, güven puanı ve sebep kontrol edilmeden işlem cariye geçmez.</div></div>
+        <div class="approval-command"><div class="approval-command-title">Kritik Kural</div><div class="approval-command-text">Mükerrer, carisiz veya düşük güvenli kayıtlar riskli renkte görünür; önce düzeltilir veya reddedilir.</div></div>
+      </div>
+      <div class="approval-status-grid" style="padding:0 16px 16px">
+        <div class="approval-kpi"><div class="k">Bekleyen</div><div class="v">${waiting.length}</div></div>
+        <div class="approval-kpi ready"><div class="k">Onaya Hazır</div><div class="v">${ready.length}</div></div>
+        <div class="approval-kpi danger"><div class="k">Kontrol Gerekli</div><div class="v">${risk.length}</div></div>
+        <div class="approval-kpi"><div class="k">Bekleyen Tutar</div><div class="v">${money(total)}</div></div>
+      </div>
+      <div class="approval-table-wrap">${rows.length?`<table class="approval-table"><thead><tr><th>İşlem Tarihi</th><th>Önerilen Cari</th><th>Tip</th><th>Kaynak</th><th>Güven</th><th class="text-right">Tutar</th><th>Sebep / Ek</th><th>Karar</th></tr></thead><tbody>${table}</tbody></table>`:`<div class="empty">Onay bekleyen kayıt yok.</div>`}</div>`;
   }
   window.approveItem=function(id){
     const a=state.approvals.find(x=>x.id===id); if(!a) return;
