@@ -241,9 +241,10 @@
     <section id="tab-yedek" class="tab-page">
       <div class="topbar"><div class="page-head"><h1>Yedekleme / İçe Aktarma</h1><p>Eski veri korunur, yeni veri eklenir. Hiçbir kayıt kaybolmaz.</p></div></div>
       <div class="section">
-        <div class="grid-3">
+        <div class="grid-4">
           <div><h3>Yedek İndir</h3><p class="muted-note">Cari, hareket, hesap, onay, otomasyon ve işlem izi JSON olarak iner.</p><button class="btn btn-blue" onclick="downloadState()">Tam yedek indir</button></div>
           <div><h3>Yedek Yükle</h3><input type="file" accept=".json,application/json" onchange="importStateFile(event)" /></div>
+          <div><h3>Geçiş Paketi Yükle</h3><p class="muted-note">Sadece ön izleme, Moka takvimi ve import hash yüklenir; cari ana defter korunur.</p><input type="file" accept=".json,application/json" onchange="importMigrationPackageFile(event)" /></div>
           <div><h3>Temizlik</h3><button class="btn btn-soft" onclick="clearCariCache()">Cari cache temizle</button> <button class="btn btn-red" onclick="resetLocalOnly()">Yerel veriyi sıfırla</button></div>
         </div>
       </div>
@@ -1920,6 +1921,28 @@
     const f=e.target.files[0]; if(!f)return;
     const r=new FileReader();
     r.onload=()=>{try{const d=JSON.parse(r.result); if(d.cariler)state.cariler=d.cariler.map(normalizeCari); if(d.manualTxns)state.manualTxns=d.manualTxns; if(d.deletedTxns)state.deletedTxns=d.deletedTxns; if(d.accounts)state.accounts=d.accounts; if(d.accountTxns)state.accountTxns=d.accountTxns; if(d.approvals)state.approvals=d.approvals; if(d.opsTasks)state.opsTasks=d.opsTasks; if(d.cashRecords)state.cashRecords=d.cashRecords; if(d.automation)state.automation=d.automation; if(d.importPreview)state.importPreview=d.importPreview; if(d.importHashes)state.importHashes=d.importHashes; if(d.mokaPlans)state.mokaPlans=d.mokaPlans; if(d.audit)writeJson(LS.audit,d.audit); persistAll();logAudit("Yedek yüklendi",f.name);refreshAll();notify("Yedek yüklendi.");}catch(err){notify("Yedek okunamadı: "+err.message);}};
+    r.readAsText(f);
+  };
+  window.importMigrationPackageFile=function(e){
+    const f=e.target.files[0]; if(!f)return;
+    const r=new FileReader();
+    r.onload=()=>{try{
+      const d=JSON.parse(r.result);
+      const preview=Array.isArray(d.importPreview)?d.importPreview:[];
+      const plans=Array.isArray(d.mokaPlans)?d.mokaPlans:[];
+      const hashes=Array.isArray(d.importHashes)?d.importHashes:[];
+      if(!preview.length && !plans.length) return notify("Geçiş paketinde ön izleme kaydı yok.");
+      state.importPreview=preview.map(row=>markImportDuplicate(markArchiveImport({...row})));
+      state.mokaPlans=plans;
+      state.importHashes=[...new Set([...(state.importHashes||[]),...hashes])].slice(-5000);
+      writeJson(LS.importPreview,state.importPreview);
+      writeJson(LS.mokaPlans,state.mokaPlans);
+      writeJson(LS.importHashes,state.importHashes);
+      logAudit("Geçiş paketi yüklendi", `${f.name} · Ön izleme ${preview.length} · Moka taksit ${plans.length}`);
+      switchTab("onay");
+      refreshAll();
+      notify("Geçiş paketi yüklendi. Onay Merkezi'nde ön izleme hazır.");
+    }catch(err){notify("Geçiş paketi okunamadı: "+err.message);}};
     r.readAsText(f);
   };
   function persistAll(){writeJson(LS.cariler,state.cariler);writeJson(LS.manual,state.manualTxns);writeJson(LS.deleted,state.deletedTxns);writeJson(LS.accounts,state.accounts);writeJson(LS.accountTxns,state.accountTxns);writeJson(LS.approvals,state.approvals);writeJson(LS.opsTasks,state.opsTasks);writeJson(LS.cashModules,state.cashRecords);writeJson(LS.automation,state.automation);writeJson(LS.importPreview,state.importPreview);writeJson(LS.importHashes,state.importHashes);writeJson(LS.mokaPlans,state.mokaPlans);}
