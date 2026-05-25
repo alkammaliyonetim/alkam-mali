@@ -1137,12 +1137,45 @@
       .filter(x=>x>0 && x<100000000);
     return values.length ? Math.max(...values) : 0;
   }
+  function detectTurkishWordAmount(text){
+    const clean=cleanText(String(text||"")
+      .replace(/\b20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}\b/g," ")
+      .replace(/\b\d{1,2}[-/.]\d{1,2}[-/.]20\d{2}\b/g," "));
+    const units={bir:1,iki:2,uc:3,dort:4,bes:5,alti:6,yedi:7,sekiz:8,dokuz:9};
+    const tens={on:10,yirmi:20,otuz:30,kirk:40,elli:50,altmis:60,yetmis:70,seksen:80,doksan:90};
+    const scales={bin:1000,milyon:1000000};
+    const valid=t=>units[t]||tens[t]||t==="yuz"||scales[t]||t==="bucuk";
+    function parsePhrase(words){
+      let total=0, group=0, hasScale=false;
+      for(const w of words){
+        if(units[w]) group+=units[w];
+        else if(tens[w]) group+=tens[w];
+        else if(w==="yuz") group=(group||1)*100;
+        else if(w==="bucuk") group+=0.5;
+        else if(scales[w]){total+=(group||1)*scales[w];group=0;hasScale=true;}
+      }
+      const value=total+group;
+      return hasScale && value>0 ? value : 0;
+    }
+    const tokens=clean.replace(/\byuzbin\b/g,"yuz bin").replace(/\bbirmilyon\b/g,"bir milyon").split(/\s+/).filter(Boolean);
+    const values=[];
+    for(let i=0;i<tokens.length;i++){
+      if(!valid(tokens[i])) continue;
+      const seq=[];
+      for(let j=i;j<Math.min(tokens.length,i+8)&&valid(tokens[j]);j++){
+        seq.push(tokens[j]);
+        const parsed=parsePhrase(seq);
+        if(parsed>0) values.push(parsed);
+      }
+    }
+    return values.length ? Math.max(...values.filter(x=>x<100000000)) : 0;
+  }
   const alkamBaseDetectAmount = detectAmount;
   detectAmount = function(text){
     const raw=String(text||"")
       .replace(/\b20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}\b/g," ")
       .replace(/\b\d{1,2}[-/.]\d{1,2}[-/.]20\d{2}\b/g," ");
-    const values=[alkamBaseDetectAmount(text), detectBinAmount(text)];
+    const values=[alkamBaseDetectAmount(text), detectBinAmount(text), detectTurkishWordAmount(text)];
     const clean=cleanText(raw);
     [...clean.matchAll(/\b(\d+(?:[.,]\d+)?)\s*k\b/g)].forEach(m=>values.push(num(String(m[1]).replace(".",","))*1000));
     [...raw.matchAll(/\b\d{1,3}(?:[.\s]\d{3})+(?:,\d{1,2})?\b/g)].forEach(m=>values.push(num(m[0])));
