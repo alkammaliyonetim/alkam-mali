@@ -1139,7 +1139,17 @@
   }
   const alkamBaseDetectAmount = detectAmount;
   detectAmount = function(text){
-    return Math.max(alkamBaseDetectAmount(text), detectBinAmount(text));
+    const raw=String(text||"")
+      .replace(/\b20\d{2}[-/.]\d{1,2}[-/.]\d{1,2}\b/g," ")
+      .replace(/\b\d{1,2}[-/.]\d{1,2}[-/.]20\d{2}\b/g," ");
+    const values=[alkamBaseDetectAmount(text), detectBinAmount(text)];
+    const clean=cleanText(raw);
+    [...clean.matchAll(/\b(\d+(?:[.,]\d+)?)\s*k\b/g)].forEach(m=>values.push(num(String(m[1]).replace(".",","))*1000));
+    [...raw.matchAll(/\b\d{1,3}(?:[.\s]\d{3})+(?:,\d{1,2})?\b/g)].forEach(m=>values.push(num(m[0])));
+    [...raw.matchAll(/\b\d{5,9}(?:,\d{1,2})?\b/g)].forEach(m=>values.push(num(m[0])));
+    [...raw.matchAll(/\b\d{1,4}(?:,\d{1,2})?\s*(?:TL|₺)\b/gi)].forEach(m=>values.push(num(m[0])));
+    const moneyValues=values.filter(x=>x>0 && x<100000000 && x!==2026);
+    return moneyValues.length ? Math.max(...moneyValues) : 0;
   };
   const alkamBaseDetectCari = detectCari;
   detectCari = function(text){
