@@ -376,6 +376,7 @@
     {id:"kasa", name:"Kasa", type:"kasa"},
     {id:"banka", name:"Banka", type:"banka"},
     {id:"moka-united", name:"Moka United", type:"moka_united"},
+    {id:"kredi-karti", name:"Kredi Kartı", type:"kredi_karti"},
     {id:"cek", name:"Çek", type:"cek"},
     {id:"senet", name:"Senet", type:"senet"},
     {id:"diger-kasa", name:"Diğer Kasa", type:"diger_kasa"}
@@ -889,13 +890,21 @@
 
   window.seedMoka=function(){if(!state.accounts.some(a=>a.id==="moka-united"))state.accounts.push({id:"moka-united",name:"Moka United",type:"moka_united"});writeJson(LS.accounts,state.accounts);renderAccounts();notify("Moka United hesabı hazır.");};
   function accountTypeLabel(type){return ({kasa:"Kasa",banka:"Banka",moka_united:"Moka United",cek:"Çek",senet:"Senet",diger_kasa:"Diğer Kasa"}[type]||type||"Hesap");}
+  const alkamBaseAccountTypeLabel = accountTypeLabel;
+  accountTypeLabel = function(type){
+    return type==="kredi_karti" ? "Kredi Kartı" : alkamBaseAccountTypeLabel(type);
+  };
   function accountBalance(accountId){return state.accountTxns.filter(t=>t.accountId===accountId).reduce((s,t)=>s+(t.dir==="giris"?num(t.amount):-num(t.amount)),0);}
   function accountStatementRows(accountId){
     let running=0;
     return state.accountTxns.filter(t=>t.accountId===accountId).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(t=>{running += t.dir==="giris"?num(t.amount):-num(t.amount); return {...t,runningBalance:running};}).reverse();
   }
   window.selectAccount=function(id){state.selectedAccountId=id;renderAccounts();};
-  window.openAccountModal=function(accountId){fillSelects();byId("accName").value=accountId||state.selectedAccountId||"kasa";byId("accDate").value=today();byId("accAmount").value="";byId("accDesc").value="";byId("accCari").value="";byId("accPostCari").checked=false;byId("accCariType").value="Tahsilat";openModal("accountModal");};
+  function ensureCreditCardSourceOption(){
+    const el=byId("accSource");
+    if(el && ![...el.options].some(o=>o.value==="Kredi Kartı")) el.add(new Option("Kredi Kartı","Kredi Kartı"), 4);
+  }
+  window.openAccountModal=function(accountId){fillSelects();ensureCreditCardSourceOption();byId("accName").value=accountId||state.selectedAccountId||"kasa";byId("accDate").value=today();byId("accAmount").value="";byId("accDesc").value="";byId("accCari").value="";byId("accPostCari").checked=false;byId("accCariType").value="Tahsilat";openModal("accountModal");};
   window.saveAccountTxn=function(){
     const row={id:uid("ACC"),accountId:byId("accName").value,date:byId("accDate").value||today(),dir:byId("accDir").value,amount:num(byId("accAmount").value),source:byId("accSource").value,desc:byId("accDesc").value,cariId:byId("accCari").value||"",postedToCari:false};
     if(row.amount<=0) return notify("Hesap hareketi tutarı sıfır olamaz.");
@@ -1166,6 +1175,7 @@
   const alkamBaseDetectTelegramAccount = detectTelegramAccount;
   detectTelegramAccount = function(text){
     if(isMokaTelegramText(text)) return {id:"moka-united", source:"Moka United"};
+    if(/kredi karti|kredi kartı|kredi kart|kart odeme|kart ödeme|kart harcama/.test(cleanText(text))) return {id:"kredi-karti", source:"Kredi Kartı"};
     return alkamBaseDetectTelegramAccount(text);
   };
   const alkamBaseBuildTelegramRecord = buildTelegramRecord;
