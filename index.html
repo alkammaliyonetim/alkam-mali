@@ -1345,6 +1345,8 @@
           <button class="btn btn-green" onclick="addTelegramAccountsAndApproval()">Hesaplara + Onaya Al</button>
           <button class="btn btn-amber" onclick="addTelegramTask()">Söz / Yapılacak Kaydet</button>
           <button class="btn btn-purple" onclick="syncTelegramBot()">Bot Mesajlarını Çek</button>
+          <button class="btn btn-soft" onclick="setupTelegramWebhook()">Webhook Kur</button>
+          <button class="btn btn-soft" onclick="checkTelegramWebhook()">Webhook Bilgisi</button>
           <button class="btn btn-soft" onclick="testTelegramStatus()">Bağlantı Testi</button>
           <button class="btn btn-soft" onclick="clearTelegramBox()">Kutuyu Temizle</button>
         </div>
@@ -1510,10 +1512,90 @@
       notify("Telegram cevabı gönderilemedi: "+(err?.message||err));
     }
   };
+  function processTelegramUpdates(updates, liveIdPrefix){
+    let added=0;
+    const accepted=[];
+    (updates||[]).forEach(u=>{
+      const row=buildTelegramRecord(u.text||"");
+      Object.assign(row,{id:uid(liveIdPrefix||"TG-LIVE"),updateId:u.updateId,messageId:u.messageId,chatId:u.chatId,chatTitle:u.chatTitle,fromName:u.fromName,telegramDate:u.date,createdAt:new Date(u.date||Date.now()).toLocaleString("tr-TR"),attachments:u.attachments||[]});
+      if(queueTelegramRecord(row)){
+        added++;
+        accepted.push({updateId:u.updateId,queueKey:u.queueKey});
+        if(row.chatId) sendTelegramMessage(row.chatId,telegramAckText(row)).catch(()=>{});
+      }else if(u.queueKey || u.updateId){
+        accepted.push({updateId:u.updateId,queueKey:u.queueKey});
+      }
+    });
+    return {added,accepted};
+  }
+  async function fetchTelegramQueue(){
+    const res=await fetch(`/api/telegram/queue?limit=50&v=${Date.now()}`,{cache:"no-store"});
+    return await res.json();
+  }
+  async function ackTelegramQueue(items){
+    const updateIds=items.map(x=>x.updateId).filter(x=>x!==undefined && x!==null);
+    const keys=items.map(x=>x.queueKey).filter(Boolean);
+    if(!updateIds.length && !keys.length) return;
+    await fetch("/api/telegram/queue/ack",{
+      method:"POST",
+      headers:{"content-type":"application/json"},
+      body:JSON.stringify({updateIds,keys})
+    }).catch(()=>{});
+  }
+  window.setupTelegramWebhook=async function(){
+    try{
+      state.telegramStatus="Telegram webhook kuruluyor...";
+      renderTelegramPanel();
+      const res=await fetch(`/api/telegram/webhook/setup?v=${Date.now()}`,{method:"POST",cache:"no-store"});
+      const data=await res.json();
+      if(!data.ok){
+        state.telegramStatus=data.storageConfigured===false ? "Webhook kurulamadı: Cloudflare TELEGRAM_QUEUE KV binding gerekli." : "Webhook kurulamadı: "+(data.error||"Bilinmeyen hata");
+      }else{
+        state.telegramStatus="Webhook aktif. Program kapalıyken gelen mesajlar Cloudflare kuyruğuna alınacak.";
+      }
+      renderTelegramPanel();
+      notify(state.telegramStatus);
+    }catch(err){
+      state.telegramStatus="Webhook kurulumu başarısız: "+(err?.message||err);
+      renderTelegramPanel();
+      notify(state.telegramStatus);
+    }
+  };
+  window.checkTelegramWebhook=async function(){
+    try{
+      state.telegramStatus="Telegram webhook bilgisi alınıyor...";
+      renderTelegramPanel();
+      const res=await fetch(`/api/telegram/webhook/info?v=${Date.now()}`,{cache:"no-store"});
+      const data=await res.json();
+      if(!data.ok){
+        state.telegramStatus=data.storageConfigured===false ? "Webhook kuyruğu bağlı değil: TELEGRAM_QUEUE KV gerekli." : "Webhook bilgisi alınamadı: "+(data.error||"Bilinmeyen hata");
+      }else{
+        const url=data.webhook&&data.webhook.url?data.webhook.url:"Webhook URL boş";
+        state.telegramStatus=`Webhook bilgi: ${url} · Bekleyen Telegram güncellemesi ${data.webhook?.pendingUpdateCount||0}`;
+      }
+      renderTelegramPanel();
+      notify(state.telegramStatus);
+    }catch(err){
+      state.telegramStatus="Webhook bilgisi alınamadı: "+(err?.message||err);
+      renderTelegramPanel();
+      notify(state.telegramStatus);
+    }
+  };
   window.syncTelegramBot=async function(){
     try{
       state.telegramStatus="Telegram bot kontrol ediliyor...";
       renderTelegramPanel();
+      let queueData=null;
+      try{ queueData=await fetchTelegramQueue(); }catch(_){}
+      if(queueData && queueData.ok && queueData.storageConfigured!==false){
+        const result=processTelegramUpdates(queueData.updates||[],"TG-WH");
+        await ackTelegramQueue(result.accepted);
+        state.telegramStatus=`Webhook kuyruğu kontrol edildi. Yeni kayıt: ${result.added}`;
+        logAudit("Telegram webhook kuyruğu eşitlemesi", `${result.added} yeni kayıt · ${result.accepted.length} kuyruk kaydı işlendi`);
+        refreshAll();
+        notify(state.telegramStatus);
+        return;
+      }
       const res=await fetch(`/api/telegram/updates?offset=${encodeURIComponent(state.telegramOffset||0)}&v=${Date.now()}`,{cache:"no-store"});
       const data=await res.json();
       if(!data.ok){
@@ -1522,19 +1604,11 @@
         notify(state.telegramStatus);
         return;
       }
-      let added=0;
-      (data.updates||[]).forEach(u=>{
-        const row=buildTelegramRecord(u.text);
-        Object.assign(row,{id:uid("TG-LIVE"),updateId:u.updateId,messageId:u.messageId,chatId:u.chatId,chatTitle:u.chatTitle,fromName:u.fromName,telegramDate:u.date,createdAt:new Date(u.date||Date.now()).toLocaleString("tr-TR"),attachments:u.attachments||[]});
-        if(queueTelegramRecord(row)){
-          added++;
-          if(row.chatId) sendTelegramMessage(row.chatId,telegramAckText(row)).catch(()=>{});
-        }
-      });
+      const result=processTelegramUpdates(data.updates||[],"TG-LIVE");
       state.telegramOffset=num(data.nextOffset||state.telegramOffset||0);
       localStorage.setItem(LS.telegramOffset,String(state.telegramOffset));
-      state.telegramStatus=`Canlı bot kontrol edildi. Yeni kayıt: ${added}`;
-      logAudit("Telegram bot eşitlemesi", `${added} yeni kayıt · offset ${state.telegramOffset}`);
+      state.telegramStatus=`Canlı bot kontrol edildi. Yeni kayıt: ${result.added}${queueData&&queueData.storageConfigured===false?" · Webhook kuyruğu için TELEGRAM_QUEUE KV gerekli.":""}`;
+      logAudit("Telegram bot eşitlemesi", `${result.added} yeni kayıt · offset ${state.telegramOffset}`);
       refreshAll();
       notify(state.telegramStatus);
     }catch(err){

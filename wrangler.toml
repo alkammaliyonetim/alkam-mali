@@ -1,0 +1,7 @@
+name = "alkam-mali"
+compatibility_date = "2026-05-25"
+pages_build_output_dir = "."
+
+[[kv_namespaces]]
+binding = "TELEGRAM_QUEUE"
+id = "4d44a5b9ce904c7eb2c4efbf3eeb9211"
