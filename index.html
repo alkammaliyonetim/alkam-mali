@@ -1265,17 +1265,25 @@
     logAudit("Telegram çalışan kartı işlendi", `${name} · ${money(row.amount)}`);
     return true;
   }
+  function markTelegramEmployeeRow(row,text){
+    row.domain="employee";
+    row.type="Çalışan";
+    row.source="Bordro";
+    row.accountId="bordro";
+    row.cariId="";
+    row.cariName="";
+    row.employeeName=detectEmployeeNameFromTelegram(text);
+    row.score=Math.max(row.score||0,96);
+    return row;
+  }
+  function isTelegramEmployeeRow(row){
+    return !!row && (row.domain==="employee" || row.type==="Çalışan" || row.type==="Calisan");
+  }
   const alkamEmployeeBuildTelegramRecord = buildTelegramRecord;
   buildTelegramRecord = function(text){
     const row=alkamEmployeeBuildTelegramRecord(text);
     if(isEmployeeTelegramText(text) && detectEmployeeNameFromTelegram(text)){
-      row.type="Çalışan";
-      row.source="Bordro";
-      row.accountId="bordro";
-      row.cariId="";
-      row.cariName="";
-      row.employeeName=detectEmployeeNameFromTelegram(text);
-      row.score=Math.max(row.score,96);
+      markTelegramEmployeeRow(row,text);
     }
     return row;
   };
@@ -1361,7 +1369,7 @@
   function queueTelegramRecord(row){
     const fresh=rememberTelegram(row);
     if(!fresh) return false;
-    if(row.type==="Çalışan"){
+    if(isTelegramEmployeeRow(row)){
       return saveTelegramEmployeeRecord(row);
     }
     if(row.type==="Operasyon"){
@@ -1436,7 +1444,7 @@
     const text=(byId("telegramText")?.value||"").trim();
     if(!text) return notify("Telegram mesajı gir.");
     const row=buildTelegramRecord(text);
-    if(row.type==="Çalışan"){
+    if(isTelegramEmployeeRow(row)){
       rememberTelegram(row);
       saveTelegramEmployeeRecord(row);
       byId("telegramText").value="";
@@ -1457,7 +1465,7 @@
     const text=(byId("telegramText")?.value||"").trim();
     if(!text) return notify("Telegram mesajı gir.");
     const row=buildTelegramRecord(text);
-    if(row.type==="Çalışan"){
+    if(isTelegramEmployeeRow(row)){
       rememberTelegram(row);
       saveTelegramEmployeeRecord(row);
       byId("telegramText").value="";
@@ -1483,7 +1491,7 @@
     const text=(byId("telegramText")?.value||"").trim();
     if(!text) return notify("Telegram mesajı gir.");
     const row=buildTelegramRecord(text);
-    if(row.type==="Çalışan"){
+    if(isTelegramEmployeeRow(row)){
       rememberTelegram(row);
       saveTelegramEmployeeRecord(row);
       byId("telegramText").value="";
@@ -1545,7 +1553,7 @@
     return data;
   }
   function telegramAckText(row){
-    if(row.type==="Çalışan"){
+    if(isTelegramEmployeeRow(row)){
       return `ALKAM Mali: Çalışan kartı kayda alındı.\nÇalışan: ${row.employeeName||detectEmployeeNameFromTelegram(row.text)||"-"}\nAylık net maaş: ${money(row.amount)}\nKaynak: Bordro`;
     }
     const target=row.type==="Operasyon" ? "operasyon listesine" : "Onay Merkezi'ne";
