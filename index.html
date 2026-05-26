@@ -1413,6 +1413,12 @@
     const attachments=(list||[]).filter(a=>a&&a.fileId);
     return attachments.length ? attachments.map(a=>`${a.kind==="photo"?"Fotoğraf":"Belge"}: ${a.fileName||"dosya"}`).join(" · ") : "";
   }
+  function isTelegramAttachmentOnlyText(text,attachments){
+    const hasAttachment=(attachments||[]).some(a=>a&&a.fileId);
+    if(!hasAttachment) return false;
+    const s=cleanText(text||"");
+    return !s || /^fotograf telegram foto \d+ jpg$/.test(s) || /^belge telegram belge/.test(s) || /^fotograf/.test(s);
+  }
   async function telegramAttachmentWorkbook(fileId,fileName){
     if(!window.XLSX) throw new Error("Excel okuyucu yüklenmedi.");
     const res=await fetch(`/api/telegram/file?id=${encodeURIComponent(fileId)}&name=${encodeURIComponent(fileName||"telegram.xlsx")}`,{cache:"no-store"});
@@ -1454,6 +1460,14 @@
   function queueTelegramRecord(row){
     const fresh=rememberTelegram(row);
     if(!fresh) return false;
+    if(row.attachmentOnly){
+      row.source="Telegram Ek";
+      row.type="OCR Bekliyor";
+      row.amount=0;
+      row.score=0;
+      writeJson(LS.telegram,state.telegramMessages);
+      return true;
+    }
     if(isTelegramEmployeeRow(row)){
       return saveTelegramEmployeeRecord(row);
     }
@@ -1650,6 +1664,9 @@
     return data;
   }
   function telegramAckText(row){
+    if(row.attachmentOnly || row.type==="OCR Bekliyor"){
+      return `ALKAM Mali: Ek dosyanız alındı.\nDurum: OCR/okuma bekliyor\nNot: Dosya adı tutar kabul edilmez; kayıt onaydan önce okunacak.`;
+    }
     if(isTelegramEmployeeRow(row)){
       return `ALKAM Mali: Çalışan kartı kayda alındı.\nÇalışan: ${row.employeeName||detectEmployeeNameFromTelegram(row.text)||"-"}\nAylık net maaş: ${money(row.amount)}\nKaynak: Bordro`;
     }
@@ -1696,6 +1713,15 @@
     (updates||[]).forEach(u=>{
       const row=buildTelegramRecord(u.text||"");
       Object.assign(row,{id:uid(liveIdPrefix||"TG-LIVE"),updateId:u.updateId,messageId:u.messageId,chatId:u.chatId,chatTitle:u.chatTitle,fromName:u.fromName,telegramDate:u.date,createdAt:new Date(u.date||Date.now()).toLocaleString("tr-TR"),attachments:u.attachments||[]});
+      if(isTelegramAttachmentOnlyText(u.text,row.attachments)){
+        row.attachmentOnly=true;
+        row.amount=0;
+        row.score=0;
+        row.type="OCR Bekliyor";
+        row.source="Telegram Ek";
+        row.cariId="";
+        row.cariName="";
+      }
       if(queueTelegramRecord(row)){
         added++;
         accepted.push({updateId:u.updateId,queueKey:u.queueKey});
@@ -1833,16 +1859,83 @@
       notify("Telegram Excel okunamadı: "+(err?.message||err));
     }
   };
+  function parseSignedMoneyText(text){
+    const matches=[...String(text||"").matchAll(/[-+]?\s*\d{1,3}(?:[.\s]\d{3})+(?:,\d{1,2})?\s*(?:TL|₺)?|[-+]\s*\d+(?:,\d{1,2})?\s*(?:TL|₺)?|\d+(?:,\d{1,2})\s*(?:TL|₺)/gi)].map(m=>m[0]);
+    if(!matches.length) return 0;
+    const raw=matches[matches.length-1].replace(/\s+/g,"");
+    const sign=raw.trim().startsWith("-") ? -1 : 1;
+    return sign * num(raw.replace(/^[-+]/,""));
+  }
+  function bankOcrDateFromLine(line){
+    const s=cleanText(line||"");
+    const day=(s.match(/\b([0-3]?\d)\b/)||[])[1];
+    const months={ocak:"01",subat:"02",mart:"03",nisan:"04",may:"05",mayis:"05",haziran:"06",temmuz:"07",agustos:"08",eylul:"09",ekim:"10",kasim:"11",aralik:"12"};
+    const monthKey=Object.keys(months).find(k=>s.includes(k));
+    if(day && monthKey) return `${today().slice(0,4)}-${months[monthKey]}-${String(day).padStart(2,"0")}`;
+    return today();
+  }
+  function parseBankOcrRows(text,attachment){
+    const rawLines=String(text||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+    const joined=rawLines.join("\n");
+    if(!/para transferi|nakit|hesap hareketleri|kredi tahsis|ekstre ucreti|diğer işlemler|diger islemler/i.test(joined)) return [];
+    const rows=[];
+    for(let i=0;i<rawLines.length;i++){
+      const line=rawLines[i];
+      const amount=parseSignedMoneyText(line);
+      if(!amount) continue;
+      const ctx=[rawLines[i-2],rawLines[i-1],line,rawLines[i+1]].filter(Boolean).join(" ");
+      if(!/para transferi|nakit|diğer|diger|kredi|ekstre|yemek|yatirilan|yatırılan|cekilen|çekilen|islem|işlem/i.test(ctx)) continue;
+      const positive=amount>0;
+      const match=detectCari(ctx);
+      rows.push({
+        id:uid("APR-OCR-BANK"),
+        cariId:match?.cari?.id||"",
+        amount:Math.abs(amount),
+        score:Math.max(45,match?.score||45),
+        type:positive?"Tahsilat":"Hesap Hareketi",
+        source:"Banka OCR",
+        accountId:"banka",
+        date:bankOcrDateFromLine(ctx),
+        reason:ctx,
+        status:"Bekliyor",
+        createdAt:new Date().toLocaleString("tr-TR"),
+        attachments:[attachment],
+        traceId:importHash(["BANK-OCR",bankOcrDateFromLine(ctx),ctx,amount,attachment?.fileId||attachment?.fileName||""])
+      });
+    }
+    const seen=new Set();
+    return rows.filter(r=>{
+      if(seen.has(r.traceId)) return false;
+      seen.add(r.traceId);
+      return true;
+    });
+  }
   window.ocrTelegramAttachment=async function(fileId,fileName,mimeType){
     try{
       notify("Telegram eki OCR ile okunuyor...");
       const blob=await telegramAttachmentBlob(fileId,fileName);
       const text=await ocrBlobText(blob,fileName,mimeType);
       if(!text) return notify("OCR metin bulamadı.");
+      const attachment={kind:/pdf/i.test(`${fileName} ${mimeType}`)?"document":"photo",fileId,fileName,mimeType};
+      const bankRows=parseBankOcrRows(text,attachment);
+      if(bankRows.length){
+        const known=knownImportHashes();
+        const fresh=bankRows.filter(r=>!known.has(r.traceId));
+        fresh.forEach(r=>{
+          state.approvals.unshift(r);
+          state.importHashes.push(r.traceId);
+        });
+        writeJson(LS.approvals,state.approvals);
+        writeJson(LS.importHashes,state.importHashes);
+        rememberTelegram({id:uid("TG-OCR"),text:`OCR Banka: ${fresh.length} kayıt`,source:"Banka OCR",type:"OCR",amount:fresh.reduce((s,r)=>s+num(r.amount),0),score:80,attachments:[attachment],createdAt:new Date().toLocaleString("tr-TR")});
+        logAudit("Telegram banka ekranı OCR ile ayrıştırıldı", `${fileName} · ${fresh.length} kayıt · Mükerrer ${bankRows.length-fresh.length}`);
+        refreshAll();
+        return notify(`OCR tamamlandı: ${fresh.length} banka hareketi Onay Merkezi'ne eklendi.`);
+      }
       const row=buildTelegramRecord(text);
       row.source=row.source||"Telegram OCR";
       row.type=row.type==="Operasyon"?"Operasyon":row.type;
-      row.attachments=[{kind:/pdf/i.test(`${fileName} ${mimeType}`)?"document":"photo",fileId,fileName,mimeType}];
+      row.attachments=[attachment];
       row.createdAt=new Date().toLocaleString("tr-TR");
       rememberTelegram({...row,id:uid("TG-OCR"),text:`OCR: ${text}`,source:"Telegram OCR"});
       if(row.type==="Operasyon"){
