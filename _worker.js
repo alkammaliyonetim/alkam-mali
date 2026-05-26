@@ -1,6 +1,15 @@
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname === "/api/mail/status") {
+      return mailStatus(request, env);
+    }
+    if (url.pathname === "/api/mail/queue") {
+      return mailQueue(request, env);
+    }
+    if (url.pathname === "/api/mail/queue/ack") {
+      return mailQueueAck(request, env);
+    }
     if (url.pathname === "/api/telegram/status") {
       return telegramStatus(request, env);
     }
@@ -36,6 +45,9 @@ export default {
       statusText: response.statusText,
       headers
     });
+  },
+  async email(message, env, ctx) {
+    ctx.waitUntil(queueInboundEmail(message, env));
   }
 };
 
@@ -68,6 +80,156 @@ function telegramQueueMissing() {
     storageConfigured: false,
     error: "Telegram kuyrugu icin Cloudflare KV binding gerekli: TELEGRAM_QUEUE."
   });
+}
+
+function mailQueueStore(env) {
+  return env.MAIL_QUEUE || env.ALKAM_MAIL_QUEUE || env.TELEGRAM_QUEUE || env.ALKAM_TELEGRAM_QUEUE || null;
+}
+
+function mailQueueMissing() {
+  return json({
+    ok: false,
+    configured: false,
+    storageConfigured: false,
+    error: "Mail kuyrugu icin Cloudflare KV binding gerekli: MAIL_QUEUE veya TELEGRAM_QUEUE."
+  });
+}
+
+function mailQueueKey(id) {
+  return `mailq:${String(id || Date.now()).replace(/[^a-zA-Z0-9_.:-]/g, "-").slice(0, 120)}`;
+}
+
+function headerValue(headers, name) {
+  try {
+    return headers.get(name) || headers.get(name.toLowerCase()) || "";
+  } catch {
+    return "";
+  }
+}
+
+function safeMailText(value, limit = 12000) {
+  return String(value == null ? "" : value).replace(/\0/g, "").slice(0, limit);
+}
+
+async function readStreamText(stream, limit = 160000) {
+  if (!stream) return "";
+  const reader = stream.getReader();
+  const chunks = [];
+  let size = 0;
+  while (size < limit) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    size += value.byteLength || value.length || 0;
+  }
+  const bytes = new Uint8Array(Math.min(size, limit));
+  let offset = 0;
+  for (const chunk of chunks) {
+    const part = chunk instanceof Uint8Array ? chunk : new Uint8Array(chunk);
+    const take = Math.min(part.length, bytes.length - offset);
+    bytes.set(part.slice(0, take), offset);
+    offset += take;
+    if (offset >= bytes.length) break;
+  }
+  return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+}
+
+function extractMailAttachmentNames(raw) {
+  const names = new Set();
+  const text = safeMailText(raw, 160000);
+  const patterns = [
+    /filename\*?=(?:UTF-8''|")?([^";\r\n]+)/gi,
+    /name\*?=(?:UTF-8''|")?([^";\r\n]+)/gi
+  ];
+  for (const re of patterns) {
+    let match;
+    while ((match = re.exec(text))) {
+      const cleaned = decodeURIComponent(String(match[1] || "").replace(/^"|"$/g, "").trim()).slice(0, 160);
+      if (cleaned && /\.(xlsx|xls|csv|pdf|txt)$/i.test(cleaned)) names.add(cleaned);
+    }
+  }
+  return [...names].slice(0, 20);
+}
+
+function classifyMailDocument(subject, raw, attachmentNames) {
+  const hay = `${subject || ""} ${attachmentNames.join(" ")} ${raw || ""}`.toLocaleLowerCase("tr-TR");
+  if (/moka|pos|taksit/.test(hay)) return "moka";
+  if (/halkbank|banka|hesap|ekstre|dekont|vadesiz/.test(hay)) return "bank";
+  if (attachmentNames.some(x => /\.(xlsx|xls|csv)$/i.test(x))) return "statement";
+  return "mail";
+}
+
+async function queueInboundEmail(message, env) {
+  const queue = mailQueueStore(env);
+  if (!queue) return;
+  const raw = await readStreamText(message.raw);
+  const from = safeMailText(message.from || headerValue(message.headers, "from"), 320);
+  const to = safeMailText(message.to || headerValue(message.headers, "to"), 320);
+  const subject = safeMailText(headerValue(message.headers, "subject"), 500);
+  const date = safeMailText(headerValue(message.headers, "date"), 120) || new Date().toISOString();
+  const messageId = safeMailText(headerValue(message.headers, "message-id"), 240) || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const attachments = extractMailAttachmentNames(raw).map(fileName => ({ fileName, source: "mail" }));
+  const row = {
+    id: messageId,
+    channel: "mail",
+    from,
+    to,
+    subject,
+    date,
+    receivedAt: new Date().toISOString(),
+    docType: classifyMailDocument(subject, raw, attachments.map(x => x.fileName)),
+    attachments,
+    text: safeMailText(raw.replace(/Content-[^\n]+\n/gi, " ").replace(/[A-Za-z0-9+/=]{80,}/g, " ").replace(/\s+/g, " "), 4000)
+  };
+  const key = mailQueueKey(messageId);
+  const exists = await queue.get(key);
+  if (!exists) {
+    await queue.put(key, JSON.stringify(row), {
+      expirationTtl: 60 * 60 * 24 * 90,
+      metadata: { channel: "mail", date: row.receivedAt }
+    });
+  }
+}
+
+async function mailStatus(request, env) {
+  const queue = mailQueueStore(env);
+  return json({
+    ok: true,
+    configured: !!queue,
+    storageConfigured: !!queue,
+    addressNote: "Cloudflare Email Routing ile alan adina gelen ekstre mailleri bu Worker'a yonlendirilir."
+  });
+}
+
+async function mailQueue(request, env) {
+  if (request.method !== "GET") return json({ ok: false, error: "GET gerekli." }, 405);
+  const queue = mailQueueStore(env);
+  if (!queue) return mailQueueMissing();
+  const url = new URL(request.url);
+  const limit = Math.max(1, Math.min(100, Number(url.searchParams.get("limit") || "50") || 50));
+  const listed = await queue.list({ prefix: "mailq:", limit });
+  const mails = [];
+  for (const item of listed.keys || []) {
+    const value = await queue.get(item.name, "json");
+    if (value) mails.push({ ...value, queueKey: item.name });
+  }
+  mails.sort((a, b) => String(b.receivedAt || "").localeCompare(String(a.receivedAt || "")));
+  return json({ ok: true, configured: true, storageConfigured: true, count: mails.length, mails });
+}
+
+async function mailQueueAck(request, env) {
+  if (request.method !== "POST") return json({ ok: false, error: "POST gerekli." }, 405);
+  const queue = mailQueueStore(env);
+  if (!queue) return mailQueueMissing();
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, configured: true, error: "Gecersiz JSON." }, 400);
+  }
+  const keys = Array.isArray(body.keys) ? body.keys.filter(k => String(k).startsWith("mailq:")) : [];
+  for (const key of keys) await queue.delete(key);
+  return json({ ok: true, configured: true, deleted: keys.length });
 }
 
 function telegramUpdateToRow(u) {

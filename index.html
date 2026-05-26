@@ -2107,6 +2107,10 @@
         </div>
         <span class="tag green mail-bridge-badge">Onayli akisa bagli</span>
       </div>
+      <div class="btn-row" style="margin-bottom:10px">
+        <button class="btn btn-green" onclick="fetchMailStatementQueue()">Mail Kuyrugunu Cek</button>
+        <button class="btn btn-soft" onclick="checkMailStatementStatus()">Mail Baglanti Durumu</button>
+      </div>
       <div class="mail-bridge-grid">
         <div class="field">
           <label>Halkbank mail eki / hesap ekstresi</label>
@@ -2328,6 +2332,52 @@
   window.previewMokaFile=function(){readWorkbookFromInput("mokaFile",(wb,name)=>{const parsed=parseMokaWorkbook(wb);state.importPreview=[...parsed.rows,...state.importPreview.filter(x=>x.kind!=="moka")];state.mokaPlans=parsed.plans;writeJson(LS.importPreview,state.importPreview);writeJson(LS.mokaPlans,state.mokaPlans);logAudit("Moka ön izleme ve ödeme takvimi oluşturuldu",`${name} · ${parsed.rows.length} işlem · ${parsed.plans.length} taksit`);refreshAll();notify(`${parsed.rows.length} Moka işlemi ve ${parsed.plans.length} taksit planı oluşturuldu.`);});};
   window.previewMailHalkbankFile=function(){readWorkbookFromInput("mailHalkbankFile",(wb,name)=>{const parsed=stampMailImportRows(parseHalkbankWorkbook(wb),"bank",name);state.importPreview=[...parsed,...state.importPreview.filter(x=>x.kind!=="bank")];writeJson(LS.importPreview,state.importPreview);logAudit("Mail Halkbank ekstresi ön izleme",`${name} · ${parsed.length} kayıt`);refreshAll();notify(`${parsed.length} mail Halkbank kaydı ön izlemeye alındı.`);});};
   window.previewMailMokaFile=function(){readWorkbookFromInput("mailMokaFile",(wb,name)=>{const parsed=parseMokaWorkbook(wb);const rows=stampMailImportRows(parsed.rows,"moka",name);const plans=(parsed.plans||[]).map(p=>({...p,deliverySource:"Mail Ekstresi",uploadFileName:name||""}));state.importPreview=[...rows,...state.importPreview.filter(x=>x.kind!=="moka")];state.mokaPlans=plans;writeJson(LS.importPreview,state.importPreview);writeJson(LS.mokaPlans,state.mokaPlans);logAudit("Mail Moka ekstresi ön izleme ve ödeme takvimi",`${name} · ${rows.length} işlem · ${plans.length} taksit`);refreshAll();notify(`${rows.length} mail Moka işlemi ve ${plans.length} taksit planı oluşturuldu.`);});};
+  window.checkMailStatementStatus=async function(){
+    try{
+      const res=await fetch(`/api/mail/status?v=${Date.now()}`,{cache:"no-store"});
+      const data=await res.json();
+      notify(data.configured ? "Mail kuyruğu bağlı." : "Mail kuyruğu için Cloudflare Email Routing/KV bağlantısı gerekli.");
+    }catch(err){
+      notify("Mail bağlantı durumu alınamadı: "+(err?.message||err));
+    }
+  };
+  window.fetchMailStatementQueue=async function(){
+    try{
+      const res=await fetch(`/api/mail/queue?limit=50&v=${Date.now()}`,{cache:"no-store"});
+      const data=await res.json();
+      if(!data.ok) return notify(data.error||"Mail kuyruğu okunamadı.");
+      const mails=Array.isArray(data.mails)?data.mails:[];
+      let added=0, parsed=0;
+      const ackKeys=[];
+      mails.forEach(mail=>{
+        const text=[mail.subject, mail.text, (mail.attachments||[]).map(a=>a.fileName).join(" ")].filter(Boolean).join("\n");
+        const row=buildTelegramRecord(text);
+        row.id=uid("MAIL");
+        row.source=mail.docType==="moka" ? "Moka United Mail Ekstresi" : "Halkbank Mail Ekstresi";
+        row.accountId=mail.docType==="moka" ? "moka-united" : "banka";
+        row.createdAt=new Date(mail.receivedAt||Date.now()).toLocaleString("tr-TR");
+        row.updateId=mail.id||mail.queueKey||"";
+        row.chatId=mail.from||"mail";
+        row.attachments=(mail.attachments||[]).map(a=>({kind:"mail",fileName:a.fileName||"mail-ek",mimeType:"",fileId:""}));
+        row.traceId=importHash(["MAIL",mail.id||mail.queueKey||"",row.source,row.text,row.amount]);
+        row.mailQueueKey=mail.queueKey||"";
+        if(row.amount>0){
+          parsed += queueTelegramRecord(row) ? 1 : 0;
+        }else{
+          rememberTelegram({...row,type:"Mail Ekstresi",score:0,amount:0,text:`Mail ekstresi alındı: ${mail.subject||"Ekstre"} ${(mail.attachments||[]).map(a=>a.fileName).join(" ")}`});
+        }
+        added++;
+        if(mail.queueKey) ackKeys.push(mail.queueKey);
+      });
+      if(ackKeys.length){
+        await fetch("/api/mail/queue/ack",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({keys:ackKeys})});
+      }
+      refreshAll();
+      notify(`Mail kuyruğu okundu: ${added} mail · ${parsed} onay/operasyon adayı.`);
+    }catch(err){
+      notify("Mail kuyruğu okunamadı: "+(err?.message||err));
+    }
+  };
   window.clearImportPreview=function(){state.importPreview=[];writeJson(LS.importPreview,state.importPreview);logAudit("İçe aktarma ön izlemesi temizlendi","Halkbank/Moka");refreshAll();};
   window.setApprovalCari=function(id,value){
     const a=state.approvals.find(x=>x.id===id);if(!a)return;
