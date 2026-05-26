@@ -840,6 +840,62 @@
     for(const c of state.cariler){const t=(c.transactions||[]).find(x=>String(x.id)===String(txId)); if(t) return t;}
     return state.manualTxns.find(x=>String(x.id)===String(txId));
   }
+  function linkedFinancialMatch(a,b){
+    if(!a || !b) return false;
+    const keys=["approvalId","traceId","importHash","legacyImportHash","sourceRowId"];
+    if(keys.some(k=>a[k] && b[k] && String(a[k])===String(b[k]))) return true;
+    if(a.docNo && b.id && String(a.docNo)===String(b.id)) return true;
+    if(b.docNo && a.id && String(b.docNo)===String(a.id)) return true;
+    return false;
+  }
+  function cancelLinkedFinancialChain(seed,reason){
+    const removedManual=[];
+    const removedAccounts=[];
+    const cancelledApprovals=[];
+    state.manualTxns=state.manualTxns.filter(t=>{
+      if(String(t.id)===String(seed?.id) || linkedFinancialMatch(t,seed)){
+        removedManual.push(t);
+        return false;
+      }
+      return true;
+    });
+    state.cariler.forEach(c=>{
+      const kept=[];
+      (c.transactions||[]).forEach(t=>{
+        if(String(t.id)===String(seed?.id) || linkedFinancialMatch(t,seed)){
+          removedManual.push({...t,cariId:c.id,sourceLedger:"Ana Cari"});
+        }else kept.push(t);
+      });
+      c.transactions=kept;
+    });
+    state.accountTxns=state.accountTxns.filter(t=>{
+      if(String(t.id)===String(seed?.id) || linkedFinancialMatch(t,seed)){
+        removedAccounts.push(t);
+        return false;
+      }
+      return true;
+    });
+    state.approvals.forEach(a=>{
+      if(linkedFinancialMatch(a,seed) || (seed?.approvalId && String(a.id)===String(seed.approvalId))){
+        a.status="İptal Edildi";
+        a.cancelledAt=new Date().toLocaleString("tr-TR");
+        a.cancelReason=reason||"Bağlı finansal işlem silindi";
+        cancelledApprovals.push(a);
+      }
+    });
+    if(removedManual.length){
+      removedManual.forEach(t=>state.deletedTxns.unshift({...t,deletedAt:new Date().toISOString(),deleteReason:reason||"Bağlı finansal işlem iptali"}));
+    }
+    if(removedAccounts.length){
+      removedAccounts.forEach(t=>state.deletedTxns.unshift({...t,sourceLedger:"Hesap",deletedAt:new Date().toISOString(),deleteReason:reason||"Bağlı finansal işlem iptali"}));
+    }
+    writeJson(LS.deleted,state.deletedTxns);
+    writeJson(LS.manual,state.manualTxns);
+    writeJson(LS.cariler,state.cariler);
+    writeJson(LS.accountTxns,state.accountTxns);
+    writeJson(LS.approvals,state.approvals);
+    return {removedManual,removedAccounts,cancelledApprovals};
+  }
 
   window.saveTxnForm=function(){
     const id=byId("txFormId").value;
@@ -860,14 +916,9 @@
   window.deleteTxn=function(txId){
     const row=findTxn(txId);
     if(!row) return;
-    if(!confirm("Bu hareket silinsin mi? Kayıt arşive alınır.")) return;
-    state.deletedTxns.unshift({...row, deletedAt:new Date().toISOString()});
-    state.manualTxns=state.manualTxns.filter(x=>String(x.id)!==String(txId));
-    state.cariler.forEach(c=>{c.transactions=(c.transactions||[]).filter(x=>String(x.id)!==String(txId));});
-    writeJson(LS.deleted,state.deletedTxns);
-    writeJson(LS.manual,state.manualTxns);
-    writeJson(LS.cariler,state.cariler);
-    logAudit("Hareket silindi", `${row.date} · ${row.description||row.id}`, "Silindi");
+    if(!confirm("Bu cari hareket silinsin mi? Bağlı kasa/banka/onay kayıtları da iptal edilir ve iz arşive alınır.")) return;
+    const res=cancelLinkedFinancialChain(row,"Cari hareketinden zincir iptali");
+    logAudit("Cari hareket zinciri silindi", `${row.date} · ${row.description||row.id} · Cari ${res.removedManual.length} · Hesap ${res.removedAccounts.length} · Onay ${res.cancelledApprovals.length}`, "Silindi");
     refreshAll();
   };
 
@@ -893,6 +944,7 @@
         <div class="metric-mini"><div class="k">Çıkış</div><div class="v">${money(cikis)}</div></div>
         <div class="metric-mini"><div class="k">Bakiye</div><div class="v">${money(accountBalance(selected.id))}</div></div>
       </div>
+      ${accountingChainWarnings().length?`<div class="rule-box" style="border:1px solid #fed7aa;background:#fff7ed;border-radius:12px;margin-bottom:10px"><strong>Muhasebe zincir kontrolü:</strong> ${accountingChainWarnings().length} tutarsız kayıt bulundu. <button class="btn btn-amber" onclick="repairAccountingChains()">Zinciri Onar</button></div>`:""}
       ${selectedRows.length?`<table><thead><tr><th>İşlem ID</th><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Kaynak</th><th>Cari</th><th>Açıklama</th><th class="text-right">Tutar</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${accountStatementRows(selected.id).map(t=>{const linked=state.cariler.find(c=>c.id===t.cariId);return`<tr><td>${traceBadge(t)}</td><td>${esc(t.date)}</td><td>${esc(selected.name)}</td><td><span class="tag ${t.dir==="giris"?"green":"red"}">${t.dir==="giris"?"Giriş":"Çıkış"}</span></td><td>${esc(t.source||"-")}</td><td>${linked?esc(linked.name):"-"} ${t.postedToCari?'<span class="tag green">Cariye işlendi</span>':""}</td><td>${esc(t.desc||"")}</td><td class="text-right money">${money(t.amount)}</td><td class="text-right money">${money(t.runningBalance)}</td><td><button class="btn btn-red" onclick="deleteAccountTxn('${t.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Bu hesaba ait hareket yok.</div>`}`;
   }
 
@@ -907,6 +959,31 @@
     let running=0;
     return state.accountTxns.filter(t=>t.accountId===accountId).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(t=>{running += t.dir==="giris"?num(t.amount):-num(t.amount); return {...t,runningBalance:running};}).reverse();
   }
+  function isPaymentApproval(a){
+    const t=cleanText(a?.type||"");
+    return /tahsilat|moka/.test(t);
+  }
+  function accountingChainWarnings(){
+    return state.approvals.filter(a=>{
+      if(a.status!=="Onaylandı" || !a.accountId || !isPaymentApproval(a)) return false;
+      const hasManual=state.manualTxns.some(t=>linkedFinancialMatch(t,a));
+      const hasAccount=state.accountTxns.some(t=>linkedFinancialMatch(t,a));
+      return hasManual!==hasAccount;
+    });
+  }
+  window.repairAccountingChains=function(){
+    const gaps=accountingChainWarnings();
+    if(!gaps.length) return notify("Muhasebe zincirinde tutarsız kayıt yok.");
+    if(!confirm(`${gaps.length} tutarsız kayıt iptal edilsin mi? Bağlı cari/hesap hareketleri arşive alınır, onay kaydı İptal Edildi olur.`)) return;
+    let manual=0,accounts=0,approvals=0;
+    gaps.forEach(a=>{
+      const res=cancelLinkedFinancialChain(a,"Muhasebe zincir kontrolü ile iptal");
+      manual+=res.removedManual.length; accounts+=res.removedAccounts.length; approvals+=res.cancelledApprovals.length;
+    });
+    logAudit("Muhasebe zincir kontrolü çalıştı", `Onay ${approvals} · Cari ${manual} · Hesap ${accounts}`, "Kontrol");
+    refreshAll();
+    notify(`Zincir onarıldı: Onay ${approvals}, cari ${manual}, hesap ${accounts}.`);
+  };
   window.selectAccount=function(id){state.selectedAccountId=id;renderAccounts();};
   function ensureCreditCardSourceOption(){
     const el=byId("accSource");
@@ -932,7 +1009,14 @@
     logAudit("Hesap hareketi kaydedildi", `${row.accountId} · ${money(row.amount)}`);
     closeModal("accountModal"); refreshAll(); notify("Hesap hareketi kaydedildi.");
   };
-  window.deleteAccountTxn=function(id){state.accountTxns=state.accountTxns.filter(x=>x.id!==id);writeJson(LS.accountTxns,state.accountTxns);logAudit("Hesap hareketi silindi", id, "Silindi");refreshAll();};
+  window.deleteAccountTxn=function(id){
+    const row=state.accountTxns.find(x=>String(x.id)===String(id));
+    if(!row) return;
+    if(!confirm("Bu hesap hareketi silinsin mi? Bağlı cari hareketi ve onay kaydı da iptal edilir; tek taraflı bakiye bırakılmaz.")) return;
+    const res=cancelLinkedFinancialChain(row,"Hesap hareketinden zincir iptali");
+    logAudit("Hesap hareketi zinciri silindi", `${row.accountId} · ${row.date} · ${money(row.amount)} · Cari ${res.removedManual.length} · Hesap ${res.removedAccounts.length} · Onay ${res.cancelledApprovals.length}`, "Silindi");
+    refreshAll();
+  };
   window.exportSelectedAccountCsv=function(){
     const a=state.accounts.find(x=>x.id===state.selectedAccountId); if(!a)return notify("Hesap seç.");
     const data=accountStatementRows(a.id).map(t=>({"Tarih":t.date,"Hesap":a.name,"Yön":t.dir==="giris"?"Giriş":"Çıkış","Kaynak":t.source,"Cari":(state.cariler.find(c=>c.id===t.cariId)||{}).name||"","Açıklama":t.desc,"Tutar":num(t.amount),"Bakiye":t.runningBalance}));
