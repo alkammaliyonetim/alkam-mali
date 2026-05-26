@@ -1458,8 +1458,21 @@
     const result=await Tesseract.recognize(source,"tur+eng");
     return (result?.data?.text||"").trim();
   }
+  function telegramRecordKey(row){
+    const attachmentKey=(row.attachments||[]).map(a=>a.uniqueId||a.fileId||a.fileName||"").filter(Boolean).join("|");
+    return row.updateId ? `TG-UPD-${row.updateId}` : importHash(["TG-MSG",row.chatId||"",attachmentKey,cleanText(row.text||row.reason||""),row.type||"",row.source||"",num(row.amount)]);
+  }
+  function telegramApprovalTrace(row,prefix="TG-APP"){
+    return row.traceId || importHash([prefix,row.updateId||"",row.chatId||"",cleanText(row.text||row.reason||""),row.type||"",row.source||"",num(row.amount),row.accountId||"",row.cariId||""]);
+  }
+  function hasApprovalTrace(traceId){
+    if(!traceId) return false;
+    return state.approvals.some(a=>txTraceId(a)===traceId || a.traceId===traceId || a.importHash===traceId || a.legacyImportHash===traceId);
+  }
   function rememberTelegram(row){
-    if(row.updateId && state.telegramMessages.some(x=>String(x.updateId)===String(row.updateId))) return false;
+    const key=telegramRecordKey(row);
+    if(state.telegramMessages.some(x=>telegramRecordKey(x)===key)) return false;
+    row.traceId=row.traceId||key;
     state.telegramMessages.unshift(row);
     state.telegramMessages=state.telegramMessages.slice(0,100);
     writeJson(LS.telegram,state.telegramMessages);
@@ -1488,7 +1501,9 @@
       return true;
     }
     persistTelegramMokaPlans(row);
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:row.text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1});
+    const traceId=telegramApprovalTrace(row);
+    if(hasApprovalTrace(traceId)) return false;
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:row.text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1,traceId,importHash:traceId});
     writeJson(LS.approvals,state.approvals);
     return true;
   }
@@ -1573,7 +1588,9 @@
     if(row.type==="Operasyon") return addTelegramTask();
     rememberTelegram(row);
     persistTelegramMokaPlans(row);
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1});
+    const traceId=telegramApprovalTrace(row);
+    if(hasApprovalTrace(traceId)) return notify("Bu Telegram kaydı zaten Onay Merkezi'nde var.");
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1,traceId,importHash:traceId});
     writeJson(LS.approvals,state.approvals);
     logAudit("Telegram mesajı onaya aktarıldı", `${row.source} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)} · ${row.score}%`);
     byId("telegramText").value="";
@@ -1594,12 +1611,17 @@
     if(row.type==="Operasyon") return addTelegramTask();
     rememberTelegram(row);
     if(row.amount>0){
-      state.accountTxns.push({id:uid("TG-ACC"),accountId:row.accountId,date:today(),dir:"giris",amount:row.amount,source:row.source,desc:text,cariId:row.cariId,postedToCari:false});
+      const accountTrace=telegramApprovalTrace(row,"TG-ACC");
+      if(!state.accountTxns.some(t=>txTraceId(t)===accountTrace)){
+        state.accountTxns.push({id:uid("TG-ACC"),accountId:row.accountId,date:today(),dir:"giris",amount:row.amount,source:row.source,desc:text,cariId:row.cariId,postedToCari:false,traceId:accountTrace,importHash:accountTrace});
+      }
       state.selectedAccountId=row.accountId;
       writeJson(LS.accountTxns,state.accountTxns);
     }
     persistTelegramMokaPlans(row);
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source,accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1});
+    const traceId=telegramApprovalTrace(row);
+    if(hasApprovalTrace(traceId)) return notify("Bu Telegram kaydı zaten Onay Merkezi'nde var.");
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source,accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1,traceId,importHash:traceId});
     writeJson(LS.approvals,state.approvals);
     logAudit("Telegram mesajı hesaplara ve onaya aktarıldı", `${row.source} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)}`);
     byId("telegramText").value="";
@@ -1882,16 +1904,20 @@
     if(day && monthKey) return `${today().slice(0,4)}-${months[monthKey]}-${String(day).padStart(2,"0")}`;
     return today();
   }
+  function isBankOcrText(text){
+    return /hesap hareketleri|para transferi|nakit cekilen|nakit yatirilan|kredi tahsis|ekstre ucreti|diger islemler/.test(cleanText(text||""));
+  }
   function parseBankOcrRows(text,attachment){
     const rawLines=String(text||"").split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
     const joined=rawLines.join("\n");
     if(!/para transferi|nakit|hesap hareketleri|kredi tahsis|ekstre ucreti|diğer işlemler|diger islemler/i.test(joined)) return [];
+    const scanLines=(rawLines.length<=3?joined.replace(/(Para Transferi|Nakit Çekilen|Nakit Cekilen|Nakit Yatan|Diğer İşlemler|Diger Islemler|Kredi Tahsis Ücreti|Kredi Tahsis Ucreti|Ekstre Ücreti|Ekstre Ucreti)/gi,"\n$1").split(/\r?\n/):rawLines).map(x=>x.trim()).filter(Boolean);
     const rows=[];
-    for(let i=0;i<rawLines.length;i++){
-      const line=rawLines[i];
+    for(let i=0;i<scanLines.length;i++){
+      const line=scanLines[i];
       const amount=parseSignedMoneyText(line);
       if(!amount) continue;
-      const ctx=[rawLines[i-2],rawLines[i-1],line,rawLines[i+1]].filter(Boolean).join(" ");
+      const ctx=[scanLines[i-2],scanLines[i-1],line,scanLines[i+1]].filter(Boolean).join(" ");
       if(!/para transferi|nakit|diğer|diger|kredi|ekstre|yemek|yatirilan|yatırılan|cekilen|çekilen|islem|işlem/i.test(ctx)) continue;
       const positive=amount>0;
       const match=detectCari(ctx);
@@ -1938,7 +1964,13 @@
         rememberTelegram({id:uid("TG-OCR"),text:`OCR Banka: ${fresh.length} kayıt`,source:"Banka OCR",type:"OCR",amount:fresh.reduce((s,r)=>s+num(r.amount),0),score:80,attachments:[attachment],createdAt:new Date().toLocaleString("tr-TR")});
         logAudit("Telegram banka ekranı OCR ile ayrıştırıldı", `${fileName} · ${fresh.length} kayıt · Mükerrer ${bankRows.length-fresh.length}`);
         refreshAll();
-        return notify(`OCR tamamlandı: ${fresh.length} banka hareketi Onay Merkezi'ne eklendi.`);
+        return notify(`OCR tamamlandı: ${fresh.length} banka hareketi Onay Merkezi'ne eklendi. Mükerrer: ${bankRows.length-fresh.length}`);
+      }
+      if(isBankOcrText(text)){
+        rememberTelegram({id:uid("TG-OCR-WAIT"),text:"Banka ekran görüntüsü okundu; satır ayrıştırma için kontrol gerekli.",source:"Banka OCR",type:"OCR Kontrol",amount:0,score:0,attachments:[attachment],createdAt:new Date().toLocaleString("tr-TR"),traceId:importHash(["BANK-OCR-WAIT",text,fileId,fileName])});
+        logAudit("Telegram banka OCR kontrol bekliyor", `${fileName} · satır ayrıştırılamadı`, "Kontrol");
+        refreshAll();
+        return notify("Banka ekranı OCR ile okundu; güvenli satır ayrıştırma için kontrol bekliyor. Cari veya hesap hareketi oluşturulmadı.");
       }
       const row=buildTelegramRecord(text);
       row.source=row.source||"Telegram OCR";
@@ -1954,7 +1986,10 @@
         }
       }else{
         persistTelegramMokaPlans(row);
-        state.approvals.unshift({id:uid("APR-OCR"),cariId:row.cariId,amount:row.amount,score:Math.max(55,row.score-10),type:row.type,source:row.type==="Moka United"?"Moka United":"Telegram OCR",accountId:row.accountId,date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments,installmentCount:row.installmentCount||1});
+        const traceId=telegramApprovalTrace(row,"TG-OCR");
+        if(!hasApprovalTrace(traceId)){
+          state.approvals.unshift({id:uid("APR-OCR"),cariId:row.cariId,amount:row.amount,score:Math.max(55,row.score-10),type:row.type,source:row.type==="Moka United"?"Moka United":"Telegram OCR",accountId:row.accountId,date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments,installmentCount:row.installmentCount||1,traceId,importHash:traceId});
+        }
         writeJson(LS.approvals,state.approvals);
       }
       logAudit("Telegram eki OCR ile okundu", `${fileName} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)} · ${row.type}`);
@@ -2153,6 +2188,16 @@
     checks.push(selfTestLine(ledgerDuplicateGroups("live").length===0,"Canlı dönem mükerrer kontrolü",ledgerDuplicateGroups("live").length?`${ledgerDuplicateGroups("live").length} canlı dönem grup kontrol edilmeli.`:"01.12.2025 sonrası canlı dönemde bloklayıcı mükerrer grup yok."));
     checks.push(selfTestLine(typeof window.ocrTelegramAttachment==="function","Telegram OCR akışı","Fotoğraf/PDF ekleri OCR ile Onay Merkezi önerisine çevrilebilir."));
     checks.push(selfTestLine(typeof window.previewTelegramExcel==="function","Telegram Excel akışı","Telegram Excel eki Halkbank veya Moka ön izlemeye alınabilir."));
+    const demoPromise=buildTelegramRecord("Colkan 100.000 TL 15.06.2026 odeme sozu verdi");
+    checks.push(selfTestLine(demoPromise.type==="Operasyon" && num(demoPromise.amount)===100000 && demoPromise.dueDate==="2026-06-15","Demo ödeme sözü çözümleme","Cari + tutar + vade ödeme sözü olarak algılanıyor; test canlı kayda yazmaz."));
+    const demoEmployee=buildTelegramRecord("Calisan ekle Erkan Sahin maasi 50.000 TL");
+    checks.push(selfTestLine(isTelegramEmployeeRow(demoEmployee) && num(demoEmployee.amount)===50000 && /erkan/i.test(demoEmployee.employeeName||""),"Demo çalışan maaş kartı","Çalışan mesajı cari tahsilat sanılmadan bordro/çalışan akışına ayrılıyor."));
+    const demoMoka=buildTelegramRecord("ESA STRAFOR TABBY 100 bin TL 6 taksit moka pos");
+    checks.push(selfTestLine(demoMoka.type==="Moka United" && num(demoMoka.amount)===100000 && num(demoMoka.installmentCount)===6 && telegramMokaPlans(demoMoka).length===6,"Demo Moka 40 gün taksit planı","100 bin / 6 taksit mesajı Moka United ve 6 vadeli plan olarak çözülüyor."));
+    const demoBankText="Hesap Hareketleri\nPara Transferi IS UGUR -75.000,00 TL\nNakit Yatan 156.400,00 TL\nEkstre Ucreti -231,00 TL";
+    const demoBankRows=parseBankOcrRows(demoBankText,{fileName:"demo-bank.png",fileId:"demo-bank"});
+    checks.push(selfTestLine(demoBankRows.length>=3 && demoBankRows.some(x=>x.type==="Tahsilat") && demoBankRows.some(x=>x.type==="Hesap Hareketi"),"Demo banka OCR satır ayrıştırma","Banka ekran görüntüsü tek toplam yerine satır satır onay önerisine ayrılıyor."));
+    checks.push(selfTestLine(telegramRecordKey({text:"demo",amount:1,source:"Banka"})===telegramRecordKey({text:"demo",amount:1,source:"Banka"}),"Demo Telegram mükerrer anahtarı","Aynı mesaj/ek tekrar okutulursa Telegram geçmişi ve Onay Merkezi şişmez."));
     try{
       const res=await fetch(`/api/telegram/status?v=${Date.now()}`,{cache:"no-store"});
       const data=await res.json();
