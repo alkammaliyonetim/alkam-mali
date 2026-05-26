@@ -195,7 +195,7 @@
               <option value="all">Tüm Bakiyeler</option><option value="borc">Bakiye B</option><option value="alacak">Bakiye A</option><option value="zero">Sıfır</option><option value="deleted">Silinmişler</option>
             </select>
             <select id="sortBy" class="select-input" onchange="renderCariList()">
-              <option value="balanceDesc">Bakiye yüksek</option><option value="nameAsc">Ada göre</option><option value="lastDateDesc">Son işleme göre</option><option value="feeDesc">Ücret yüksek</option>
+              <option value="promiseDue">Ödeme sözü tarihi</option><option value="promiseAmount">Ödeme sözü tutarı</option><option value="balanceDesc">Bakiye yüksek</option><option value="nameAsc">Ada göre</option><option value="lastDateDesc">Son işleme göre</option><option value="feeDesc">Ücret yüksek</option>
             </select>
           </div>
           <div id="cariList" class="list cari-list-scroll"></div>
@@ -692,14 +692,22 @@
     const q=(byId("cariSearch")?.value||"").toLowerCase();
     const f=byId("balanceFilter")?.value||"all";
     const sort=byId("sortBy")?.value||"balanceDesc";
-    let rows = state.cariler.map(c=>({c,...totals(c)}));
+    let rows = state.cariler.map(c=>{
+      const openPromises=paymentPromisesForCari(c.id).filter(p=>!isTaskDone(p));
+      const promiseDue=openPromises.map(p=>isoDate(p.dueDate)).filter(Boolean).sort()[0]||"9999-12-31";
+      const promiseAmount=openPromises.reduce((s,p)=>s+num(p.amount),0);
+      const promiseOverdue=!!(openPromises.length && promiseDue<today());
+      return {c,...totals(c),openPromiseCount:openPromises.length,promiseDue,promiseAmount,promiseOverdue};
+    });
     if(f!=="deleted") rows = rows.filter(x=>!x.c.deleted);
     if(f==="deleted") rows = rows.filter(x=>x.c.deleted);
     if(q) rows = rows.filter(x=>(x.c.name+" "+x.c.code+" "+x.c.phone+" "+x.c.sourceFile).toLowerCase().includes(q));
     if(f==="borc") rows=rows.filter(x=>x.bal>0.01);
     if(f==="alacak") rows=rows.filter(x=>x.bal<-0.01);
     if(f==="zero") rows=rows.filter(x=>Math.abs(x.bal)<0.01);
-    if(sort==="nameAsc") rows.sort((a,b)=>a.c.name.localeCompare(b.c.name,"tr"));
+    if(sort==="promiseDue") rows.sort((a,b)=>(b.promiseOverdue-a.promiseOverdue) || (b.openPromiseCount-a.openPromiseCount) || String(a.promiseDue).localeCompare(String(b.promiseDue)) || (b.promiseAmount-a.promiseAmount) || a.c.name.localeCompare(b.c.name,"tr"));
+    else if(sort==="promiseAmount") rows.sort((a,b)=>(b.openPromiseCount-a.openPromiseCount) || (b.promiseAmount-a.promiseAmount) || String(a.promiseDue).localeCompare(String(b.promiseDue)) || a.c.name.localeCompare(b.c.name,"tr"));
+    else if(sort==="nameAsc") rows.sort((a,b)=>a.c.name.localeCompare(b.c.name,"tr"));
     else if(sort==="lastDateDesc") rows.sort((a,b)=>String(b.last).localeCompare(String(a.last)));
     else if(sort==="feeDesc") rows.sort((a,b)=>num(b.c.monthlyFee)-num(a.c.monthlyFee));
     else rows.sort((a,b)=>Math.abs(b.bal)-Math.abs(a.bal));
