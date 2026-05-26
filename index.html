@@ -1507,9 +1507,42 @@
     writeJson(LS.approvals,state.approvals);
     return true;
   }
+  function shortText(v,limit=160){
+    const s=String(v||"").replace(/\s+/g," ").trim();
+    return s.length>limit ? s.slice(0,limit-1)+"..." : s;
+  }
+  function telegramHistoryItems(){
+    const seen=new Set(), out=[];
+    (state.telegramMessages||[]).forEach(m=>{
+      const key=telegramRecordKey(m);
+      if(seen.has(key)) return;
+      seen.add(key);
+      out.push(m);
+    });
+    return out.slice(0,8);
+  }
+  function telegramHistoryTitle(m){
+    const src=cleanText(`${m?.source||""} ${m?.type||""} ${m?.text||""}`);
+    if(src.includes("ocr")) return "Ekstre / Dekont OCR";
+    if(m?.attachmentOnly || src.includes("ocr bekliyor")) return "Ek dosya bekliyor";
+    return m?.type || "Telegram";
+  }
+  function telegramHistorySummary(m){
+    const src=cleanText(`${m?.source||""} ${m?.type||""}`);
+    const txt=String(m?.text||"");
+    if(src.includes("ocr") || isBankOcrText(txt)){
+      return "Ekstre/dekont OCR ile okundu. Ham metin ek içinde tutulur; kesin kayıt Onay Merkezi kontrolüyle yapılır.";
+    }
+    return shortText(txt,180);
+  }
+  function telegramHistoryAmount(m){
+    const src=cleanText(`${m?.source||""} ${m?.type||""}`);
+    if((src.includes("ocr") || m?.attachmentOnly) && num(m?.amount)<=0) return "";
+    return num(m?.amount)>0 ? ` · ${money(m.amount)}` : "";
+  }
   function renderTelegramPanel(){
     const el=byId("telegramPanel"); if(!el) return;
-    const recent=state.telegramMessages.slice(0,8);
+    const recent=telegramHistoryItems();
     const openTasks=state.opsTasks.filter(t=>!isTaskDone(t)).slice().sort((a,b)=>taskSortValue(a).localeCompare(taskSortValue(b))).slice(0,16);
     const openPromises=openPaymentPromises().slice().sort((a,b)=>taskSortValue(a).localeCompare(taskSortValue(b)));
     const donePromises=donePaymentPromises().slice().sort((a,b)=>String(b.completedAt||"").localeCompare(String(a.completedAt||""))).slice(0,10);
@@ -1540,7 +1573,7 @@
               <button class="btn btn-soft" onclick="clearTelegramBox()">Kutuyu Temizle</button>
             </div>
             <label class="inline-check"><input id="tgAutoPoll" type="checkbox" ${state.telegramPoll?"checked":""} onchange="toggleTelegramPolling(this.checked)" /> Telegram botunu 60 saniyede bir otomatik kontrol et</label>
-            <div class="tg-status"><strong>Bot durumu:</strong> ${esc(state.telegramStatus)}<br><span class="muted-note">Token HTML içinde tutulmaz; Cloudflare ortam değişkeni <strong>TELEGRAM_BOT_TOKEN</strong> ile okunur.</span></div>
+            <div class="tg-status"><strong>Bot durumu:</strong> ${esc(state.telegramStatus)}<br><span class="muted-note">Güvenli bot bağlantısı sunucu tarafından yönetilir.</span></div>
           </div>
         </div>
       </div>
@@ -1548,7 +1581,7 @@
       <div class="grid-2">
         <div>
           <h3 class="section-title" style="font-size:16px">Telegram Geçmişi</h3>
-          <div class="mini-list">${recent.length?recent.map(m=>`<div class="mini-row"><strong>${esc(m.type)}</strong> · ${esc(m.source||"Operasyon")} · ${money(m.amount)} · Güven ${m.score}%<br>${esc(m.cariName||"Cari eşleşmedi")} ${m.dueDate?`· Vade ${esc(m.dueDate)}`:""}<br><span class="muted-note">${esc(m.text)}</span>${telegramAttachmentButtons(m.attachments)}${m.chatId?`<br><button class="btn btn-soft" onclick="replyTelegramMessage('${esc(m.id)}')">Telegram Cevap Yaz</button>`:""}</div>`).join(""):`<div class="empty">Telegram mesaj geçmişi yok.</div>`}</div>
+          <div class="mini-list">${recent.length?recent.map(m=>`<div class="mini-row"><strong>${esc(telegramHistoryTitle(m))}</strong> · ${esc(m.source||"Operasyon")}${telegramHistoryAmount(m)} · Güven ${num(m.score)}%<br>${esc(m.cariName||"Cari eşleşmedi")} ${m.dueDate?`· Vade ${esc(m.dueDate)}`:""}<br><span class="muted-note">${esc(telegramHistorySummary(m))}</span>${telegramAttachmentButtons(m.attachments)}${m.chatId?`<br><button class="btn btn-soft" onclick="replyTelegramMessage('${esc(m.id)}')">Telegram Cevap Yaz</button>`:""}</div>`).join(""):`<div class="empty">Telegram mesaj geçmişi yok.</div>`}</div>
         </div>
         <div>
           <h3 class="section-title" style="font-size:16px">Açık Ödeme Sözü / Yapılacaklar</h3>
