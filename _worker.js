@@ -10,6 +10,9 @@ export default {
     if (url.pathname === "/api/mail/queue/ack") {
       return mailQueueAck(request, env);
     }
+    if (url.pathname === "/api/mail/file") {
+      return mailFile(request, env);
+    }
     if (url.pathname === "/api/telegram/status") {
       return telegramStatus(request, env);
     }
@@ -111,7 +114,7 @@ function safeMailText(value, limit = 12000) {
   return String(value == null ? "" : value).replace(/\0/g, "").slice(0, limit);
 }
 
-async function readStreamText(stream, limit = 160000) {
+async function readStreamText(stream, limit = 8000000) {
   if (!stream) return "";
   const reader = stream.getReader();
   const chunks = [];
@@ -134,21 +137,58 @@ async function readStreamText(stream, limit = 160000) {
   return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
 }
 
-function extractMailAttachmentNames(raw) {
-  const names = new Set();
-  const text = safeMailText(raw, 160000);
-  const patterns = [
-    /filename\*?=(?:UTF-8''|")?([^";\r\n]+)/gi,
-    /name\*?=(?:UTF-8''|")?([^";\r\n]+)/gi
-  ];
-  for (const re of patterns) {
-    let match;
-    while ((match = re.exec(text))) {
-      const cleaned = decodeURIComponent(String(match[1] || "").replace(/^"|"$/g, "").trim()).slice(0, 160);
-      if (cleaned && /\.(xlsx|xls|csv|pdf|txt)$/i.test(cleaned)) names.add(cleaned);
-    }
+function mimeHeaderMap(part) {
+  const split = part.search(/\r?\n\r?\n/);
+  const headerText = split >= 0 ? part.slice(0, split) : "";
+  const body = split >= 0 ? part.slice(split).replace(/^\r?\n\r?\n/, "") : "";
+  const headers = {};
+  headerText.replace(/\r?\n[ \t]+/g, " ").split(/\r?\n/).forEach(line => {
+    const idx = line.indexOf(":");
+    if (idx > 0) headers[line.slice(0, idx).toLowerCase()] = line.slice(idx + 1).trim();
+  });
+  return { headers, body };
+}
+
+function mimeParam(value, name) {
+  const re = new RegExp(`${name}\\*?=(?:UTF-8''|")?([^";\\r\\n]+)`, "i");
+  const match = String(value || "").match(re);
+  if (!match) return "";
+  try {
+    return decodeURIComponent(match[1].replace(/^"|"$/g, "").trim());
+  } catch {
+    return match[1].replace(/^"|"$/g, "").trim();
   }
-  return [...names].slice(0, 20);
+}
+
+function extractMailAttachments(raw, queueKey) {
+  const text = safeMailText(raw, 8000000);
+  const boundary = (text.match(/boundary="?([^";\r\n]+)"?/i) || [])[1];
+  const parts = boundary ? text.split(`--${boundary}`) : [text];
+  const out = [];
+  for (const part of parts) {
+    const { headers, body } = mimeHeaderMap(part);
+    const disposition = headers["content-disposition"] || "";
+    const contentType = headers["content-type"] || "application/octet-stream";
+    const fileName = sanitizeFileName(mimeParam(disposition, "filename") || mimeParam(contentType, "name"));
+    if (!fileName || !/\.(xlsx|xls|csv|pdf|txt)$/i.test(fileName)) continue;
+    const encoding = String(headers["content-transfer-encoding"] || "").toLowerCase();
+    const base64 = encoding.includes("base64")
+      ? body.replace(/\s+/g, "")
+      : btoa(unescape(encodeURIComponent(body.trim())));
+    if (!base64 || base64.length > 7000000) {
+      out.push({ fileName, mimeType: contentType.split(";")[0], source: "mail", tooLarge: true });
+      continue;
+    }
+    out.push({
+      fileName,
+      mimeType: contentType.split(";")[0],
+      source: "mail",
+      storageKey: `${queueKey}:att:${out.length}`,
+      size: Math.floor(base64.length * 0.75),
+      base64
+    });
+  }
+  return out.slice(0, 20);
 }
 
 function classifyMailDocument(subject, raw, attachmentNames) {
@@ -168,7 +208,18 @@ async function queueInboundEmail(message, env) {
   const subject = safeMailText(headerValue(message.headers, "subject"), 500);
   const date = safeMailText(headerValue(message.headers, "date"), 120) || new Date().toISOString();
   const messageId = safeMailText(headerValue(message.headers, "message-id"), 240) || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const attachments = extractMailAttachmentNames(raw).map(fileName => ({ fileName, source: "mail" }));
+  const key = mailQueueKey(messageId);
+  const attachmentsWithData = extractMailAttachments(raw, key);
+  for (const att of attachmentsWithData) {
+    if (att.storageKey && att.base64) {
+      await queue.put(att.storageKey, att.base64, {
+        expirationTtl: 60 * 60 * 24 * 90,
+        metadata: { channel: "mail-file", fileName: att.fileName || "" }
+      });
+      delete att.base64;
+    }
+  }
+  const attachments = attachmentsWithData.map(att => ({ ...att }));
   const row = {
     id: messageId,
     channel: "mail",
@@ -181,7 +232,6 @@ async function queueInboundEmail(message, env) {
     attachments,
     text: safeMailText(raw.replace(/Content-[^\n]+\n/gi, " ").replace(/[A-Za-z0-9+/=]{80,}/g, " ").replace(/\s+/g, " "), 4000)
   };
-  const key = mailQueueKey(messageId);
   const exists = await queue.get(key);
   if (!exists) {
     await queue.put(key, JSON.stringify(row), {
@@ -189,6 +239,34 @@ async function queueInboundEmail(message, env) {
       metadata: { channel: "mail", date: row.receivedAt }
     });
   }
+}
+
+async function mailFile(request, env) {
+  if (request.method !== "GET") return json({ ok: false, error: "GET gerekli." }, 405);
+  const queue = mailQueueStore(env);
+  if (!queue) return mailQueueMissing();
+  const url = new URL(request.url);
+  const key = String(url.searchParams.get("key") || "");
+  const name = sanitizeFileName(url.searchParams.get("name") || "mail-ekstre-dosyasi");
+  if (!key.startsWith("mailq:") || !key.includes(":att:")) return json({ ok: false, error: "Gecersiz mail dosya anahtari." }, 400);
+  const base64 = await queue.get(key);
+  if (!base64) return json({ ok: false, error: "Mail eki bulunamadi veya suresi doldu." }, 404);
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const ext = name.split(".").pop().toLowerCase();
+  const type = ext === "xlsx" ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    : ext === "xls" ? "application/vnd.ms-excel"
+    : ext === "csv" ? "text/csv; charset=utf-8"
+    : ext === "pdf" ? "application/pdf"
+    : "application/octet-stream";
+  return new Response(bytes, {
+    headers: {
+      "content-type": type,
+      "cache-control": "no-store",
+      "content-disposition": `attachment; filename="${name.replace(/"/g, "")}"`
+    }
+  });
 }
 
 async function mailStatus(request, env) {

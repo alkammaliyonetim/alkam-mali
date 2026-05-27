@@ -1434,6 +1434,14 @@
     const buf=await res.arrayBuffer();
     return XLSX.read(buf,{type:"array",cellDates:true});
   }
+  async function mailAttachmentWorkbook(att){
+    if(!window.XLSX) throw new Error("Excel okuyucu yüklenmedi.");
+    if(!att?.storageKey) throw new Error("Mail eki için dosya anahtarı yok.");
+    const res=await fetch(`/api/mail/file?key=${encodeURIComponent(att.storageKey)}&name=${encodeURIComponent(att.fileName||"mail-ekstre.xlsx")}`,{cache:"no-store"});
+    if(!res.ok) throw new Error("Mail eki indirilemedi.");
+    const buf=await res.arrayBuffer();
+    return XLSX.read(buf,{type:"array",cellDates:true});
+  }
   async function telegramAttachmentBlob(fileId,fileName){
     const res=await fetch(`/api/telegram/file?id=${encodeURIComponent(fileId)}&name=${encodeURIComponent(fileName||"telegram-dosya")}`,{cache:"no-store"});
     if(!res.ok) throw new Error("Telegram dosyası indirilemedi.");
@@ -2347,33 +2355,63 @@
       const data=await res.json();
       if(!data.ok) return notify(data.error||"Mail kuyruğu okunamadı.");
       const mails=Array.isArray(data.mails)?data.mails:[];
-      let added=0, parsed=0;
+      let added=0, parsed=0, files=0;
       const ackKeys=[];
-      mails.forEach(mail=>{
-        const text=[mail.subject, mail.text, (mail.attachments||[]).map(a=>a.fileName).join(" ")].filter(Boolean).join("\n");
-        const row=buildTelegramRecord(text);
-        row.id=uid("MAIL");
-        row.source=mail.docType==="moka" ? "Moka United Mail Ekstresi" : "Halkbank Mail Ekstresi";
-        row.accountId=mail.docType==="moka" ? "moka-united" : "banka";
-        row.createdAt=new Date(mail.receivedAt||Date.now()).toLocaleString("tr-TR");
-        row.updateId=mail.id||mail.queueKey||"";
-        row.chatId=mail.from||"mail";
-        row.attachments=(mail.attachments||[]).map(a=>({kind:"mail",fileName:a.fileName||"mail-ek",mimeType:"",fileId:""}));
-        row.traceId=importHash(["MAIL",mail.id||mail.queueKey||"",row.source,row.text,row.amount]);
-        row.mailQueueKey=mail.queueKey||"";
-        if(row.amount>0){
-          parsed += queueTelegramRecord(row) ? 1 : 0;
-        }else{
-          rememberTelegram({...row,type:"Mail Ekstresi",score:0,amount:0,text:`Mail ekstresi alındı: ${mail.subject||"Ekstre"} ${(mail.attachments||[]).map(a=>a.fileName).join(" ")}`});
+      for(const mail of mails){
+        const attachments=Array.isArray(mail.attachments)?mail.attachments:[];
+        const excelAttachments=attachments.filter(a=>/\.(xlsx|xls|csv)$/i.test(a.fileName||"") && a.storageKey);
+        let fileParsed=false;
+        for(const att of excelAttachments){
+          try{
+            const wb=await mailAttachmentWorkbook(att);
+            const kind=mail.docType==="moka" || /moka|pos/i.test(att.fileName||"") ? "moka" : "bank";
+            if(kind==="moka"){
+              const parsedMoka=parseMokaWorkbook(wb);
+              const rows=stampMailImportRows(parsedMoka.rows,"moka",att.fileName);
+              const plans=(parsedMoka.plans||[]).map(p=>({...p,deliverySource:"Mail Ekstresi",uploadFileName:att.fileName||""}));
+              state.importPreview=[...rows,...state.importPreview];
+              state.mokaPlans=[...state.mokaPlans,...plans];
+              parsed+=rows.length;
+              files++;
+            }else{
+              const rows=stampMailImportRows(parseHalkbankWorkbook(wb),"bank",att.fileName);
+              state.importPreview=[...rows,...state.importPreview];
+              parsed+=rows.length;
+              files++;
+            }
+            fileParsed=true;
+          }catch(fileErr){
+            logAudit("Mail eki okunamadı", `${att.fileName||"ek"} · ${fileErr?.message||fileErr}`, "Kontrol");
+          }
+        }
+        if(!fileParsed){
+          const text=[mail.subject, mail.text, attachments.map(a=>a.fileName).join(" ")].filter(Boolean).join("\n");
+          const row=buildTelegramRecord(text);
+          row.id=uid("MAIL");
+          row.source=mail.docType==="moka" ? "Moka United Mail Ekstresi" : "Halkbank Mail Ekstresi";
+          row.accountId=mail.docType==="moka" ? "moka-united" : "banka";
+          row.createdAt=new Date(mail.receivedAt||Date.now()).toLocaleString("tr-TR");
+          row.updateId=mail.id||mail.queueKey||"";
+          row.chatId=mail.from||"mail";
+          row.attachments=attachments.map(a=>({kind:"mail",fileName:a.fileName||"mail-ek",mimeType:a.mimeType||"",fileId:a.storageKey||"",storageKey:a.storageKey||""}));
+          row.traceId=importHash(["MAIL",mail.id||mail.queueKey||"",row.source,row.text,row.amount]);
+          row.mailQueueKey=mail.queueKey||"";
+          if(row.amount>0){
+            parsed += queueTelegramRecord(row) ? 1 : 0;
+          }else{
+            rememberTelegram({...row,type:"Mail Ekstresi",score:0,amount:0,text:`Mail ekstresi alındı: ${mail.subject||"Ekstre"} ${attachments.map(a=>a.fileName).join(" ")}`});
+          }
         }
         added++;
         if(mail.queueKey) ackKeys.push(mail.queueKey);
-      });
+      }
+      writeJson(LS.importPreview,state.importPreview);
+      writeJson(LS.mokaPlans,state.mokaPlans);
       if(ackKeys.length){
         await fetch("/api/mail/queue/ack",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({keys:ackKeys})});
       }
       refreshAll();
-      notify(`Mail kuyruğu okundu: ${added} mail · ${parsed} onay/operasyon adayı.`);
+      notify(`Mail kuyruğu okundu: ${added} mail · ${files} dosya · ${parsed} kayıt/adayı.`);
     }catch(err){
       notify("Mail kuyruğu okunamadı: "+(err?.message||err));
     }
