@@ -2110,14 +2110,14 @@
     return `<div class="mail-bridge">
       <div class="mail-bridge-head">
         <div>
-          <div class="mail-bridge-title">Mail Ekstre Merkezi</div>
-          <div class="mail-bridge-copy">Mailden gelen Halkbank veya Moka ekini burada yukle. Sistem dosyayi kaynakli ve ID'li on izlemeye alir; kullanici onayi olmadan cari ekstresine kesin hareket yazmaz.</div>
+          <div class="mail-bridge-title">Gmail Ekstre Otomasyonu</div>
+          <div class="mail-bridge-copy">Gmail otomasyonu Halkbank ve Moka eklerini otomatik kuyruğa alır. Bu ekrandaki dosya seçme alanları sadece acil yedek yoldur; kesin cari hareketi yine Onay Merkezi onayı olmadan yazılmaz.</div>
         </div>
         <span class="tag green mail-bridge-badge">Onayli akisa bagli</span>
       </div>
       <div class="btn-row" style="margin-bottom:10px">
-        <button class="btn btn-green" onclick="fetchMailStatementQueue()">Mail Kuyrugunu Cek</button>
-        <button class="btn btn-soft" onclick="checkMailStatementStatus()">Mail Baglanti Durumu</button>
+        <button class="btn btn-green" onclick="fetchMailStatementQueue()">Gmail Kuyruğunu Çek</button>
+        <button class="btn btn-soft" onclick="checkMailStatementStatus()">Gmail Otomasyon Durumu</button>
       </div>
       <div class="mail-bridge-grid">
         <div class="field">
@@ -2344,7 +2344,8 @@
     try{
       const res=await fetch(`/api/mail/status?v=${Date.now()}`,{cache:"no-store"});
       const data=await res.json();
-      notify(data.configured ? "Mail kuyruğu bağlı." : "Mail kuyruğu için Cloudflare Email Routing/KV bağlantısı gerekli.");
+      if(!data.configured) return notify("Mail kuyruğu için Cloudflare KV bağlantısı gerekli.");
+      notify(data.gmailConfigured ? "Gmail otomasyonu bağlı." : "Gmail otomasyonu için Cloudflare ALKAM_GMAIL_INGEST_KEY gerekli.");
     }catch(err){
       notify("Mail bağlantı durumu alınamadı: "+(err?.message||err));
     }

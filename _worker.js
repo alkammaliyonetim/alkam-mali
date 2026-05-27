@@ -13,6 +13,9 @@ export default {
     if (url.pathname === "/api/mail/file") {
       return mailFile(request, env);
     }
+    if (url.pathname === "/api/mail/gmail-import") {
+      return gmailImport(request, env);
+    }
     if (url.pathname === "/api/telegram/status") {
       return telegramStatus(request, env);
     }
@@ -269,13 +272,87 @@ async function mailFile(request, env) {
   });
 }
 
+async function gmailImport(request, env) {
+  if (request.method !== "POST") return json({ ok: false, error: "POST gerekli." }, 405);
+  const queue = mailQueueStore(env);
+  if (!queue) return mailQueueMissing();
+  const expected = String(env.ALKAM_GMAIL_INGEST_KEY || "").trim();
+  if (!expected) return json({ ok: false, configured: false, error: "ALKAM_GMAIL_INGEST_KEY Cloudflare secret gerekli." }, 403);
+  const supplied = request.headers.get("x-alkam-mail-key") || "";
+  if (supplied !== expected) return json({ ok: false, configured: true, error: "Mail aktarim anahtari hatali." }, 403);
+  let body = {};
+  try {
+    body = await request.json();
+  } catch {
+    return json({ ok: false, error: "Gecersiz JSON." }, 400);
+  }
+  const messages = Array.isArray(body.messages) ? body.messages : [body];
+  let queued = 0, duplicate = 0, files = 0;
+  for (const msg of messages.slice(0, 50)) {
+    const messageId = safeMailText(msg.id || msg.messageId || `${Date.now()}-${Math.random().toString(16).slice(2)}`, 240);
+    const key = mailQueueKey(`gmail-${messageId}`);
+    const exists = await queue.get(key);
+    if (exists) {
+      duplicate++;
+      continue;
+    }
+    const attachments = [];
+    for (const [idx, att] of (Array.isArray(msg.attachments) ? msg.attachments : []).entries()) {
+      const fileName = sanitizeFileName(att.fileName || `gmail-ek-${idx + 1}`);
+      if (!fileName || !/\.(xlsx|xls|csv|pdf|txt)$/i.test(fileName)) continue;
+      const base64 = String(att.base64 || "").replace(/\s+/g, "");
+      const storageKey = `${key}:att:${attachments.length}`;
+      if (base64 && base64.length <= 7000000) {
+        await queue.put(storageKey, base64, {
+          expirationTtl: 60 * 60 * 24 * 90,
+          metadata: { channel: "gmail-file", fileName }
+        });
+        files++;
+        attachments.push({
+          fileName,
+          mimeType: safeMailText(att.mimeType || "application/octet-stream", 160),
+          source: "gmail",
+          storageKey,
+          size: Math.floor(base64.length * 0.75)
+        });
+      } else {
+        attachments.push({ fileName, mimeType: safeMailText(att.mimeType || "", 160), source: "gmail", tooLarge: true });
+      }
+    }
+    const subject = safeMailText(msg.subject || "", 500);
+    const text = safeMailText(msg.text || msg.plainBody || "", 4000);
+    const row = {
+      id: messageId,
+      channel: "gmail",
+      from: safeMailText(msg.from || "", 320),
+      to: safeMailText(msg.to || "", 320),
+      subject,
+      date: safeMailText(msg.date || "", 120),
+      receivedAt: new Date().toISOString(),
+      docType: classifyMailDocument(subject, text, attachments.map(x => x.fileName)),
+      attachments,
+      text
+    };
+    await queue.put(key, JSON.stringify(row), {
+      expirationTtl: 60 * 60 * 24 * 90,
+      metadata: { channel: "gmail", date: row.receivedAt }
+    });
+    queued++;
+  }
+  return json({ ok: true, configured: true, queued, duplicate, files });
+}
+
 async function mailStatus(request, env) {
   const queue = mailQueueStore(env);
+  const gmailConfigured = !!String(env.ALKAM_GMAIL_INGEST_KEY || "").trim();
   return json({
     ok: true,
     configured: !!queue,
     storageConfigured: !!queue,
-    addressNote: "Cloudflare Email Routing ile alan adina gelen ekstre mailleri bu Worker'a yonlendirilir."
+    gmailConfigured,
+    addressNote: gmailConfigured
+      ? "Gmail otomasyonu hazir: Apps Script ekstre eklerini /api/mail/gmail-import kuyruğuna gonderir."
+      : "Gmail otomasyonu icin Cloudflare secret gerekli: ALKAM_GMAIL_INGEST_KEY."
   });
 }
 
