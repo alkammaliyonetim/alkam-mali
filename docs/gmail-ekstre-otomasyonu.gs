@@ -48,7 +48,8 @@ function alkamEkstreAktar() {
       const attachments = [];
       for (const attachment of message.getAttachments({ includeInlineImages: false, includeAttachments: true })) {
         const name = attachment.getName() || 'gmail-ek';
-        if (!ALKAM_ALLOWED_EXT.test(name)) continue;
+        // ALKAM decides the document type; Gmail only transports attachments.
+        // if (!ALKAM_ALLOWED_EXT.test(name)) continue;
         if (fileCount >= ALKAM_MAX_ATTACHMENTS_PER_RUN) break;
         attachments.push({
           fileName: name,
