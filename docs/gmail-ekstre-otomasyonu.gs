@@ -19,7 +19,7 @@ const ALKAM_DONE_LABEL = 'ALKAM_AKTARILDI';
 const ALKAM_ERROR_LABEL = 'ALKAM_AKTARIM_HATASI';
 const ALKAM_MAX_THREADS = 50;
 const ALKAM_MAX_ATTACHMENTS_PER_RUN = 75;
-const ALKAM_ALLOWED_EXT = /\.(xlsx|xls|csv|pdf|txt)$/i;
+const ALKAM_ALLOWED_EXT = /\.(xlsx|xls|csv|pdf|txt|jpg|jpeg|png|webp|zip|ofx|sta|mt940)$/i;
 const ALKAM_GMAIL_LOOKBACK = 'newer_than:30d';
 
 function alkamEkstreAktar() {
