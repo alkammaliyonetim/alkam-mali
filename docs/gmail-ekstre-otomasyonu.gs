@@ -17,9 +17,10 @@ const ALKAM_ENDPOINT = 'https://alkam-mali.pages.dev/api/mail/gmail-import';
 const ALKAM_INGEST_KEY = 'BURAYA_CLOUDFLARE_ALKAM_GMAIL_INGEST_KEY';
 const ALKAM_DONE_LABEL = 'ALKAM_AKTARILDI';
 const ALKAM_ERROR_LABEL = 'ALKAM_AKTARIM_HATASI';
-const ALKAM_MAX_THREADS = 20;
-const ALKAM_MAX_ATTACHMENTS_PER_RUN = 30;
+const ALKAM_MAX_THREADS = 50;
+const ALKAM_MAX_ATTACHMENTS_PER_RUN = 75;
 const ALKAM_ALLOWED_EXT = /\.(xlsx|xls|csv|pdf|txt)$/i;
+const ALKAM_GMAIL_LOOKBACK = 'newer_than:30d';
 
 function alkamEkstreAktar() {
   if (!ALKAM_INGEST_KEY || ALKAM_INGEST_KEY.indexOf('BURAYA_') === 0) {
@@ -32,8 +33,7 @@ function alkamEkstreAktar() {
     'has:attachment',
     '-label:' + ALKAM_DONE_LABEL,
     '-label:' + ALKAM_ERROR_LABEL,
-    'newer_than:365d',
-    '{halkbank vadesiz hesap ekstre dekont moka pos taksit}'
+    ALKAM_GMAIL_LOOKBACK
   ].join(' ');
 
   const threads = GmailApp.search(query, 0, ALKAM_MAX_THREADS);
