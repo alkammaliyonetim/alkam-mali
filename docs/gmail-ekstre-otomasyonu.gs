@@ -20,7 +20,7 @@ const ALKAM_ERROR_LABEL = 'ALKAM_AKTARIM_HATASI';
 const ALKAM_MAX_THREADS = 50;
 const ALKAM_MAX_ATTACHMENTS_PER_RUN = 75;
 const ALKAM_ALLOWED_EXT = /\.(xlsx|xls|csv|pdf|txt|jpg|jpeg|png|webp|zip|ofx|sta|mt940)$/i;
-const ALKAM_GMAIL_LOOKBACK = 'newer_than:30d';
+const ALKAM_GMAIL_LOOKBACK = 'newer_than:365d';
 
 function alkamEkstreAktar() {
   if (!ALKAM_INGEST_KEY || ALKAM_INGEST_KEY.indexOf('BURAYA_') === 0) {
@@ -30,9 +30,10 @@ function alkamEkstreAktar() {
   const doneLabel = getOrCreateLabel_(ALKAM_DONE_LABEL);
   const errorLabel = getOrCreateLabel_(ALKAM_ERROR_LABEL);
   const query = [
-    'has:attachment',
-    '-label:' + ALKAM_DONE_LABEL,
-    '-label:' + ALKAM_ERROR_LABEL,
+    'in:anywhere has:attachment',
+    // Labels are not excluded here: ALKAM/Worker duplicate keys prevent re-import.
+    // '-label:' + ALKAM_DONE_LABEL,
+    // '-label:' + ALKAM_ERROR_LABEL,
     ALKAM_GMAIL_LOOKBACK
   ].join(' ');
 
