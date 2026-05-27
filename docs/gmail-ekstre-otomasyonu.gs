@@ -83,7 +83,14 @@ function alkamEkstreAktar() {
 
     const code = response.getResponseCode();
     const text = response.getContentText();
-    if (code >= 200 && code < 300) {
+    console.log('ALKAM yanit: HTTP ' + code + ' ' + text.slice(0, 500));
+    let result = {};
+    try {
+      result = JSON.parse(text || '{}');
+    } catch (err) {
+      result = { ok: false, error: 'JSON okunamadi' };
+    }
+    if (code >= 200 && code < 300 && result.ok === true && result.storageConfigured !== false && (Number(result.queued || 0) > 0 || Number(result.duplicate || 0) > 0)) {
       thread.addLabel(doneLabel);
       sent += payloads.length;
     } else {
