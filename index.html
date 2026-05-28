@@ -1380,6 +1380,107 @@
     }
     return row;
   };
+  function telegramAssistantHelpText(){
+    return [
+      "ALKAM Mali Telegram Asistanı hazır.",
+      "Örnekler:",
+      "• ADEM KAMACI tahsilat 12.500 TL banka",
+      "• ÇOLKAN 15 Haziran 100000 ödeme sözü",
+      "• ESA STRAFOR - TABBY 100 bin TL 6 taksit Moka",
+      "• Çalışan ekle Erkan Şahin maaşı 50.000 TL",
+      "• Dekont, ekstre, PDF veya Excel gönder; önce Onay Merkezi'ne düşer.",
+      "Kural: Onaylanmadan cari ekstresine kesin kayıt yazılmaz."
+    ].join("\n");
+  }
+  function telegramAssistantSummaryText(){
+    const approvals=(state.approvals||[]).filter(a=>a.status==="Bekliyor");
+    const risk=approvals.filter(a=>!a.cariId || num(a.score)<70 || num(a.amount)<=0);
+    const promises=openPaymentPromises();
+    const pb=promiseBudget();
+    const pendingMoka=(state.mokaPlans||[]).filter(x=>!x.bankMatched);
+    return [
+      "ALKAM Mali durum özeti:",
+      `Onay bekleyen: ${approvals.length}`,
+      `Kontrol gerekli: ${risk.length}`,
+      `Açık ödeme sözü: ${promises.length}`,
+      `Bu ay beklenen ödeme sözü: ${money(pb.month)}`,
+      `Geciken ödeme sözü: ${money(pb.overdue)}`,
+      `Moka bekleyen taksit: ${pendingMoka.length} / ${money(pendingMoka.reduce((s,x)=>s+num(x.amount),0))}`
+    ].join("\n");
+  }
+  function telegramAssistantCommand(text){
+    const s=cleanText(text||"");
+    if(/^(yardim|yardimci ol|help|komutlar|nasil kullanirim)$/.test(s)) return "help";
+    if(/^(durum|ozet|rapor|bugun ne var|bekleyenler|onay durumu)$/.test(s)) return "summary";
+    return "";
+  }
+  function isTelegramAssistantRow(row){
+    return !!row && row.domain==="assistant";
+  }
+  function markTelegramAssistantRow(row,text){
+    const cmd=telegramAssistantCommand(text);
+    row.domain="assistant";
+    row.type="Bilgi";
+    row.source="Telegram Asistan";
+    row.accountId="";
+    row.cariId="";
+    row.cariName="";
+    row.amount=0;
+    row.score=100;
+    row.aiIntent=cmd==="summary" ? "durum_ozeti" : "yardim";
+    row.aiReason=cmd==="summary" ? "Kullanıcı durum/özet istedi." : "Kullanıcı yardım/komut listesi istedi.";
+    row.replyText=cmd==="summary" ? telegramAssistantSummaryText() : telegramAssistantHelpText();
+    return row;
+  }
+  function telegramIntentDecision(text,row){
+    const s=cleanText(text||"");
+    const hasAmount=num(row.amount)>0;
+    const hasCari=!!row.cariId;
+    const due=detectDueDate(text);
+    const reasons=[];
+    if(hasCari) reasons.push("cari eşleşti"); else reasons.push("cari eşleşmesi bekliyor");
+    if(hasAmount) reasons.push("tutar bulundu"); else reasons.push("tutar yok");
+    if(due) reasons.push("vade/tarih bulundu");
+    if(isMokaTelegramText(text)){
+      return {intent:"moka_tahsilat",type:"Moka United",source:"Moka United",accountId:"moka-united",scoreBoost:12,reason:[...reasons,`${detectInstallmentCount(text)} taksit/40 gün Moka kuralı`].join(" · ")};
+    }
+    if(isTelegramEmployeeRow(row)){
+      return {intent:"calisan_karti",type:"Çalışan",source:"Bordro",accountId:"bordro",scoreBoost:8,reason:[...reasons,"çalışan/maaş ifadesi"].join(" · ")};
+    }
+    if(/odeme sozu|soz verdi|odeyecek|getirecek|gelecek|tahsil edilecek|beklenen/.test(s) || (due && hasAmount && /verdi|odeyecek|getirecek|gelecek|soz/.test(s))){
+      return {intent:"odeme_sozu",type:"Operasyon",source:"Telegram Operasyon",accountId:"",scoreBoost:8,reason:[...reasons,"ödeme sözü/yapılacak"].join(" · ")};
+    }
+    if(/ara|hatirlat|kontrol et|takip et|yapilacak|not al|gorus|evrak/.test(s) && !/tahsilat|odedi|gonderdi|yatirdi/.test(s)){
+      return {intent:"yapilacak",type:"Operasyon",source:"Telegram Operasyon",accountId:"",scoreBoost:4,reason:[...reasons,"operasyon/yapılacak"].join(" · ")};
+    }
+    if(/maas tahakkuk|maaş tahakkuk|personel tahakkuk/.test(s)){
+      return {intent:"maas_tahakkuk",type:"Tahakkuk",source:"Bordro",accountId:"bordro",scoreBoost:6,reason:[...reasons,"maaş tahakkuku"].join(" · ")};
+    }
+    if(/tahakkuk|fatura|defter ucreti|muhasebe ucreti|aylik ucret|aylık ücret/.test(s)){
+      return {intent:"cari_tahakkuk",type:"Tahakkuk",source:row.source||"Telegram",accountId:row.accountId||"",scoreBoost:4,reason:[...reasons,"tahakkuk/fatura"].join(" · ")};
+    }
+    if(/tahsilat|odedi|ödedi|gonderdi|gönderdi|yatirdi|yatırdı|geldi|dekont|havale|eft|fast|nakit/.test(s) || hasAmount){
+      return {intent:"tahsilat",type:"Tahsilat",source:row.source||"Banka",accountId:row.accountId||"banka",scoreBoost:6,reason:[...reasons,"tahsilat/hareket"].join(" · ")};
+    }
+    return {intent:"belirsiz_operasyon",type:"Operasyon",source:"Telegram Operasyon",accountId:"",scoreBoost:0,reason:[...reasons,"belirsiz mesaj"].join(" · ")};
+  }
+  const alkamAssistantBuildTelegramRecord = buildTelegramRecord;
+  buildTelegramRecord = function(text){
+    const row=alkamAssistantBuildTelegramRecord(text);
+    if(telegramAssistantCommand(text)) return markTelegramAssistantRow(row,text);
+    const decision=telegramIntentDecision(text,row);
+    row.aiIntent=decision.intent;
+    row.aiReason=decision.reason;
+    row.type=decision.type;
+    row.source=decision.source;
+    if(decision.accountId) row.accountId=decision.accountId;
+    row.dueDate=row.dueDate||detectDueDate(text);
+    row.score=Math.min(100,Math.max(0,num(row.score)+num(decision.scoreBoost)));
+    if(!row.cariId && row.type!=="Operasyon" && !isTelegramEmployeeRow(row)) row.score=Math.min(row.score,65);
+    if(num(row.amount)<=0 && !["Operasyon","Bilgi","Çalışan"].includes(row.type)) row.score=Math.min(row.score,55);
+    row.reviewStatus=(!row.cariId && !["Operasyon","Bilgi","Çalışan"].includes(row.type)) || num(row.score)<70 ? "Kontrol Gerekli" : "Onaya Hazır";
+    return row;
+  };
   function telegramMokaPlans(row){
     if(!row || row.type!=="Moka United" || num(row.amount)<=0) return [];
     const inst=Math.max(1,Math.min(36,num(row.installmentCount)||1));
@@ -1517,6 +1618,10 @@
   function queueTelegramRecord(row){
     const fresh=rememberTelegram(row);
     if(!fresh) return false;
+    if(isTelegramAssistantRow(row)){
+      logAudit("Telegram asistan komutu", row.aiReason||row.text||"Bilgi");
+      return true;
+    }
     if(row.attachmentOnly){
       row.source="Telegram Ek";
       row.type="OCR Bekliyor";
@@ -1539,7 +1644,7 @@
     persistTelegramMokaPlans(row);
     const traceId=telegramApprovalTrace(row);
     if(hasApprovalTrace(traceId)) return false;
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:row.text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1,traceId,importHash:traceId});
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:row.text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1,aiIntent:row.aiIntent||"",aiReason:row.aiReason||"",reviewStatus:row.reviewStatus||"",traceId,importHash:traceId});
     writeJson(LS.approvals,state.approvals);
     return true;
   }
@@ -1559,6 +1664,7 @@
   }
   function telegramHistoryTitle(m){
     const src=cleanText(`${m?.source||""} ${m?.type||""} ${m?.text||""}`);
+    if(m?.domain==="assistant") return "Asistan Cevabı";
     if(src.includes("ocr")) return "Ekstre / Dekont OCR";
     if(m?.attachmentOnly || src.includes("ocr bekliyor")) return "Ek dosya bekliyor";
     return m?.type || "Telegram";
@@ -1659,7 +1765,7 @@
     persistTelegramMokaPlans(row);
     const traceId=telegramApprovalTrace(row);
     if(hasApprovalTrace(traceId)) return notify("Bu Telegram kaydı zaten Onay Merkezi'nde var.");
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1,traceId,importHash:traceId});
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source||"Telegram",accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1,aiIntent:row.aiIntent||"",aiReason:row.aiReason||"",reviewStatus:row.reviewStatus||"",traceId,importHash:traceId});
     writeJson(LS.approvals,state.approvals);
     logAudit("Telegram mesajı onaya aktarıldı", `${row.source} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)} · ${row.score}%`);
     byId("telegramText").value="";
@@ -1690,7 +1796,7 @@
     persistTelegramMokaPlans(row);
     const traceId=telegramApprovalTrace(row);
     if(hasApprovalTrace(traceId)) return notify("Bu Telegram kaydı zaten Onay Merkezi'nde var.");
-    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source,accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1,traceId,importHash:traceId});
+    state.approvals.unshift({id:uid("APR-TG"),cariId:row.cariId,amount:row.amount,score:row.score,type:row.type,source:row.source,accountId:row.accountId,telegramUpdateId:row.updateId||"",date:today(),reason:text,status:"Bekliyor",createdAt:row.createdAt,attachments:row.attachments||[],installmentCount:row.installmentCount||1,aiIntent:row.aiIntent||"",aiReason:row.aiReason||"",reviewStatus:row.reviewStatus||"",traceId,importHash:traceId});
     writeJson(LS.approvals,state.approvals);
     logAudit("Telegram mesajı hesaplara ve onaya aktarıldı", `${row.source} · ${row.cariName||"Cari eşleşmedi"} · ${money(row.amount)}`);
     byId("telegramText").value="";
@@ -1763,6 +1869,9 @@
     return data;
   }
   function telegramAckText(row){
+    if(isTelegramAssistantRow(row)){
+      return row.replyText || telegramAssistantHelpText();
+    }
     if(row.attachmentOnly || row.type==="OCR Bekliyor"){
       return `ALKAM Mali: Ek dosyanız alındı.\nDurum: OCR/okuma bekliyor\nNot: Dosya adı tutar kabul edilmez; kayıt onaydan önce okunacak.`;
     }
@@ -1772,7 +1881,11 @@
     const target=row.type==="Operasyon" ? "operasyon listesine" : "Onay Merkezi'ne";
     const cari=row.cariName ? `Cari: ${row.cariName}` : "Cari eşleşmesi bekliyor";
     const fileLine=telegramAttachmentText(row.attachments);
-    return `ALKAM Mali: Mesajınız kayda alındı ve ${target} düştü.\n${cari}\nTutar: ${money(row.amount)}\nKaynak: ${row.source||"Telegram"}${fileLine?`\nEk: ${fileLine}`:""}`;
+    const decision=row.aiIntent ? `Karar: ${row.aiIntent}` : "";
+    const review=row.reviewStatus ? `Durum: ${row.reviewStatus}` : "Durum: Onay bekliyor";
+    const moka=row.type==="Moka United" ? `\nMoka planı: ${row.installmentCount||1} taksit, ilk ödeme 40 gün kuralına göre hesaplanır.` : "";
+    const reason=row.aiReason ? `\nSebep: ${row.aiReason}` : "";
+    return `ALKAM Mali: Mesajınız kayda alındı ve ${target} düştü.\n${cari}\nTutar: ${money(row.amount)}\nKaynak: ${row.source||"Telegram"}\n${review}${decision?`\n${decision}`:""}${reason}${moka}${fileLine?`\nEk: ${fileLine}`:""}`;
   }
   window.testTelegramStatus=async function(){
     try{
@@ -1824,7 +1937,7 @@
       if(queueTelegramRecord(row)){
         added++;
         accepted.push({updateId:u.updateId,queueKey:u.queueKey});
-        if(row.chatId) sendTelegramMessage(row.chatId,telegramAckText(row)).catch(()=>{});
+        if(row.chatId && !u.webhookAckSent) sendTelegramMessage(row.chatId,telegramAckText(row)).catch(()=>{});
       }else if(u.queueKey || u.updateId){
         accepted.push({updateId:u.updateId,queueKey:u.queueKey});
       }
@@ -2574,7 +2687,7 @@
     const filterDefs=[["all","Tümü",rows.length],["bank","Banka",rows.filter(a=>approvalFilterMatch(a,"bank")).length],["moka","Moka",rows.filter(a=>approvalFilterMatch(a,"moka")).length],["telegram","Telegram",rows.filter(a=>approvalFilterMatch(a,"telegram")).length],["accrual","Tahakkuk",rows.filter(a=>approvalFilterMatch(a,"accrual")).length],["waiting","Eşleşme Bekleyen",rows.filter(a=>approvalFilterMatch(a,"waiting")).length]];
     const activeFilter=filterDefs.find(x=>x[0]===filter)||filterDefs[0];
     const filterBar=filterDefs.map(([key,label,count])=>`<button class="approval-tab ${filter===key?"active":""}" onclick="setApprovalFilter('${key}')"><span>${label}</span><strong>${count}</strong></button>`).join("");
-    const table=filtered.map(a=>{const ledgerDate=approvalLedgerDate(a);const c=state.cariler.find(x=>x.id===a.cariId);return`<tr class="${approvalStatusClass(a)}"><td>${traceBadge(a)}</td><td><strong>${esc(ledgerDate)}</strong><br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td><div class="approval-cari-main">${c?esc(c.name):approvalCariCell(a)}</div>${!c?`<span class="tag amber">EŞLEŞME BEKLEYEN</span>`:""}</td><td><span class="tag ${a.type==="Tahsilat"?"green":a.type==="Tahakkuk"?"red":"purple"}">${esc(a.type)}</span></td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td class="approval-reason">${esc(a.reason||"")}${approvalAttachmentHtml(a)}</td><td><div class="approval-actions">${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button><button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</div></td></tr>`}).join("");
+    const table=filtered.map(a=>{const ledgerDate=approvalLedgerDate(a);const c=state.cariler.find(x=>x.id===a.cariId);const ai=a.aiReason?`<br><span class="muted-note">AI karar: ${esc(a.aiIntent||"-")} · ${esc(a.aiReason)}</span>`:"";return`<tr class="${approvalStatusClass(a)}"><td>${traceBadge(a)}</td><td><strong>${esc(ledgerDate)}</strong><br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td><div class="approval-cari-main">${c?esc(c.name):approvalCariCell(a)}</div>${!c?`<span class="tag amber">EŞLEŞME BEKLEYEN</span>`:""}</td><td><span class="tag ${a.type==="Tahsilat"?"green":a.type==="Tahakkuk"?"red":"purple"}">${esc(a.type)}</span></td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td class="approval-reason">${esc(a.reason||"")}${ai}${approvalAttachmentHtml(a)}</td><td><div class="approval-actions">${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button><button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</div></td></tr>`}).join("");
     el.className="section approval-board";
     el.innerHTML=`
       <div class="approval-board-head">

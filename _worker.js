@@ -449,6 +449,36 @@ function attachmentSummary(attachments) {
   return attachments.map(a => `${a.kind === "photo" ? "Fotoğraf" : "Belge"}: ${a.fileName}`).join(" · ");
 }
 
+function telegramWebhookReceiptText(row) {
+  const hasAttachment = row.attachments && row.attachments.length;
+  const lines = [
+    "ALKAM Mali: Mesajınız alındı ve güvenli kuyruğa eklendi.",
+    hasAttachment ? "Ek/dosya programda okunup Onay Merkezi'ne öneri olarak düşecek." : "Programda Onay Merkezi'ne öneri olarak düşecek.",
+    "Kural: Onaylanmadan cari ekstresine kesin kayıt yazılmaz."
+  ];
+  return lines.join("\n");
+}
+
+async function telegramSendRaw(token, chatId, text) {
+  if (!chatId || !text) return false;
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      signal: AbortSignal.timeout(8000),
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: String(text).slice(0, 3900),
+        disable_web_page_preview: true
+      })
+    });
+    const data = await res.json().catch(() => ({}));
+    return !!data.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function telegramStatus(request, env) {
   const token = env.TELEGRAM_BOT_TOKEN;
   if (!token) return tokenMissing();
@@ -532,13 +562,16 @@ async function telegramWebhook(request, env) {
 
   const key = queueKey(row.updateId);
   const exists = await queue.get(key);
+  let webhookAckSent = false;
   if (!exists) {
+    webhookAckSent = await telegramSendRaw(token, row.chatId, telegramWebhookReceiptText(row));
+    row.webhookAckSent = webhookAckSent;
     await queue.put(key, JSON.stringify(row), {
       expirationTtl: 60 * 60 * 24 * 45,
       metadata: { updateId: String(row.updateId), date: row.date || "" }
     });
   }
-  return json({ ok: true, configured: true, storageConfigured: true, queued: !exists, updateId: row.updateId });
+  return json({ ok: true, configured: true, storageConfigured: true, queued: !exists, updateId: row.updateId, webhookAckSent });
 }
 
 async function telegramQueue(request, env) {
