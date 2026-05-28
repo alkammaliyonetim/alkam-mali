@@ -2146,6 +2146,8 @@
         score:Math.max(parsed.confidence||45,match?.score||45),
         type:positive?"Tahsilat":"Hesap Hareketi",
         source:"Banka OCR",
+        originChannel:"OCR",
+        originFile:attachment?.fileName||"",
         accountId:"banka",
         date:bankOcrDateFromLine(ctx),
         reason:`${ctx} · ${parsed.note}`,
@@ -2169,6 +2171,19 @@
     (state.approvals||[]).forEach(a=>{
       if(a.status!=="Bekliyor") return;
       if(!/banka ocr/i.test(String(a.source||""))) return;
+      const fileText=(a.attachments||[]).map(x=>`${x.fileName||""} ${x.kind||""}`).join(" ");
+      if(!a.originChannel){
+        a.originChannel=/telegram/i.test(fileText) || a.telegramUpdateId ? "Telegram" : (/mail/i.test(fileText) ? "Mail" : "OCR");
+        changed=true;
+      }
+      if(!a.originFile && (a.attachments||[])[0]?.fileName){
+        a.originFile=(a.attachments||[])[0].fileName;
+        changed=true;
+      }
+      if(/^Banka OCR$/i.test(String(a.source||"")) && a.originChannel==="Telegram"){
+        a.source="Telegram Banka OCR";
+        changed=true;
+      }
       if(!a.reason || String(a.reason).includes("işlem tutarı işaretli okundu") || String(a.reason).includes("giriş işlemi olarak okundu") || String(a.reason).includes("çıkış/masraf işlemi olarak okundu")) return;
       const parsed=extractBankOcrTxnAmount(a.reason);
       if(!parsed.amount) {
@@ -2203,8 +2218,15 @@
       const blob=await telegramAttachmentBlob(fileId,fileName);
       const text=await ocrBlobText(blob,fileName,mimeType);
       if(!text) return notify("OCR metin bulamadı.");
-      const attachment={kind:/pdf/i.test(`${fileName} ${mimeType}`)?"document":"photo",fileId,fileName,mimeType};
-      const bankRows=parseBankOcrRows(text,attachment);
+      const attachment={kind:/pdf/i.test(`${fileName} ${mimeType}`)?"document":"photo",fileId,fileName,mimeType,originChannel:"Telegram"};
+      const bankRows=parseBankOcrRows(text,attachment).map(r=>({
+        ...r,
+        source:"Telegram Banka OCR",
+        originChannel:"Telegram",
+        originFile:fileName||"telegram-dosya",
+        telegramFileId:fileId,
+        aiReason:`Telegram eki OCR ile okundu. ${r.aiReason||r.reason||""}`.trim()
+      }));
       if(bankRows.length){
         const known=knownImportHashes();
         const fresh=bankRows.filter(r=>!known.has(r.traceId));
@@ -2214,13 +2236,13 @@
         });
         writeJson(LS.approvals,state.approvals);
         writeJson(LS.importHashes,state.importHashes);
-        rememberTelegram({id:uid("TG-OCR"),text:`OCR Banka: ${fresh.length} kayıt`,source:"Banka OCR",type:"OCR",amount:fresh.reduce((s,r)=>s+num(r.amount),0),score:80,attachments:[attachment],createdAt:new Date().toLocaleString("tr-TR")});
+        rememberTelegram({id:uid("TG-OCR"),text:`OCR Banka: ${fresh.length} kayıt`,source:"Telegram Banka OCR",type:"OCR",amount:fresh.reduce((s,r)=>s+num(r.amount),0),score:80,attachments:[attachment],createdAt:new Date().toLocaleString("tr-TR"),originChannel:"Telegram"});
         logAudit("Telegram banka ekranı OCR ile ayrıştırıldı", `${fileName} · ${fresh.length} kayıt · Mükerrer ${bankRows.length-fresh.length}`);
         refreshAll();
         return notify(`OCR tamamlandı: ${fresh.length} banka hareketi Onay Merkezi'ne eklendi. Mükerrer: ${bankRows.length-fresh.length}`);
       }
       if(isBankOcrText(text)){
-        rememberTelegram({id:uid("TG-OCR-WAIT"),text:"Banka ekran görüntüsü okundu; satır ayrıştırma için kontrol gerekli.",source:"Banka OCR",type:"OCR Kontrol",amount:0,score:0,attachments:[attachment],createdAt:new Date().toLocaleString("tr-TR"),traceId:importHash(["BANK-OCR-WAIT",text,fileId,fileName])});
+        rememberTelegram({id:uid("TG-OCR-WAIT"),text:"Banka ekran görüntüsü okundu; satır ayrıştırma için kontrol gerekli.",source:"Telegram Banka OCR",type:"OCR Kontrol",amount:0,score:0,attachments:[attachment],createdAt:new Date().toLocaleString("tr-TR"),originChannel:"Telegram",traceId:importHash(["BANK-OCR-WAIT",text,fileId,fileName])});
         logAudit("Telegram banka OCR kontrol bekliyor", `${fileName} · satır ayrıştırılamadı`, "Kontrol");
         refreshAll();
         return notify("Banka ekranı OCR ile okundu; güvenli satır ayrıştırma için kontrol bekliyor. Cari veya hesap hareketi oluşturulmadı.");
@@ -2553,11 +2575,15 @@
   window.previewMailHalkbankFile=function(){readWorkbookFromInput("mailHalkbankFile",(wb,name)=>{const parsed=stampMailImportRows(parseHalkbankWorkbook(wb),"bank",name);state.importPreview=[...parsed,...state.importPreview.filter(x=>x.kind!=="bank")];writeJson(LS.importPreview,state.importPreview);logAudit("Mail Halkbank ekstresi ön izleme",`${name} · ${parsed.length} kayıt`);refreshAll();notify(`${parsed.length} mail Halkbank kaydı ön izlemeye alındı.`);});};
   window.previewMailMokaFile=function(){readWorkbookFromInput("mailMokaFile",(wb,name)=>{const parsed=parseMokaWorkbook(wb);const rows=stampMailImportRows(parsed.rows,"moka",name);const plans=(parsed.plans||[]).map(p=>({...p,deliverySource:"Mail Ekstresi",uploadFileName:name||""}));state.importPreview=[...rows,...state.importPreview.filter(x=>x.kind!=="moka")];state.mokaPlans=plans;writeJson(LS.importPreview,state.importPreview);writeJson(LS.mokaPlans,state.mokaPlans);logAudit("Mail Moka ekstresi ön izleme ve ödeme takvimi",`${name} · ${rows.length} işlem · ${plans.length} taksit`);refreshAll();notify(`${rows.length} mail Moka işlemi ve ${plans.length} taksit planı oluşturuldu.`);});};
   async function addMailBankPdfToApprovals(mail,att){
-    const attachment={kind:"mail",fileId:att.storageKey||"",storageKey:att.storageKey||"",fileName:att.fileName||"mail-ekstre.pdf",mimeType:att.mimeType||"application/pdf"};
+    const attachment={kind:"mail",fileId:att.storageKey||"",storageKey:att.storageKey||"",fileName:att.fileName||"mail-ekstre.pdf",mimeType:att.mimeType||"application/pdf",originChannel:"Mail",mailId:mail.id||mail.queueKey||""};
     const text=await mailPdfText(att);
     const rows=parseBankOcrRows(text,attachment).map(r=>({
       ...r,
       source:"Halkbank Mail PDF",
+      originChannel:"Mail",
+      originFile:att.fileName||"mail-ekstre.pdf",
+      mailId:mail.id||mail.queueKey||"",
+      mailSubject:mail.subject||"",
       reason:`${r.reason||""} · Mail: ${mail.subject||""}`.trim(),
       traceId:importHash(["MAIL-PDF",mail.id||mail.queueKey||"",att.storageKey||att.fileName||"",r.date,r.reason,r.amount])
     }));
@@ -2690,7 +2716,7 @@
         state.importHashes.push(r.legacyImportHash);
       }
       if(r.credit>0||r.kind==="moka"){
-        state.approvals.unshift({id:uid("APR-IMP"),cariId:r.cariId||"",amount:r.amount,score:r.score,type:r.type==="Moka United"?"Moka United":"Tahsilat",source:r.source,accountId:r.accountId||"",date:r.date,reason:r.desc,status:"Bekliyor",createdAt:new Date().toLocaleString("tr-TR"),traceId:r.importHash,importHash:r.importHash,legacyImportHash:r.legacyImportHash||"",sourceRowId:r.id});
+        state.approvals.unshift({id:uid("APR-IMP"),cariId:r.cariId||"",amount:r.amount,score:r.score,type:r.type==="Moka United"?"Moka United":"Tahsilat",source:r.source,originChannel:r.deliverySource||r.originChannel||(/mail/i.test(String(r.source||""))?"Mail":"Dosya"),originFile:r.uploadFileName||r.fileName||"",accountId:r.accountId||"",date:r.date,reason:r.desc,status:"Bekliyor",createdAt:new Date().toLocaleString("tr-TR"),traceId:r.importHash,importHash:r.importHash,legacyImportHash:r.legacyImportHash||"",sourceRowId:r.id});
         apr++;
       }
     });
@@ -2728,6 +2754,18 @@
     const buttons=telegramAttachmentButtons(a.attachments||[]);
     return buttons ? `<div class="muted-note" style="margin-top:6px">Telegram eki güvenli indirme/ön izleme</div>${buttons}` : "";
   }
+  function approvalOriginLabel(a){
+    const src=cleanText(a.source||"");
+    const file=(a.originFile || (a.attachments||[])[0]?.fileName || "").trim();
+    let channel=a.originChannel || "";
+    if(!channel){
+      if(/telegram/.test(src) || a.telegramUpdateId || (a.attachments||[]).some(x=>/telegram/i.test(`${x.fileName||""} ${x.kind||""}`))) channel="Telegram";
+      else if(/mail|gmail/.test(src) || a.mailId) channel="Mail";
+      else if(/manuel/.test(src)) channel="Manuel";
+      else channel="Program";
+    }
+    return `<span class="tag ${channel==="Telegram"?"purple":channel==="Mail"?"blue":"gray"}">${esc(channel)}</span>${file?`<br><span class="muted-note">Dosya: ${esc(file)}</span>`:""}${a.mailSubject?`<br><span class="muted-note">Mail: ${esc(a.mailSubject)}</span>`:""}`;
+  }
   function approvalStatusClass(a){
     if(a.status!=="Bekliyor") return "approval-row-blocked";
     if(!a.cariId || num(a.score)<70 || num(a.amount)<=0) return "approval-row-risk";
@@ -2737,7 +2775,7 @@
     const src=cleanText(a.source||""), type=cleanText(a.type||"");
     if(filter==="bank") return /halkbank|banka|hesap hareketi/.test(src) || a.accountId==="banka";
     if(filter==="moka") return /moka/.test(src) || /moka/.test(type) || a.accountId==="moka-united";
-    if(filter==="telegram") return /telegram/.test(src) || !!a.telegramUpdateId;
+    if(filter==="telegram") return /telegram/.test(src) || a.originChannel==="Telegram" || !!a.telegramUpdateId;
     if(filter==="accrual") return /tahakkuk/.test(src) || /tahakkuk/.test(type);
     if(filter==="waiting") return !a.cariId || num(a.score)<70 || num(a.amount)<=0;
     return true;
@@ -2758,7 +2796,7 @@
     const filterDefs=[["all","Tümü",rows.length],["bank","Banka",rows.filter(a=>approvalFilterMatch(a,"bank")).length],["moka","Moka",rows.filter(a=>approvalFilterMatch(a,"moka")).length],["telegram","Telegram",rows.filter(a=>approvalFilterMatch(a,"telegram")).length],["accrual","Tahakkuk",rows.filter(a=>approvalFilterMatch(a,"accrual")).length],["waiting","Eşleşme Bekleyen",rows.filter(a=>approvalFilterMatch(a,"waiting")).length]];
     const activeFilter=filterDefs.find(x=>x[0]===filter)||filterDefs[0];
     const filterBar=filterDefs.map(([key,label,count])=>`<button class="approval-tab ${filter===key?"active":""}" onclick="setApprovalFilter('${key}')"><span>${label}</span><strong>${count}</strong></button>`).join("");
-    const table=filtered.map(a=>{const ledgerDate=approvalLedgerDate(a);const c=state.cariler.find(x=>x.id===a.cariId);const ai=a.aiReason?`<br><span class="muted-note">AI karar: ${esc(a.aiIntent||"-")} · ${esc(a.aiReason)}</span>`:"";return`<tr class="${approvalStatusClass(a)}"><td>${traceBadge(a)}</td><td><strong>${esc(ledgerDate)}</strong><br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td><div class="approval-cari-main">${c?esc(c.name):approvalCariCell(a)}</div>${!c?`<span class="tag amber">EŞLEŞME BEKLEYEN</span>`:""}</td><td><span class="tag ${a.type==="Tahsilat"?"green":a.type==="Tahakkuk"?"red":"purple"}">${esc(a.type)}</span></td><td>${esc(a.source)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td class="approval-reason">${esc(a.reason||"")}${ai}${approvalAttachmentHtml(a)}</td><td><div class="approval-actions">${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button><button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</div></td></tr>`}).join("");
+    const table=filtered.map(a=>{const ledgerDate=approvalLedgerDate(a);const c=state.cariler.find(x=>x.id===a.cariId);const ai=a.aiReason?`<br><span class="muted-note">AI karar: ${esc(a.aiIntent||"-")} · ${esc(a.aiReason)}</span>`:"";return`<tr class="${approvalStatusClass(a)}"><td>${traceBadge(a)}</td><td><strong>${esc(ledgerDate)}</strong><br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td><div class="approval-cari-main">${c?esc(c.name):approvalCariCell(a)}</div>${!c?`<span class="tag amber">EŞLEŞME BEKLEYEN</span>`:""}</td><td><span class="tag ${a.type==="Tahsilat"?"green":a.type==="Tahakkuk"?"red":"purple"}">${esc(a.type)}</span></td><td>${approvalOriginLabel(a)}<br><span class="muted-note">Kaynak: ${esc(a.source)}</span></td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td class="approval-reason">${esc(a.reason||"")}${ai}${approvalAttachmentHtml(a)}</td><td><div class="approval-actions">${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button><button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</div></td></tr>`}).join("");
     el.className="section approval-board";
     el.innerHTML=`
       <div class="approval-board-head">
