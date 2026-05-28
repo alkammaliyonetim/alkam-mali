@@ -14,6 +14,7 @@
 */
 
 const ALKAM_ENDPOINT = 'https://alkam-mali.pages.dev/api/mail/gmail-import';
+const ALKAM_QUEUE_ENDPOINT = 'https://alkam-mali.pages.dev/api/mail/queue?limit=10';
 const ALKAM_INGEST_KEY = 'BURAYA_CLOUDFLARE_ALKAM_GMAIL_INGEST_KEY';
 const ALKAM_DONE_LABEL = 'ALKAM_AKTARILDI';
 const ALKAM_ERROR_LABEL = 'ALKAM_AKTARIM_HATASI';
@@ -99,6 +100,7 @@ function alkamEkstreAktar() {
     }
   }
 
+  alkamKuyrukDurumuLogla_();
   console.log('ALKAM Gmail aktarim tamam. Mail: ' + sent + ', ek: ' + fileCount);
 }
 
@@ -118,6 +120,14 @@ function alkamTetikleyicileriSil() {
       ScriptApp.deleteTrigger(trigger);
     }
   }
+}
+
+function alkamKuyrukDurumuLogla_() {
+  const response = UrlFetchApp.fetch(ALKAM_QUEUE_ENDPOINT, {
+    method: 'get',
+    muteHttpExceptions: true
+  });
+  console.log('ALKAM kuyruk kontrol: HTTP ' + response.getResponseCode() + ' ' + response.getContentText().slice(0, 500));
 }
 
 function getOrCreateLabel_(name) {
