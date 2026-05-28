@@ -85,7 +85,7 @@ function telegramQueueMissing() {
     configured: true,
     storageConfigured: false,
     error: "Telegram kuyrugu icin Cloudflare KV binding gerekli: TELEGRAM_QUEUE."
-  });
+  }, 503);
 }
 
 function mailQueueStore(env) {
@@ -98,7 +98,7 @@ function mailQueueMissing() {
     configured: false,
     storageConfigured: false,
     error: "Mail kuyrugu icin Cloudflare KV binding gerekli: MAIL_QUEUE veya TELEGRAM_QUEUE."
-  });
+  }, 503);
 }
 
 function mailQueueKey(id) {
@@ -339,7 +339,7 @@ async function gmailImport(request, env) {
     });
     queued++;
   }
-  return json({ ok: true, configured: true, queued, duplicate, files });
+  return json({ ok: true, configured: true, storageConfigured: true, queued, duplicate, files });
 }
 
 async function mailStatus(request, env) {
