@@ -669,6 +669,7 @@
   };
 
   window.refreshAll = function(){
+    repairUnsafeBankOcrApprovals();
     renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderCashModules(); renderTelegramPanel(); renderHistoryImportPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects(); cleanupLegacyTelegramPanels();
   };
 
@@ -2078,6 +2079,40 @@
     const sign=raw.trim().startsWith("-") ? -1 : 1;
     return sign * num(raw.replace(/^[-+]/,""));
   }
+  function bankOcrMoneyTokens(text){
+    const re=/[-+]?\s*(?:\d{1,3}(?:[.\s]\d{3})+|\d+)(?:,\d{1,2})?\s*(?:TL|₺)?/gi;
+    return [...String(text||"").matchAll(re)].map(m=>{
+      const raw=String(m[0]||"").trim();
+      const hasCurrency=/TL|₺/i.test(raw);
+      const hasGroup=/\d[.\s]\d{3}/.test(raw);
+      const signed=/^\s*[-+]/.test(raw);
+      const value=num(raw.replace(/^\s*[-+]\s*/,""));
+      const sign=raw.trim().startsWith("-") ? -1 : 1;
+      return {raw,index:m.index||0,value:sign*value,abs:Math.abs(value),signed,hasCurrency,hasGroup};
+    }).filter(x=>x.abs>0 && x.abs<100000000 && (x.hasCurrency || x.hasGroup || x.signed) && x.abs!==2026 && x.abs>10);
+  }
+  function extractBankOcrTxnAmount(ctx){
+    const s=cleanText(ctx||"");
+    const tokens=bankOcrMoneyTokens(ctx);
+    const signed=tokens.filter(x=>x.signed && (x.hasCurrency || x.hasGroup || x.abs>=100));
+    const category =
+      /nakit yatan|yatirilan para|yatırılan para/.test(s) ? "in" :
+      /nakit cekilen|nakit çekilen|kredi tahsis|ekstre ucreti|ekstre ücreti|para transferi/.test(s) ? "signedOrOut" :
+      /tahsilat|gelen|yatan/.test(s) ? "in" : "";
+    if(signed.length){
+      const t=signed[0];
+      return {amount:t.value, confidence:75, note:`işlem tutarı işaretli okundu: ${t.raw}`};
+    }
+    if(category==="in" && tokens.length){
+      const t=tokens[0];
+      return {amount:Math.abs(t.value), confidence:62, note:`giriş işlemi olarak okundu: ${t.raw}`};
+    }
+    if(category==="signedOrOut" && tokens.length){
+      const t=tokens[0];
+      return {amount:-Math.abs(t.value), confidence:55, note:`çıkış/masraf işlemi olarak okundu: ${t.raw}`};
+    }
+    return {amount:0, confidence:0, note:"OCR satırında işlem tutarı bakiye tutarından güvenle ayrılamadı"};
+  }
   function bankOcrDateFromLine(line){
     const s=cleanText(line||"");
     const day=(s.match(/\b([0-3]?\d)\b/)||[])[1];
@@ -2097,22 +2132,23 @@
     const rows=[];
     for(let i=0;i<scanLines.length;i++){
       const line=scanLines[i];
-      const amount=parseSignedMoneyText(line);
-      if(!amount) continue;
       const ctx=[scanLines[i-2],scanLines[i-1],line,scanLines[i+1]].filter(Boolean).join(" ");
       if(!/para transferi|nakit|diğer|diger|kredi|ekstre|yemek|yatirilan|yatırılan|cekilen|çekilen|islem|işlem/i.test(ctx)) continue;
+      const parsed=extractBankOcrTxnAmount(ctx);
+      const amount=parsed.amount;
+      if(!amount) continue;
       const positive=amount>0;
       const match=detectCari(ctx);
       rows.push({
         id:uid("APR-OCR-BANK"),
         cariId:match?.cari?.id||"",
         amount:Math.abs(amount),
-        score:Math.max(45,match?.score||45),
+        score:Math.max(parsed.confidence||45,match?.score||45),
         type:positive?"Tahsilat":"Hesap Hareketi",
         source:"Banka OCR",
         accountId:"banka",
         date:bankOcrDateFromLine(ctx),
-        reason:ctx,
+        reason:`${ctx} · ${parsed.note}`,
         status:"Bekliyor",
         createdAt:new Date().toLocaleString("tr-TR"),
         attachments:[attachment],
@@ -2125,6 +2161,41 @@
       seen.add(r.traceId);
       return true;
     });
+  }
+  function repairUnsafeBankOcrApprovals(){
+    if(window.__alkamBankOcrRepairRunning) return;
+    window.__alkamBankOcrRepairRunning=true;
+    let changed=false;
+    (state.approvals||[]).forEach(a=>{
+      if(a.status!=="Bekliyor") return;
+      if(!/banka ocr/i.test(String(a.source||""))) return;
+      if(!a.reason || String(a.reason).includes("işlem tutarı işaretli okundu") || String(a.reason).includes("giriş işlemi olarak okundu") || String(a.reason).includes("çıkış/masraf işlemi olarak okundu")) return;
+      const parsed=extractBankOcrTxnAmount(a.reason);
+      if(!parsed.amount) {
+        a.score=Math.min(num(a.score)||45,45);
+        a.reviewStatus="Kontrol Gerekli";
+        a.aiReason="OCR işlem tutarı bakiye tutarından güvenle ayrılamadı.";
+        changed=true;
+        return;
+      }
+      const fixed=Math.abs(parsed.amount);
+      if(Math.abs(num(a.amount)-fixed)>0.009 || !a.aiReason){
+        a.amount=fixed;
+        a.type=parsed.amount>0?"Tahsilat":"Hesap Hareketi";
+        a.score=Math.max(parsed.confidence||45,Math.min(num(a.score)||45,75));
+        a.reviewStatus=a.cariId&&a.score>=70?"Onaya Hazır":"Kontrol Gerekli";
+        a.aiIntent=parsed.amount>0?"banka_ocr_giris":"banka_ocr_cikis";
+        a.aiReason=parsed.note;
+        a.reason=`${a.reason} · ${parsed.note}`;
+        a.traceId=a.traceId||importHash(["BANK-OCR-REPAIR",a.date,a.reason,a.amount]);
+        changed=true;
+      }
+    });
+    if(changed){
+      writeJson(LS.approvals,state.approvals);
+      logAudit("Banka OCR tutar güvenlik düzeltmesi", "Mevcut OCR adayları işlem tutarı / bakiye ayrımıyla yeniden işaretlendi.", "Kontrol");
+    }
+    window.__alkamBankOcrRepairRunning=false;
   }
   window.ocrTelegramAttachment=async function(fileId,fileName,mimeType){
     try{
