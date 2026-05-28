@@ -196,7 +196,7 @@ function extractMailAttachments(raw, queueKey) {
 
 function classifyMailDocument(subject, raw, attachmentNames) {
   const hay = `${subject || ""} ${attachmentNames.join(" ")} ${raw || ""}`.toLocaleLowerCase("tr-TR");
-  if (/moka|pos|taksit/.test(hay)) return "moka";
+  if (/\bmoka\b|sanal\s+pos|\bpos\b|taksit/.test(hay)) return "moka";
   if (/halkbank|banka|hesap|ekstre|dekont|vadesiz/.test(hay)) return "bank";
   if (attachmentNames.some(x => /\.(xlsx|xls|csv)$/i.test(x))) return "statement";
   return "mail";

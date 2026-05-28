@@ -1442,10 +1442,29 @@
     const buf=await res.arrayBuffer();
     return XLSX.read(buf,{type:"array",cellDates:true});
   }
+  async function mailAttachmentBlob(att){
+    if(!att?.storageKey) throw new Error("Mail eki için dosya anahtarı yok.");
+    const res=await fetch(`/api/mail/file?key=${encodeURIComponent(att.storageKey)}&name=${encodeURIComponent(att.fileName||"mail-ekstre")}`,{cache:"no-store"});
+    if(!res.ok) throw new Error("Mail eki indirilemedi.");
+    return res.blob();
+  }
   async function telegramAttachmentBlob(fileId,fileName){
     const res=await fetch(`/api/telegram/file?id=${encodeURIComponent(fileId)}&name=${encodeURIComponent(fileName||"telegram-dosya")}`,{cache:"no-store"});
     if(!res.ok) throw new Error("Telegram dosyası indirilemedi.");
     return res.blob();
+  }
+  async function pdfTextFromBlob(blob){
+    const pdfjs=window.pdfjsLib;
+    if(!pdfjs) throw new Error("PDF okuyucu yüklenmedi.");
+    const data=await blob.arrayBuffer();
+    const pdf=await pdfjs.getDocument({data}).promise;
+    const chunks=[];
+    for(let pageNo=1;pageNo<=pdf.numPages;pageNo++){
+      const page=await pdf.getPage(pageNo);
+      const content=await page.getTextContent();
+      chunks.push(content.items.map(x=>x.str||"").join(" "));
+    }
+    return chunks.join("\n");
   }
   async function pdfFirstPageImage(blob){
     const pdfjs=window.pdfjsLib;
@@ -1465,6 +1484,15 @@
     const source=/pdf/i.test(`${fileName||""} ${mimeType||""}`) ? await pdfFirstPageImage(blob) : blob;
     const result=await Tesseract.recognize(source,"tur+eng");
     return (result?.data?.text||"").trim();
+  }
+  async function mailPdfText(att){
+    const blob=await mailAttachmentBlob(att);
+    let text="";
+    try{text=await pdfTextFromBlob(blob);}catch(err){logAudit("Mail PDF metni okunamadı", `${att.fileName||"PDF"} · ${err?.message||err}`, "Kontrol");}
+    if(!text || cleanText(text).length<30){
+      text=await ocrBlobText(blob,att.fileName||"mail-ekstre.pdf",att.mimeType||"application/pdf");
+    }
+    return text||"";
   }
   function telegramRecordKey(row){
     const attachmentKey=(row.attachments||[]).map(a=>a.uniqueId||a.fileId||a.fileName||"").filter(Boolean).join("|");
@@ -2340,6 +2368,27 @@
   window.previewMokaFile=function(){readWorkbookFromInput("mokaFile",(wb,name)=>{const parsed=parseMokaWorkbook(wb);state.importPreview=[...parsed.rows,...state.importPreview.filter(x=>x.kind!=="moka")];state.mokaPlans=parsed.plans;writeJson(LS.importPreview,state.importPreview);writeJson(LS.mokaPlans,state.mokaPlans);logAudit("Moka ön izleme ve ödeme takvimi oluşturuldu",`${name} · ${parsed.rows.length} işlem · ${parsed.plans.length} taksit`);refreshAll();notify(`${parsed.rows.length} Moka işlemi ve ${parsed.plans.length} taksit planı oluşturuldu.`);});};
   window.previewMailHalkbankFile=function(){readWorkbookFromInput("mailHalkbankFile",(wb,name)=>{const parsed=stampMailImportRows(parseHalkbankWorkbook(wb),"bank",name);state.importPreview=[...parsed,...state.importPreview.filter(x=>x.kind!=="bank")];writeJson(LS.importPreview,state.importPreview);logAudit("Mail Halkbank ekstresi ön izleme",`${name} · ${parsed.length} kayıt`);refreshAll();notify(`${parsed.length} mail Halkbank kaydı ön izlemeye alındı.`);});};
   window.previewMailMokaFile=function(){readWorkbookFromInput("mailMokaFile",(wb,name)=>{const parsed=parseMokaWorkbook(wb);const rows=stampMailImportRows(parsed.rows,"moka",name);const plans=(parsed.plans||[]).map(p=>({...p,deliverySource:"Mail Ekstresi",uploadFileName:name||""}));state.importPreview=[...rows,...state.importPreview.filter(x=>x.kind!=="moka")];state.mokaPlans=plans;writeJson(LS.importPreview,state.importPreview);writeJson(LS.mokaPlans,state.mokaPlans);logAudit("Mail Moka ekstresi ön izleme ve ödeme takvimi",`${name} · ${rows.length} işlem · ${plans.length} taksit`);refreshAll();notify(`${rows.length} mail Moka işlemi ve ${plans.length} taksit planı oluşturuldu.`);});};
+  async function addMailBankPdfToApprovals(mail,att){
+    const attachment={kind:"mail",fileId:att.storageKey||"",storageKey:att.storageKey||"",fileName:att.fileName||"mail-ekstre.pdf",mimeType:att.mimeType||"application/pdf"};
+    const text=await mailPdfText(att);
+    const rows=parseBankOcrRows(text,attachment).map(r=>({
+      ...r,
+      source:"Halkbank Mail PDF",
+      reason:`${r.reason||""} · Mail: ${mail.subject||""}`.trim(),
+      traceId:importHash(["MAIL-PDF",mail.id||mail.queueKey||"",att.storageKey||att.fileName||"",r.date,r.reason,r.amount])
+    }));
+    if(!rows.length) return 0;
+    const known=knownImportHashes();
+    const fresh=rows.filter(r=>!known.has(r.traceId));
+    fresh.forEach(r=>{
+      state.approvals.unshift(r);
+      state.importHashes.push(r.traceId);
+    });
+    writeJson(LS.approvals,state.approvals);
+    writeJson(LS.importHashes,state.importHashes);
+    logAudit("Mail Halkbank PDF Onay Merkezi'ne alındı", `${att.fileName||"PDF"} · ${fresh.length} yeni · ${rows.length-fresh.length} mükerrer`);
+    return rows.length;
+  }
   window.checkMailStatementStatus=async function(){
     try{
       const res=await fetch(`/api/mail/status?v=${Date.now()}`,{cache:"no-store"});
@@ -2361,6 +2410,7 @@
       for(const mail of mails){
         const attachments=Array.isArray(mail.attachments)?mail.attachments:[];
         const excelAttachments=attachments.filter(a=>/\.(xlsx|xls|csv)$/i.test(a.fileName||"") && a.storageKey);
+        const pdfAttachments=attachments.filter(a=>/\.pdf$/i.test(a.fileName||"") && a.storageKey);
         let fileParsed=false;
         for(const att of excelAttachments){
           try{
@@ -2385,6 +2435,18 @@
             logAudit("Mail eki okunamadı", `${att.fileName||"ek"} · ${fileErr?.message||fileErr}`, "Kontrol");
           }
         }
+        for(const att of pdfAttachments){
+          try{
+            const count=await addMailBankPdfToApprovals(mail,att);
+            if(count>0){
+              parsed+=count;
+              files++;
+              fileParsed=true;
+            }
+          }catch(pdfErr){
+            logAudit("Mail PDF okunamadı", `${att.fileName||"PDF"} · ${pdfErr?.message||pdfErr}`, "Kontrol");
+          }
+        }
         if(!fileParsed){
           const text=[mail.subject, mail.text, attachments.map(a=>a.fileName).join(" ")].filter(Boolean).join("\n");
           const row=buildTelegramRecord(text);
@@ -2398,13 +2460,15 @@
           row.traceId=importHash(["MAIL",mail.id||mail.queueKey||"",row.source,row.text,row.amount]);
           row.mailQueueKey=mail.queueKey||"";
           if(row.amount>0){
-            parsed += queueTelegramRecord(row) ? 1 : 0;
+            const queued=queueTelegramRecord(row);
+            parsed += queued ? 1 : 0;
+            fileParsed = queued || fileParsed;
           }else{
             rememberTelegram({...row,type:"Mail Ekstresi",score:0,amount:0,text:`Mail ekstresi alındı: ${mail.subject||"Ekstre"} ${attachments.map(a=>a.fileName).join(" ")}`});
           }
         }
         added++;
-        if(mail.queueKey) ackKeys.push(mail.queueKey);
+        if(fileParsed && mail.queueKey) ackKeys.push(mail.queueKey);
       }
       writeJson(LS.importPreview,state.importPreview);
       writeJson(LS.mokaPlans,state.mokaPlans);
