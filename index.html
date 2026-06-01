@@ -2533,6 +2533,7 @@
         <div><b>Kaynak ayrımı</b>Mail / Telegram / Dosya ayrı gösterilir.</div>
       </div>
       <div class="btn-row" style="margin-bottom:10px">
+        <button class="btn btn-blue" onclick="fetchMailAndStageImports()">Mailden Oku + Onaya Hazırla</button>
         <button class="btn btn-green" onclick="fetchMailStatementQueue()">Gmail Kuyruğunu Çek</button>
         <button class="btn btn-soft" onclick="checkMailStatementStatus()">Gmail Otomasyon Durumu</button>
       </div>
@@ -2885,6 +2886,20 @@
       return {ok:false,added:0,files:0,parsed:0,error:err?.message||String(err)};
     }
   };
+  window.fetchMailAndStageImports=async function(){
+    const beforePreview=(state.importPreview||[]).length, beforeApprovals=(state.approvals||[]).length, beforeAccounts=(state.accountTxns||[]).length;
+    const result=await fetchMailStatementQueue(true);
+    if(!result.ok) return notify("Mail kuyruğu okunamadı; Gmail otomasyon durumunu kontrol edin.");
+    const newPreview=(state.importPreview||[]).length-beforePreview;
+    if((state.importPreview||[]).some(r=>!r.archive&&!r.duplicate)){
+      sendImportPreviewToApproval();
+      const addedApprovals=(state.approvals||[]).length-beforeApprovals, addedAccounts=(state.accountTxns||[]).length-beforeAccounts;
+      notify(`Mail işlendi: ${result.added} mail · ${result.files} dosya · Hesap ${addedAccounts} · Onay ${addedApprovals}. Cari kesin kayıt için Onay Merkezi bekler.`);
+    }else{
+      refreshAll();
+      notify(`Mail kontrol edildi: ${result.added} mail · ${result.files} dosya · yeni onaylanabilir kayıt yok. Ön izleme farkı: ${newPreview}.`);
+    }
+  };
   window.clearImportPreview=function(){state.importPreview=[];writeJson(LS.importPreview,state.importPreview);logAudit("İçe aktarma ön izlemesi temizlendi","Halkbank/Moka");refreshAll();};
   window.setApprovalCari=function(id,value){
     const a=state.approvals.find(x=>x.id===id);if(!a)return;
@@ -3073,41 +3088,90 @@
     const d=new Date(periodDate(period)+"T12:00:00");
     return d.toLocaleDateString("tr-TR",{month:"long",year:"numeric"}).toLocaleUpperCase("tr-TR");
   }
+  function addMonths(period,delta){
+    const [y,m]=String(period||periodInputDefault()).slice(0,7).split("-").map(Number);
+    const d=new Date(y,(m||1)-1+(delta||0),1,12,0,0);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+  }
+  function monthSequence(start,end){
+    let cur=String(start||periodInputDefault()).slice(0,7), stop=String(end||cur).slice(0,7);
+    if(cur>stop){const tmp=cur;cur=stop;stop=tmp;}
+    const out=[];
+    for(let i=0;i<240 && cur<=stop;i++,cur=addMonths(cur,1)) out.push(cur);
+    return out;
+  }
   function accrualExists(c, period, amount){
     return allTxns(c).some(t=>{
       const samePeriod=String(t.date||"").slice(0,7)===period;
       const sameAmount=Math.abs(num(t.debit)-num(amount))<0.01;
       const isAccrual=String(t.type||"").toLocaleLowerCase("tr-TR").includes("tahakkuk") || String(t.source||"").toLocaleLowerCase("tr-TR").includes("tahakkuk");
       return samePeriod && sameAmount && isAccrual;
-    }) || state.approvals.some(a=>a.status==="Bekliyor" && a.cariId===c.id && a.type==="Tahakkuk" && String(a.date||"").slice(0,7)===period && Math.abs(num(a.amount)-num(amount))<0.01);
+    }) || state.approvals.some(a=>!isRejectedApproval(a) && a.cariId===c.id && a.type==="Tahakkuk" && String(a.date||"").slice(0,7)===period && Math.abs(num(a.amount)-num(amount))<0.01);
   }
   function monthlyAccrualCandidates(){
     const period=byId("accrualPeriod")?.value || periodInputDefault();
     return state.cariler.filter(c=>!c.deleted).map(c=>({c,amount:num(c.monthlyFee),period})).filter(x=>x.amount>0 && !accrualExists(x.c,x.period,x.amount));
   }
+  function accrualRangeCandidates(){
+    const mode=byId("accrualMode")?.value||"single";
+    if(mode==="single") return monthlyAccrualCandidates();
+    const start=byId("accrualStart")?.value || LIVE_START_DATE.slice(0,7);
+    const end=byId("accrualEnd")?.value || periodInputDefault();
+    const rows=[];
+    monthSequence(start,end).forEach(period=>{
+      state.cariler.filter(c=>!c.deleted).forEach(c=>{
+        const amount=num(c.monthlyFee);
+        if(amount>0 && !accrualExists(c,period,amount)) rows.push({c,amount,period});
+      });
+    });
+    return rows;
+  }
+  function accrualRangeExistingCount(){
+    const mode=byId("accrualMode")?.value||"single";
+    const periods=mode==="single" ? [byId("accrualPeriod")?.value || periodInputDefault()] : monthSequence(byId("accrualStart")?.value || LIVE_START_DATE.slice(0,7), byId("accrualEnd")?.value || periodInputDefault());
+    let count=0;
+    state.cariler.filter(c=>!c.deleted && num(c.monthlyFee)>0).forEach(c=>periods.forEach(p=>{if(accrualExists(c,p,num(c.monthlyFee))) count++;}));
+    return count;
+  }
   function renderAccrualPanel(){
     const el=byId("accrualPanel"); if(!el) return;
     const period=byId("accrualPeriod")?.value || periodInputDefault();
-    const rows=monthlyAccrualCandidates();
+    const mode=byId("accrualMode")?.value||"single";
+    const start=byId("accrualStart")?.value || LIVE_START_DATE.slice(0,7);
+    const end=byId("accrualEnd")?.value || periodInputDefault();
+    const rows=accrualRangeCandidates();
     const total=rows.reduce((s,x)=>s+x.amount,0);
+    const periods=mode==="single"?1:monthSequence(start,end).length;
+    const existing=accrualRangeExistingCount();
     el.innerHTML=`
-      <h2 class="section-title">Aylık Tahakkuk Önizleme</h2>
-      <div class="rule-box" style="margin-bottom:12px">Bu işlem doğrudan cari ekstresine yazmaz. Aktif ücret bulunan cariler için ${esc(periodName(period))} tahakkuk adaylarını Onay Merkezi'ne gönderir; mükerrer dönem/tutar kontrolü yapılır.</div>
+      <h2 class="section-title">Toplu Tahakkuk Kontrol Merkezi</h2>
+      <div class="rule-box" style="margin-bottom:12px">Her tahakkuk ayın <strong>1. günü</strong> tarihli aday olarak hazırlanır. Bu ekran doğrudan cari ekstresine yazmaz; önce Onay Merkezi'ne gönderir ve aynı cari/dönem/tutar için mükerrer aday üretmez.</div>
       <div class="grid-3">
-        <div class="field"><label>Dönem</label><input id="accrualPeriod" type="month" value="${esc(period)}" onchange="renderAccrualPanel()" /></div>
-        <div class="metric-mini"><div class="k">Aday Cari</div><div class="v">${rows.length}</div></div>
-        <div class="metric-mini"><div class="k">Toplam Tahakkuk</div><div class="v">${money(total)}</div></div>
+        <div class="field"><label>İşlem Tipi</label><select id="accrualMode" onchange="renderAccrualPanel()"><option value="single" ${mode==="single"?"selected":""}>Tek ay</option><option value="range" ${mode==="range"?"selected":""}>Ay aralığı</option></select></div>
+        <div class="field"><label>Tek Ay</label><input id="accrualPeriod" type="month" value="${esc(period)}" onchange="renderAccrualPanel()" /></div>
+        <div class="field"><label>Aralık</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="accrualStart" type="month" value="${esc(start)}" onchange="renderAccrualPanel()" /><input id="accrualEnd" type="month" value="${esc(end)}" onchange="renderAccrualPanel()" /></div></div>
       </div>
-      <div class="btn-row" style="margin:10px 0 12px"><button class="btn btn-green" onclick="sendMonthlyAccrualsToApproval()">Önizlemeyi Onaya Gönder</button><button class="btn btn-soft" onclick="renderAccrualPanel()">Yenile</button></div>
-      <div class="mini-list">${rows.length?rows.slice(0,12).map(x=>`<div class="mini-row"><strong>${esc(x.c.name)}</strong><br>${esc(periodName(x.period))} aylık muhasebe ücreti · ${money(x.amount)}</div>`).join(""):`<div class="empty">Bu dönem için yeni tahakkuk adayı yok. Ücretler sıfır olabilir veya kayıtlar zaten hazırlanmış olabilir.</div>`}</div>`;
+      <div class="compact-status">
+        <div class="compact-card"><span>Dönem</span><strong>${periods}</strong><p class="muted-note">${mode==="single"?esc(periodName(period)):`${esc(start)} / ${esc(end)}`}</p></div>
+        <div class="compact-card"><span>Onaya Hazır</span><strong>${rows.length}</strong><p class="muted-note">Mükerrer olmayan aday</p></div>
+        <div class="metric-mini"><div class="k">Toplam Tahakkuk</div><div class="v">${money(total)}</div></div>
+        <div class="compact-card"><span>Zaten Var / Bekliyor</span><strong>${existing}</strong><p class="muted-note">Tekrar üretilmez</p></div>
+        <div class="compact-card"><span>Tarih Standardı</span><strong>01</strong><p class="muted-note">Her ayın 1'i</p></div>
+      </div>
+      <div class="btn-row" style="margin:10px 0 12px"><button class="btn btn-green" onclick="sendMonthlyAccrualsToApproval()">Tahakkukları Onay Merkezi'ne Gönder</button><button class="btn btn-soft" onclick="renderAccrualPanel()">Yenile</button></div>
+      <div class="mini-list">${rows.length?rows.slice(0,24).map(x=>`<div class="mini-row"><strong>${esc(x.c.name)}</strong><br>${esc(periodName(x.period))} aylık muhasebe ücreti · ${money(x.amount)} · Tarih ${esc(periodDate(x.period))}</div>`).join(""):`<div class="empty">Bu seçim için yeni tahakkuk adayı yok. Ücretler sıfır olabilir veya kayıtlar zaten hazırlanmış/onaya gönderilmiş olabilir.</div>`}</div>`;
   }
   window.sendMonthlyAccrualsToApproval=function(){
-    const rows=monthlyAccrualCandidates();
+    const rows=accrualRangeCandidates();
     if(!rows.length) return notify("Onaya gönderilecek tahakkuk adayı yok.");
     rows.forEach(x=>{
-      state.approvals.unshift({id:uid("APR-TAH"),cariId:x.c.id,amount:x.amount,score:100,type:"Tahakkuk",source:"Otomasyon Tahakkuk",date:periodDate(x.period),reason:`${periodName(x.period)} aylık muhasebe ücreti tahakkuku`,status:"Bekliyor",createdAt:new Date().toLocaleString("tr-TR")});
+      const traceId=importHash(["TAHAKKUK",x.c.id,x.period,x.amount]);
+      state.approvals.unshift({id:uid("APR-TAH"),cariId:x.c.id,amount:x.amount,score:100,type:"Tahakkuk",source:"Otomasyon Tahakkuk",date:periodDate(x.period),reason:`${periodName(x.period)} aylık muhasebe ücreti tahakkuku`,status:"Bekliyor",createdAt:new Date().toLocaleString("tr-TR"),traceId,importHash:traceId});
+      state.importHashes.push(traceId);
     });
+    state.importHashes=[...new Set(state.importHashes)].slice(-5000);
     writeJson(LS.approvals,state.approvals);
+    writeJson(LS.importHashes,state.importHashes);
     logAudit("Aylık tahakkuk önizlemesi onaya aktarıldı", `${rows.length} cari · ${money(rows.reduce((s,x)=>s+x.amount,0))}`);
     refreshAll();
     notify(`${rows.length} tahakkuk adayı Onay Merkezi'ne eklendi.`);
