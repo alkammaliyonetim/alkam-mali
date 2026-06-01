@@ -700,6 +700,7 @@
 
   window.refreshAll = function(){
     repairUnsafeBankOcrApprovals();
+    repairApprovedAccrualLedgerLinks();
     renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderCashModules(); renderTelegramPanel(); renderHistoryImportPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects(); cleanupLegacyTelegramPanels();
   };
 
@@ -2370,6 +2371,33 @@
       logAudit("Banka OCR tutar güvenlik düzeltmesi", "Mevcut OCR adayları işlem tutarı / bakiye ayrımıyla yeniden işaretlendi.", "Kontrol");
     }
     window.__alkamBankOcrRepairRunning=false;
+  }
+  function isApprovedStatus(v){
+    return /^onayland[ıi]$/i.test(String(v||"").trim());
+  }
+  function repairApprovedAccrualLedgerLinks(){
+    if(window.__alkamApprovedAccrualRepairRunning) return;
+    window.__alkamApprovedAccrualRepairRunning=true;
+    let changed=false, repaired=0, skipped=0;
+    (state.approvals||[]).forEach(a=>{
+      if(!isApprovedStatus(a.status) || a.type!=="Tahakkuk" || !a.cariId || num(a.amount)<=0) return;
+      const traceId=txTraceId(a)||a.traceId||a.importHash||a.id;
+      const linked=(state.manualTxns||[]).some(t=>String(t.approvalId||"")===String(a.id) || String(t.traceId||"")===String(traceId) || String(t.importHash||"")===String(a.importHash||""));
+      if(linked) return;
+      const ledgerDate=approvalLedgerDate(a);
+      const c=state.cariler.find(x=>x.id===a.cariId && !x.deleted);
+      if(!c) return;
+      const duplicate=findExistingCariDuplicate({date:ledgerDate,amount:a.amount,debit:a.amount,credit:0,type:a.type,cariId:a.cariId,desc:a.reason,source:a.source});
+      if(duplicate){skipped++; return;}
+      state.manualTxns.push({id:uid("APP-REPAIR"),cariId:a.cariId,date:ledgerDate,type:"TAHAKKUK",debit:num(a.amount),credit:0,source:a.source||"Onay Merkezi",description:a.reason||"Onay merkezi tahakkuk kaydı",docNo:traceId,traceId,importHash:a.importHash||"",legacyImportHash:a.legacyImportHash||"",approvalId:a.id,sourceRowId:a.sourceRowId||"",repairedFromApproval:true});
+      repaired++;
+      changed=true;
+    });
+    if(changed){
+      writeJson(LS.manual,state.manualTxns);
+      logAudit("Onaylı tahakkuk defter senkronu", `${repaired} eksik tahakkuk cariye işlendi · ${skipped} mükerrer atlandı`, "Kontrol");
+    }
+    window.__alkamApprovedAccrualRepairRunning=false;
   }
   window.ocrTelegramAttachment=async function(fileId,fileName,mimeType){
     try{
