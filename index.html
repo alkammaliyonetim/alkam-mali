@@ -179,6 +179,7 @@
         <div class="card"><div class="card-label">Toplam Alacak</div><div id="kpiCredit" class="card-value">0,00 TL</div></div>
         <div class="card"><div class="card-label">Net Bakiye</div><div id="kpiBalance" class="card-value">0,00 TL</div></div>
       </div>
+      <div id="dashboardFinanceStatement"></div>
       <div class="grid-2">
         <div class="section"><h2 class="section-title">En Borçlu / Riskli Cariler</h2><div id="dashboardTopCari"></div></div>
         <div class="section"><h2 class="section-title">Sistem Durumu</h2><div id="systemStatus" class="rule-box"></div></div>
@@ -511,6 +512,49 @@
       dueCount: open.filter(t=>isoDate(t.dueDate) && isoDate(t.dueDate)<=today()).length
     };
   }
+  function monthBounds(period){
+    const p=String(period||today().slice(0,7)).slice(0,7);
+    const [y,m]=p.split("-").map(Number);
+    const end=new Date(y,(m||1),0,12,0,0).toISOString().slice(0,10);
+    return {period:p,start:p+"-01",end};
+  }
+  function dateInRange(date,start,end){const d=isoDate(date);return !!d && d>=start && d<=end;}
+  function currentLedgerRows(){
+    const rows=[];
+    state.cariler.filter(c=>!c.deleted).forEach(c=>(c.transactions||[]).forEach(t=>rows.push({...t,cariId:c.id,cariName:c.name,ledger:"Ana Cari"})));
+    (state.manualTxns||[]).filter(t=>!t.deleted).forEach(t=>{const c=state.cariler.find(x=>x.id===t.cariId);rows.push({...t,cariName:c?.name||"",ledger:t.approvalId?"Onaylı Defter":"Cari Defter"});});
+    return rows;
+  }
+  function cashExpenseRows(){
+    const rows=[];
+    Object.entries(state.cashRecords||{}).forEach(([module,list])=>(Array.isArray(list)?list:[]).forEach(r=>rows.push({...r,module})));
+    return rows;
+  }
+  function isPaidStatus(v){return /(ödendi|odendi|tahsil edildi|tamamlandı|tamamlandi|kapandı|kapandi)/i.test(String(v||""));}
+  function isTaxText(v){return /(kdv|gelir vergisi|geçici vergi|gecici vergi|stopaj|muhtasar|vergi)/i.test(String(v||""));}
+  function financialStatement(period){
+    const b=monthBounds(period), ledger=currentLedgerRows().filter(t=>dateInRange(t.date,b.start,b.end));
+    const accountRows=(state.accountTxns||[]).filter(t=>dateInRange(t.date,b.start,b.end));
+    const cashRows=cashExpenseRows().filter(r=>dateInRange(r.date,b.start,b.end));
+    const accrual=ledger.reduce((s,t)=>s+num(t.debit),0);
+    const collection=ledger.reduce((s,t)=>s+num(t.credit),0);
+    const expenseAccrual=cashRows.reduce((s,r)=>{
+      if(/calisanlar/i.test(r.module||"") && r.recordType==="salary" && r.payrollType==="Ödeme") return s;
+      return s+num(r.amount);
+    },0);
+    const paidByCash=cashRows.filter(r=>isPaidStatus(r.status)||r.payrollType==="Ödeme").reduce((s,r)=>s+num(r.amount),0);
+    const paidByAccounts=accountRows.filter(r=>r.dir==="cikis").reduce((s,r)=>s+num(r.amount),0);
+    const paid=paidByCash+paidByAccounts;
+    const taxAccrual=[...ledger,...cashRows].filter(r=>isTaxText(`${r.description||""} ${r.desc||""} ${r.note||""} ${r.party||""} ${r.type||""}`)).reduce((s,r)=>s+num(r.debit||r.amount),0);
+    const taxPaid=[...accountRows,...cashRows].filter(r=>isTaxText(`${r.desc||""} ${r.note||""} ${r.party||""} ${r.source||""}`) && (r.dir==="cikis"||isPaidStatus(r.status))).reduce((s,r)=>s+num(r.amount),0);
+    const grossProfit=accrual-expenseAccrual, remaining=Math.max(0,expenseAccrual-paid);
+    return {period:b.period,start:b.start,end:b.end,accrual,collection,expenseAccrual,paid,remaining,grossProfit,taxAccrual,taxPaid,netProfit:grossProfit-taxAccrual,ledgerCount:ledger.length,accountCount:accountRows.length,cashCount:cashRows.length};
+  }
+  function renderDashboardFinanceStatement(){
+    const el=byId("dashboardFinanceStatement"); if(!el)return;
+    const f=financialStatement(today().slice(0,7));
+    el.innerHTML=`<div class="section"><div class="topbar" style="margin-bottom:10px"><div><h2 class="section-title">Bu Ay Gelir ve Finans Tablosu</h2><p class="muted-note">${esc(f.start)} / ${esc(f.end)} · cari defter, hesap hareketleri ve nakit yönetimi aynı ay motorundan hesaplanır.</p></div></div><div class="cards"><div class="card"><div class="card-label">Bu Ay Tahakkuk</div><div class="card-value">${money(f.accrual)}</div></div><div class="card"><div class="card-label">Bu Ay Tahsilat</div><div class="card-value">${money(f.collection)}</div></div><div class="card"><div class="card-label">Gider Tahakkuku</div><div class="card-value">${money(f.expenseAccrual)}</div></div><div class="card"><div class="card-label">Bu Ay Ödenen</div><div class="card-value">${money(f.paid)}</div></div><div class="card"><div class="card-label">Bu Ay Kalan</div><div class="card-value">${money(f.remaining)}</div></div><div class="card"><div class="card-label">Brüt Kar</div><div class="card-value">${money(f.grossProfit)}</div></div><div class="card"><div class="card-label">KDV / Vergi Tahakkuku</div><div class="card-value">${money(f.taxAccrual)}</div></div><div class="card"><div class="card-label">KDV / Vergi Ödemesi</div><div class="card-value">${money(f.taxPaid)}</div></div><div class="card"><div class="card-label">Tahakkuka Göre Kazanç</div><div class="card-value">${money(f.netProfit)}</div></div></div><div class="rule-box">Kontrol: ${f.ledgerCount} cari hareketi · ${f.accountCount} hesap hareketi · ${f.cashCount} nakit yönetimi kaydı okundu. Vergi alanları yalnızca KDV/Gelir Vergisi/Stopaj olarak etiketlenmiş kayıtlardan gelir.</div></div>`;
+  }
   function slug(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("cari");}
   function notify(msg){const el=byId("toast"); if(!el) return; el.textContent=msg; el.style.display="block"; clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>el.style.display="none",3000);}
   function logAudit(action, detail, level="Kaydedildi"){const list=readJson(LS.audit,[]); list.unshift({at:new Date().toISOString(), action, detail, level}); writeJson(LS.audit, list.slice(0,500)); renderAuditList();}
@@ -712,6 +756,7 @@
     byId("kpiDebit").textContent = money(debit);
     byId("kpiCredit").textContent = money(credit);
     byId("kpiBalance").textContent = balanceLabel(bal);
+    renderDashboardFinanceStatement();
     byId("sideConn").textContent = state.cariler.length ? `${state.dataSource} • ${activeCariler.length} aktif cari` : (state.loadError ? "Hata: "+state.loadError : "Yükleniyor...");
     byId("connState").textContent = activeCariler.length ? `${activeCariler.length} cari yüklü` : "Cari bekleniyor";
     const top = rows.sort((a,b)=>Math.abs(b.bal)-Math.abs(a.bal)).slice(0,8);
@@ -2373,7 +2418,7 @@
     window.__alkamBankOcrRepairRunning=false;
   }
   function isApprovedStatus(v){
-    return /^onayland[ıi]$/i.test(String(v||"").trim());
+    return /onayland/i.test(String(v||"").trim());
   }
   function repairApprovedAccrualLedgerLinks(){
     if(window.__alkamApprovedAccrualRepairRunning) return;
@@ -2389,7 +2434,7 @@
       if(!c) return;
       const duplicate=findExistingCariDuplicate({date:ledgerDate,amount:a.amount,debit:a.amount,credit:0,type:a.type,cariId:a.cariId,desc:a.reason,source:a.source});
       if(duplicate){skipped++; return;}
-      state.manualTxns.push({id:uid("APP-REPAIR"),cariId:a.cariId,date:ledgerDate,type:"TAHAKKUK",debit:num(a.amount),credit:0,source:a.source||"Onay Merkezi",description:a.reason||"Onay merkezi tahakkuk kaydı",docNo:traceId,traceId,importHash:a.importHash||"",legacyImportHash:a.legacyImportHash||"",approvalId:a.id,sourceRowId:a.sourceRowId||"",repairedFromApproval:true});
+      state.manualTxns.push({id:uid("APP-REPAIR"),cariId:a.cariId,date:ledgerDate,type:"TAHAKKUK",debit:num(a.amount),credit:0,source:"Onaylı Eşleşme",description:a.reason||"Onay merkezi tahakkuk kaydı",docNo:traceId,traceId,importHash:a.importHash||"",legacyImportHash:a.legacyImportHash||"",approvalId:a.id,sourceRowId:a.sourceRowId||"",repairedFromApproval:true,approvedLedger:true,sourceApprovalStatus:a.status});
       repaired++;
       changed=true;
     });
@@ -3099,6 +3144,7 @@
     const rejected=isRejectedApproval(a);
     if(filter==="rejected") return rejected;
     if(rejected) return false;
+    if(a.status!=="Bekliyor") return false;
     const src=cleanText(a.source||""), type=cleanText(a.type||"");
     const fromTelegram=/telegram/.test(src) || a.originChannel==="Telegram" || !!a.telegramUpdateId;
     if(filter==="bank") return !fromTelegram && (/halkbank|banka|hesap hareketi/.test(src) || a.accountId==="banka");
@@ -3122,7 +3168,7 @@
     const rows=state.approvals||[];
     const filter=window.__alkamApprovalFilter||"all";
     const filtered=rows.filter(a=>approvalFilterMatch(a,filter)).slice().sort(approvalSort);
-    const activeRows=rows.filter(a=>!isRejectedApproval(a));
+    const activeRows=rows.filter(a=>a.status==="Bekliyor");
     const waiting=activeRows.filter(a=>a.status==="Bekliyor");
     const ready=waiting.filter(a=>a.cariId && num(a.score)>=90 && num(a.amount)>0);
     const risk=waiting.filter(a=>!a.cariId || num(a.score)<70 || num(a.amount)<=0);
@@ -3180,9 +3226,9 @@
       return notify("Mükerrer kayıt engellendi: cari ekstresinde zaten var.");
     }
     if(credit>0 && !a.accountId) return notify("Tahsilat için hedef hesap seçilmeli: Kasa, Banka, Moka United, Çek, Senet, Kredi Kartı veya Diğer Kasa.");
-    state.manualTxns.push({id:uid("APP"),cariId:a.cariId,date:ledgerDate,type:a.type.toUpperCase(),debit,credit,source:a.source||"Onay Merkezi",description:a.reason||"Onay merkezi kaydı",docNo:traceId,traceId,importHash:a.importHash||"",legacyImportHash:a.legacyImportHash||"",approvalId:a.id,sourceRowId:a.sourceRowId||""});
+    state.manualTxns.push({id:uid("APP"),cariId:a.cariId,date:ledgerDate,type:a.type.toUpperCase(),debit,credit,source:"Onaylı Eşleşme",description:a.reason||"Onay merkezi kaydı",docNo:traceId,traceId,importHash:a.importHash||"",legacyImportHash:a.legacyImportHash||"",approvalId:a.id,sourceRowId:a.sourceRowId||"",approvedLedger:true});
     if(a.accountId && credit>0){
-      state.accountTxns.push({id:uid("APP-ACC"),accountId:a.accountId,date:ledgerDate,dir:"giris",amount:a.amount,source:a.source||"Onay Merkezi",desc:a.reason||"Onay merkezi tahsilat kaydı",cariId:a.cariId,postedToCari:true,traceId,importHash:a.importHash||"",legacyImportHash:a.legacyImportHash||"",approvalId:a.id,sourceRowId:a.sourceRowId||""});
+      state.accountTxns.push({id:uid("APP-ACC"),accountId:a.accountId,date:ledgerDate,dir:"giris",amount:a.amount,source:"Onaylı Eşleşme",desc:a.reason||"Onay merkezi tahsilat kaydı",cariId:a.cariId,postedToCari:true,traceId,importHash:a.importHash||"",legacyImportHash:a.legacyImportHash||"",approvalId:a.id,sourceRowId:a.sourceRowId||"",approvedLedger:true});
       state.selectedAccountId=a.accountId;
       writeJson(LS.accountTxns,state.accountTxns);
     }
@@ -3192,7 +3238,7 @@
     refreshAll();
   };
   window.rejectItem=function(id){const a=state.approvals.find(x=>x.id===id);if(!a)return;a.status="Reddedildi";a.rejectedAt=new Date().toLocaleString("tr-TR");writeJson(LS.approvals,state.approvals);logAudit("Onay kaydı reddedildi", a.reason||id, "Reddedildi");refreshAll();notify("Kayıt aktif listeden Reddedilen Arşiv sekmesine taşındı.");};
-  window.clearApproved=function(){state.approvals=state.approvals.filter(a=>a.status==="Bekliyor"||isRejectedApproval(a));writeJson(LS.approvals,state.approvals);refreshAll();notify("Onaylanan kayıtlar temizlendi; reddedilen arşiv korundu.");};
+  window.clearApproved=function(){repairApprovedAccrualLedgerLinks();state.approvals=state.approvals.filter(a=>a.status==="Bekliyor"||isRejectedApproval(a));writeJson(LS.approvals,state.approvals);refreshAll();notify("Onaylanan kayıtlar defter bağlantısı kontrol edilerek listeden kaldırıldı; reddedilen arşiv korundu.");};
 
   function periodInputDefault(){return today().slice(0,7);}
   function periodDate(period){return (period||periodInputDefault())+"-01";}
