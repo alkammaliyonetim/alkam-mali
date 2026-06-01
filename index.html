@@ -3053,13 +3053,19 @@
     writeJson(LS.approvals,state.approvals);
     renderApprovals();
   };
+  function canSplitAnnualApproval(a){
+    return a && a.status==="Bekliyor" && a.type==="Tahakkuk" && num(a.amount)>=12 && !!a.cariId;
+  }
+  function approvalSplitButton(a){
+    return canSplitAnnualApproval(a) ? `<button class="btn btn-amber" onclick="splitApprovalToMonthly('${esc(a.id)}',12)">12 Aya Böl</button>` : "";
+  }
   function approvalStatusClass(a){
     if(a.status!=="Bekliyor") return "approval-row-blocked";
     if(!a.cariId || num(a.score)<70 || num(a.amount)<=0) return "approval-row-risk";
     return "approval-row-pending";
   }
   function isRejectedApproval(a){
-    return /reddedildi|iptal|mükerrer|mukerrer/i.test(String(a?.status||""));
+    return /reddedildi|iptal|mükerrer|mukerrer|bölündü|bolundu/i.test(String(a?.status||""));
   }
   function approvalFilterMatch(a,filter){
     const rejected=isRejectedApproval(a);
@@ -3103,7 +3109,7 @@
     const mail=latestMailRecord(), processed=latestProcessedRecord();
     const mailLine=mail?`${esc(mail.source)} · ${esc(mail.stage)} · ${esc(mail.date||"-")} · ${money(mail.amount)}`:"Mail kaydı yok";
     const processedLine=processed?`${esc(processed.status)} · ${esc(processed.date||"-")} · ${money(processed.amount)}`:"İşlenmiş kayıt yok";
-    const table=filtered.map(a=>{const ledgerDate=approvalLedgerDate(a);const c=state.cariler.find(x=>x.id===a.cariId);const ai=a.aiReason?`<br><span class="muted-note">AI karar: ${esc(a.aiIntent||"-")} · ${esc(a.aiReason)}</span>`:"";return`<tr class="${approvalStatusClass(a)}"><td>${traceBadge(a)}</td><td><strong>${esc(ledgerDate)}</strong><br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td><div class="approval-cari-main">${c?esc(c.name):approvalCariCell(a)}</div>${!c&&!isRejectedApproval(a)?`<span class="tag amber">EŞLEŞME BEKLEYEN</span>`:""}</td><td><span class="tag ${a.type==="Tahsilat"?"green":a.type==="Tahakkuk"?"red":"purple"}">${esc(a.type)}</span></td><td>${approvalOriginLabel(a)}<br><span class="muted-note">Kaynak: ${esc(a.source)}</span>${approvalAccountCell(a)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td class="approval-reason">${esc(a.reason||"")}${ai}${approvalAttachmentHtml(a)}</td><td><div class="approval-actions">${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button><button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</div></td></tr>`}).join("");
+    const table=filtered.map(a=>{const ledgerDate=approvalLedgerDate(a);const c=state.cariler.find(x=>x.id===a.cariId);const ai=a.aiReason?`<br><span class="muted-note">AI karar: ${esc(a.aiIntent||"-")} · ${esc(a.aiReason)}</span>`:"";return`<tr class="${approvalStatusClass(a)}"><td>${traceBadge(a)}</td><td><strong>${esc(ledgerDate)}</strong><br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td><div class="approval-cari-main">${c?esc(c.name):approvalCariCell(a)}</div>${!c&&!isRejectedApproval(a)?`<span class="tag amber">EŞLEŞME BEKLEYEN</span>`:""}</td><td><span class="tag ${a.type==="Tahsilat"?"green":a.type==="Tahakkuk"?"red":"purple"}">${esc(a.type)}</span></td><td>${approvalOriginLabel(a)}<br><span class="muted-note">Kaynak: ${esc(a.source)}</span>${approvalAccountCell(a)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td class="approval-reason">${esc(a.reason||"")}${ai}${approvalAttachmentHtml(a)}</td><td><div class="approval-actions">${a.status==="Bekliyor"?`${approvalSplitButton(a)}<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button><button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</div></td></tr>`}).join("");
     el.className="section approval-board";
     el.innerHTML=`
       <div class="approval-board-head">
@@ -3186,6 +3192,32 @@
       return samePeriod && sameAmount && isAccrual;
     }) || state.approvals.some(a=>!isRejectedApproval(a) && a.cariId===c.id && a.type==="Tahakkuk" && String(a.date||"").slice(0,7)===period && Math.abs(num(a.amount)-num(amount))<0.01);
   }
+  window.splitApprovalToMonthly=function(id,months=12){
+    const a=state.approvals.find(x=>x.id===id); if(!a)return;
+    const c=state.cariler.find(x=>x.id===a.cariId && !x.deleted);
+    if(!c) return notify("12 aya bölmek için cari seçili olmalı.");
+    if(a.status!=="Bekliyor" || a.type!=="Tahakkuk") return notify("Sadece bekleyen tahakkuk kaydı aylara bölünebilir.");
+    const count=Math.max(1,Math.min(24,num(months)||12));
+    const monthly=Math.round((num(a.amount)/count)*100)/100;
+    if(monthly<=0) return notify("Bölünecek tahakkuk tutarı geçersiz.");
+    const start=String(approvalLedgerDate(a)||today()).slice(0,7);
+    const createdAt=new Date().toLocaleString("tr-TR");
+    const fresh=[];
+    monthSequence(start,addMonths(start,count-1)).forEach(period=>{
+      if(accrualExists(c,period,monthly)) return;
+      const traceId=importHash(["SPLIT-ACCRUAL",txTraceId(a)||a.id,period,c.id,monthly]);
+      fresh.push({id:uid("APR-SPLIT"),cariId:c.id,amount:monthly,score:100,type:"Tahakkuk",source:"Otomasyon Tahakkuk",date:periodDate(period),reason:`${periodName(period)} aylık muhasebe ücreti tahakkuku (yıllık kayıttan bölündü)`,status:"Bekliyor",createdAt,traceId,importHash:traceId,splitFrom:a.id});
+    });
+    if(!fresh.length) return notify("Bu dönemler için aylık tahakkuk zaten var veya onaya alınmış.");
+    a.status="Bölündü";
+    a.splitAt=createdAt;
+    a.splitInto=fresh.map(x=>x.id);
+    state.approvals=[...fresh,...state.approvals];
+    writeJson(LS.approvals,state.approvals);
+    logAudit("Yıllık tahakkuk aylara bölündü", `${c.name} · ${money(a.amount)} -> ${fresh.length} x ${money(monthly)}`, "Tahakkuk");
+    refreshAll();
+    notify(`${fresh.length} aylık tahakkuk Onay Merkezi'ne alındı. Orijinal yıllık kayıt kapatıldı.`);
+  };
   function monthlyAccrualCandidates(){
     const period=byId("accrualPeriod")?.value || periodInputDefault();
     return state.cariler.filter(c=>!c.deleted).map(c=>({c,amount:num(c.monthlyFee),period})).filter(x=>x.amount>0 && !accrualExists(x.c,x.period,x.amount));
