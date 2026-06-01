@@ -962,8 +962,78 @@
     refreshAll();
   };
 
+  function mokaInstallmentCountFromText(text){
+    const m=cleanText(text||"").match(/(\d{1,2})\s*taksit/);
+    return Math.max(1,Math.min(36,m?num(m[1]):1));
+  }
+  function ensureMokaPlansFromAccountTxns(){
+    const known=new Set((state.mokaPlans||[]).map(x=>x.scheduleHash||`${x.sourceImportHash}-${x.installment}`).filter(Boolean));
+    const fresh=[];
+    state.accountTxns.filter(t=>t.accountId==="moka-united" && t.dir==="giris" && num(t.amount)>0).forEach(t=>{
+      const trace=txTraceId(t)||t.id;
+      if((state.mokaPlans||[]).some(p=>p.sourceImportHash===trace || p.txId===trace)) return;
+      const inst=mokaInstallmentCountFromText(t.desc||"");
+      const part=num(t.amount)/inst;
+      const txDate=normalizeImportDate(t.date)||today();
+      const linked=state.cariler.find(c=>c.id===t.cariId);
+      for(let n=1;n<=inst;n++){
+        const dueDate=addDays(txDate,40*n);
+        const scheduleHash=importHash(["MOKA-ACC-TAKSIT",trace,n,dueDate,part]);
+        if(known.has(scheduleHash)) continue;
+        known.add(scheduleHash);
+        fresh.push({id:uid("MOKA-ACC"),txId:trace,installment:n,installmentCount:inst,dueDate,amount:part,bankMatched:false,bankHash:"",scheduleHash,sourceImportHash:trace,cardHolder:"",serviceName:linked?.name||"",cariId:t.cariId||"",cariName:linked?.name||"",gross:num(t.amount),net:num(t.amount),txDate,source:"Moka United Hesap",accountTxnId:t.id,desc:t.desc||""});
+      }
+    });
+    if(fresh.length){
+      state.mokaPlans=[...state.mokaPlans,...fresh];
+      writeJson(LS.mokaPlans,state.mokaPlans);
+      logAudit("Moka hesap hareketinden taksit planı üretildi", `${fresh.length} taksit satırı`);
+    }
+    return fresh.length;
+  }
+  function mokaPeriodRange(period){
+    const base=today(), now=new Date(base+"T00:00:00");
+    if(period==="today") return {label:"Bugün",start:base,end:base,mode:"closed"};
+    if(period==="week"){const d=new Date(now);d.setDate(d.getDate()+7);return {label:"Bu hafta",start:base,end:d.toISOString().slice(0,10),mode:"closed"};}
+    if(period==="month"){const m=window.__mokaDueMonth||base.slice(0,7);return {label:"Seçili ay",start:`${m}-01`,end:addDays(`${m}-01`,32).slice(0,7)+"-01",mode:"openEnd"};}
+    if(period==="year"){const y=window.__mokaDueYear||base.slice(0,4);return {label:"Seçili yıl",start:`${y}-01-01`,end:`${y}-12-31`,mode:"closed"};}
+    if(period==="overdue") return {label:"Geciken",start:"0000-01-01",end:addDays(base,-1),mode:"closed"};
+    return {label:"Tümü",start:"0000-01-01",end:"9999-12-31",mode:"closed"};
+  }
+  function mokaPlanInRange(p,range){
+    const d=normalizeImportDate(p.dueDate);
+    if(!d) return false;
+    return range.mode==="openEnd" ? d>=range.start && d<range.end : d>=range.start && d<=range.end;
+  }
+  function mokaDueSummary(){
+    ensureMokaPlansFromAccountTxns();
+    const open=(state.mokaPlans||[]).filter(p=>!p.bankMatched);
+    const base=today(), now=new Date(base+"T00:00:00"), weekEnd=new Date(now);
+    weekEnd.setDate(weekEnd.getDate()+7);
+    return {
+      today: open.filter(p=>normalizeImportDate(p.dueDate)===base).reduce((s,p)=>s+num(p.amount),0),
+      week: open.filter(p=>{const d=new Date((normalizeImportDate(p.dueDate)||base)+"T00:00:00");return d>=now&&d<=weekEnd;}).reduce((s,p)=>s+num(p.amount),0),
+      month: open.filter(p=>monthKey(p.dueDate)===monthKey(base)).reduce((s,p)=>s+num(p.amount),0),
+      year: open.filter(p=>yearKey(p.dueDate)===yearKey(base)).reduce((s,p)=>s+num(p.amount),0),
+      overdue: open.filter(p=>normalizeImportDate(p.dueDate) && normalizeImportDate(p.dueDate)<base).reduce((s,p)=>s+num(p.amount),0),
+      total: open.reduce((s,p)=>s+num(p.amount),0),
+      count: open.length
+    };
+  }
+  function renderMokaDuePanel(){
+    const period=window.__mokaDuePeriod||"month", range=mokaPeriodRange(period), summary=mokaDueSummary();
+    const filtered=(state.mokaPlans||[]).filter(p=>!p.bankMatched && mokaPlanInRange(p,range)).sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)));
+    const filteredTotal=filtered.reduce((s,p)=>s+num(p.amount),0);
+    const rows=filtered.slice(0,160).map(p=>`<tr><td>${esc(p.dueDate)}</td><td>${esc(p.cariName||p.serviceName||"-")}<br><span class="muted-note">${esc(p.desc||p.txId||"")}</span></td><td>${esc(p.installment)} / ${esc(p.installmentCount)}</td><td class="text-right money">${money(p.amount)}</td><td><span class="tag amber">Bekliyor</span></td></tr>`).join("");
+    return `<div class="section moka-due-panel"><div class="topbar" style="margin-bottom:10px"><div><h2 class="section-title" style="margin-bottom:4px">Moka Ödeme Takvimi</h2><p class="muted-note">40 gün kuralına göre bankaya geçmesi beklenen taksitler. Bankaya geçenler eşleşince bekleyen listeden düşer.</p></div><div class="btn-row"><select class="select-input" style="width:150px" onchange="setMokaDuePeriod(this.value)"><option value="today" ${period==="today"?"selected":""}>Bugün</option><option value="week" ${period==="week"?"selected":""}>Bu hafta</option><option value="month" ${period==="month"?"selected":""}>Ay seç</option><option value="year" ${period==="year"?"selected":""}>Yıl seç</option><option value="overdue" ${period==="overdue"?"selected":""}>Geciken</option><option value="all" ${period==="all"?"selected":""}>Tümü</option></select><input class="search-input" style="width:150px" type="month" value="${esc(window.__mokaDueMonth||today().slice(0,7))}" onchange="setMokaDueMonth(this.value)" /><input class="search-input" style="width:100px" type="number" min="2022" max="2035" value="${esc(window.__mokaDueYear||today().slice(0,4))}" onchange="setMokaDueYear(this.value)" /></div></div><div class="compact-status"><div class="compact-card"><span>Bugün Gelecek</span><strong>${money(summary.today)}</strong></div><div class="compact-card"><span>Bu Hafta Gelecek</span><strong>${money(summary.week)}</strong></div><div class="compact-card"><span>Bu Ay Gelecek</span><strong>${money(summary.month)}</strong></div><div class="compact-card"><span>Bu Yıl Gelecek</span><strong>${money(summary.year)}</strong></div><div class="compact-card"><span>Toplam Bekleyen</span><strong>${money(summary.total)}</strong><p class="muted-note">${summary.count} taksit</p></div></div><div class="rule-box" style="margin-bottom:10px"><strong>${esc(range.label)}:</strong> ${filtered.length} taksit · ${money(filteredTotal)} beklenen Moka ödemesi.</div><div class="import-table-wrap">${rows?`<table><thead><tr><th>Vade</th><th>Cari / Açıklama</th><th>Taksit</th><th class="text-right">Tutar</th><th>Durum</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="empty">Bu dönemde bekleyen Moka ödemesi yok.</div>`}</div></div>`;
+  }
+  window.setMokaDuePeriod=function(v){window.__mokaDuePeriod=v||"month";renderAccounts();};
+  window.setMokaDueMonth=function(v){window.__mokaDueMonth=v||today().slice(0,7);window.__mokaDuePeriod="month";renderAccounts();};
+  window.setMokaDueYear=function(v){window.__mokaDueYear=v||today().slice(0,4);window.__mokaDuePeriod="year";renderAccounts();};
+
   function renderAccounts(){
     const tx=state.accountTxns;
+    ensureMokaPlansFromAccountTxns();
     if(!state.accounts.some(a=>a.id===state.selectedAccountId)) state.selectedAccountId=state.accounts[0]?.id||"kasa";
     byId("accountCards").innerHTML=state.accounts.map(a=>{
       const rows=tx.filter(t=>t.accountId===a.id);
@@ -984,6 +1054,7 @@
         <div class="metric-mini"><div class="k">Çıkış</div><div class="v">${money(cikis)}</div></div>
         <div class="metric-mini"><div class="k">Bakiye</div><div class="v">${money(accountBalance(selected.id))}</div></div>
       </div>
+      ${selected.id==="moka-united"?renderMokaDuePanel():""}
       ${selectedRows.length?`<table><thead><tr><th>İşlem ID</th><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Kaynak</th><th>Cari</th><th>Açıklama</th><th class="text-right">Tutar</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${accountStatementRows(selected.id).map(t=>{const linked=state.cariler.find(c=>c.id===t.cariId);return`<tr><td>${traceBadge(t)}</td><td>${esc(t.date)}</td><td>${esc(selected.name)}</td><td><span class="tag ${t.dir==="giris"?"green":"red"}">${t.dir==="giris"?"Giriş":"Çıkış"}</span></td><td>${esc(t.source||"-")}</td><td>${linked?esc(linked.name):"-"} ${t.postedToCari?'<span class="tag green">Cariye işlendi</span>':""}</td><td>${esc(t.desc||"")}</td><td class="text-right money">${money(t.amount)}</td><td class="text-right money">${money(t.runningBalance)}</td><td><button class="btn btn-red" onclick="deleteAccountTxn('${t.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Bu hesaba ait hareket yok.</div>`}`;
   }
 
