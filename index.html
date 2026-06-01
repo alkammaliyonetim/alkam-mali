@@ -2610,6 +2610,39 @@
     });
     return {rows:out.map(markArchiveImport).map(markImportDuplicate),plans};
   }
+  function mokaMailField(text, labels){
+    const raw=String(text||"").replace(/\r/g,"\n");
+    for(const label of labels){
+      const re=new RegExp(`${label}\\s*[:：]?\\s*([^\\n]+)`,`i`);
+      const m=raw.match(re);
+      if(m) return m[1].replace(/\s+/g," ").trim();
+    }
+    return "";
+  }
+  function parseMokaMailBody(mail){
+    const text=[mail.subject||"",mail.text||""].join("\n");
+    const known=knownImportHashes();
+    const txId=(text.match(/\b(\d{6,})\s+numaral[ıi]\s+[öo]demeye/i)||text.match(/(?:odeme|ödeme)\s*(?:id|no|numarası|numarasi)?\s*[:：]?\s*(\d{6,})/i)||[])[1]||mail.id||mail.queueKey||uid("MOKA-MAIL");
+    const date=normalizeImportDate(mokaMailField(text,["Ödeme Tarihi","Odeme Tarihi"]))||normalizeImportDate(mail.date)||today();
+    const serviceName=mokaMailField(text,["Hizmet Alan Kişi Adı","Hizmet Alan Kisi Adi","Hizmet Alan Kişi","Hizmet Alan Kisi"])||detectMokaServiceName(text);
+    const holder=mokaMailField(text,["Kart Sahibinin Adı","Kart Sahibinin Adi","Kart Sahibi"]);
+    const desc=mokaMailField(text,["Açıklama","Aciklama"])||`${serviceName||holder} Moka POS`;
+    const amount=num(mokaMailField(text,["Tutar","İşlem Tutarı","Islem Tutari","Ödeme Tutarı","Odeme Tutari"]))||detectAmount(text);
+    const commission=num(mokaMailField(text,["Bayi Komisyon Tutarı","Bayi Komisyon Tutari","Komisyon Tutarı","Komisyon Tutari"]));
+    const inst=installmentCount(mokaMailField(text,["Taksit Sayısı","Taksit Sayisi"]))||detectInstallmentCount(text);
+    if(!amount || amount<=0) return {rows:[],plans:[]};
+    const match=detectCari([serviceName,holder,desc].join(" "));
+    const hash=importHash(["MOKA-MAIL",txId,date,amount,inst,serviceName,holder]);
+    const legacyHash=importHash(["MOKA-MAIL",txId,date,amount,inst]);
+    const row={id:uid("MOKA-MAIL"),kind:"moka",source:"Moka United Mail",deliverySource:"Mail",originChannel:"Mail",uploadFileName:"Moka POS mail gövdesi",mailSubject:mail.subject||"",accountId:"moka-united",date,desc:`Moka POS maili · ${desc} · ${inst>1?inst+" taksit":"tek çekim"}`,amount,debit:0,credit:amount,gross:amount,commission,installmentCount:inst,cardHolder:holder,serviceName,txId,cariId:match?.cari?.id||"",cariName:match?.cari?.name||"",score:match?.score?Math.min(100,match.score+15):65,type:"Moka United",status:"Ön İzleme",duplicate:known.has(hash)||known.has(legacyHash),importHash:hash,legacyImportHash:legacyHash,mailQueueKey:mail.queueKey||""};
+    const plans=[];
+    for(let n=1;n<=inst;n++){
+      const dueDate=addDays(date,40*n), part=amount/inst, scheduleHash=importHash(["MOKA-MAIL-TAKSIT",txId,n,dueDate,part]);
+      plans.push({id:uid("MOKA-MAIL-SCH"),txId,installment:n,installmentCount:inst,dueDate,amount:part,bankMatched:false,bankHash:"",scheduleHash,sourceImportHash:hash,legacyImportHash:legacyHash,cardHolder:holder,serviceName,cariId:row.cariId,cariName:row.cariName,gross:amount,net:amount,txDate:date,source:"Moka United Mail",desc});
+    }
+    row.schedule=plans;
+    return {rows:[row].map(markArchiveImport).map(markImportDuplicate),plans};
+  }
   function matchMokaSchedules(){
     const bankRows=[...state.accountTxns,...state.importPreview.filter(x=>x.kind==="bank")].filter(x=>String(x.source||"").toLocaleLowerCase("tr-TR").includes("halkbank")||x.accountId==="banka");
     state.mokaPlans=state.mokaPlans.map(p=>{if(p.bankMatched)return p;const m=bankRows.find(b=>{const amount=Math.abs(num(b.amount||b.credit||b.debit)), desc=cleanText(b.desc||b.description||"");const dayDiff=Math.abs((new Date((normalizeImportDate(b.date)||today())+"T00:00:00")-new Date((p.dueDate||today())+"T00:00:00"))/86400000);return Math.abs(amount-num(p.amount))<1&&dayDiff<=7&&/moka|pos|batch|valor/.test(desc);});return m?{...p,bankMatched:true,bankHash:m.importHash||m.id,matchedAt:new Date().toLocaleString("tr-TR")}:p;});
@@ -2858,6 +2891,17 @@
             }
           }catch(pdfErr){
             logAudit("Mail PDF okunamadı", `${att.fileName||"PDF"} · ${pdfErr?.message||pdfErr}`, "Kontrol");
+          }
+        }
+        if(!fileParsed){
+          if(mail.docType==="moka" && /pos|moka|taksit|ödeme|odeme/i.test(`${mail.subject||""} ${mail.text||""}`)){
+            const parsedMokaMail=parseMokaMailBody(mail);
+            if(parsedMokaMail.rows.length){
+              state.importPreview=[...stampMailImportRows(parsedMokaMail.rows,"moka","Moka POS mail gövdesi"),...state.importPreview];
+              state.mokaPlans=[...state.mokaPlans,...parsedMokaMail.plans];
+              parsed+=parsedMokaMail.rows.length;
+              fileParsed=true;
+            }
           }
         }
         if(!fileParsed){

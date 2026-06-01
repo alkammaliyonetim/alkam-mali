@@ -30,15 +30,19 @@ function alkamEkstreAktar() {
 
   const doneLabel = getOrCreateLabel_(ALKAM_DONE_LABEL);
   const errorLabel = getOrCreateLabel_(ALKAM_ERROR_LABEL);
-  const query = [
-    'in:anywhere has:attachment',
-    // Labels are not excluded here: ALKAM/Worker duplicate keys prevent re-import.
-    // '-label:' + ALKAM_DONE_LABEL,
-    // '-label:' + ALKAM_ERROR_LABEL,
-    ALKAM_GMAIL_LOOKBACK
-  ].join(' ');
-
-  const threads = GmailApp.search(query, 0, ALKAM_MAX_THREADS);
+  const queries = [
+    ['in:anywhere has:attachment', ALKAM_GMAIL_LOOKBACK].join(' '),
+    ['in:anywhere (from:operations@mokaunited.com OR subject:"Pos Ödemesi" OR subject:"POS Ödemesi" OR moka)', ALKAM_GMAIL_LOOKBACK].join(' ')
+  ];
+  const seenThreads = {};
+  const threads = [];
+  queries.forEach(function(query) {
+    GmailApp.search(query, 0, ALKAM_MAX_THREADS).forEach(function(thread) {
+      if (seenThreads[thread.getId()]) return;
+      seenThreads[thread.getId()] = true;
+      threads.push(thread);
+    });
+  });
   let sent = 0;
   let fileCount = 0;
 
@@ -60,14 +64,16 @@ function alkamEkstreAktar() {
         });
         fileCount++;
       }
-      if (!attachments.length) continue;
+      const plainBody = message.getPlainBody().slice(0, 4000);
+      const isMokaBody = alkamMokaPosMailMi_(message, plainBody);
+      if (!attachments.length && !isMokaBody) continue;
       payloads.push({
         id: message.getId(),
         from: message.getFrom(),
         to: message.getTo(),
         subject: message.getSubject(),
         date: message.getDate().toISOString(),
-        plainBody: message.getPlainBody().slice(0, 4000),
+        plainBody: plainBody,
         attachments: attachments
       });
     }
@@ -102,6 +108,18 @@ function alkamEkstreAktar() {
 
   alkamKuyrukDurumuLogla_();
   console.log('ALKAM Gmail aktarim tamam. Mail: ' + sent + ', ek: ' + fileCount);
+}
+
+function alkamMokaPosMailMi_(message, plainBody) {
+  const hay = [
+    message.getFrom(),
+    message.getSubject(),
+    plainBody
+  ].join(' ').toLocaleLowerCase('tr-TR');
+  return hay.indexOf('moka united') >= 0 ||
+    hay.indexOf('pos ödemesi') >= 0 ||
+    hay.indexOf('pos odemesi') >= 0 ||
+    (hay.indexOf('taksit sayısı') >= 0 && hay.indexOf('ödeme tarihi') >= 0);
 }
 
 function alkamTetikleyiciKur() {
