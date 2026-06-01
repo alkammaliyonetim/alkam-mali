@@ -2484,7 +2484,7 @@
     return candidates[0]||null;
   }
   function lastMailPollText(){return localStorage.getItem("ALKAM_LAST_MAIL_POLL_AT") || "Henüz bu cihazda kontrol kaydı yok";}
-  function mailPollingInfo(){return "Gmail 5 dk · Program açıkken kuyruk 5 dk";}
+  function mailPollingInfo(){return "Gmail 10:00 · 14:00 · 18:00 / Program açıkken kuyruk 5 dk";}
   function knownImportHashes(){const set=new Set(state.importHashes||[]);state.accountTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);if(x.legacyImportHash)set.add(x.legacyImportHash);});state.approvals.forEach(x=>{if(x.importHash)set.add(x.importHash);if(x.legacyImportHash)set.add(x.legacyImportHash);});state.manualTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);if(x.legacyImportHash)set.add(x.legacyImportHash);});return set;}
   function markArchiveImport(row){
     if((normalizeImportDate(row.date)||"") < LIVE_START_DATE){

@@ -105,12 +105,15 @@ function alkamEkstreAktar() {
 }
 
 function alkamTetikleyiciKur() {
-  const exists = ScriptApp.getProjectTriggers().some(function(trigger) {
-    return trigger.getHandlerFunction() === 'alkamEkstreAktar';
+  alkamTetikleyicileriSil();
+  [10, 14, 18].forEach(function(hour) {
+    ScriptApp.newTrigger('alkamEkstreAktar')
+      .timeBased()
+      .everyDays(1)
+      .atHour(hour)
+      .nearMinute(0)
+      .create();
   });
-  if (!exists) {
-    ScriptApp.newTrigger('alkamEkstreAktar').timeBased().everyMinutes(5).create();
-  }
   alkamEkstreAktar();
 }
 
