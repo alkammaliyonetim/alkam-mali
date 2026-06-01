@@ -2994,6 +2994,21 @@
     }
     return `<span class="tag ${channel==="Telegram"?"purple":channel==="Mail"?"blue":"gray"}">${esc(channel)}</span>${file?`<br><span class="muted-note">Dosya: ${esc(file)}</span>`:""}${a.mailSubject?`<br><span class="muted-note">Mail: ${esc(a.mailSubject)}</span>`:""}`;
   }
+  function approvalAccountCell(a){
+    const current=a.accountId||"";
+    const opts=`<option value="">Hesap seç...</option>`+(state.accounts||[]).map(x=>`<option value="${esc(x.id)}" ${String(current)===String(x.id)?"selected":""}>${esc(x.name)} (${esc(accountTypeLabel(x.type))})</option>`).join("");
+    if(a.status!=="Bekliyor"){
+      const acc=(state.accounts||[]).find(x=>String(x.id)===String(a.accountId));
+      return `<br><span class="muted-note">Hedef hesap: ${acc?esc(acc.name):"-"}</span>`;
+    }
+    return `<div style="margin-top:6px"><span class="muted-note">Hedef hesap</span><select class="select-input" style="margin-top:4px;min-width:170px" onchange="setApprovalAccount('${esc(a.id)}',this.value)">${opts}</select></div>`;
+  }
+  window.setApprovalAccount=function(id,accountId){
+    const a=state.approvals.find(x=>x.id===id); if(!a)return;
+    a.accountId=accountId||"";
+    writeJson(LS.approvals,state.approvals);
+    renderApprovals();
+  };
   function approvalStatusClass(a){
     if(a.status!=="Bekliyor") return "approval-row-blocked";
     if(!a.cariId || num(a.score)<70 || num(a.amount)<=0) return "approval-row-risk";
@@ -3044,7 +3059,7 @@
     const mail=latestMailRecord(), processed=latestProcessedRecord();
     const mailLine=mail?`${esc(mail.source)} · ${esc(mail.stage)} · ${esc(mail.date||"-")} · ${money(mail.amount)}`:"Mail kaydı yok";
     const processedLine=processed?`${esc(processed.status)} · ${esc(processed.date||"-")} · ${money(processed.amount)}`:"İşlenmiş kayıt yok";
-    const table=filtered.map(a=>{const ledgerDate=approvalLedgerDate(a);const c=state.cariler.find(x=>x.id===a.cariId);const ai=a.aiReason?`<br><span class="muted-note">AI karar: ${esc(a.aiIntent||"-")} · ${esc(a.aiReason)}</span>`:"";return`<tr class="${approvalStatusClass(a)}"><td>${traceBadge(a)}</td><td><strong>${esc(ledgerDate)}</strong><br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td><div class="approval-cari-main">${c?esc(c.name):approvalCariCell(a)}</div>${!c&&!isRejectedApproval(a)?`<span class="tag amber">EŞLEŞME BEKLEYEN</span>`:""}</td><td><span class="tag ${a.type==="Tahsilat"?"green":a.type==="Tahakkuk"?"red":"purple"}">${esc(a.type)}</span></td><td>${approvalOriginLabel(a)}<br><span class="muted-note">Kaynak: ${esc(a.source)}</span></td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td class="approval-reason">${esc(a.reason||"")}${ai}${approvalAttachmentHtml(a)}</td><td><div class="approval-actions">${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button><button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</div></td></tr>`}).join("");
+    const table=filtered.map(a=>{const ledgerDate=approvalLedgerDate(a);const c=state.cariler.find(x=>x.id===a.cariId);const ai=a.aiReason?`<br><span class="muted-note">AI karar: ${esc(a.aiIntent||"-")} · ${esc(a.aiReason)}</span>`:"";return`<tr class="${approvalStatusClass(a)}"><td>${traceBadge(a)}</td><td><strong>${esc(ledgerDate)}</strong><br><span class="muted-note">Kayıt: ${esc(a.createdAt||"-")}</span></td><td><div class="approval-cari-main">${c?esc(c.name):approvalCariCell(a)}</div>${!c&&!isRejectedApproval(a)?`<span class="tag amber">EŞLEŞME BEKLEYEN</span>`:""}</td><td><span class="tag ${a.type==="Tahsilat"?"green":a.type==="Tahakkuk"?"red":"purple"}">${esc(a.type)}</span></td><td>${approvalOriginLabel(a)}<br><span class="muted-note">Kaynak: ${esc(a.source)}</span>${approvalAccountCell(a)}</td><td><span class="tag ${a.score>=90?"green":a.score>=70?"amber":"red"}">${a.score}%</span></td><td class="text-right money">${money(a.amount)}</td><td class="approval-reason">${esc(a.reason||"")}${ai}${approvalAttachmentHtml(a)}</td><td><div class="approval-actions">${a.status==="Bekliyor"?`<button class="btn btn-green" onclick="approveItem('${a.id}')">Onayla</button><button class="btn btn-red" onclick="rejectItem('${a.id}')">Reddet</button>`:`<span class="tag gray">${esc(a.status)}</span>`}</div></td></tr>`}).join("");
     el.className="section approval-board";
     el.innerHTML=`
       <div class="approval-board-head">
@@ -3086,6 +3101,7 @@
       refreshAll();
       return notify("Mükerrer kayıt engellendi: cari ekstresinde zaten var.");
     }
+    if(credit>0 && !a.accountId) return notify("Tahsilat için hedef hesap seçilmeli: Kasa, Banka, Moka United, Çek, Senet, Kredi Kartı veya Diğer Kasa.");
     state.manualTxns.push({id:uid("APP"),cariId:a.cariId,date:ledgerDate,type:a.type.toUpperCase(),debit,credit,source:a.source||"Onay Merkezi",description:a.reason||"Onay merkezi kaydı",docNo:traceId,traceId,importHash:a.importHash||"",legacyImportHash:a.legacyImportHash||"",approvalId:a.id,sourceRowId:a.sourceRowId||""});
     if(a.accountId && credit>0){
       state.accountTxns.push({id:uid("APP-ACC"),accountId:a.accountId,date:ledgerDate,dir:"giris",amount:a.amount,source:a.source||"Onay Merkezi",desc:a.reason||"Onay merkezi tahsilat kaydı",cariId:a.cariId,postedToCari:true,traceId,importHash:a.importHash||"",legacyImportHash:a.legacyImportHash||"",approvalId:a.id,sourceRowId:a.sourceRowId||""});
