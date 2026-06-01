@@ -2484,6 +2484,7 @@
     return candidates[0]||null;
   }
   function lastMailPollText(){return localStorage.getItem("ALKAM_LAST_MAIL_POLL_AT") || "Henüz bu cihazda kontrol kaydı yok";}
+  function mailPollingInfo(){return "Gmail 5 dk · Program açıkken kuyruk 5 dk";}
   function knownImportHashes(){const set=new Set(state.importHashes||[]);state.accountTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);if(x.legacyImportHash)set.add(x.legacyImportHash);});state.approvals.forEach(x=>{if(x.importHash)set.add(x.importHash);if(x.legacyImportHash)set.add(x.legacyImportHash);});state.manualTxns.forEach(x=>{if(x.importHash)set.add(x.importHash);if(x.legacyImportHash)set.add(x.legacyImportHash);});return set;}
   function markArchiveImport(row){
     if((normalizeImportDate(row.date)||"") < LIVE_START_DATE){
@@ -2543,9 +2544,9 @@
       </div>
       <div class="mail-flow" style="margin-bottom:10px">
         <div><b>Son mail kontrolü</b>${esc(lastMailPollText())}</div>
+        <div><b>Otomatik kontrol</b>${esc(mailPollingInfo())}</div>
         <div><b>Son mail kaydı</b>${mailStatus}</div>
         <div><b>İşlem ID</b>${mail?traceBadge(mail):"-"}</div>
-        <div><b>Kaynak ayrımı</b>Mail / Telegram / Dosya ayrı gösterilir.</div>
       </div>
       <div class="btn-row" style="margin-bottom:10px">
         <button class="btn btn-blue" onclick="fetchMailAndStageImports()">Mailden Oku + Onaya Hazırla</button>
@@ -3052,7 +3053,7 @@
       </div>
       <div class="approval-safe-note">Güvenli akış aktif: kaynak, cari eşleşmesi, tutar, tarih, mükerrer kontrolü ve güven puanı görülmeden hiçbir kayıt cariye kesin hareket olarak yazılmaz.</div>
       <div class="compact-status" style="padding:0 16px 14px;margin-bottom:0">
-        <div class="compact-card"><span>Son Mail Kontrolü</span><strong style="font-size:15px">${esc(lastMailPollText())}</strong></div>
+        <div class="compact-card"><span>Son Mail Kontrolü</span><strong style="font-size:15px">${esc(lastMailPollText())}</strong><small>${esc(mailPollingInfo())}</small></div>
         <div class="compact-card"><span>Son Mail Kaydı</span><strong style="font-size:15px">${mailLine}</strong></div>
         <div class="compact-card"><span>Son İşlenen Kayıt</span><strong style="font-size:15px">${processedLine}</strong></div>
         <div class="compact-card"><span>Reddedilen Arşiv</span><strong>${rejectedCount}</strong></div>
