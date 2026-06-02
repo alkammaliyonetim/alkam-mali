@@ -808,7 +808,8 @@
     const tableRows = rows.map((t,i)=>{
       const tip = String(t.type||"").toLocaleLowerCase("tr-TR");
       const klass = tip.includes("tahakkuk") || num(t.debit)>0 ? "row-tahakkuk" : num(t.credit)>0 ? "row-tahsilat" : "row-neutral";
-      return `<tr class="${klass}"><td>${esc(t.docNo||t.id||t.statementIndex||i+1)}</td><td>${esc(t.date)}</td><td><span class="source-badge ${sourceClass(t.source)}">${esc(t.source||"Ana Veri")}</span></td><td>${esc(t.type||"-")}</td><td class="desc">${esc(t.description||"-")}</td><td class="text-right money">${money(t.debit)}</td><td class="text-right money">${money(t.credit)}</td><td class="text-right money">${balanceLabel(t.runningBalance)}</td><td><button class="btn btn-soft" onclick="editTxn('${t.id}')">Düzenle</button> <button class="btn btn-red" onclick="deleteTxn('${t.id}')">Sil</button></td></tr>`;
+      const verified=t.ledgerVerified?`<br><span class="tag green">Doğrulandı</span>`:"";
+      return `<tr class="${klass}"><td>${esc(t.docNo||t.id||t.statementIndex||i+1)}${verified}</td><td>${esc(t.date)}</td><td><span class="source-badge ${sourceClass(t.source)}">${esc(t.source||"Ana Veri")}</span></td><td>${esc(t.type||"-")}</td><td class="desc">${esc(t.description||"-")}</td><td class="text-right money">${money(t.debit)}</td><td class="text-right money">${money(t.credit)}</td><td class="text-right money">${balanceLabel(t.runningBalance)}</td><td><button class="btn btn-soft" onclick="editTxn('${t.id}')">Düzenle</button> <button class="btn btn-red" onclick="deleteTxn('${t.id}')">Sil</button></td></tr>`;
     }).join("");
     byId("selectedCariDetail").innerHTML = `
       <div class="cari-sticky-header">
@@ -936,6 +937,41 @@
     if(b.docNo && a.id && String(b.docNo)===String(a.id)) return true;
     return false;
   }
+  function ensureTraceId(row,prefix){
+    if(!row) return "";
+    const existing=txTraceId(row);
+    if(existing){row.traceId=existing;return existing;}
+    row.traceId=uid(prefix||"FIN");
+    return row.traceId;
+  }
+  function verifyFinancialPosting(seed){
+    const traceId=ensureTraceId(seed,"FIN");
+    const amount=num(seed.amount||seed.debit||seed.credit);
+    const manual=(state.manualTxns||[]).find(t=>!t.deleted && linkedFinancialMatch(t,seed));
+    const account=(state.accountTxns||[]).find(t=>linkedFinancialMatch(t,seed));
+    const result={traceId, manual, account, ok:false, reason:""};
+    if(seed.requiresManual && !manual) result.reason="Cari defter satırı bulunamadı";
+    else if(seed.requiresAccount && !account) result.reason="Hesap defter satırı bulunamadı";
+    else if(seed.cariId && manual && String(manual.cariId)!==String(seed.cariId)) result.reason="Cari eşleşmesi tutarsız";
+    else if(seed.accountId && account && String(account.accountId)!==String(seed.accountId)) result.reason="Hesap eşleşmesi tutarsız";
+    else if(amount>0 && manual && Math.abs(num(manual.debit||manual.credit)-amount)>0.01) result.reason="Cari tutarı tutarsız";
+    else if(amount>0 && account && Math.abs(num(account.amount)-amount)>0.01) result.reason="Hesap tutarı tutarsız";
+    else {result.ok=true;result.reason="Defter satırı doğrulandı";}
+    return result;
+  }
+  function recordFinancialVerification(seed,scope){
+    const r=verifyFinancialPosting(seed);
+    const c=state.cariler.find(x=>String(x.id)===String(seed.cariId||r.manual?.cariId||""));
+    const acc=state.accounts.find(x=>String(x.id)===String(seed.accountId||r.account?.accountId||""));
+    const row={id:uid("VER"),ok:r.ok,scope:scope||"Finansal İşlem",approvalId:seed.approvalId||"",traceId:r.traceId,date:normalizeImportDate(seed.date||r.manual?.date||r.account?.date)||today(),amount:num(seed.amount||seed.debit||seed.credit),type:seed.type||seed.dir||"",cariName:c?.name||"",accountName:acc?.name||"",verifiedAt:new Date().toLocaleString("tr-TR"),manualTxnId:r.manual?.id||"",accountTxnId:r.account?.id||"",message:r.reason};
+    state.approvalVerifications=[row,...(state.approvalVerifications||[])].slice(0,150);
+    writeJson(LS.approvalVerifications,state.approvalVerifications);
+    if(seed.manualRow) seed.manualRow.ledgerVerified=r.ok;
+    if(seed.accountRow) seed.accountRow.ledgerVerified=r.ok;
+    if(r.ok) logAudit("Finansal işlem doğrulandı", `${scope||"İşlem"} · ${money(row.amount)} · ${r.traceId}`, "Doğrulandı");
+    else logAudit("Finansal işlem doğrulama hatası", `${scope||"İşlem"} · ${money(row.amount)} · ${r.reason}`, "Kontrol");
+    return row;
+  }
   function cancelLinkedFinancialChain(seed,reason){
     const removedManual=[];
     const removedAccounts=[];
@@ -992,8 +1028,11 @@
     let row = id ? findTxn(id) : null;
     if(!row){row={id:uid("MAN"), cariId, docNo:"MANUEL"}; state.manualTxns.push(row);}
     Object.assign(row,{cariId,date:byId("txDate").value||today(),type:byId("txType").value.toUpperCase(),debit:num(byId("txDebit").value),credit:num(byId("txCredit").value),source:byId("txSource").value,description:byId("txDesc").value});
+    ensureTraceId(row,"MAN");
     writeJson(LS.manual,state.manualTxns);
     writeJson(LS.cariler,state.cariler);
+    recordFinancialVerification({manualRow:row,requiresManual:true,cariId:row.cariId,date:row.date,amount:row.debit||row.credit,type:row.type,traceId:row.traceId},"Manuel Cari Hareketi");
+    writeJson(LS.manual,state.manualTxns);
     state.selectedCariId=cariId;
     logAudit(id?"Hareket düzenlendi":"Hareket kaydedildi", `${(state.cariler.find(c=>c.id===cariId)||{}).name||""} · ${money(row.debit||row.credit)}`);
     closeModal("txnModal");
@@ -1103,7 +1142,7 @@
         <div class="metric-mini"><div class="k">Bakiye</div><div class="v">${money(accountBalance(selected.id))}</div></div>
       </div>
       ${selected.id==="moka-united"?renderMokaDuePanel():""}
-      ${selectedRows.length?`<table><thead><tr><th>İşlem ID</th><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Kaynak</th><th>Cari</th><th>Açıklama</th><th class="text-right">Tutar</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${accountStatementRows(selected.id).map(t=>{const linked=state.cariler.find(c=>c.id===t.cariId);return`<tr><td>${traceBadge(t)}</td><td>${esc(t.date)}</td><td>${esc(selected.name)}</td><td><span class="tag ${t.dir==="giris"?"green":"red"}">${t.dir==="giris"?"Giriş":"Çıkış"}</span></td><td>${esc(t.source||"-")}</td><td>${linked?esc(linked.name):"-"} ${t.postedToCari?'<span class="tag green">Cariye işlendi</span>':""}</td><td>${esc(t.desc||"")}</td><td class="text-right money">${money(t.amount)}</td><td class="text-right money">${money(t.runningBalance)}</td><td><button class="btn btn-red" onclick="deleteAccountTxn('${t.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Bu hesaba ait hareket yok.</div>`}`;
+      ${selectedRows.length?`<table><thead><tr><th>İşlem ID</th><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Kaynak</th><th>Cari</th><th>Açıklama</th><th class="text-right">Tutar</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${accountStatementRows(selected.id).map(t=>{const linked=state.cariler.find(c=>c.id===t.cariId);return`<tr><td>${traceBadge(t)}${t.ledgerVerified?'<br><span class="tag green">Doğrulandı</span>':""}</td><td>${esc(t.date)}</td><td>${esc(selected.name)}</td><td><span class="tag ${t.dir==="giris"?"green":"red"}">${t.dir==="giris"?"Giriş":"Çıkış"}</span></td><td>${esc(t.source||"-")}</td><td>${linked?esc(linked.name):"-"} ${t.postedToCari?'<span class="tag green">Cariye işlendi</span>':""}</td><td>${esc(t.desc||"")}</td><td class="text-right money">${money(t.amount)}</td><td class="text-right money">${money(t.runningBalance)}</td><td><button class="btn btn-red" onclick="deleteAccountTxn('${t.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Bu hesaba ait hareket yok.</div>`}`;
   }
 
   window.seedMoka=function(){if(!state.accounts.some(a=>a.id==="moka-united"))state.accounts.push({id:"moka-united",name:"Moka United",type:"moka_united"});writeJson(LS.accounts,state.accounts);renderAccounts();notify("Moka United hesabı hazır.");};
@@ -1158,12 +1197,17 @@
     const baseDesc=byId("accDesc").value||"";
     const transferId=transferTarget?uid("TRF"):"";
     const row={id:uid("ACC"),accountId:sourceAccount,date,dir:byId("accDir").value,amount,source:transferTarget?"Hesap Transferi":byId("accSource").value,desc:transferTarget?`${baseDesc||"Hesaplar arası transfer"} -> ${targetName}`:baseDesc,cariId:transferTarget?"":(byId("accCari").value||""),postedToCari:false,transferId,targetAccountId:transferTarget};
+    ensureTraceId(row,"ACC");
     if(row.amount<=0) return notify("Hesap hareketi tutarı sıfır olamaz.");
     if(transferTarget && transferTarget===sourceAccount) return notify("Transfer için farklı bir karşı hesap seçilmeli.");
     state.accountTxns.push(row); writeJson(LS.accountTxns,state.accountTxns);
     if(transferTarget){
       const pairedDir=row.dir==="cikis"?"giris":"cikis";
-      state.accountTxns.push({id:uid("ACC"),accountId:transferTarget,date:row.date,dir:pairedDir,amount:row.amount,source:"Hesap Transferi",desc:`${baseDesc||"Hesaplar arası transfer"} <- ${sourceName}`,cariId:"",postedToCari:false,transferId,linkedAccountTxnId:row.id,targetAccountId:sourceAccount});
+      const paired={id:uid("ACC"),accountId:transferTarget,date:row.date,dir:pairedDir,amount:row.amount,source:"Hesap Transferi",desc:`${baseDesc||"Hesaplar arası transfer"} <- ${sourceName}`,cariId:"",postedToCari:false,transferId,linkedAccountTxnId:row.id,targetAccountId:sourceAccount,traceId:uid("ACC")};
+      state.accountTxns.push(paired);
+      writeJson(LS.accountTxns,state.accountTxns);
+      recordFinancialVerification({accountRow:row,requiresAccount:true,accountId:row.accountId,date:row.date,amount:row.amount,type:row.dir,traceId:row.traceId},"Hesap Transferi Çıkış/Giriş");
+      recordFinancialVerification({accountRow:paired,requiresAccount:true,accountId:paired.accountId,date:paired.date,amount:paired.amount,type:paired.dir,traceId:paired.traceId},"Hesap Transferi Karşı Hesap");
       writeJson(LS.accountTxns,state.accountTxns);
       state.selectedAccountId=row.accountId;
       logAudit("Hesaplar arası transfer kaydedildi", `${sourceName} -> ${targetName} · ${money(row.amount)} · ${transferId}`);
@@ -1175,12 +1219,20 @@
       const cariType=byId("accCariType").value;
       const credit = cariType==="Tahsilat" ? row.amount : 0;
       const debit = cariType==="Tahakkuk" ? row.amount : 0;
-      state.manualTxns.push({id:uid("ACC-CARI"),cariId:row.cariId,date:row.date,type:cariType.toUpperCase(),debit,credit,source:row.source||"Hesap Hareketi",description:row.desc||"Hesap hareketinden cari aktarım",docNo:row.id});
+      const manualRow={id:uid("ACC-CARI"),cariId:row.cariId,date:row.date,type:cariType.toUpperCase(),debit,credit,source:row.source||"Hesap Hareketi",description:row.desc||"Hesap hareketinden cari aktarım",docNo:row.id,traceId:row.traceId,linkedAccountTxnId:row.id};
+      state.manualTxns.push(manualRow);
       row.postedToCari=true;
+      writeJson(LS.manual,state.manualTxns);
+      writeJson(LS.accountTxns,state.accountTxns);
+      recordFinancialVerification({manualRow,accountRow:row,requiresManual:true,requiresAccount:true,cariId:row.cariId,accountId:row.accountId,date:row.date,amount:row.amount,type:cariType,traceId:row.traceId},"Hesaptan Cariye İşleme");
       writeJson(LS.manual,state.manualTxns);
       writeJson(LS.accountTxns,state.accountTxns);
       state.selectedCariId=row.cariId;
       logAudit("Hesap hareketi cariye işlendi", `${row.source} · ${money(row.amount)}`);
+    }
+    if(!row.postedToCari){
+      recordFinancialVerification({accountRow:row,requiresAccount:true,accountId:row.accountId,date:row.date,amount:row.amount,type:row.dir,traceId:row.traceId},"Hesap Hareketi");
+      writeJson(LS.accountTxns,state.accountTxns);
     }
     logAudit("Hesap hareketi kaydedildi", `${row.accountId} · ${money(row.amount)}`);
     closeModal("accountModal"); refreshAll(); notify("Hesap hareketi kaydedildi.");
@@ -1981,7 +2033,9 @@
     if(row.amount>0){
       const accountTrace=telegramApprovalTrace(row,"TG-ACC");
       if(!state.accountTxns.some(t=>txTraceId(t)===accountTrace)){
-        state.accountTxns.push({id:uid("TG-ACC"),accountId:row.accountId,date:today(),dir:"giris",amount:row.amount,source:row.source,desc:text,cariId:row.cariId,postedToCari:false,traceId:accountTrace,importHash:accountTrace});
+        const accountRow={id:uid("TG-ACC"),accountId:row.accountId,date:today(),dir:"giris",amount:row.amount,source:row.source,desc:text,cariId:row.cariId,postedToCari:false,traceId:accountTrace,importHash:accountTrace};
+        state.accountTxns.push(accountRow);
+        recordFinancialVerification({accountRow,requiresAccount:true,accountId:accountRow.accountId,date:accountRow.date,amount:accountRow.amount,type:accountRow.dir,traceId:accountRow.traceId},"Telegram Hesap Kaydı");
       }
       state.selectedAccountId=row.accountId;
       writeJson(LS.accountTxns,state.accountTxns);
@@ -3062,7 +3116,9 @@
       if(r.archive){archive++;return;}
       if(r.duplicate||alreadyKnown){skip++;return;}
       const dir=r.credit>0?"giris":"cikis";
-      state.accountTxns.push({id:uid("IMP-ACC"),accountId:r.accountId,date:r.date,dir,amount:r.amount,source:r.source,desc:r.desc,cariId:r.cariId||"",postedToCari:false,traceId:r.importHash,importHash:r.importHash,legacyImportHash:r.legacyImportHash||"",sourceRowId:r.id,createdAt:new Date().toLocaleString("tr-TR"),raw:r});
+      const accountRow={id:uid("IMP-ACC"),accountId:r.accountId,date:r.date,dir,amount:r.amount,source:r.source,desc:r.desc,cariId:r.cariId||"",postedToCari:false,traceId:r.importHash,importHash:r.importHash,legacyImportHash:r.legacyImportHash||"",sourceRowId:r.id,createdAt:new Date().toLocaleString("tr-TR"),raw:r};
+      state.accountTxns.push(accountRow);
+      recordFinancialVerification({accountRow,requiresAccount:true,accountId:accountRow.accountId,date:accountRow.date,amount:accountRow.amount,type:accountRow.dir,traceId:accountRow.traceId},"İçe Aktarma Hesap Kaydı");
       acc++;
       known.add(r.importHash);
       state.importHashes.push(r.importHash);
