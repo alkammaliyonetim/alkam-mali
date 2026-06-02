@@ -1162,7 +1162,7 @@
   }
   function accountingChainWarnings(){
     return state.approvals.filter(a=>{
-      if(a.status!=="Onaylandı" || !a.accountId || !isPaymentApproval(a)) return false;
+      if(!isApprovedStatus(a.status) || !a.accountId || !isPaymentApproval(a)) return false;
       const hasManual=state.manualTxns.some(t=>linkedFinancialMatch(t,a));
       const hasAccount=state.accountTxns.some(t=>linkedFinancialMatch(t,a));
       return hasManual!==hasAccount;
@@ -2474,7 +2474,7 @@
     window.__alkamBankOcrRepairRunning=false;
   }
   function isApprovedStatus(v){
-    return /onayland/i.test(String(v||"").trim());
+    return /onayland|deftere işlendi|deftere islendi|doğrulandı|dogrulandi/i.test(String(v||"").trim());
   }
   function repairApprovedAccrualLedgerLinks(){
     if(window.__alkamApprovedAccrualRepairRunning) return;
@@ -2596,7 +2596,7 @@
   function latestBankRecord(){
     const candidates=[];
     (state.accountTxns||[]).forEach(x=>{if(isBankRecord(x))candidates.push({stage:x.postedToCari?"Hesap + Cari":"Hesap / Onay Bekliyor",date:normalizeImportDate(x.date)||"",amount:num(x.amount||x.credit||x.debit),desc:x.desc||x.description||"",source:x.source||"Banka",traceId:txTraceId(x),createdAt:x.createdAt||""});});
-    (state.approvals||[]).forEach(x=>{if(isBankRecord(x))candidates.push({stage:x.status==="Onaylandı"?"Onaylandı":"Onay Merkezi",date:normalizeImportDate(x.date)||normalizeImportDate(x.createdAt)||"",amount:num(x.amount),desc:x.reason||"",source:x.source||"Banka",traceId:txTraceId(x),createdAt:x.approvedAt||x.createdAt||""});});
+    (state.approvals||[]).forEach(x=>{if(isBankRecord(x))candidates.push({stage:isApprovedStatus(x.status)?(x.ledgerVerified?"Deftere İşlendi":"Onaylandı"):"Onay Merkezi",date:normalizeImportDate(x.date)||normalizeImportDate(x.createdAt)||"",amount:num(x.amount),desc:x.reason||"",source:x.source||"Banka",traceId:txTraceId(x),createdAt:x.approvedAt||x.createdAt||""});});
     (state.importPreview||[]).forEach(x=>{if(isBankRecord(x))candidates.push({stage:x.archive?"Arşiv":(x.duplicate?"Mükerrer":"Ön İzleme"),date:normalizeImportDate(x.date)||"",amount:num(x.amount||x.credit||x.debit),desc:x.desc||"",source:x.source||"Banka",traceId:txTraceId(x),createdAt:""});});
     candidates.sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))||String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
     return candidates[0]||null;
@@ -2607,7 +2607,7 @@
   }
   function latestMailRecord(){
     const candidates=[];
-    (state.approvals||[]).forEach(x=>{if(isMailRecord(x))candidates.push({stage:x.status==="Onaylandı"?"Onaylandı":"Onay Merkezi",date:normalizeImportDate(x.date)||normalizeImportDate(x.createdAt)||"",amount:num(x.amount),desc:x.mailSubject||x.reason||"",source:x.source||"Mail",traceId:txTraceId(x),createdAt:x.approvedAt||x.createdAt||"",file:x.originFile||""});});
+    (state.approvals||[]).forEach(x=>{if(isMailRecord(x))candidates.push({stage:isApprovedStatus(x.status)?(x.ledgerVerified?"Deftere İşlendi":"Onaylandı"):"Onay Merkezi",date:normalizeImportDate(x.date)||normalizeImportDate(x.createdAt)||"",amount:num(x.amount),desc:x.mailSubject||x.reason||"",source:x.source||"Mail",traceId:txTraceId(x),createdAt:x.approvedAt||x.createdAt||"",file:x.originFile||""});});
     (state.importPreview||[]).forEach(x=>{if(isMailRecord(x))candidates.push({stage:x.archive?"Arşiv":(x.duplicate?"Mükerrer":"Ön İzleme"),date:normalizeImportDate(x.date)||"",amount:num(x.amount||x.credit||x.debit),desc:x.mailImportNote||x.desc||"",source:x.source||"Mail",traceId:txTraceId(x),createdAt:"",file:x.uploadFileName||x.fileName||""});});
     (state.telegramMessages||[]).forEach(x=>{if(isMailRecord(x))candidates.push({stage:"Mail Kuyruğu",date:normalizeImportDate(x.createdAt)||"",amount:num(x.amount),desc:x.text||x.mailSubject||"",source:x.source||"Mail",traceId:txTraceId(x),createdAt:x.createdAt||"",file:x.originFile||""});});
     candidates.sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||""),"tr")||String(b.date||"").localeCompare(String(a.date||""),"tr"));
@@ -3262,7 +3262,11 @@
     const c=state.cariler.find(x=>x.id===a.cariId);
     const acc=state.accounts.find(x=>String(x.id)===String(a.accountId));
     const row={id:uid("VER"),ok:!!result.ok,approvalId:a.id,traceId:result.traceId,date:result.ledgerDate,amount:num(a.amount),type:a.type,cariName:c?.name||"",accountName:acc?.name||"",verifiedAt:new Date().toLocaleString("tr-TR"),manualTxnId:result.manual?.id||"",accountTxnId:result.account===true?"":(result.account?.id||""),message:result.ok?"Deftere yazıldı ve doğrulandı":"Defter bağlantısı doğrulanamadı"};
+    if(result.ok && result.manual) result.manual.ledgerVerified=true;
+    if(result.ok && result.account && result.account!==true) result.account.ledgerVerified=true;
     state.approvalVerifications=[row,...(state.approvalVerifications||[])].slice(0,100);
+    if(result.manual) writeJson(LS.manual,state.manualTxns);
+    if(result.account && result.account!==true) writeJson(LS.accountTxns,state.accountTxns);
     writeJson(LS.approvalVerifications,state.approvalVerifications);
     return row;
   }
@@ -3385,7 +3389,7 @@
     refreshAll();
   };
   window.rejectItem=function(id){const a=state.approvals.find(x=>x.id===id);if(!a)return;a.status="Reddedildi";a.rejectedAt=new Date().toLocaleString("tr-TR");writeJson(LS.approvals,state.approvals);logAudit("Onay kaydı reddedildi", a.reason||id, "Reddedildi");refreshAll();notify("Kayıt aktif listeden Reddedilen Arşiv sekmesine taşındı.");};
-  window.clearApproved=function(){repairApprovedAccrualLedgerLinks();state.approvals=state.approvals.filter(a=>a.status==="Bekliyor"||isRejectedApproval(a));writeJson(LS.approvals,state.approvals);refreshAll();notify("Onaylanan kayıtlar defter bağlantısı kontrol edilerek listeden kaldırıldı; reddedilen arşiv korundu.");};
+  window.clearApproved=function(){repairApprovedAccrualLedgerLinks();state.approvals=state.approvals.filter(a=>a.status==="Bekliyor"||isVerificationProblem(a)||isRejectedApproval(a));writeJson(LS.approvals,state.approvals);refreshAll();notify("Deftere bağlanan kayıtlar listeden kaldırıldı; kontrol gereken ve reddedilen kayıtlar korundu.");};
 
   function periodInputDefault(){return today().slice(0,7);}
   function periodDate(period){return (period||periodInputDefault())+"-01";}
