@@ -2504,6 +2504,7 @@
     });
     if(changed){
       writeJson(LS.manual,state.manualTxns);
+      writeJson(LS.approvals,state.approvals);
       logAudit("Onaylı tahakkuk defter senkronu", `${repaired} eksik tahakkuk cariye işlendi · ${skipped} mükerrer atlandı`, "Kontrol");
     }
     window.__alkamApprovedAccrualRepairRunning=false;
