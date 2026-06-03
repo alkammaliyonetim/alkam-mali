@@ -457,6 +457,7 @@
   function initAutomation(){
     const out = {};
     automationRules.forEach(r => out[r.key] = {enabled:false,title:r.title,desc:r.desc,risk:r.risk,updatedAt:new Date().toISOString()});
+    out.monthlyAccrual.enabled=true;
     return out;
   }
   function byId(id){return document.getElementById(id);}
@@ -467,6 +468,15 @@
     defaultAccounts.forEach(a=>{ if(!existing.has(a.id)) state.accounts.push({...a}); });
     writeJson(LS.accounts,state.accounts);
   }
+  function ensureMonthlyAccrualAutomationEnabled(){
+    if(!state.automation.monthlyAccrual) state.automation.monthlyAccrual={enabled:true,title:"Aylık Muhasebe Ücreti Tahakkuku",desc:"Her ay otomatik muhasebe ücreti tahakkuku oluşturma.",risk:"Yüksek",updatedAt:new Date().toISOString()};
+    if(!state.automation.monthlyAccrual.enabled){
+      state.automation.monthlyAccrual.enabled=true;
+      state.automation.monthlyAccrual.updatedAt=new Date().toISOString();
+      writeJson(LS.automation,state.automation);
+    }
+  }
+  ensureMonthlyAccrualAutomationEnabled();
   function uid(prefix){return prefix+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);}
   function num(v){
     if(typeof v==="number") return Number.isFinite(v)?v:0;
@@ -745,6 +755,7 @@
   };
 
   window.refreshAll = function(){
+    autoCreateMonthlyAccrualApprovals();
     repairUnsafeBankOcrApprovals();
     repairApprovedAccrualLedgerLinks();
     renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderCashModules(); renderTelegramPanel(); renderHistoryImportPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects(); cleanupLegacyTelegramPanels();
@@ -3513,6 +3524,30 @@
     accrualCariler().filter(c=>num(c.monthlyFee)>0).forEach(c=>periods.forEach(p=>{if(accrualExists(c,p,num(c.monthlyFee))) count++;}));
     return count;
   }
+  function autoCreateMonthlyAccrualApprovals(){
+    if(window.__alkamAutoMonthlyAccrualRunning) return;
+    if(!state.automation.monthlyAccrual?.enabled) return;
+    if(!Array.isArray(state.cariler) || !state.cariler.length) return;
+    window.__alkamAutoMonthlyAccrualRunning=true;
+    try{
+      const period=periodInputDefault();
+      const createdAt=new Date().toLocaleString("tr-TR");
+      const rows=state.cariler.filter(c=>!c.deleted).map(c=>({c,amount:num(c.monthlyFee),period})).filter(x=>x.amount>0 && !accrualExists(x.c,x.period,x.amount));
+      if(!rows.length) return;
+      rows.forEach(x=>{
+        const traceId=importHash(["AUTO-MONTHLY-TAHAKKUK",x.c.id,x.period,x.amount]);
+        state.approvals.unshift({id:uid("APR-AUTO"),cariId:x.c.id,amount:x.amount,score:100,type:"Tahakkuk",source:"Otomasyon Tahakkuk",date:periodDate(x.period),reason:`${periodName(x.period)} aylık muhasebe ücreti tahakkuku`,status:"Bekliyor",createdAt,traceId,importHash:traceId,autoCreated:true});
+        state.importHashes.push(traceId);
+      });
+      state.importHashes=[...new Set(state.importHashes)].slice(-5000);
+      writeJson(LS.approvals,state.approvals);
+      writeJson(LS.importHashes,state.importHashes);
+      logAudit("Aylık tahakkuk otomatik hazırlandı", `${periodName(period)} · ${rows.length} cari · ${money(rows.reduce((s,x)=>s+x.amount,0))}`, "Tahakkuk");
+      notify(`${periodName(period)} tahakkukları otomatik hazırlandı: ${rows.length} cari Onay Merkezi'nde.`);
+    }finally{
+      window.__alkamAutoMonthlyAccrualRunning=false;
+    }
+  }
   function renderAccrualPanel(){
     const el=byId("accrualPanel"); if(!el) return;
     const period=byId("accrualPeriod")?.value || periodInputDefault();
@@ -3563,7 +3598,7 @@
   function renderAutomation(){
     const pending = readJson(LS.pendingAuto,[]);
     byId("automationPanel").innerHTML = `
-      <div class="rule-box" style="margin-bottom:12px"><strong>Kırmızı çizgi:</strong> Riskli otomatik mutasyonlar varsayılan kapalıdır. Açılmadan tahakkuk, banka işleme, Moka işleme veya toplu güncelleme yapılmaz.</div>
+      <div class="rule-box" style="margin-bottom:12px"><strong>Aylık tahakkuk kuralı:</strong> Her ayın 1'inde cari kartındaki aylık ücretlerden eksik tahakkuk adayları otomatik hazırlanır. Kesin cari hareketi yine Onay Merkezi onayıyla deftere işlenir; banka, Moka ve toplu mutasyonlar onaysız çalışmaz.</div>
       ${automationRules.map(r=>{const enabled=!!state.automation[r.key]?.enabled;return `<div class="auto-row"><div><div class="auto-name">${esc(r.title)}</div><div class="auto-desc">${esc(r.desc)}</div><span class="auto-risk">Risk: ${esc(r.risk)}</span></div><label><span class="switch"><input type="checkbox" data-auto="${esc(r.key)}" ${enabled?"checked":""}><span class="slider"></span></span><span class="switch-text">${enabled?"OTOMATİK":"KAPALI"}</span></label></div>`;}).join("")}
       <h3 style="font-size:15px;margin:18px 0 8px">Onay Bekleyen / Bloklanan Otomasyonlar</h3>
       <div class="rule-box">${pending.length?pending.map(x=>`<div><strong>${esc(x.title||x.key)}</strong> · ${esc(x.createdAt||"")}</div>`).join(""):"Onay bekleyen otomasyon kaydı yok."}</div>
