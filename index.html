@@ -65,7 +65,7 @@
     .row-tahakkuk{background:rgba(254,242,242,.72)}.row-tahsilat{background:rgba(236,253,245,.8)}.row-neutral{background:rgba(238,245,255,.5)}
     .empty{padding:22px;border-style:dashed;text-align:center;color:var(--muted);font-weight:850;line-height:1.55}.rule-box{padding:12px;font-size:13px;font-weight:750;color:#334155;line-height:1.62}
     .metric-mini{padding:12px}.metric-mini .k{font-size:11px;font-weight:950;color:var(--muted);text-transform:uppercase;letter-spacing:.045em;margin-bottom:6px}.metric-mini .v{font-size:18px;font-weight:950}
-    .finance-sheet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px 14px;border:1px solid #dbeafe;border-radius:14px;background:#fff;padding:12px;margin-bottom:12px}.finance-detail{margin:0!important;box-shadow:none!important}.finance-detail summary{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;min-height:50px}.finance-detail summary span{font-size:13px;color:#334155}.finance-detail summary strong{font-size:18px;color:#0f172a;font-variant-numeric:tabular-nums}.finance-detail>div{max-height:280px;overflow:auto}.finance-result{display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;border:1px solid #c7d2fe;background:#f8fbff;border-radius:14px;padding:13px 15px;font-weight:950}.finance-result span{font-size:14px;color:#334155}.finance-result strong{font-size:21px;color:#0f172a;font-variant-numeric:tabular-nums}.finance-wide{grid-column:1/-1;width:min(560px,100%);margin:0 auto}.finance-net{border-color:#86efac;background:#f0fdf4}.finance-spacer{min-height:1px}
+    .finance-sheet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px 14px;border:1px solid #dbeafe;border-radius:14px;background:#fff;padding:12px;margin-bottom:12px}.finance-detail{margin:0!important;box-shadow:none!important}.finance-detail summary{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;min-height:50px}.finance-detail summary span{font-size:13px;color:#334155}.finance-detail summary strong{font-size:18px;color:#0f172a;font-variant-numeric:tabular-nums}.finance-detail>div{max-height:280px;overflow:auto}.finance-result{display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;border:1px solid #c7d2fe;background:#f8fbff;border-radius:14px;padding:13px 15px;font-weight:950}.finance-result span{font-size:14px;color:#334155}.finance-result strong{font-size:21px;color:#0f172a;font-variant-numeric:tabular-nums}.finance-wide{grid-column:1/-1;width:min(560px,100%);margin:0 auto}.finance-net{border-color:#86efac;background:#f0fdf4}.finance-spacer{min-height:1px}.finance-period-controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap}.finance-period-controls .field{margin:0;min-width:128px}.finance-period-controls .field label{font-size:10px}.finance-period-controls .select-input,.finance-period-controls .search-input{min-height:36px;padding:7px 10px}.finance-period-note{font-size:11px;font-weight:850;color:#64748b;margin-top:4px}
     .hero-name{font-size:24px;font-weight:950;line-height:1.15;margin:0 0 8px}.hero-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px;font-weight:800;margin-bottom:13px}
     .v119-legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:10px;border:1px solid #e2e8f0;background:#fbfdff;border-radius:12px}.v119-legend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:#475569}.v119-dot{width:9px;height:9px;border-radius:50%;display:inline-block}.v119-red{background:#ef4444}.v119-green{background:#10b981}.v119-blue{background:#3b82f6}
     .login-overlay{position:fixed;inset:0;background:rgba(15,23,42,.42);backdrop-filter:blur(10px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:28px}.login-overlay.force-hidden{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}body.alkam-unlocked .login-overlay{display:none!important}body.alkam-unlocked{overflow:auto!important}
@@ -529,7 +529,20 @@
     const p=String(period||today().slice(0,7)).slice(0,7);
     const [y,m]=p.split("-").map(Number);
     const end=new Date(y,(m||1),0,12,0,0).toISOString().slice(0,10);
-    return {period:p,start:p+"-01",end};
+    return {mode:"month",period:p,label:p,start:p+"-01",end};
+  }
+  function yearBounds(year){
+    const y=String(year||today().slice(0,4)).slice(0,4);
+    return {mode:"year",period:y,label:y,start:y+"-01-01",end:y+"-12-31"};
+  }
+  function financePeriodMode(){return localStorage.getItem("ALKAM_FINANCE_PERIOD_MODE_V1") || "month";}
+  function financePeriodMonth(){return localStorage.getItem("ALKAM_FINANCE_PERIOD_MONTH_V1") || today().slice(0,7);}
+  function financePeriodYear(){return localStorage.getItem("ALKAM_FINANCE_PERIOD_YEAR_V1") || today().slice(0,4);}
+  function financePeriodBounds(mode, value){
+    return mode==="year" ? yearBounds(value || financePeriodYear()) : monthBounds(value || financePeriodMonth());
+  }
+  function financePeriodTitle(b){
+    return b.mode==="year" ? `${b.period} yılı` : `${b.period} ayı`;
   }
   function dateInRange(date,start,end){const d=isoDate(date);return !!d && d>=start && d<=end;}
   function currentLedgerRows(){
@@ -548,8 +561,8 @@
   function isKdvText(v){return /kdv/i.test(String(v||""));}
   function isIncomeTaxText(v){return /(gelir vergisi|geçici vergi|gecici vergi|stopaj|muhtasar)/i.test(String(v||""));}
   function financeRowText(r){return `${r.description||""} ${r.desc||""} ${r.note||""} ${r.party||""} ${r.type||""} ${r.source||""} ${r.status||""}`;}
-  function financialStatement(period){
-    const b=monthBounds(period), ledger=currentLedgerRows().filter(t=>dateInRange(t.date,b.start,b.end));
+  function financialStatement(period, mode){
+    const b=financePeriodBounds(mode || "month", period), ledger=currentLedgerRows().filter(t=>dateInRange(t.date,b.start,b.end));
     const accountRows=(state.accountTxns||[]).filter(t=>dateInRange(t.date,b.start,b.end));
     const cashRows=cashExpenseRows().filter(r=>dateInRange(r.date,b.start,b.end));
     const incomeAccrualRows=ledger.filter(t=>num(t.debit)>0);
@@ -577,7 +590,7 @@
     const incomeTaxPaid=incomeTaxPaidRows.reduce((s,r)=>s+num(r.amount),0);
     const grossProfit=incomeAccrual-expenseAccrual, remaining=Math.max(0,expenseAccrual-paid);
     const netProfitAccrual=grossProfit-kdvAccrual-incomeTaxAccrual;
-    return {period:b.period,start:b.start,end:b.end,accrual:incomeAccrual,collection:incomeCollection,incomeAccrual,incomeCollection,expenseAccrual,paid,remaining,grossProfit,taxAccrual,taxPaid,kdvAccrual,kdvPaid,incomeTaxAccrual,incomeTaxPaid,netProfit:netProfitAccrual,netProfitAccrual,ledgerCount:ledger.length,accountCount:accountRows.length,cashCount:cashRows.length,details:{incomeAccrual:incomeAccrualRows,incomeCollection:incomeCollectionRows,expenseAccrual:expenseAccrualRows,paid:paidRows,taxAccrual:taxAccrualRows,taxPaid:taxPaidRows,kdvAccrual:kdvAccrualRows,kdvPaid:kdvPaidRows,incomeTaxAccrual:incomeTaxAccrualRows,incomeTaxPaid:incomeTaxPaidRows}};
+    return {mode:b.mode,period:b.period,start:b.start,end:b.end,accrual:incomeAccrual,collection:incomeCollection,incomeAccrual,incomeCollection,expenseAccrual,paid,remaining,grossProfit,taxAccrual,taxPaid,kdvAccrual,kdvPaid,incomeTaxAccrual,incomeTaxPaid,netProfit:netProfitAccrual,netProfitAccrual,ledgerCount:ledger.length,accountCount:accountRows.length,cashCount:cashRows.length,details:{incomeAccrual:incomeAccrualRows,incomeCollection:incomeCollectionRows,expenseAccrual:expenseAccrualRows,paid:paidRows,taxAccrual:taxAccrualRows,taxPaid:taxPaidRows,kdvAccrual:kdvAccrualRows,kdvPaid:kdvPaidRows,incomeTaxAccrual:incomeTaxAccrualRows,incomeTaxPaid:incomeTaxPaidRows}};
   }
   function financeRowTitle(r){
     return r.cariName || r.party || r.employeeName || r.desc || r.description || r.note || r.source || "-";
@@ -595,10 +608,31 @@
   function financeCell(title, value, rows, kind){
     return `<details class="compact-details finance-detail"><summary><span>${esc(title)}</span><strong>${money(value)}</strong></summary><div>${financeDetailHtml(title,rows,kind)}</div></details>`;
   }
+  window.setFinancePeriodMode=function(mode){
+    localStorage.setItem("ALKAM_FINANCE_PERIOD_MODE_V1", mode==="year"?"year":"month");
+    renderDashboardFinanceStatement();
+  };
+  window.setFinancePeriodMonth=function(period){
+    if(period) localStorage.setItem("ALKAM_FINANCE_PERIOD_MONTH_V1", String(period).slice(0,7));
+    localStorage.setItem("ALKAM_FINANCE_PERIOD_MODE_V1", "month");
+    renderDashboardFinanceStatement();
+  };
+  window.setFinancePeriodYear=function(year){
+    if(year) localStorage.setItem("ALKAM_FINANCE_PERIOD_YEAR_V1", String(year).slice(0,4));
+    localStorage.setItem("ALKAM_FINANCE_PERIOD_MODE_V1", "year");
+    renderDashboardFinanceStatement();
+  };
+  window.resetFinancePeriodToCurrent=function(){
+    localStorage.setItem("ALKAM_FINANCE_PERIOD_MODE_V1", "month");
+    localStorage.setItem("ALKAM_FINANCE_PERIOD_MONTH_V1", today().slice(0,7));
+    localStorage.setItem("ALKAM_FINANCE_PERIOD_YEAR_V1", today().slice(0,4));
+    renderDashboardFinanceStatement();
+  };
   function renderDashboardFinanceStatement(){
     const el=byId("dashboardFinanceStatement"); if(!el)return;
-    const f=financialStatement(today().slice(0,7));
-    el.innerHTML=`<div class="section"><div class="topbar" style="margin-bottom:10px"><div><h2 class="section-title">Gelir Tablosu</h2><p class="muted-note">${esc(f.start)} / ${esc(f.end)} · tutarlara tıklayınca ilgili kayıt listesi açılır.</p></div></div><div class="finance-sheet">
+    const mode=financePeriodMode(), selectedMonth=financePeriodMonth(), selectedYear=financePeriodYear();
+    const f=financialStatement(mode==="year"?selectedYear:selectedMonth, mode);
+    el.innerHTML=`<div class="section"><div class="topbar" style="margin-bottom:10px"><div><h2 class="section-title">Gelir Tablosu</h2><p class="muted-note">${esc(financePeriodTitle(f))} · ${esc(f.start)} / ${esc(f.end)} · tutarlara tıklayınca ilgili kayıt listesi açılır.</p><div class="finance-period-note">İlk görünüm mevcut aydır; ay veya yıl seçince aynı tablo seçilen döneme göre hesaplanır.</div></div><div class="finance-period-controls"><div class="field"><label>Görünüm</label><select class="select-input" onchange="setFinancePeriodMode(this.value)"><option value="month" ${mode==="month"?"selected":""}>Ay</option><option value="year" ${mode==="year"?"selected":""}>Yıl</option></select></div><div class="field"><label>Ay</label><input class="search-input" type="month" value="${esc(selectedMonth)}" onchange="setFinancePeriodMonth(this.value)" /></div><div class="field"><label>Yıl</label><input class="search-input" type="number" min="2022" max="2035" value="${esc(selectedYear)}" onchange="setFinancePeriodYear(this.value)" /></div><button class="btn btn-soft" onclick="resetFinancePeriodToCurrent()">Bu Ay</button></div></div><div class="finance-sheet">
       <div>${financeCell("Gelir tahakkukları",f.incomeAccrual,f.details.incomeAccrual,"incomeAccrual")}</div>
       <div>${financeCell("Gelen ödeme",f.incomeCollection,f.details.incomeCollection,"incomeCollection")}</div>
       <div>${financeCell("Gider tahakkukları",f.expenseAccrual,f.details.expenseAccrual,"expenseAccrual")}</div>
