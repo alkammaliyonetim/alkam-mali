@@ -644,6 +644,83 @@
       <div class="finance-result finance-net finance-wide"><span>Net kar</span><strong>${money(f.netProfitAccrual)}</strong></div>
     </div><div class="rule-box">Kontrol: ${f.ledgerCount} cari hareketi · ${f.accountCount} hesap hareketi · ${f.cashCount} nakit yönetimi kaydı okundu. Vergi alanları yalnızca KDV/Gelir Vergisi/Stopaj olarak etiketlenmiş kayıtlardan gelir.</div></div>`;
   }
+  function rowLinkKey(r){return txTraceId(r) || r.approvalId || r.importHash || r.docNo || r.id || "";}
+  function isCollectionLike(r){
+    const txt=cleanText(`${r.type||""} ${r.source||""} ${r.description||r.desc||""}`);
+    return num(r.credit)>0 || /(tahsilat|banka|kasa|moka|hesap hareketi)/i.test(txt);
+  }
+  function isAccrualLike(r){
+    const txt=cleanText(`${r.type||""} ${r.source||""} ${r.description||r.desc||""}`);
+    return num(r.debit)>0 || /tahakkuk/i.test(txt);
+  }
+  function hasLinkedAccountRow(r){
+    if(!isCollectionLike(r)) return true;
+    if(/ana veri/i.test(String(r.source||"")) && !r.approvalId && !txTraceId(r)) return true;
+    return (state.accountTxns||[]).some(a=>linkedFinancialMatch(a,r) || (r.linkedAccountTxnId && String(a.id)===String(r.linkedAccountTxnId)));
+  }
+  function hasLinkedLedgerRow(a){
+    if(!a.cariId && !a.postedToCari) return true;
+    return currentLedgerRows().some(t=>linkedFinancialMatch(t,a) || (a.linkedManualTxnId && String(t.id)===String(a.linkedManualTxnId)));
+  }
+  function liveLedgerDuplicateGroups(){
+    const map=new Map();
+    state.cariler.filter(c=>!c.deleted).forEach(c=>allTxns(c).filter(t=>isLivePeriodDate(t.date)).forEach(t=>{
+      const side=num(t.debit)>0?"B":num(t.credit)>0?"A":"N";
+      const key=[c.id,isoDate(t.date),side,Math.round((num(t.debit)||num(t.credit))*100),cleanText(t.description||t.desc||"").slice(0,50)].join("|");
+      if(!map.has(key)) map.set(key,[]);
+      map.get(key).push({...t,cariName:c.name});
+    }));
+    return [...map.values()].filter(g=>g.length>1);
+  }
+  function endToEndIntegrityCheck(){
+    const ledger=currentLedgerRows(), accounts=state.accountTxns||[], approvals=state.approvals||[];
+    const issues=[];
+    const missingSource=ledger.filter(t=>!t.source);
+    missingSource.slice(0,20).forEach(t=>issues.push({level:"Sarı",area:"Cari",title:"Kaynak bilgisi eksik",detail:`${t.cariName||"-"} · ${t.date||"-"} · ${money(num(t.debit)||num(t.credit))}`}));
+    const unlinkedCollections=ledger.filter(t=>isCollectionLike(t) && !hasLinkedAccountRow(t));
+    unlinkedCollections.slice(0,30).forEach(t=>issues.push({level:"Turuncu",area:"Cari/Hesap",title:"Tahsilatın hesap karşılığı yok",detail:`${t.cariName||"-"} · ${t.date||"-"} · ${money(num(t.credit)||num(t.amount))} · ${t.source||"-"}`}));
+    const unlinkedAccounts=accounts.filter(a=>a.postedToCari && !hasLinkedLedgerRow(a));
+    unlinkedAccounts.slice(0,30).forEach(a=>issues.push({level:"Kırmızı",area:"Hesap/Cari",title:"Hesap hareketinin cari karşılığı yok",detail:`${a.accountId||"-"} · ${a.date||"-"} · ${money(a.amount)} · ${a.desc||"-"}`}));
+    const approvedButNotTrusted=approvals.filter(a=>a.status!=="Bekliyor" && !isRejectedApproval(a) && !isTrustedApproval(a));
+    approvedButNotTrusted.slice(0,30).forEach(a=>issues.push({level:"Turuncu",area:"Onay",title:"Onaylı ama güven zinciri tamam değil",detail:`${a.date||"-"} · ${a.type||"-"} · ${money(a.amount)} · ${a.reason||""}`}));
+    const duplicates=liveLedgerDuplicateGroups();
+    duplicates.slice(0,20).forEach(g=>issues.push({level:"Kırmızı",area:"Mükerrer",title:"Canlı defterde benzer kayıt grubu",detail:`${g[0].cariName||"-"} · ${g[0].date||"-"} · ${money(num(g[0].debit)||num(g[0].credit))} · ${g.length} kayıt`}));
+    const verified=(state.approvalVerifications||[]).filter(v=>v.ok).length;
+    const status=issues.some(i=>i.level==="Kırmızı")?"Kırmızı":issues.length?"Turuncu":"Yeşil";
+    return {
+      status,
+      ledgerCount:ledger.length,
+      accountCount:accounts.length,
+      approvalCount:approvals.length,
+      pendingApprovals:approvals.filter(a=>a.status==="Bekliyor").length,
+      verifiedCount:verified,
+      missingSource:missingSource.length,
+      unlinkedCollections:unlinkedCollections.length,
+      unlinkedAccounts:unlinkedAccounts.length,
+      approvedButNotTrusted:approvedButNotTrusted.length,
+      duplicateGroups:duplicates.length,
+      issues
+    };
+  }
+  function renderEndToEndStatusMini(check){
+    const cls=check.status==="Yeşil"?"green":check.status==="Kırmızı"?"red":"amber";
+    return `<div style="margin-top:10px;border-top:1px dashed #cbd5e1;padding-top:10px"><strong>Uçtan uca muhasebe bağlantısı:</strong> <span class="tag ${cls}">${esc(check.status)}</span><br><strong>Cari / Hesap / Onay:</strong> ${check.ledgerCount} cari hareketi · ${check.accountCount} hesap hareketi · ${check.pendingApprovals} onay bekleyen<br><strong>Kopukluk:</strong> Tahsilat-hesap ${check.unlinkedCollections} · Hesap-cari ${check.unlinkedAccounts} · Onay zinciri ${check.approvedButNotTrusted} · Mükerrer grup ${check.duplicateGroups}</div>`;
+  }
+  function renderEndToEndReportPanel(){
+    const c=endToEndIntegrityCheck();
+    const cls=c.status==="Yeşil"?"green":c.status==="Kırmızı"?"red":"amber";
+    const issueRows=c.issues.length?`<table><thead><tr><th>Durum</th><th>Alan</th><th>Kontrol</th><th>Detay</th></tr></thead><tbody>${c.issues.map(i=>`<tr><td><span class="tag ${i.level==="Kırmızı"?"red":i.level==="Turuncu"?"amber":"gray"}">${esc(i.level)}</span></td><td>${esc(i.area)}</td><td><strong>${esc(i.title)}</strong></td><td>${esc(i.detail)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Cari, hesap, onay ve rapor bağlantılarında açık kopukluk bulunmadı.</div>`;
+    return `<h2 class="section-title" style="margin-top:16px">Uçtan Uca Muhasebe Bağlantı Kontrolü</h2>
+      <div class="compact-status" style="margin-bottom:12px">
+        <div class="compact-card"><span>Genel Statü</span><strong><span class="tag ${cls}">${esc(c.status)}</span></strong><p class="muted-note">Yeşil yalnızca kopukluk yoksa</p></div>
+        <div class="compact-card"><span>Cari Hareketi</span><strong>${c.ledgerCount}</strong><p class="muted-note">Gelir tablosu aynı defteri okur</p></div>
+        <div class="compact-card"><span>Hesap Hareketi</span><strong>${c.accountCount}</strong><p class="muted-note">Kasa / banka / Moka / kredi kartı</p></div>
+        <div class="compact-card"><span>Onay Bekleyen</span><strong>${c.pendingApprovals}</strong><p class="muted-note">${c.approvedButNotTrusted} onay zinciri eksik</p></div>
+        <div class="compact-card"><span>Kopuk / Mükerrer</span><strong>${c.unlinkedCollections+c.unlinkedAccounts+c.duplicateGroups}</strong><p class="muted-note">Uçtan uca takip</p></div>
+      </div>
+      <div class="rule-box" style="margin-bottom:10px"><strong>Kural:</strong> Cari, hesap, Onay Merkezi ve Gelir Tablosu aynı aktif defterden beslenir. Defterden silinen kayıt raporda kalamaz; hesap karşılığı olmayan tahsilat yeşil güvenilir kabul edilmez.</div>
+      <div class="import-table-wrap" style="max-height:430px">${issueRows}</div>`;
+  }
   function slug(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("cari");}
   function notify(msg){const el=byId("toast"); if(!el) return; el.textContent=msg; el.style.display="block"; clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>el.style.display="none",3000);}
   function logAudit(action, detail, level="Kaydedildi"){const list=readJson(LS.audit,[]); list.unshift({at:new Date().toISOString(), action, detail, level}); writeJson(LS.audit, list.slice(0,500)); renderAuditList();}
@@ -876,7 +953,9 @@
     const top = rows.sort((a,b)=>Math.abs(b.bal)-Math.abs(a.bal)).slice(0,8);
     byId("dashboardTopCari").innerHTML = top.length ? `<table><thead><tr><th>Cari</th><th>Son İşlem</th><th class="text-right">Bakiye</th></tr></thead><tbody>${top.map(x=>`<tr><td>${esc(x.c.name)}</td><td>${esc(x.last||"-")}</td><td class="text-right money">${balanceLabel(x.bal)}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Cari veri yok.<br>${esc(state.loadError||"Yükleniyor...")}</div>`;
     const pb=promiseBudget();
+    const integrity=endToEndIntegrityCheck();
     byId("systemStatus").innerHTML = `<strong>Veri kaynağı:</strong> ${esc(state.dataSource)}<br><strong>Aktif cari:</strong> ${activeCariler.length}<br><strong>Toplam hareket:</strong> ${activeCariler.reduce((s,c)=>s+allTxns(c).length,0)}<br><strong>Beklenen ödeme sözleri:</strong> Bu hafta ${money(pb.week)} · Bu ay ${money(pb.month)} · Bu yıl ${money(pb.year)}${pb.overdue>0?`<br><span style="color:#b91c1c"><strong>Geciken ödeme sözü:</strong> ${money(pb.overdue)}</span>`:""}<br><strong>Kaynak kolonu:</strong> Aktif<br><strong>Bakiye standardı:</strong> Bakiye B / Bakiye A<br><strong>Moka United:</strong> Ayrı hesap aktif<br><strong>Otomasyon:</strong> Riskli işler varsayılan KAPALI${state.loadError?`<br><span style="color:#b91c1c"><strong>Hata:</strong> ${esc(state.loadError)}</span>`:""}`;
+    byId("systemStatus").innerHTML += renderEndToEndStatusMini(integrity);
   }
 
   window.renderCariList = function(){
@@ -3855,6 +3934,7 @@
         <div class="card"><div class="card-label">Otomasyon Açık</div><div class="card-value">${openAuto}</div></div>
         <div class="card"><div class="card-label">Silinmiş Cari</div><div class="card-value">${deleted}</div></div>
       </div>
+      ${renderEndToEndReportPanel()}
       <h2 class="section-title" style="margin-top:16px">Kategori Performansı</h2>
       <div class="import-table-wrap" style="max-height:520px">${perfTable}</div>
       <div class="rule-box" style="margin-top:14px"><strong>Kontrol:</strong> Kaynak kolonu, Bakiye A/B, Moka United, onay merkezi, cari/hareket düzenle-sil ve otomasyon kapalı başlangıç kuralı aktiftir.</div>
