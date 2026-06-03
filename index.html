@@ -735,8 +735,30 @@
     };
   }
 
+  function txnAmountKey(t){return `${money(num(t.debit)||num(t.credit)||num(t.amount))}`;}
+  function txnDeleteKeys(t,cariId){
+    const idParts=[t?.id,t?.docNo,t?.traceId,t?.importHash,t?.legacyImportHash,t?.sourceRowId,t?.approvalId].filter(Boolean).map(String);
+    const amount=txnAmountKey(t);
+    const date=String(t?.date||"");
+    const cid=String(cariId||t?.cariId||"");
+    const keys=idParts.map(x=>`ID|${cid}|${x}`);
+    if(date && amount) keys.push(`ROW|${cid}|${date}|${amount}|${String(t?.type||"")}|${String(t?.description||t?.desc||"").slice(0,80)}`);
+    return keys;
+  }
+  function deletedTxnKeySet(){
+    const set=new Set();
+    (state.deletedTxns||[]).forEach(t=>txnDeleteKeys(t,t.cariId).forEach(k=>set.add(k)));
+    return set;
+  }
+  function isTxnDeletedByArchive(t,cariId,set){
+    const keys=txnDeleteKeys(t,cariId);
+    return keys.some(k=>(set||deletedTxnKeySet()).has(k));
+  }
   function allTxns(c){
-    return [...(c.transactions||[]), ...state.manualTxns.filter(t=>t.cariId===c.id && !t.deleted)].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    const deletedSet=deletedTxnKeySet();
+    const base=(c.transactions||[]).filter(t=>!isTxnDeletedByArchive(t,c.id,deletedSet));
+    const manual=state.manualTxns.filter(t=>t.cariId===c.id && !t.deleted && !isTxnDeletedByArchive(t,c.id,deletedSet));
+    return [...base, ...manual].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   }
   function totals(c){
     const rows = allTxns(c);
@@ -800,6 +822,7 @@
 
   window.refreshAll = function(){
     cleanupPendingSplitAccruals();
+    cleanupStaleProgramAccrualApprovals();
     autoCreateMonthlyAccrualApprovals();
     repairUnsafeBankOcrApprovals();
     repairApprovedAccrualLedgerLinks();
@@ -1100,9 +1123,16 @@
     const row=findTxn(txId);
     if(!row) return;
     if(!confirm("Bu cari hareket silinsin mi? Bağlı kasa/banka/onay kayıtları da iptal edilir ve iz arşive alınır.")) return;
+    const traceId=txTraceId(row);
+    const rowDate=row.date, rowAmount=num(row.debit)||num(row.credit)||num(row.amount), rowDesc=row.description||row.desc||row.id;
     const res=cancelLinkedFinancialChain(row,"Cari hareketinden zincir iptali");
-    logAudit("Cari hareket zinciri silindi", `${row.date} · ${row.description||row.id} · Cari ${res.removedManual.length} · Hesap ${res.removedAccounts.length} · Onay ${res.cancelledApprovals.length}`, "Silindi");
+    const stillExists=state.cariler.some(c=>allTxns(c).some(t=>{
+      if(traceId && txTraceId(t)===traceId) return true;
+      return String(t.id)===String(txId) || (String(t.date||"")===String(rowDate) && Math.abs((num(t.debit)||num(t.credit)||num(t.amount))-rowAmount)<0.01 && String(t.description||t.desc||t.id||"").slice(0,80)===String(rowDesc||"").slice(0,80));
+    }));
+    logAudit(stillExists?"Cari hareket silme doğrulaması başarısız":"Cari hareket zinciri silindi", `${rowDate} · ${rowDesc} · Cari ${res.removedManual.length} · Hesap ${res.removedAccounts.length} · Onay ${res.cancelledApprovals.length}`, stillExists?"Kontrol":"Silindi");
     refreshAll();
+    notify(stillExists?"Silme kontrol gerektiriyor: kayıt defterde hâlâ görünüyor.":"Hareket silindi, bağlı kayıtlar iptal edildi ve arşive alındı.");
   };
 
   function mokaInstallmentCountFromText(text){
@@ -3291,6 +3321,11 @@
   function isPendingSplitAccrual(a){
     return a && a.status==="Bekliyor" && a.type==="Tahakkuk" && (!!a.splitFrom || /yıllık kayıttan bölündü|yillik kayittan bolundu/i.test(String(a.reason||"")));
   }
+  function isStaleProgramAccrualApproval(a){
+    if(!a || a.status!=="Bekliyor" || a.type!=="Tahakkuk") return false;
+    const src=cleanText(`${a.source||""} ${a.reason||""}`);
+    return /otomasyon tahakkuk|program|aylik muhasebe ucreti|aylık muhasebe ücreti|yillik kayittan bolundu|yıllık kayıttan bölündü/.test(src);
+  }
   function cleanupPendingSplitAccruals(){
     if(window.__alkamSplitAccrualCleanupRunning) return;
     const rows=(state.approvals||[]).filter(isPendingSplitAccrual);
@@ -3303,6 +3338,20 @@
       logAudit("Eski yıllık bölünmüş tahakkuk adayları otomatik temizlendi", `${rows.length} bekleyen aday silindi`, "Tahakkuk");
     }finally{
       window.__alkamSplitAccrualCleanupRunning=false;
+    }
+  }
+  function cleanupStaleProgramAccrualApprovals(){
+    if(window.__alkamProgramAccrualCleanupRunning) return;
+    const rows=(state.approvals||[]).filter(isStaleProgramAccrualApproval);
+    if(!rows.length) return;
+    window.__alkamProgramAccrualCleanupRunning=true;
+    try{
+      const ids=new Set(rows.map(x=>x.id));
+      state.approvals=(state.approvals||[]).filter(x=>!ids.has(x.id));
+      writeJson(LS.approvals,state.approvals);
+      logAudit("Eski otomasyon tahakkuk adayları otomatik temizlendi", `${rows.length} bekleyen aday silindi; cari defterdeki kesin hareketlere dokunulmadı.`, "Tahakkuk");
+    }finally{
+      window.__alkamProgramAccrualCleanupRunning=false;
     }
   }
   window.clearPendingSplitAccruals=function(){
@@ -3513,7 +3562,7 @@
       const sameAmount=Math.abs(num(t.debit)-num(amount))<0.01;
       const isAccrual=String(t.type||"").toLocaleLowerCase("tr-TR").includes("tahakkuk") || String(t.source||"").toLocaleLowerCase("tr-TR").includes("tahakkuk");
       return samePeriod && sameAmount && isAccrual;
-    }) || state.approvals.some(a=>!isRejectedApproval(a) && a.cariId===c.id && a.type==="Tahakkuk" && String(a.date||"").slice(0,7)===period && Math.abs(num(a.amount)-num(amount))<0.01);
+    }) || state.approvals.some(a=>!isStaleProgramAccrualApproval(a) && !isRejectedApproval(a) && a.cariId===c.id && a.type==="Tahakkuk" && String(a.date||"").slice(0,7)===period && Math.abs(num(a.amount)-num(amount))<0.01);
   }
   function accrualScopeValue(){
     const el=byId("accrualScope");
