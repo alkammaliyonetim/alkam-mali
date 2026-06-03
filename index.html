@@ -547,8 +547,7 @@
   function dateInRange(date,start,end){const d=isoDate(date);return !!d && d>=start && d<=end;}
   function currentLedgerRows(){
     const rows=[];
-    state.cariler.filter(c=>!c.deleted).forEach(c=>(c.transactions||[]).forEach(t=>rows.push({...t,cariId:c.id,cariName:c.name,ledger:"Ana Cari"})));
-    (state.manualTxns||[]).filter(t=>!t.deleted).forEach(t=>{const c=state.cariler.find(x=>x.id===t.cariId);rows.push({...t,cariName:c?.name||"",ledger:t.approvalId?"Onaylı Defter":"Cari Defter"});});
+    state.cariler.filter(c=>!c.deleted).forEach(c=>allTxns(c).forEach(t=>rows.push({...t,cariId:c.id,cariName:c.name,ledger:t.approvalId?"Onaylı Defter":(t.sourceLedger||"Cari Defter")})));
     return rows;
   }
   function cashExpenseRows(){
