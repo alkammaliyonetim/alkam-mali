@@ -180,6 +180,7 @@
         <div class="card"><div class="card-label">Toplam Alacak</div><div id="kpiCredit" class="card-value">0,00 TL</div></div>
         <div class="card"><div class="card-label">Net Bakiye</div><div id="kpiBalance" class="card-value">0,00 TL</div></div>
       </div>
+      <div id="dashboardOpsCenter"></div>
       <div id="dashboardFinanceStatement"></div>
       <div class="grid-2">
         <div class="section"><h2 class="section-title">En Borçlu / Riskli Cariler</h2><div id="dashboardTopCari"></div></div>
@@ -238,8 +239,8 @@
         <div class="btn-row"><button class="btn btn-blue" onclick="openApprovalModal()">Onay Kaydı Ekle</button><button class="btn btn-soft" onclick="clearApproved()">Onaylananları Temizle</button></div>
       </div>
       <div id="approvalList" class="section"></div>
-      <div id="telegramPanel" class="section"></div>
       <div id="historyImportPanel" class="section"></div>
+      <div id="telegramPanel" class="section"></div>
     </section>
 
     <section id="tab-otomasyon" class="tab-page">
@@ -989,6 +990,7 @@
     byId("kpiDebit").textContent = money(debit);
     byId("kpiCredit").textContent = money(credit);
     byId("kpiBalance").textContent = balanceLabel(bal);
+    renderDashboardOpsCenter();
     renderDashboardFinanceStatement();
     byId("sideConn").textContent = state.cariler.length ? `${state.dataSource} • ${activeCariler.length} aktif cari` : (state.loadError ? "Hata: "+state.loadError : "Yükleniyor...");
     byId("connState").textContent = activeCariler.length ? `${activeCariler.length} cari yüklü` : "Cari bekleniyor";
@@ -998,6 +1000,31 @@
     const integrity=endToEndIntegrityCheck();
     byId("systemStatus").innerHTML = `<strong>Veri kaynağı:</strong> ${esc(state.dataSource)}<br><strong>Aktif cari:</strong> ${activeCariler.length}<br><strong>Toplam hareket:</strong> ${activeCariler.reduce((s,c)=>s+allTxns(c).length,0)}<br><strong>Beklenen ödeme sözleri:</strong> Bu hafta ${money(pb.week)} · Bu ay ${money(pb.month)} · Bu yıl ${money(pb.year)}${pb.overdue>0?`<br><span style="color:#b91c1c"><strong>Geciken ödeme sözü:</strong> ${money(pb.overdue)}</span>`:""}<br><strong>Kaynak kolonu:</strong> Aktif<br><strong>Bakiye standardı:</strong> Bakiye B / Bakiye A<br><strong>Moka United:</strong> Ayrı hesap aktif<br><strong>Otomasyon:</strong> Riskli işler varsayılan KAPALI${state.loadError?`<br><span style="color:#b91c1c"><strong>Hata:</strong> ${esc(state.loadError)}</span>`:""}`;
     byId("systemStatus").innerHTML += renderEndToEndStatusMini(integrity);
+  }
+
+  function renderDashboardOpsCenter(){
+    const el=byId("dashboardOpsCenter"); if(!el) return;
+    const approvals=state.approvals||[];
+    const waiting=approvals.filter(a=>a.status==="Bekliyor");
+    const risk=waiting.filter(a=>!a.cariId || num(a.score)<70 || num(a.amount)<=0);
+    const ready=waiting.filter(a=>a.cariId && num(a.score)>=70 && num(a.amount)>0);
+    const mail=latestMailRecord();
+    const processed=latestProcessedRecord();
+    const mailText=mail?`${esc(mail.source)} · ${esc(mail.stage)} · ${esc(mail.date||"-")} · ${money(mail.amount)}`:"Mailden alınmış ekstre kaydı yok";
+    const processedText=processed?`${esc(processed.status)} · ${esc(processed.date||"-")} · ${money(processed.amount)}`:"Henüz işlenen kayıt yok";
+    el.innerHTML=`<div class="section approval-board" style="margin:14px 0">
+      <div class="approval-board-head">
+        <div><div class="approval-board-title">Canlı Operasyon Merkezi</div><div class="approval-board-sub">Mailden banka ekstresi, Moka, Telegram ve Onay Merkezi burada izlenir; kesin kayıt onay ve doğrulama zincirinden geçmeden deftere yazılmaz.</div></div>
+        <div class="btn-row"><button class="btn btn-green" onclick="switchTab('onay');fetchMailAndStageImports()">Mailden Oku + Onaya Hazırla</button><button class="btn btn-blue" onclick="switchTab('onay')">Onay Merkezi</button></div>
+      </div>
+      <div class="compact-status" style="padding:16px;margin:0">
+        <div class="compact-card"><span>Son Mail Kontrolü</span><strong style="font-size:15px">${esc(lastMailPollText())}</strong><small>${esc(mailPollingInfo())}</small></div>
+        <div class="compact-card"><span>Son Mail Kaydı</span><strong style="font-size:15px">${mailText}</strong></div>
+        <div class="compact-card"><span>Onaya Hazır</span><strong>${ready.length}</strong><p class="muted-note">${risk.length} kontrol gerekli</p></div>
+        <div class="compact-card"><span>Bekleyen Tutar</span><strong>${money(waiting.reduce((s,a)=>s+num(a.amount),0))}</strong></div>
+        <div class="compact-card"><span>Son İşlenen</span><strong style="font-size:15px">${processedText}</strong></div>
+      </div>
+    </div>`;
   }
 
   window.renderCariList = function(){
@@ -3197,7 +3224,7 @@
     const table=rows.slice(0,180).map(r=>`<tr class="${r.duplicate?"match-duplicate":(!r.cariId||r.score<70?"match-waiting":"match-ready")}"><td>${traceBadge(r)}</td><td>${esc(r.source)}</td><td>${esc(r.date)}</td><td>${esc(r.cariName||"-")}</td><td>${esc(r.type)}</td><td><span class="tag ${r.score>=90?"green":r.score>=70?"amber":"red"}">${r.score}%</span><br>${esc(importPreviewStatus(r))}</td><td>${esc(r.desc)}</td><td class="text-right money">${money(r.amount)}</td></tr>`).join("");
     const planRows=moka.slice().sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate))).slice(0,80).map(p=>`<tr><td>${esc(p.dueDate)}</td><td>${esc(p.cariName||p.serviceName||p.cardHolder||"-")}<br><span class="muted-note">${esc(p.serviceName&&p.cardHolder?`Kart: ${p.cardHolder}`:"")}</span></td><td>${esc(p.installment)}/${esc(p.installmentCount)}</td><td class="text-right money">${money(p.amount)}</td><td>${p.bankMatched?'<span class="tag green">Bankaya geçti</span>':'<span class="tag amber">Bekliyor</span>'}</td></tr>`).join("");
     el.className="section";
-    el.innerHTML=`<details class="ops-accordion"><summary><span>Gmail, banka ve Moka içe aktarma<span class="ops-accordion-sub">Mail kuyruğu otomatik kontrol edilir; manuel dosya alanları yalnızca yedek yoldur.</span></span></summary><div class="ops-accordion-body"><h2 class="section-title">Banka / Moka Canlı Kullanım Durumu</h2>${renderReadinessPanel()}<div class="btn-row" style="margin-bottom:12px"><button class="btn btn-green" onclick="sendImportPreviewToApproval()">Canlı Kayıtları Onay Merkezi'ne Aktar</button><button class="btn btn-soft" onclick="clearImportPreview()">Ön İzlemeyi Temizle</button><button class="btn btn-soft" onclick="matchMokaSchedules();renderHistoryImportPanel()">Banka-Moka Eşleştir</button><button class="btn btn-blue" onclick="runLiveReadinessSelfTest()">Kontrol Testi</button></div><details class="compact-details"><summary>Excel yükleme alanları</summary><div class="import-preview-grid"><div class="field"><label>Halkbank Excel</label><input id="halkbankFile" type="file" accept=".xlsx,.xls" /><button class="btn btn-blue" onclick="previewHalkbankFile()">Halkbank Ön İzle</button></div><div class="field"><label>Moka POS Excel</label><input id="mokaFile" type="file" accept=".xlsx,.xls" /><button class="btn btn-purple" onclick="previewMokaFile()">Moka Ön İzle + Takvim</button></div></div></details><div class="compact-status"><div class="compact-card"><span>Moka Bugün</span><strong>${money(todayDue)}</strong></div><div class="compact-card"><span>Moka Bu Hafta</span><strong>${money(weekDue)}</strong></div><div class="compact-card"><span>Moka Bu Ay</span><strong>${money(monthDue)}</strong></div><div class="compact-card"><span>Toplam Moka Alacağı</span><strong>${money(totalPending)}</strong></div><div class="compact-card"><span>Taksit Satırı</span><strong>${moka.length}</strong></div></div><details class="compact-details"><summary>Ön izleme satırlarını göster (${rows.length} kayıt)</summary><div class="import-table-wrap">${rows.length?`<table><thead><tr><th>Kaynak</th><th>Tarih</th><th>Önerilen Cari</th><th>Tip</th><th>Durum</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${table}</tbody></table>`:`<div class="empty">Henüz ön izleme yok.</div>`}</div></details><details class="compact-details"><summary>Moka taksit bazlı ödeme takvimi (${moka.length} satır)</summary><div class="import-table-wrap">${moka.length?`<table><thead><tr><th>Vade</th><th>Kart Sahibi / Cari</th><th>Taksit</th><th class="text-right">Net Tutar</th><th>Durum</th></tr></thead><tbody>${planRows}</tbody></table>`:`<div class="empty">Moka ödeme takvimi yok.</div>`}</div></details></div></details>`;
+    el.innerHTML=`<details open class="ops-accordion"><summary><span>Gmail, banka ve Moka içe aktarma<span class="ops-accordion-sub">Mail kuyruğu otomatik kontrol edilir; manuel dosya alanları yalnızca yedek yoldur.</span></span></summary><div class="ops-accordion-body"><h2 class="section-title">Banka / Moka Canlı Kullanım Durumu</h2>${renderReadinessPanel()}<div class="btn-row" style="margin-bottom:12px"><button class="btn btn-green" onclick="sendImportPreviewToApproval()">Canlı Kayıtları Onay Merkezi'ne Aktar</button><button class="btn btn-soft" onclick="clearImportPreview()">Ön İzlemeyi Temizle</button><button class="btn btn-soft" onclick="matchMokaSchedules();renderHistoryImportPanel()">Banka-Moka Eşleştir</button><button class="btn btn-blue" onclick="runLiveReadinessSelfTest()">Kontrol Testi</button></div><details class="compact-details"><summary>Excel yükleme alanları</summary><div class="import-preview-grid"><div class="field"><label>Halkbank Excel</label><input id="halkbankFile" type="file" accept=".xlsx,.xls" /><button class="btn btn-blue" onclick="previewHalkbankFile()">Halkbank Ön İzle</button></div><div class="field"><label>Moka POS Excel</label><input id="mokaFile" type="file" accept=".xlsx,.xls" /><button class="btn btn-purple" onclick="previewMokaFile()">Moka Ön İzle + Takvim</button></div></div></details><div class="compact-status"><div class="compact-card"><span>Moka Bugün</span><strong>${money(todayDue)}</strong></div><div class="compact-card"><span>Moka Bu Hafta</span><strong>${money(weekDue)}</strong></div><div class="compact-card"><span>Moka Bu Ay</span><strong>${money(monthDue)}</strong></div><div class="compact-card"><span>Toplam Moka Alacağı</span><strong>${money(totalPending)}</strong></div><div class="compact-card"><span>Taksit Satırı</span><strong>${moka.length}</strong></div></div><details class="compact-details"><summary>Ön izleme satırlarını göster (${rows.length} kayıt)</summary><div class="import-table-wrap">${rows.length?`<table><thead><tr><th>Kaynak</th><th>Tarih</th><th>Önerilen Cari</th><th>Tip</th><th>Durum</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${table}</tbody></table>`:`<div class="empty">Henüz ön izleme yok.</div>`}</div></details><details class="compact-details"><summary>Moka taksit bazlı ödeme takvimi (${moka.length} satır)</summary><div class="import-table-wrap">${moka.length?`<table><thead><tr><th>Vade</th><th>Kart Sahibi / Cari</th><th>Taksit</th><th class="text-right">Net Tutar</th><th>Durum</th></tr></thead><tbody>${planRows}</tbody></table>`:`<div class="empty">Moka ödeme takvimi yok.</div>`}</div></details></div></details>`;
     el.innerHTML=el.innerHTML.replace('<div class="ops-accordion-body">', `<div class="ops-accordion-body">${renderMailStatementBridge()}`);
     el.innerHTML=el.innerHTML.replace("<th>Kaynak</th><th>Tarih</th><th>Önerilen Cari</th><th>Tip</th><th>Durum</th><th>Açıklama</th><th class=\"text-right\">Tutar</th>","<th>İşlem ID</th><th>Kaynak</th><th>Tarih</th><th>Önerilen Cari</th><th>Tip</th><th>Durum</th><th>Açıklama</th><th class=\"text-right\">Tutar</th>");
   }
