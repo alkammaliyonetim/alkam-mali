@@ -5,3 +5,7 @@ pages_build_output_dir = "."
 [[kv_namespaces]]
 binding = "TELEGRAM_QUEUE"
 id = "4d44a5b9ce904c7eb2c4efbf3eeb9211"
+
+[[kv_namespaces]]
+binding = "MAIL_QUEUE"
+id = "4d44a5b9ce904c7eb2c4efbf3eeb9211"
