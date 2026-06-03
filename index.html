@@ -548,8 +548,8 @@
     const b=monthBounds(period), ledger=currentLedgerRows().filter(t=>dateInRange(t.date,b.start,b.end));
     const accountRows=(state.accountTxns||[]).filter(t=>dateInRange(t.date,b.start,b.end));
     const cashRows=cashExpenseRows().filter(r=>dateInRange(r.date,b.start,b.end));
-    const accrual=ledger.reduce((s,t)=>s+num(t.debit),0);
-    const collection=ledger.reduce((s,t)=>s+num(t.credit),0);
+    const incomeAccrual=ledger.reduce((s,t)=>s+num(t.debit),0);
+    const incomeCollection=ledger.reduce((s,t)=>s+num(t.credit),0);
     const expenseAccrual=cashRows.reduce((s,r)=>{
       if(/calisanlar/i.test(r.module||"") && r.recordType==="salary" && r.payrollType==="Ödeme") return s;
       return s+num(r.amount);
@@ -559,13 +559,24 @@
     const paid=paidByCash+paidByAccounts;
     const taxAccrual=[...ledger,...cashRows].filter(r=>isTaxText(`${r.description||""} ${r.desc||""} ${r.note||""} ${r.party||""} ${r.type||""}`)).reduce((s,r)=>s+num(r.debit||r.amount),0);
     const taxPaid=[...accountRows,...cashRows].filter(r=>isTaxText(`${r.desc||""} ${r.note||""} ${r.party||""} ${r.source||""}`) && (r.dir==="cikis"||isPaidStatus(r.status))).reduce((s,r)=>s+num(r.amount),0);
-    const grossProfit=accrual-expenseAccrual, remaining=Math.max(0,expenseAccrual-paid);
-    return {period:b.period,start:b.start,end:b.end,accrual,collection,expenseAccrual,paid,remaining,grossProfit,taxAccrual,taxPaid,netProfit:grossProfit-taxAccrual,ledgerCount:ledger.length,accountCount:accountRows.length,cashCount:cashRows.length};
+    const grossProfit=incomeAccrual-expenseAccrual, remaining=Math.max(0,expenseAccrual-paid);
+    const netProfitAccrual=grossProfit-taxAccrual;
+    return {period:b.period,start:b.start,end:b.end,accrual:incomeAccrual,collection:incomeCollection,incomeAccrual,incomeCollection,expenseAccrual,paid,remaining,grossProfit,taxAccrual,taxPaid,netProfit:netProfitAccrual,netProfitAccrual,ledgerCount:ledger.length,accountCount:accountRows.length,cashCount:cashRows.length};
   }
   function renderDashboardFinanceStatement(){
     const el=byId("dashboardFinanceStatement"); if(!el)return;
     const f=financialStatement(today().slice(0,7));
-    el.innerHTML=`<div class="section"><div class="topbar" style="margin-bottom:10px"><div><h2 class="section-title">Bu Ay Gelir ve Finans Tablosu</h2><p class="muted-note">${esc(f.start)} / ${esc(f.end)} · cari defter, hesap hareketleri ve nakit yönetimi aynı ay motorundan hesaplanır.</p></div></div><div class="cards"><div class="card"><div class="card-label">Bu Ay Tahakkuk</div><div class="card-value">${money(f.accrual)}</div></div><div class="card"><div class="card-label">Bu Ay Tahsilat</div><div class="card-value">${money(f.collection)}</div></div><div class="card"><div class="card-label">Gider Tahakkuku</div><div class="card-value">${money(f.expenseAccrual)}</div></div><div class="card"><div class="card-label">Bu Ay Ödenen</div><div class="card-value">${money(f.paid)}</div></div><div class="card"><div class="card-label">Bu Ay Kalan</div><div class="card-value">${money(f.remaining)}</div></div><div class="card"><div class="card-label">Brüt Kar</div><div class="card-value">${money(f.grossProfit)}</div></div><div class="card"><div class="card-label">KDV / Vergi Tahakkuku</div><div class="card-value">${money(f.taxAccrual)}</div></div><div class="card"><div class="card-label">KDV / Vergi Ödemesi</div><div class="card-value">${money(f.taxPaid)}</div></div><div class="card"><div class="card-label">Tahakkuka Göre Kazanç</div><div class="card-value">${money(f.netProfit)}</div></div></div><div class="rule-box">Kontrol: ${f.ledgerCount} cari hareketi · ${f.accountCount} hesap hareketi · ${f.cashCount} nakit yönetimi kaydı okundu. Vergi alanları yalnızca KDV/Gelir Vergisi/Stopaj olarak etiketlenmiş kayıtlardan gelir.</div></div>`;
+    const rows=[
+      ["Gelir Tahakkukları", f.incomeAccrual, "Cari aylık ücret ve diğer borç/tahakkuk kayıtları"],
+      ["Gelen Ödeme / Tahsilat", f.incomeCollection, "Cari alacak/tahsilat kayıtları"],
+      ["Gider Tahakkukları", f.expenseAccrual, "Masraf, maaş, kredi, demirbaş vb. nakit yönetimi kayıtları"],
+      ["Ödenen Gider", f.paid, "Hesap çıkışları ve ödendi durumundaki giderler"],
+      ["Brüt Kar", f.grossProfit, "Gelir tahakkuku - gider tahakkuku"],
+      ["KDV + Gelir Vergisi Tahakkuku", f.taxAccrual, "KDV, gelir vergisi, stopaj ve vergi etiketli kayıtlar"],
+      ["Ödenen KDV + Gelir Vergisi", f.taxPaid, "Vergi etiketli ödemeler"],
+      ["Net Kar (Tahakkuk Esası)", f.netProfitAccrual, "Brüt kar - vergi tahakkukları"]
+    ];
+    el.innerHTML=`<div class="section"><div class="topbar" style="margin-bottom:10px"><div><h2 class="section-title">Bu Ay Gelir Tablosu ve Finans Özeti</h2><p class="muted-note">${esc(f.start)} / ${esc(f.end)} · tahakkuk esası ve ödeme hareketleri aynı ay motorundan hesaplanır.</p></div></div><div class="cards"><div class="card"><div class="card-label">Gelir Tahakkuku</div><div class="card-value">${money(f.incomeAccrual)}</div></div><div class="card"><div class="card-label">Gelen Ödeme</div><div class="card-value">${money(f.incomeCollection)}</div></div><div class="card"><div class="card-label">Gider Tahakkuku</div><div class="card-value">${money(f.expenseAccrual)}</div></div><div class="card"><div class="card-label">Net Kar</div><div class="card-value">${money(f.netProfitAccrual)}</div></div></div><table><thead><tr><th>Kalem</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${rows.map(([name,value,note])=>`<tr><td><strong>${esc(name)}</strong></td><td>${esc(note)}</td><td class="text-right money">${money(value)}</td></tr>`).join("")}</tbody></table><div class="rule-box">Kontrol: ${f.ledgerCount} cari hareketi · ${f.accountCount} hesap hareketi · ${f.cashCount} nakit yönetimi kaydı okundu. Vergi alanları yalnızca KDV/Gelir Vergisi/Stopaj olarak etiketlenmiş kayıtlardan gelir.</div></div>`;
   }
   function slug(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("cari");}
   function notify(msg){const el=byId("toast"); if(!el) return; el.textContent=msg; el.style.display="block"; clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>el.style.display="none",3000);}
@@ -3532,21 +3543,29 @@
     try{
       const period=periodInputDefault();
       const createdAt=new Date().toLocaleString("tr-TR");
-      const rows=state.cariler.filter(c=>!c.deleted).map(c=>({c,amount:num(c.monthlyFee),period})).filter(x=>x.amount>0 && !accrualExists(x.c,x.period,x.amount));
+      const rows=state.cariler.filter(c=>!c.deleted).map(c=>({c,amount:num(c.monthlyFee),period})).filter(x=>x.amount>0 && !allTxns(x.c).some(t=>String(t.date||"").slice(0,7)===x.period && Math.abs(num(t.debit)-x.amount)<0.01 && /tahakkuk/i.test(String(t.type||t.source||""))));
       if(!rows.length) return;
+      const removeApprovalIds=new Set();
       rows.forEach(x=>{
         const traceId=importHash(["AUTO-MONTHLY-TAHAKKUK",x.c.id,x.period,x.amount]);
-        state.approvals.unshift({id:uid("APR-AUTO"),cariId:x.c.id,amount:x.amount,score:100,type:"Tahakkuk",source:"Otomasyon Tahakkuk",date:periodDate(x.period),reason:`${periodName(x.period)} aylık muhasebe ücreti tahakkuku`,status:"Bekliyor",createdAt,traceId,importHash:traceId,autoCreated:true});
+        state.manualTxns.push({id:uid("AUTO-TAH"),cariId:x.c.id,date:periodDate(x.period),type:"TAHAKKUK",debit:x.amount,credit:0,source:"Otomasyon Tahakkuk",description:`${periodName(x.period)} aylık muhasebe ücreti tahakkuku`,docNo:traceId,traceId,importHash:traceId,autoMonthlyAccrual:true,ledgerVerified:true,createdAt});
+        (state.approvals||[]).filter(a=>a.status==="Bekliyor" && a.type==="Tahakkuk" && a.autoCreated && a.cariId===x.c.id && String(a.date||"").slice(0,7)===x.period && Math.abs(num(a.amount)-x.amount)<0.01).forEach(a=>removeApprovalIds.add(a.id));
         state.importHashes.push(traceId);
       });
+      if(removeApprovalIds.size) state.approvals=state.approvals.filter(a=>!removeApprovalIds.has(a.id));
       state.importHashes=[...new Set(state.importHashes)].slice(-5000);
+      writeJson(LS.manual,state.manualTxns);
       writeJson(LS.approvals,state.approvals);
       writeJson(LS.importHashes,state.importHashes);
-      logAudit("Aylık tahakkuk otomatik hazırlandı", `${periodName(period)} · ${rows.length} cari · ${money(rows.reduce((s,x)=>s+x.amount,0))}`, "Tahakkuk");
-      notify(`${periodName(period)} tahakkukları otomatik hazırlandı: ${rows.length} cari Onay Merkezi'nde.`);
+      logAudit("Aylık tahakkuk otomatik işlendi", `${periodName(period)} · ${rows.length} cari · ${money(rows.reduce((s,x)=>s+x.amount,0))}`, "Tahakkuk");
+      notify(`${periodName(period)} tahakkukları otomatik cariye işlendi: ${rows.length} cari.`);
     }finally{
       window.__alkamAutoMonthlyAccrualRunning=false;
     }
+  }
+  function autoMonthlyAccrualRows(period){
+    const p=String(period||periodInputDefault()).slice(0,7);
+    return (state.manualTxns||[]).filter(t=>t.autoMonthlyAccrual && String(t.date||"").slice(0,7)===p).map(t=>({txn:t,cari:state.cariler.find(c=>c.id===t.cariId)})).sort((a,b)=>String(a.cari?.name||"").localeCompare(String(b.cari?.name||""),"tr"));
   }
   function renderAccrualPanel(){
     const el=byId("accrualPanel"); if(!el) return;
@@ -3560,9 +3579,10 @@
     const existing=accrualRangeExistingCount();
     const scope=accrualScopeValue();
     const selectedCari=state.cariler.find(c=>c.id===state.selectedCariId && !c.deleted);
+    const postedRows=autoMonthlyAccrualRows(period);
     el.innerHTML=`
       <h2 class="section-title">Toplu Tahakkuk Kontrol Merkezi</h2>
-      <div class="rule-box" style="margin-bottom:12px">Basit kural: cari kartındaki aylık ücret alınır, tahakkuk ayın <strong>1. günü</strong> tarihli aday olarak hazırlanır. Bu ekran doğrudan cari ekstresine yazmaz; önce Onay Merkezi'ne gönderir ve aynı cari/dönem/tutar için mükerrer aday üretmez.</div>
+      <div class="rule-box" style="margin-bottom:12px">Basit kural: cari kartındaki aylık ücret alınır, tahakkuk ayın <strong>1. günü</strong> otomatik cari ekstresine işlenir. Aynı cari/dönem/tutar için mükerrer tahakkuk üretmez.</div>
       <div class="grid-4">
         <div class="field"><label>Kapsam</label><select id="accrualScope" onchange="setAccrualScope(this.value)"><option value="all" ${scope==="all"?"selected":""}>Tüm aktif cariler</option><option value="selected" ${scope==="selected"?"selected":""}>Sadece seçili cari</option></select><small class="muted-note">${scope==="selected" ? esc(selectedCari?.name||"Seçili cari yok") : "Tüm ücretli cariler"}</small></div>
         <div class="field"><label>İşlem Tipi</label><select id="accrualMode" onchange="renderAccrualPanel()"><option value="single" ${mode==="single"?"selected":""}>Tek ay</option><option value="range" ${mode==="range"?"selected":""}>Ay aralığı</option></select></div>
@@ -3571,34 +3591,36 @@
       </div>
       <div class="compact-status">
         <div class="compact-card"><span>Dönem</span><strong>${periods}</strong><p class="muted-note">${mode==="single"?esc(periodName(period)):`${esc(start)} / ${esc(end)}`}</p></div>
-        <div class="compact-card"><span>Onaya Hazır</span><strong>${rows.length}</strong><p class="muted-note">Mükerrer olmayan aday</p></div>
+        <div class="compact-card"><span>Otomatik İşlenen</span><strong>${postedRows.length}</strong><p class="muted-note">${esc(periodName(period))}</p></div>
+        <div class="compact-card"><span>Eksik / Hazırlanacak</span><strong>${rows.length}</strong><p class="muted-note">Mükerrer olmayan aday</p></div>
         <div class="metric-mini"><div class="k">Toplam Tahakkuk</div><div class="v">${money(total)}</div></div>
         <div class="compact-card"><span>Zaten Var / Bekliyor</span><strong>${existing}</strong><p class="muted-note">Tekrar üretilmez</p></div>
         <div class="compact-card"><span>Tarih Standardı</span><strong>01</strong><p class="muted-note">Her ayın 1'i</p></div>
       </div>
-      <div class="btn-row" style="margin:10px 0 12px"><button class="btn btn-green" onclick="sendMonthlyAccrualsToApproval()">Seçime Göre Tahakkukları Onaya Gönder</button><button class="btn btn-soft" onclick="setAccrualScope('selected')">Sadece Seçili Cari</button><button class="btn btn-soft" onclick="renderAccrualPanel()">Yenile</button></div>
+      <div class="btn-row" style="margin:10px 0 12px"><button class="btn btn-green" onclick="sendMonthlyAccrualsToApproval()">Eksik Tahakkukları Cariye İşle</button><button class="btn btn-soft" onclick="setAccrualScope('selected')">Sadece Seçili Cari</button><button class="btn btn-soft" onclick="renderAccrualPanel()">Yenile</button></div>
+      <div class="section" style="margin:10px 0 12px"><h3 class="section-title">Bu Ay Otomatik İşlenen Tahakkuklar</h3>${postedRows.length?`<table><thead><tr><th>Cari</th><th>Tarih</th><th>İşlem ID</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${postedRows.map(x=>`<tr><td><strong>${esc(x.cari?.name||"-")}</strong></td><td>${esc(x.txn.date)}</td><td>${traceBadge(x.txn)}<br><span class="tag green">Doğrulandı</span></td><td>${esc(x.txn.description||"")}</td><td class="text-right money">${money(x.txn.debit)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Bu ay otomatik işlenmiş tahakkuk yok.</div>`}</div>
       <div class="mini-list">${rows.length?rows.slice(0,24).map(x=>`<div class="mini-row"><strong>${esc(x.c.name)}</strong><br>${esc(periodName(x.period))} aylık muhasebe ücreti · ${money(x.amount)} · Tarih ${esc(periodDate(x.period))}</div>`).join(""):`<div class="empty">Bu seçim için yeni tahakkuk adayı yok. Ücretler sıfır olabilir veya kayıtlar zaten hazırlanmış/onaya gönderilmiş olabilir.</div>`}</div>`;
   }
   window.sendMonthlyAccrualsToApproval=function(){
     const rows=accrualRangeCandidates();
-    if(!rows.length) return notify("Onaya gönderilecek tahakkuk adayı yok.");
+    if(!rows.length) return notify("İşlenecek eksik tahakkuk yok.");
     rows.forEach(x=>{
       const traceId=importHash(["TAHAKKUK",x.c.id,x.period,x.amount]);
-      state.approvals.unshift({id:uid("APR-TAH"),cariId:x.c.id,amount:x.amount,score:100,type:"Tahakkuk",source:"Otomasyon Tahakkuk",date:periodDate(x.period),reason:`${periodName(x.period)} aylık muhasebe ücreti tahakkuku`,status:"Bekliyor",createdAt:new Date().toLocaleString("tr-TR"),traceId,importHash:traceId});
+      state.manualTxns.push({id:uid("AUTO-TAH"),cariId:x.c.id,date:periodDate(x.period),type:"TAHAKKUK",debit:x.amount,credit:0,source:"Otomasyon Tahakkuk",description:`${periodName(x.period)} aylık muhasebe ücreti tahakkuku`,docNo:traceId,traceId,importHash:traceId,autoMonthlyAccrual:true,ledgerVerified:true,createdAt:new Date().toLocaleString("tr-TR")});
       state.importHashes.push(traceId);
     });
     state.importHashes=[...new Set(state.importHashes)].slice(-5000);
-    writeJson(LS.approvals,state.approvals);
+    writeJson(LS.manual,state.manualTxns);
     writeJson(LS.importHashes,state.importHashes);
-    logAudit("Aylık tahakkuk önizlemesi onaya aktarıldı", `${rows.length} cari · ${money(rows.reduce((s,x)=>s+x.amount,0))}`);
+    logAudit("Aylık tahakkuk cariye işlendi", `${rows.length} cari · ${money(rows.reduce((s,x)=>s+x.amount,0))}`);
     refreshAll();
-    notify(`${rows.length} tahakkuk adayı Onay Merkezi'ne eklendi.`);
+    notify(`${rows.length} tahakkuk cariye işlendi.`);
   };
 
   function renderAutomation(){
     const pending = readJson(LS.pendingAuto,[]);
     byId("automationPanel").innerHTML = `
-      <div class="rule-box" style="margin-bottom:12px"><strong>Aylık tahakkuk kuralı:</strong> Her ayın 1'inde cari kartındaki aylık ücretlerden eksik tahakkuk adayları otomatik hazırlanır. Kesin cari hareketi yine Onay Merkezi onayıyla deftere işlenir; banka, Moka ve toplu mutasyonlar onaysız çalışmaz.</div>
+      <div class="rule-box" style="margin-bottom:12px"><strong>Aylık tahakkuk kuralı:</strong> Her ayın 1'inde cari kartındaki aylık ücretler doğrudan cari ekstresine tahakkuk olarak işlenir. Banka, Moka, Telegram ve toplu mutasyonlar onaysız kesin deftere yazılmaz.</div>
       ${automationRules.map(r=>{const enabled=!!state.automation[r.key]?.enabled;return `<div class="auto-row"><div><div class="auto-name">${esc(r.title)}</div><div class="auto-desc">${esc(r.desc)}</div><span class="auto-risk">Risk: ${esc(r.risk)}</span></div><label><span class="switch"><input type="checkbox" data-auto="${esc(r.key)}" ${enabled?"checked":""}><span class="slider"></span></span><span class="switch-text">${enabled?"OTOMATİK":"KAPALI"}</span></label></div>`;}).join("")}
       <h3 style="font-size:15px;margin:18px 0 8px">Onay Bekleyen / Bloklanan Otomasyonlar</h3>
       <div class="rule-box">${pending.length?pending.map(x=>`<div><strong>${esc(x.title||x.key)}</strong> · ${esc(x.createdAt||"")}</div>`).join(""):"Onay bekleyen otomasyon kaydı yok."}</div>
