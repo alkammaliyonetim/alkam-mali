@@ -766,6 +766,7 @@
   };
 
   window.refreshAll = function(){
+    cleanupPendingSplitAccruals();
     autoCreateMonthlyAccrualApprovals();
     repairUnsafeBankOcrApprovals();
     repairApprovedAccrualLedgerLinks();
@@ -3217,7 +3218,7 @@
     renderApprovals();
   };
   function canSplitAnnualApproval(a){
-    return a && a.status==="Bekliyor" && a.type==="Tahakkuk" && num(a.amount)>=12 && !!a.cariId;
+    return false;
   }
   function approvalSplitButton(a){
     return canSplitAnnualApproval(a) ? `<button class="btn btn-amber" onclick="splitApprovalToMonthly('${esc(a.id)}',12)">12 Aya Böl</button>` : "";
@@ -3256,6 +3257,20 @@
   }
   function isPendingSplitAccrual(a){
     return a && a.status==="Bekliyor" && a.type==="Tahakkuk" && (!!a.splitFrom || /yıllık kayıttan bölündü|yillik kayittan bolundu/i.test(String(a.reason||"")));
+  }
+  function cleanupPendingSplitAccruals(){
+    if(window.__alkamSplitAccrualCleanupRunning) return;
+    const rows=(state.approvals||[]).filter(isPendingSplitAccrual);
+    if(!rows.length) return;
+    window.__alkamSplitAccrualCleanupRunning=true;
+    try{
+      const ids=new Set(rows.map(x=>x.id));
+      state.approvals=(state.approvals||[]).filter(x=>!ids.has(x.id));
+      writeJson(LS.approvals,state.approvals);
+      logAudit("Eski yıllık bölünmüş tahakkuk adayları otomatik temizlendi", `${rows.length} bekleyen aday silindi`, "Tahakkuk");
+    }finally{
+      window.__alkamSplitAccrualCleanupRunning=false;
+    }
   }
   window.clearPendingSplitAccruals=function(){
     const rows=(state.approvals||[]).filter(isPendingSplitAccrual);
