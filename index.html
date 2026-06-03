@@ -65,7 +65,7 @@
     .row-tahakkuk{background:rgba(254,242,242,.72)}.row-tahsilat{background:rgba(236,253,245,.8)}.row-neutral{background:rgba(238,245,255,.5)}
     .empty{padding:22px;border-style:dashed;text-align:center;color:var(--muted);font-weight:850;line-height:1.55}.rule-box{padding:12px;font-size:13px;font-weight:750;color:#334155;line-height:1.62}
     .metric-mini{padding:12px}.metric-mini .k{font-size:11px;font-weight:950;color:var(--muted);text-transform:uppercase;letter-spacing:.045em;margin-bottom:6px}.metric-mini .v{font-size:18px;font-weight:950}
-    .finance-sheet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px 14px;border:1px solid #dbeafe;border-radius:14px;background:#fff;padding:12px;margin-bottom:12px}.finance-detail{margin:0!important;box-shadow:none!important}.finance-detail summary{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;min-height:50px}.finance-detail summary span{font-size:13px;color:#334155}.finance-detail summary strong{font-size:18px;color:#0f172a;font-variant-numeric:tabular-nums}.finance-detail>div{max-height:280px;overflow:auto}.finance-result{display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;border:1px solid #c7d2fe;background:#f8fbff;border-radius:14px;padding:13px 15px;font-weight:950}.finance-result span{font-size:14px;color:#334155}.finance-result strong{font-size:21px;color:#0f172a;font-variant-numeric:tabular-nums}.finance-wide{grid-column:1/-1;width:min(560px,100%);margin:0 auto}.finance-net{border-color:#86efac;background:#f0fdf4}.finance-spacer{min-height:1px}.finance-period-controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap}.finance-period-controls .field{margin:0;min-width:128px}.finance-period-controls .field label{font-size:10px}.finance-period-controls .select-input,.finance-period-controls .search-input{min-height:36px;padding:7px 10px}.finance-period-note{font-size:11px;font-weight:850;color:#64748b;margin-top:4px}
+    .finance-sheet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px 14px;border:1px solid #dbeafe;border-radius:14px;background:#fff;padding:12px;margin-bottom:12px}.finance-detail{margin:0!important;box-shadow:none!important}.finance-detail summary{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;min-height:50px}.finance-detail summary span{font-size:13px;color:#334155}.finance-detail summary strong{font-size:18px;color:#0f172a;font-variant-numeric:tabular-nums}.finance-detail>div{max-height:280px;overflow:auto}.finance-result{display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px;border:1px solid #c7d2fe;background:#f8fbff;border-radius:14px;padding:13px 15px;font-weight:950}.finance-result span{font-size:14px;color:#334155}.finance-result strong{font-size:21px;color:#0f172a;font-variant-numeric:tabular-nums}.finance-wide{grid-column:1/-1;width:min(560px,100%);margin:0 auto}.finance-net{border-color:#86efac;background:#f0fdf4}.finance-spacer{min-height:1px}.finance-period-controls{display:flex;align-items:end;gap:8px;flex-wrap:wrap}.finance-period-controls .field{margin:0;min-width:128px}.finance-period-controls .field label{font-size:10px}.finance-period-controls .select-input,.finance-period-controls .search-input{min-height:36px;padding:7px 10px}.finance-period-note{font-size:11px;font-weight:850;color:#64748b;margin-top:4px}.sort-toolbar{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin:8px 0;flex-wrap:wrap}.sort-toolbar label{font-size:11px;font-weight:950;color:#64748b;text-transform:uppercase}.sort-toolbar .select-input{width:auto;min-width:150px;min-height:34px;padding:6px 10px;font-size:12px}
     .hero-name{font-size:24px;font-weight:950;line-height:1.15;margin:0 0 8px}.hero-sub{display:flex;gap:8px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px;font-weight:800;margin-bottom:13px}
     .v119-legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px;padding:10px;border:1px solid #e2e8f0;background:#fbfdff;border-radius:12px}.v119-legend span{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;color:#475569}.v119-dot{width:9px;height:9px;border-radius:50%;display:inline-block}.v119-red{background:#ef4444}.v119-green{background:#10b981}.v119-blue{background:#3b82f6}
     .login-overlay{position:fixed;inset:0;background:rgba(15,23,42,.42);backdrop-filter:blur(10px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:28px}.login-overlay.force-hidden{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}body.alkam-unlocked .login-overlay{display:none!important}body.alkam-unlocked{overflow:auto!important}
@@ -600,9 +600,47 @@
     if(kind==="taxAccrual"||kind==="kdvAccrual"||kind==="incomeTaxAccrual") return num(r.debit||r.amount);
     return num(r.amount);
   }
+  function recordSortLabel(v){
+    return ({
+      dateDesc:"Tarih: en yeni",
+      dateAsc:"Tarih: en eski",
+      nameAsc:"İsim: A-Z",
+      nameDesc:"İsim: Z-A",
+      amountDesc:"Tutar: yüksek",
+      amountAsc:"Tutar: düşük"
+    })[v] || "Tarih: en yeni";
+  }
+  function sortSelectHtml(value, onchange){
+    const opts=["dateDesc","dateAsc","nameAsc","nameDesc","amountDesc","amountAsc"];
+    return `<div class="sort-toolbar"><label>Sırala</label><select class="select-input" onchange="${onchange}">${opts.map(o=>`<option value="${o}" ${value===o?"selected":""}>${recordSortLabel(o)}</option>`).join("")}</select></div>`;
+  }
+  function recordName(r){
+    return financeRowTitle(r) || r.cariName || r.party || r.employeeName || r.name || r.desc || r.description || "-";
+  }
+  function recordAmount(r,kind){
+    return kind ? financeRowAmount(r,kind) : num(r.amount ?? r.debit ?? r.credit);
+  }
+  function sortRecords(rows, sort, kind){
+    const list=(rows||[]).slice();
+    const s=sort || "dateDesc";
+    const cmpName=(a,b)=>recordName(a).localeCompare(recordName(b),"tr");
+    const cmpDate=(a,b)=>String(a.date||"").localeCompare(String(b.date||""));
+    const cmpAmount=(a,b)=>recordAmount(a,kind)-recordAmount(b,kind);
+    list.sort((a,b)=>{
+      if(s==="dateAsc") return cmpDate(a,b) || cmpName(a,b);
+      if(s==="nameAsc") return cmpName(a,b) || cmpDate(b,a);
+      if(s==="nameDesc") return cmpName(b,a) || cmpDate(b,a);
+      if(s==="amountDesc") return cmpAmount(b,a) || cmpName(a,b);
+      if(s==="amountAsc") return cmpAmount(a,b) || cmpName(a,b);
+      return cmpDate(b,a) || cmpName(a,b);
+    });
+    return list;
+  }
+  function financeSortKind(kind){return localStorage.getItem("ALKAM_FINANCE_SORT_"+kind) || "dateDesc";}
   function financeDetailHtml(title, rows, kind){
     if(!rows || !rows.length) return `<div class="empty">${esc(title)} için kayıt yok.</div>`;
-    return `<table><thead><tr><th>Tarih</th><th>Kayıt</th><th>Kaynak</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.date||"-")}</td><td><strong>${esc(financeRowTitle(r))}</strong></td><td>${esc(r.source||r.module||r.ledger||"-")}</td><td>${esc(r.description||r.desc||r.note||r.status||"")}</td><td class="text-right money">${money(financeRowAmount(r,kind))}</td></tr>`).join("")}</tbody></table>`;
+    const sort=financeSortKind(kind), sorted=sortRecords(rows,sort,kind);
+    return `${sortSelectHtml(sort,`setFinanceSort('${kind}', this.value)`)}<table><thead><tr><th>Tarih</th><th>Kayıt</th><th>Kaynak</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${esc(r.date||"-")}</td><td><strong>${esc(financeRowTitle(r))}</strong></td><td>${esc(r.source||r.module||r.ledger||"-")}</td><td>${esc(r.description||r.desc||r.note||r.status||"")}</td><td class="text-right money">${money(financeRowAmount(r,kind))}</td></tr>`).join("")}</tbody></table>`;
   }
   function financeCell(title, value, rows, kind){
     return `<details class="compact-details finance-detail"><summary><span>${esc(title)}</span><strong>${money(value)}</strong></summary><div>${financeDetailHtml(title,rows,kind)}</div></details>`;
@@ -619,6 +657,10 @@
   window.setFinancePeriodYear=function(year){
     if(year) localStorage.setItem("ALKAM_FINANCE_PERIOD_YEAR_V1", String(year).slice(0,4));
     localStorage.setItem("ALKAM_FINANCE_PERIOD_MODE_V1", "year");
+    renderDashboardFinanceStatement();
+  };
+  window.setFinanceSort=function(kind, value){
+    localStorage.setItem("ALKAM_FINANCE_SORT_"+kind, value || "dateDesc");
     renderDashboardFinanceStatement();
   };
   window.resetFinancePeriodToCurrent=function(){
@@ -1307,14 +1349,16 @@
   }
   function renderMokaDuePanel(){
     const period=window.__mokaDuePeriod||"month", range=mokaPeriodRange(period), summary=mokaDueSummary();
-    const filtered=(state.mokaPlans||[]).filter(p=>!p.bankMatched && mokaPlanInRange(p,range)).sort((a,b)=>String(a.dueDate).localeCompare(String(b.dueDate)));
+    const sort=localStorage.getItem("ALKAM_MOKA_DUE_SORT") || "dateAsc";
+    const filtered=sortRecords((state.mokaPlans||[]).filter(p=>!p.bankMatched && mokaPlanInRange(p,range)).map(p=>({...p,date:p.dueDate,party:p.cariName||p.serviceName||p.cardHolder||""})),sort);
     const filteredTotal=filtered.reduce((s,p)=>s+num(p.amount),0);
     const rows=filtered.slice(0,160).map(p=>`<tr><td>${esc(p.dueDate)}</td><td>${esc(p.cariName||p.serviceName||"-")}<br><span class="muted-note">${esc(p.desc||p.txId||"")}</span></td><td>${esc(p.installment)} / ${esc(p.installmentCount)}</td><td class="text-right money">${money(p.amount)}</td><td><span class="tag amber">Bekliyor</span></td></tr>`).join("");
-    return `<div class="section moka-due-panel"><div class="topbar" style="margin-bottom:10px"><div><h2 class="section-title" style="margin-bottom:4px">Moka Ödeme Takvimi</h2><p class="muted-note">40 gün kuralına göre bankaya geçmesi beklenen taksitler. Bankaya geçenler eşleşince bekleyen listeden düşer.</p></div><div class="btn-row"><select class="select-input" style="width:150px" onchange="setMokaDuePeriod(this.value)"><option value="today" ${period==="today"?"selected":""}>Bugün</option><option value="week" ${period==="week"?"selected":""}>Bu hafta</option><option value="month" ${period==="month"?"selected":""}>Ay seç</option><option value="year" ${period==="year"?"selected":""}>Yıl seç</option><option value="overdue" ${period==="overdue"?"selected":""}>Geciken</option><option value="all" ${period==="all"?"selected":""}>Tümü</option></select><input class="search-input" style="width:150px" type="month" value="${esc(window.__mokaDueMonth||today().slice(0,7))}" onchange="setMokaDueMonth(this.value)" /><input class="search-input" style="width:100px" type="number" min="2022" max="2035" value="${esc(window.__mokaDueYear||today().slice(0,4))}" onchange="setMokaDueYear(this.value)" /></div></div><div class="compact-status"><div class="compact-card"><span>Bugün Gelecek</span><strong>${money(summary.today)}</strong></div><div class="compact-card"><span>Bu Hafta Gelecek</span><strong>${money(summary.week)}</strong></div><div class="compact-card"><span>Bu Ay Gelecek</span><strong>${money(summary.month)}</strong></div><div class="compact-card"><span>Bu Yıl Gelecek</span><strong>${money(summary.year)}</strong></div><div class="compact-card"><span>Toplam Bekleyen</span><strong>${money(summary.total)}</strong><p class="muted-note">${summary.count} taksit</p></div></div><div class="rule-box" style="margin-bottom:10px"><strong>${esc(range.label)}:</strong> ${filtered.length} taksit · ${money(filteredTotal)} beklenen Moka ödemesi.</div><div class="import-table-wrap">${rows?`<table><thead><tr><th>Vade</th><th>Cari / Açıklama</th><th>Taksit</th><th class="text-right">Tutar</th><th>Durum</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="empty">Bu dönemde bekleyen Moka ödemesi yok.</div>`}</div></div>`;
+    return `<div class="section moka-due-panel"><div class="topbar" style="margin-bottom:10px"><div><h2 class="section-title" style="margin-bottom:4px">Moka Ödeme Takvimi</h2><p class="muted-note">40 gün kuralına göre bankaya geçmesi beklenen taksitler. Bankaya geçenler eşleşince bekleyen listeden düşer.</p></div><div class="btn-row"><select class="select-input" style="width:150px" onchange="setMokaDuePeriod(this.value)"><option value="today" ${period==="today"?"selected":""}>Bugün</option><option value="week" ${period==="week"?"selected":""}>Bu hafta</option><option value="month" ${period==="month"?"selected":""}>Ay seç</option><option value="year" ${period==="year"?"selected":""}>Yıl seç</option><option value="overdue" ${period==="overdue"?"selected":""}>Geciken</option><option value="all" ${period==="all"?"selected":""}>Tümü</option></select><input class="search-input" style="width:150px" type="month" value="${esc(window.__mokaDueMonth||today().slice(0,7))}" onchange="setMokaDueMonth(this.value)" /><input class="search-input" style="width:100px" type="number" min="2022" max="2035" value="${esc(window.__mokaDueYear||today().slice(0,4))}" onchange="setMokaDueYear(this.value)" /></div></div><div class="compact-status"><div class="compact-card"><span>Bugün Gelecek</span><strong>${money(summary.today)}</strong></div><div class="compact-card"><span>Bu Hafta Gelecek</span><strong>${money(summary.week)}</strong></div><div class="compact-card"><span>Bu Ay Gelecek</span><strong>${money(summary.month)}</strong></div><div class="compact-card"><span>Bu Yıl Gelecek</span><strong>${money(summary.year)}</strong></div><div class="compact-card"><span>Toplam Bekleyen</span><strong>${money(summary.total)}</strong><p class="muted-note">${summary.count} taksit</p></div></div><div class="rule-box" style="margin-bottom:10px"><strong>${esc(range.label)}:</strong> ${filtered.length} taksit · ${money(filteredTotal)} beklenen Moka ödemesi.</div><div class="import-table-wrap">${rows?`${sortSelectHtml(sort,"setMokaDueSort(this.value)")}<table><thead><tr><th>Vade</th><th>Cari / Açıklama</th><th>Taksit</th><th class="text-right">Tutar</th><th>Durum</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="empty">Bu dönemde bekleyen Moka ödemesi yok.</div>`}</div></div>`;
   }
   window.setMokaDuePeriod=function(v){window.__mokaDuePeriod=v||"month";renderAccounts();};
   window.setMokaDueMonth=function(v){window.__mokaDueMonth=v||today().slice(0,7);window.__mokaDuePeriod="month";renderAccounts();};
   window.setMokaDueYear=function(v){window.__mokaDueYear=v||today().slice(0,4);window.__mokaDuePeriod="year";renderAccounts();};
+  window.setMokaDueSort=function(v){localStorage.setItem("ALKAM_MOKA_DUE_SORT",v||"dateAsc");renderAccounts();};
 
   function renderAccounts(){
     const tx=state.accountTxns;
@@ -1329,6 +1373,7 @@
     }).join("");
     const selected=state.accounts.find(a=>a.id===state.selectedAccountId) || state.accounts[0] || {id:"",name:"Hesap"};
     const selectedRows=tx.filter(t=>t.accountId===selected.id).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    const accountSort=localStorage.getItem("ALKAM_ACCOUNT_SORT_"+selected.id) || "dateDesc";
     const giris=selectedRows.filter(t=>t.dir==="giris").reduce((s,t)=>s+num(t.amount),0);
     const cikis=selectedRows.filter(t=>t.dir==="cikis").reduce((s,t)=>s+num(t.amount),0);
     byId("accountTxns").innerHTML=`
@@ -1340,7 +1385,7 @@
         <div class="metric-mini"><div class="k">Bakiye</div><div class="v">${money(accountBalance(selected.id))}</div></div>
       </div>
       ${selected.id==="moka-united"?renderMokaDuePanel():""}
-      ${selectedRows.length?`<table><thead><tr><th>İşlem ID</th><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Kaynak</th><th>Cari</th><th>Açıklama</th><th class="text-right">Tutar</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${accountStatementRows(selected.id).map(t=>{const linked=state.cariler.find(c=>c.id===t.cariId);return`<tr><td>${traceBadge(t)}${t.ledgerVerified?'<br><span class="tag green">Doğrulandı</span>':""}</td><td>${esc(t.date)}</td><td>${esc(selected.name)}</td><td><span class="tag ${t.dir==="giris"?"green":"red"}">${t.dir==="giris"?"Giriş":"Çıkış"}</span></td><td>${esc(t.source||"-")}</td><td>${linked?esc(linked.name):"-"} ${t.postedToCari?'<span class="tag green">Cariye işlendi</span>':""}</td><td>${esc(t.desc||"")}</td><td class="text-right money">${money(t.amount)}</td><td class="text-right money">${money(t.runningBalance)}</td><td><button class="btn btn-red" onclick="deleteAccountTxn('${t.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Bu hesaba ait hareket yok.</div>`}`;
+      ${selectedRows.length?`${sortSelectHtml(accountSort,`setAccountSort('${selected.id}', this.value)`)}<table><thead><tr><th>İşlem ID</th><th>Tarih</th><th>Hesap</th><th>Yön</th><th>Kaynak</th><th>Cari</th><th>Açıklama</th><th class="text-right">Tutar</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${accountStatementRows(selected.id,accountSort).map(t=>{const linked=state.cariler.find(c=>c.id===t.cariId);return`<tr><td>${traceBadge(t)}${t.ledgerVerified?'<br><span class="tag green">Doğrulandı</span>':""}</td><td>${esc(t.date)}</td><td>${esc(selected.name)}</td><td><span class="tag ${t.dir==="giris"?"green":"red"}">${t.dir==="giris"?"Giriş":"Çıkış"}</span></td><td>${esc(t.source||"-")}</td><td>${linked?esc(linked.name):"-"} ${t.postedToCari?'<span class="tag green">Cariye işlendi</span>':""}</td><td>${esc(t.desc||"")}</td><td class="text-right money">${money(t.amount)}</td><td class="text-right money">${money(t.runningBalance)}</td><td><button class="btn btn-red" onclick="deleteAccountTxn('${t.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Bu hesaba ait hareket yok.</div>`}`;
   }
 
   window.seedMoka=function(){if(!state.accounts.some(a=>a.id==="moka-united"))state.accounts.push({id:"moka-united",name:"Moka United",type:"moka_united"});writeJson(LS.accounts,state.accounts);renderAccounts();notify("Moka United hesabı hazır.");};
@@ -1350,9 +1395,14 @@
     return type==="kredi_karti" ? "Kredi Kartı" : alkamBaseAccountTypeLabel(type);
   };
   function accountBalance(accountId){return state.accountTxns.filter(t=>t.accountId===accountId).reduce((s,t)=>s+(t.dir==="giris"?num(t.amount):-num(t.amount)),0);}
-  function accountStatementRows(accountId){
+  window.setAccountSort=function(accountId,value){
+    localStorage.setItem("ALKAM_ACCOUNT_SORT_"+accountId, value || "dateDesc");
+    renderAccounts();
+  };
+  function accountStatementRows(accountId, sort){
     let running=0;
-    return state.accountTxns.filter(t=>t.accountId===accountId).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(t=>{running += t.dir==="giris"?num(t.amount):-num(t.amount); return {...t,runningBalance:running};}).reverse();
+    const chronological=state.accountTxns.filter(t=>t.accountId===accountId).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(t=>{running += t.dir==="giris"?num(t.amount):-num(t.amount); return {...t,runningBalance:running};});
+    return sortRecords(chronological, sort || "dateDesc");
   }
   function isPaymentApproval(a){
     const t=cleanText(a?.type||"");
@@ -1457,10 +1507,17 @@
   function employeeSalaryRows(){return cashModuleRows("calisanlar").filter(r=>r.recordType==="salary");}
   function employeeName(r){return r.employeeName || r.party || "Çalışan";}
   function employeeMonthlySalary(r){return num(r.monthlySalary || r.amount);}
+  function cashSortKey(key, part){return localStorage.getItem(`ALKAM_CASH_SORT_${key}_${part||"rows"}`) || "dateDesc";}
+  window.setCashSort=function(key, part, value){
+    localStorage.setItem(`ALKAM_CASH_SORT_${key}_${part||"rows"}`, value || "dateDesc");
+    const mod=cashModules.find(m=>m.key===key);
+    if(mod) renderCashModule(mod);
+  };
   function renderEmployeeModule(mod){
     const el=byId("cashModule-"+mod.key); if(!el) return;
-    const employees=employeeCards().sort((a,b)=>employeeName(a).localeCompare(employeeName(b),"tr"));
-    const txns=employeeSalaryRows().slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    const employeeSort=cashSortKey("calisanlar","cards"), salarySort=cashSortKey("calisanlar","salary");
+    const employees=sortRecords(employeeCards(),employeeSort);
+    const txns=sortRecords(employeeSalaryRows(),salarySort);
     const active=employees.filter(e=>!/pasif/i.test(String(e.status||"")));
     const monthlyTotal=active.reduce((s,e)=>s+employeeMonthlySalary(e),0);
     const accrued=txns.filter(t=>t.payrollType==="Tahakkuk").reduce((s,t)=>s+num(t.amount),0);
@@ -1474,13 +1531,14 @@
         <div class="section"><h2 class="section-title">Çalışan Kartı</h2><div class="grid-3"><div class="field"><label>Çalışan</label><input id="emp-name" placeholder="Ad Soyad" /></div><div class="field"><label>Aylık Net Maaş</label><input id="emp-salary" type="number" step="0.01" /></div><div class="field"><label>Durum</label><select id="emp-status"><option>Aktif</option><option>Pasif</option></select></div></div><div class="field"><label>Not</label><input id="emp-note" placeholder="IBAN, görev, SGK, özel not" /></div><button class="btn btn-green" onclick="saveEmployeeCard()">Çalışan Kaydet</button></div>
         <div class="section"><h2 class="section-title">Maaş Tahakkuk / Ödeme</h2><div class="grid-4"><div class="field"><label>Dönem</label><input id="pay-period" type="month" value="${currentMonth()}" /></div><div class="field"><label>İşlem Tarihi</label><input id="pay-date" type="date" value="${firstDayOfPeriod(currentMonth())}" /></div><div class="field"><label>Çalışan</label><select id="pay-employee">${empOptions || '<option value="">Çalışan yok</option>'}</select></div><div class="field"><label>İşlem</label><select id="pay-type"><option>Tahakkuk</option><option>Ödeme</option></select></div></div><div class="grid-3"><div class="field"><label>Tutar</label><input id="pay-amount" type="number" step="0.01" placeholder="Boşsa kart maaşı" /></div><div class="field"><label>Kaynak / Hesap</label><select id="pay-account"><option>Bordro</option><option>Kasa</option><option>Banka</option><option>Diğer Kasa</option></select></div><div class="field"><label>Durum</label><select id="pay-status"><option>Onaya Hazır</option><option>Ödenecek</option><option>Ödendi</option></select></div></div><div class="field"><label>Açıklama</label><input id="pay-note" placeholder="Maaş tahakkuku, avans, ödeme dekontu vb." /></div><button class="btn btn-green" onclick="savePayrollTxn()">Manuel İşlemi Kaydet</button></div>
       </div>
-      <div class="section"><h2 class="section-title">Çalışan Kartları</h2>${employees.length?`<table><thead><tr><th>Çalışan</th><th>Durum</th><th>Not</th><th class="text-right">Aylık Net Maaş</th><th>İşlem</th></tr></thead><tbody>${employees.map(e=>`<tr><td>${esc(employeeName(e))}</td><td><span class="tag ${/pasif/i.test(e.status)?"amber":"green"}">${esc(e.status||"Aktif")}</span></td><td>${esc(e.note||"")}</td><td class="text-right money">${money(employeeMonthlySalary(e))}</td><td><button class="btn btn-red" onclick="deleteCashRecord('calisanlar','${e.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz çalışan kartı yok.</div>`}</div>
-      <div class="section"><h2 class="section-title">Maaş Hareketleri</h2>${txns.length?`<table><thead><tr><th>Dönem</th><th>Tarih</th><th>Çalışan</th><th>İşlem</th><th>Kaynak</th><th>Durum</th><th>Not</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${txns.map(r=>`<tr><td>${esc(r.period||"-")}</td><td>${esc(r.date)}</td><td>${esc(employeeName(r))}</td><td><span class="tag ${r.payrollType==="Ödeme"?"green":"amber"}">${esc(r.payrollType)}</span></td><td>${esc(r.account||"Bordro")}</td><td>${esc(r.status||"")}</td><td>${esc(r.note||"")}</td><td class="text-right money">${money(r.amount)}</td><td><button class="btn btn-red" onclick="deleteCashRecord('calisanlar','${r.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz maaş hareketi yok.</div>`}</div>`;
+      <div class="section"><h2 class="section-title">Çalışan Kartları</h2>${employees.length?`${sortSelectHtml(employeeSort,`setCashSort('calisanlar','cards',this.value)`)}<table><thead><tr><th>Çalışan</th><th>Durum</th><th>Not</th><th class="text-right">Aylık Net Maaş</th><th>İşlem</th></tr></thead><tbody>${employees.map(e=>`<tr><td>${esc(employeeName(e))}</td><td><span class="tag ${/pasif/i.test(e.status)?"amber":"green"}">${esc(e.status||"Aktif")}</span></td><td>${esc(e.note||"")}</td><td class="text-right money">${money(employeeMonthlySalary(e))}</td><td><button class="btn btn-red" onclick="deleteCashRecord('calisanlar','${e.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz çalışan kartı yok.</div>`}</div>
+      <div class="section"><h2 class="section-title">Maaş Hareketleri</h2>${txns.length?`${sortSelectHtml(salarySort,`setCashSort('calisanlar','salary',this.value)`)}<table><thead><tr><th>Dönem</th><th>Tarih</th><th>Çalışan</th><th>İşlem</th><th>Kaynak</th><th>Durum</th><th>Not</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${txns.map(r=>`<tr><td>${esc(r.period||"-")}</td><td>${esc(r.date)}</td><td>${esc(employeeName(r))}</td><td><span class="tag ${r.payrollType==="Ödeme"?"green":"amber"}">${esc(r.payrollType)}</span></td><td>${esc(r.account||"Bordro")}</td><td>${esc(r.status||"")}</td><td>${esc(r.note||"")}</td><td class="text-right money">${money(r.amount)}</td><td><button class="btn btn-red" onclick="deleteCashRecord('calisanlar','${r.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz maaş hareketi yok.</div>`}</div>`;
   }
   function renderCashModule(mod){
     const el=byId("cashModule-"+mod.key); if(!el) return;
     if(mod.key==="calisanlar") return renderEmployeeModule(mod);
-    const rows=cashModuleRows(mod.key).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+    const sort=cashSortKey(mod.key,"rows");
+    const rows=sortRecords(cashModuleRows(mod.key),sort);
     const total=rows.reduce((s,r)=>s+num(r.amount),0);
     const open=rows.filter(r=>!/(ödendi|tamamlandı|kapandı|tahsil edildi|satıldı|hurda)/i.test(String(r.status||""))).reduce((s,r)=>s+num(r.amount),0);
     el.innerHTML=`
@@ -1507,7 +1565,7 @@
       </div>
       <div class="section">
         <h2 class="section-title">${esc(mod.title)} Kayıtları</h2>
-        ${rows.length?`<table><thead><tr><th>Tarih</th><th>${esc(mod.party)}</th><th>Durum</th><th>Not</th><th class="text-right">${esc(mod.amount)}</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.party)}</td><td><span class="tag ${/(ödendi|tamamlandı|kapandı|tahsil edildi)/i.test(r.status)?"green":"amber"}">${esc(r.status)}</span></td><td>${esc(r.note||"")}</td><td class="text-right money">${money(r.amount)}</td><td><button class="btn btn-red" onclick="deleteCashRecord('${mod.key}','${r.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz kayıt yok.</div>`}
+        ${rows.length?`${sortSelectHtml(sort,`setCashSort('${mod.key}','rows',this.value)`)}<table><thead><tr><th>Tarih</th><th>${esc(mod.party)}</th><th>Durum</th><th>Not</th><th class="text-right">${esc(mod.amount)}</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.party)}</td><td><span class="tag ${/(ödendi|tamamlandı|kapandı|tahsil edildi)/i.test(r.status)?"green":"amber"}">${esc(r.status)}</span></td><td>${esc(r.note||"")}</td><td class="text-right money">${money(r.amount)}</td><td><button class="btn btn-red" onclick="deleteCashRecord('${mod.key}','${r.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz kayıt yok.</div>`}
       </div>`;
   }
   window.addCashRecord=function(key){
