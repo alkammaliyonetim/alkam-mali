@@ -3232,6 +3232,31 @@
     if(filter==="waiting") return isVerificationProblem(a) || !a.cariId || num(a.score)<70 || num(a.amount)<=0;
     return true;
   }
+  function isPendingSplitAccrual(a){
+    return a && a.status==="Bekliyor" && a.type==="Tahakkuk" && (!!a.splitFrom || /yıllık kayıttan bölündü|yillik kayittan bolundu/i.test(String(a.reason||"")));
+  }
+  window.clearPendingSplitAccruals=function(){
+    const rows=(state.approvals||[]).filter(isPendingSplitAccrual);
+    if(!rows.length) return notify("Temizlenecek yıllık bölünmüş tahakkuk adayı yok.");
+    if(!confirm(`${rows.length} yıllık bölünmüş tahakkuk adayı silinsin mi? Cariye yazılmış kesin hareketlere dokunulmaz.`)) return;
+    const ids=new Set(rows.map(x=>x.id));
+    state.approvals=(state.approvals||[]).filter(x=>!ids.has(x.id));
+    writeJson(LS.approvals,state.approvals);
+    logAudit("Yıllık bölünmüş tahakkuk adayları temizlendi", `${rows.length} bekleyen aday silindi`, "Tahakkuk");
+    refreshAll();
+    notify(`${rows.length} bekleyen tahakkuk adayı temizlendi. Cari ekstresine yazılmış hareketlere dokunulmadı.`);
+  };
+  window.clearPendingAccrualApprovals=function(){
+    const rows=(state.approvals||[]).filter(a=>a.status==="Bekliyor" && a.type==="Tahakkuk");
+    if(!rows.length) return notify("Temizlenecek bekleyen tahakkuk adayı yok.");
+    if(!confirm(`${rows.length} bekleyen tahakkuk adayı silinsin mi? Cariye yazılmış kesin hareketlere dokunulmaz.`)) return;
+    const ids=new Set(rows.map(x=>x.id));
+    state.approvals=(state.approvals||[]).filter(x=>!ids.has(x.id));
+    writeJson(LS.approvals,state.approvals);
+    logAudit("Bekleyen tahakkuk adayları temizlendi", `${rows.length} bekleyen aday silindi`, "Tahakkuk");
+    refreshAll();
+    notify(`${rows.length} bekleyen tahakkuk adayı temizlendi.`);
+  };
   function approvalSortValue(a){
     const d=normalizeImportDate(approvalLedgerDate(a)) || String(approvalLedgerDate(a)||"");
     const created=String(a.createdAt||a.approvedAt||"");
@@ -3295,6 +3320,7 @@
     const filterDefs=[["all","Tümü",activeRows.length],["bank","Banka",rows.filter(a=>approvalFilterMatch(a,"bank")).length],["moka","Moka",rows.filter(a=>approvalFilterMatch(a,"moka")).length],["telegram","Telegram",rows.filter(a=>approvalFilterMatch(a,"telegram")).length],["accrual","Tahakkuk",rows.filter(a=>approvalFilterMatch(a,"accrual")).length],["waiting","Eşleşme Bekleyen",rows.filter(a=>approvalFilterMatch(a,"waiting")).length],["verified","Deftere İşlenen",verifiedRows.length],["rejected","Reddedilen Arşiv",rejectedCount]];
     const activeFilter=filterDefs.find(x=>x[0]===filter)||filterDefs[0];
     const filterBar=filterDefs.map(([key,label,count])=>`<button class="approval-tab ${filter===key?"active":""}" onclick="setApprovalFilter('${key}')"><span>${label}</span><strong>${count}</strong></button>`).join("");
+    const accrualTools=filter==="accrual" ? `<div class="btn-row" style="padding:0 16px 12px"><button class="btn btn-amber" onclick="clearPendingSplitAccruals()">Yıllık Bölünmüş Adayları Temizle</button><button class="btn btn-soft" onclick="clearPendingAccrualApprovals()">Bekleyen Tahakkukları Temizle</button></div>` : "";
     const mail=latestMailRecord(), processed=latestProcessedRecord();
     const mailLine=mail?`${esc(mail.source)} · ${esc(mail.stage)} · ${esc(mail.date||"-")} · ${money(mail.amount)}`:"Mail kaydı yok";
     const processedLine=processed?`${esc(processed.status)} · ${esc(processed.date||"-")} · ${money(processed.amount)}`:"İşlenmiş kayıt yok";
@@ -3321,6 +3347,7 @@
         <div class="approval-kpi"><div class="k">Bekleyen Tutar</div><div class="v">${money(total)}</div></div>
       </div>
       <div class="approval-tabs">${filterBar}</div>
+      ${accrualTools}
       <div class="approval-context"><b>${esc(activeFilter[1])}</b> görünümü açık. Bu listede ${filtered.length} kayıt var; onaylanmadan hiçbir finansal kayıt cari ekstresine kesin hareket olarak yazılmaz.</div>
       <div class="approval-table-wrap">${filtered.length?`<table class="approval-table"><thead><tr><th>İşlem ID</th><th>İşlem Tarihi</th><th>Önerilen Cari</th><th>Tip</th><th>Kaynak</th><th>Güven</th><th class="text-right">Tutar</th><th>Sebep / Ek</th><th>Karar</th></tr></thead><tbody>${table}</tbody></table>`:`<div class="empty">Bu filtrede kayıt yok.</div>`}</div>`;
   }
@@ -3418,6 +3445,23 @@
       return samePeriod && sameAmount && isAccrual;
     }) || state.approvals.some(a=>!isRejectedApproval(a) && a.cariId===c.id && a.type==="Tahakkuk" && String(a.date||"").slice(0,7)===period && Math.abs(num(a.amount)-num(amount))<0.01);
   }
+  function accrualScopeValue(){
+    const el=byId("accrualScope");
+    return el?.value || localStorage.getItem("ALKAM_ACCRUAL_SCOPE") || "all";
+  }
+  window.setAccrualScope=function(value){
+    localStorage.setItem("ALKAM_ACCRUAL_SCOPE", value||"all");
+    renderAccrualPanel();
+  };
+  function accrualCariler(){
+    const scope=accrualScopeValue();
+    const active=state.cariler.filter(c=>!c.deleted);
+    if(scope==="selected"){
+      const c=active.find(x=>x.id===state.selectedCariId);
+      return c ? [c] : [];
+    }
+    return active;
+  }
   window.splitApprovalToMonthly=function(id,months=12){
     const a=state.approvals.find(x=>x.id===id); if(!a)return;
     const c=state.cariler.find(x=>x.id===a.cariId && !x.deleted);
@@ -3446,7 +3490,7 @@
   };
   function monthlyAccrualCandidates(){
     const period=byId("accrualPeriod")?.value || periodInputDefault();
-    return state.cariler.filter(c=>!c.deleted).map(c=>({c,amount:num(c.monthlyFee),period})).filter(x=>x.amount>0 && !accrualExists(x.c,x.period,x.amount));
+    return accrualCariler().map(c=>({c,amount:num(c.monthlyFee),period})).filter(x=>x.amount>0 && !accrualExists(x.c,x.period,x.amount));
   }
   function accrualRangeCandidates(){
     const mode=byId("accrualMode")?.value||"single";
@@ -3455,7 +3499,7 @@
     const end=byId("accrualEnd")?.value || periodInputDefault();
     const rows=[];
     monthSequence(start,end).forEach(period=>{
-      state.cariler.filter(c=>!c.deleted).forEach(c=>{
+      accrualCariler().forEach(c=>{
         const amount=num(c.monthlyFee);
         if(amount>0 && !accrualExists(c,period,amount)) rows.push({c,amount,period});
       });
@@ -3466,7 +3510,7 @@
     const mode=byId("accrualMode")?.value||"single";
     const periods=mode==="single" ? [byId("accrualPeriod")?.value || periodInputDefault()] : monthSequence(byId("accrualStart")?.value || LIVE_START_DATE.slice(0,7), byId("accrualEnd")?.value || periodInputDefault());
     let count=0;
-    state.cariler.filter(c=>!c.deleted && num(c.monthlyFee)>0).forEach(c=>periods.forEach(p=>{if(accrualExists(c,p,num(c.monthlyFee))) count++;}));
+    accrualCariler().filter(c=>num(c.monthlyFee)>0).forEach(c=>periods.forEach(p=>{if(accrualExists(c,p,num(c.monthlyFee))) count++;}));
     return count;
   }
   function renderAccrualPanel(){
@@ -3479,10 +3523,13 @@
     const total=rows.reduce((s,x)=>s+x.amount,0);
     const periods=mode==="single"?1:monthSequence(start,end).length;
     const existing=accrualRangeExistingCount();
+    const scope=accrualScopeValue();
+    const selectedCari=state.cariler.find(c=>c.id===state.selectedCariId && !c.deleted);
     el.innerHTML=`
       <h2 class="section-title">Toplu Tahakkuk Kontrol Merkezi</h2>
-      <div class="rule-box" style="margin-bottom:12px">Her tahakkuk ayın <strong>1. günü</strong> tarihli aday olarak hazırlanır. Bu ekran doğrudan cari ekstresine yazmaz; önce Onay Merkezi'ne gönderir ve aynı cari/dönem/tutar için mükerrer aday üretmez.</div>
-      <div class="grid-3">
+      <div class="rule-box" style="margin-bottom:12px">Basit kural: cari kartındaki aylık ücret alınır, tahakkuk ayın <strong>1. günü</strong> tarihli aday olarak hazırlanır. Bu ekran doğrudan cari ekstresine yazmaz; önce Onay Merkezi'ne gönderir ve aynı cari/dönem/tutar için mükerrer aday üretmez.</div>
+      <div class="grid-4">
+        <div class="field"><label>Kapsam</label><select id="accrualScope" onchange="setAccrualScope(this.value)"><option value="all" ${scope==="all"?"selected":""}>Tüm aktif cariler</option><option value="selected" ${scope==="selected"?"selected":""}>Sadece seçili cari</option></select><small class="muted-note">${scope==="selected" ? esc(selectedCari?.name||"Seçili cari yok") : "Tüm ücretli cariler"}</small></div>
         <div class="field"><label>İşlem Tipi</label><select id="accrualMode" onchange="renderAccrualPanel()"><option value="single" ${mode==="single"?"selected":""}>Tek ay</option><option value="range" ${mode==="range"?"selected":""}>Ay aralığı</option></select></div>
         <div class="field"><label>Tek Ay</label><input id="accrualPeriod" type="month" value="${esc(period)}" onchange="renderAccrualPanel()" /></div>
         <div class="field"><label>Aralık</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input id="accrualStart" type="month" value="${esc(start)}" onchange="renderAccrualPanel()" /><input id="accrualEnd" type="month" value="${esc(end)}" onchange="renderAccrualPanel()" /></div></div>
@@ -3494,7 +3541,7 @@
         <div class="compact-card"><span>Zaten Var / Bekliyor</span><strong>${existing}</strong><p class="muted-note">Tekrar üretilmez</p></div>
         <div class="compact-card"><span>Tarih Standardı</span><strong>01</strong><p class="muted-note">Her ayın 1'i</p></div>
       </div>
-      <div class="btn-row" style="margin:10px 0 12px"><button class="btn btn-green" onclick="sendMonthlyAccrualsToApproval()">Tahakkukları Onay Merkezi'ne Gönder</button><button class="btn btn-soft" onclick="renderAccrualPanel()">Yenile</button></div>
+      <div class="btn-row" style="margin:10px 0 12px"><button class="btn btn-green" onclick="sendMonthlyAccrualsToApproval()">Seçime Göre Tahakkukları Onaya Gönder</button><button class="btn btn-soft" onclick="setAccrualScope('selected')">Sadece Seçili Cari</button><button class="btn btn-soft" onclick="renderAccrualPanel()">Yenile</button></div>
       <div class="mini-list">${rows.length?rows.slice(0,24).map(x=>`<div class="mini-row"><strong>${esc(x.c.name)}</strong><br>${esc(periodName(x.period))} aylık muhasebe ücreti · ${money(x.amount)} · Tarih ${esc(periodDate(x.period))}</div>`).join(""):`<div class="empty">Bu seçim için yeni tahakkuk adayı yok. Ücretler sıfır olabilir veya kayıtlar zaten hazırlanmış/onaya gönderilmiş olabilir.</div>`}</div>`;
   }
   window.sendMonthlyAccrualsToApproval=function(){
