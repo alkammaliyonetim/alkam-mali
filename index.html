@@ -2066,6 +2066,11 @@
     if(!res.ok) throw new Error("Mail eki indirilemedi.");
     return res.blob();
   }
+  function attachmentHay(att){return `${att?.fileName||""} ${att?.mimeType||""}`.toLocaleLowerCase("tr-TR");}
+  function isWorkbookAttachment(att){return /\.(xlsx|xls|csv)$/i.test(att?.fileName||"") || /excel|spreadsheet|csv/.test(attachmentHay(att));}
+  function isPdfAttachment(att){return /\.pdf$/i.test(att?.fileName||"") || /pdf/.test(attachmentHay(att));}
+  function isImageAttachment(att){return /\.(jpg|jpeg|png|webp)$/i.test(att?.fileName||"") || /^image\//i.test(String(att?.mimeType||""));}
+  function isTextBankAttachment(att){return /\.(txt|ofx|sta|mt940)$/i.test(att?.fileName||"") || /text\/plain/.test(String(att?.mimeType||""));}
   async function telegramAttachmentBlob(fileId,fileName){
     const res=await fetch(`/api/telegram/file?id=${encodeURIComponent(fileId)}&name=${encodeURIComponent(fileName||"telegram-dosya")}`,{cache:"no-store"});
     if(!res.ok) throw new Error("Telegram dosyası indirilemedi.");
@@ -2662,8 +2667,8 @@
     const months={ocak:"01",subat:"02",mart:"03",nisan:"04",may:"05",mayis:"05",haziran:"06",temmuz:"07",agustos:"08",eylul:"09",ekim:"10",kasim:"11",aralik:"12"};
     const monthKey=Object.keys(months).find(k=>s.includes(k));
     const day=([...s.matchAll(/\b([0-2]?\d|3[01])\b/g)].map(m=>num(m[1])).find(d=>d>=1&&d<=31));
-    if(day && monthKey) return validIsoDate(`${today().slice(0,4)}-${months[monthKey]}-${String(day).padStart(2,"0")}`) || today();
-    return today();
+    if(day && monthKey) return validIsoDate(`${today().slice(0,4)}-${months[monthKey]}-${String(day).padStart(2,"0")}`) || "";
+    return "";
   }
   function isBankOcrText(text){
     return /hesap hareketleri|para transferi|nakit cekilen|nakit yatirilan|kredi tahsis|ekstre ucreti|diger islemler/.test(cleanText(text||""));
@@ -2683,6 +2688,7 @@
       if(!amount) continue;
       const positive=amount>0;
       const match=detectCari(ctx);
+      const rowDate=bankOcrDateFromLine(ctx) || normalizeImportDate(attachment?.mailDate) || normalizeImportDate(attachment?.receivedAt) || today();
       rows.push({
         id:uid("APR-OCR-BANK"),
         cariId:match?.cari?.id||"",
@@ -2693,12 +2699,12 @@
         originChannel:"OCR",
         originFile:attachment?.fileName||"",
         accountId:"banka",
-        date:bankOcrDateFromLine(ctx),
+        date:rowDate,
         reason:`${ctx} · ${parsed.note}`,
         status:"Bekliyor",
         createdAt:new Date().toLocaleString("tr-TR"),
         attachments:[attachment],
-        traceId:importHash(["BANK-OCR",bankOcrDateFromLine(ctx),ctx,amount,attachment?.fileId||attachment?.fileName||""])
+        traceId:importHash(["BANK-OCR",rowDate,ctx,amount,attachment?.fileId||attachment?.fileName||""])
       });
     }
     const seen=new Set();
@@ -3233,7 +3239,7 @@
   window.previewMailHalkbankFile=function(){readWorkbookFromInput("mailHalkbankFile",(wb,name)=>{const parsed=stampMailImportRows(parseHalkbankWorkbook(wb),"bank",name);state.importPreview=[...parsed,...state.importPreview.filter(x=>x.kind!=="bank")];writeJson(LS.importPreview,state.importPreview);logAudit("Mail Halkbank ekstresi ön izleme",`${name} · ${parsed.length} kayıt`);refreshAll();notify(`${parsed.length} mail Halkbank kaydı ön izlemeye alındı.`);});};
   window.previewMailMokaFile=function(){readWorkbookFromInput("mailMokaFile",(wb,name)=>{const parsed=parseMokaWorkbook(wb);const rows=stampMailImportRows(parsed.rows,"moka",name);const plans=(parsed.plans||[]).map(p=>({...p,deliverySource:"Mail Ekstresi",uploadFileName:name||""}));state.importPreview=[...rows,...state.importPreview.filter(x=>x.kind!=="moka")];state.mokaPlans=plans;writeJson(LS.importPreview,state.importPreview);writeJson(LS.mokaPlans,state.mokaPlans);logAudit("Mail Moka ekstresi ön izleme ve ödeme takvimi",`${name} · ${rows.length} işlem · ${plans.length} taksit`);refreshAll();notify(`${rows.length} mail Moka işlemi ve ${plans.length} taksit planı oluşturuldu.`);});};
   async function addMailBankPdfToApprovals(mail,att){
-    const attachment={kind:"mail",fileId:att.storageKey||"",storageKey:att.storageKey||"",fileName:att.fileName||"mail-ekstre.pdf",mimeType:att.mimeType||"application/pdf",originChannel:"Mail",mailId:mail.id||mail.queueKey||""};
+    const attachment={kind:"mail",fileId:att.storageKey||"",storageKey:att.storageKey||"",fileName:att.fileName||"mail-ekstre.pdf",mimeType:att.mimeType||"application/pdf",originChannel:"Mail",mailId:mail.id||mail.queueKey||"",mailDate:mail.date||mail.receivedAt||""};
     const text=await mailPdfText(att);
     const rows=parseBankOcrRows(text,attachment).map(r=>({
       ...r,
@@ -3257,6 +3263,32 @@
     logAudit("Mail Halkbank PDF Onay Merkezi'ne alındı", `${att.fileName||"PDF"} · ${fresh.length} yeni · ${rows.length-fresh.length} mükerrer`);
     return rows.length;
   }
+  async function addMailBankOcrAttachmentToApprovals(mail,att){
+    const blob=await mailAttachmentBlob(att);
+    const text=isTextBankAttachment(att) ? await blob.text() : await ocrBlobText(blob,att.fileName||"mail-dekont",att.mimeType||blob.type||"");
+    const attachment={kind:"mail",fileId:att.storageKey||"",storageKey:att.storageKey||"",fileName:att.fileName||"mail-dekont",mimeType:att.mimeType||blob.type||"",originChannel:"Mail",mailId:mail.id||mail.queueKey||"",mailDate:mail.date||mail.receivedAt||""};
+    const rows=parseBankOcrRows(text,attachment).map(r=>({
+      ...r,
+      source:"Halkbank Mail OCR",
+      originChannel:"Mail",
+      originFile:att.fileName||"mail-dekont",
+      mailId:mail.id||mail.queueKey||"",
+      mailSubject:mail.subject||"",
+      reason:`${r.reason||""} · Mail: ${mail.subject||""}`.trim(),
+      traceId:importHash(["MAIL-OCR",mail.id||mail.queueKey||"",att.storageKey||att.fileName||"",r.date,r.reason,r.amount])
+    }));
+    if(!rows.length) return 0;
+    const known=knownImportHashes();
+    const fresh=rows.filter(r=>!known.has(r.traceId));
+    fresh.forEach(r=>{
+      state.approvals.unshift(r);
+      state.importHashes.push(r.traceId);
+    });
+    writeJson(LS.approvals,state.approvals);
+    writeJson(LS.importHashes,state.importHashes);
+    logAudit("Mail banka OCR Onay Merkezi'ne alındı", `${att.fileName||"ek"} · ${fresh.length} yeni · ${rows.length-fresh.length} mükerrer`);
+    return rows.length;
+  }
   window.checkMailStatementStatus=async function(){
     try{
       const res=await fetch(`/api/mail/status?v=${Date.now()}`,{cache:"no-store"});
@@ -3277,8 +3309,9 @@
       const ackKeys=[];
       for(const mail of mails){
         const attachments=Array.isArray(mail.attachments)?mail.attachments:[];
-        const excelAttachments=attachments.filter(a=>/\.(xlsx|xls|csv)$/i.test(a.fileName||"") && a.storageKey);
-        const pdfAttachments=attachments.filter(a=>/\.pdf$/i.test(a.fileName||"") && a.storageKey);
+        const excelAttachments=attachments.filter(a=>a.storageKey && isWorkbookAttachment(a));
+        const pdfAttachments=attachments.filter(a=>a.storageKey && isPdfAttachment(a));
+        const ocrAttachments=attachments.filter(a=>a.storageKey && !isPdfAttachment(a) && (isImageAttachment(a) || isTextBankAttachment(a)));
         let fileParsed=false;
         for(const att of excelAttachments){
           try{
@@ -3313,6 +3346,18 @@
             }
           }catch(pdfErr){
             logAudit("Mail PDF okunamadı", `${att.fileName||"PDF"} · ${pdfErr?.message||pdfErr}`, "Kontrol");
+          }
+        }
+        for(const att of ocrAttachments){
+          try{
+            const count=await addMailBankOcrAttachmentToApprovals(mail,att);
+            if(count>0){
+              parsed+=count;
+              files++;
+              fileParsed=true;
+            }
+          }catch(ocrErr){
+            logAudit("Mail OCR eki okunamadı", `${att.fileName||"ek"} · ${ocrErr?.message||ocrErr}`, "Kontrol");
           }
         }
         if(!fileParsed){

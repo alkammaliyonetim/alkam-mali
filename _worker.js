@@ -173,7 +173,7 @@ function extractMailAttachments(raw, queueKey) {
     const disposition = headers["content-disposition"] || "";
     const contentType = headers["content-type"] || "application/octet-stream";
     const fileName = sanitizeFileName(mimeParam(disposition, "filename") || mimeParam(contentType, "name"));
-    if (!fileName || !/\.(xlsx|xls|csv|pdf|txt)$/i.test(fileName)) continue;
+    if (!fileName || !/\.(xlsx|xls|csv|pdf|txt|jpg|jpeg|png|webp|ofx|sta|mt940)$/i.test(fileName)) continue;
     const encoding = String(headers["content-transfer-encoding"] || "").toLowerCase();
     const base64 = encoding.includes("base64")
       ? body.replace(/\s+/g, "")
@@ -262,6 +262,10 @@ async function mailFile(request, env) {
     : ext === "xls" ? "application/vnd.ms-excel"
     : ext === "csv" ? "text/csv; charset=utf-8"
     : ext === "pdf" ? "application/pdf"
+    : ext === "jpg" || ext === "jpeg" ? "image/jpeg"
+    : ext === "png" ? "image/png"
+    : ext === "webp" ? "image/webp"
+    : ext === "txt" || ext === "ofx" || ext === "sta" || ext === "mt940" ? "text/plain; charset=utf-8"
     : "application/octet-stream";
   return new Response(bytes, {
     headers: {
@@ -299,7 +303,7 @@ async function gmailImport(request, env) {
     const attachments = [];
     for (const [idx, att] of (Array.isArray(msg.attachments) ? msg.attachments : []).entries()) {
       const fileName = sanitizeFileName(att.fileName || `gmail-ek-${idx + 1}`);
-      if (!fileName || !/\.(xlsx|xls|csv|pdf|txt)$/i.test(fileName)) continue;
+      if (!fileName || !/\.(xlsx|xls|csv|pdf|txt|jpg|jpeg|png|webp|ofx|sta|mt940)$/i.test(fileName)) continue;
       const base64 = String(att.base64 || "").replace(/\s+/g, "");
       const storageKey = `${key}:att:${attachments.length}`;
       if (base64 && base64.length <= 7000000) {
