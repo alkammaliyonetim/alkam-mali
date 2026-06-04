@@ -3857,13 +3857,16 @@
     for(let i=0;i<240 && cur<=stop;i++,cur=addMonths(cur,1)) out.push(cur);
     return out;
   }
-  function accrualExists(c, period, amount){
+  function accrualLedgerExists(c, period, amount){
     return allTxns(c).some(t=>{
       const samePeriod=String(t.date||"").slice(0,7)===period;
       const sameAmount=Math.abs(num(t.debit)-num(amount))<0.01;
       const isAccrual=String(t.type||"").toLocaleLowerCase("tr-TR").includes("tahakkuk") || String(t.source||"").toLocaleLowerCase("tr-TR").includes("tahakkuk");
       return samePeriod && sameAmount && isAccrual;
-    }) || state.approvals.some(a=>!isStaleProgramAccrualApproval(a) && !isRejectedApproval(a) && a.cariId===c.id && a.type==="Tahakkuk" && String(a.date||"").slice(0,7)===period && Math.abs(num(a.amount)-num(amount))<0.01);
+    });
+  }
+  function accrualExists(c, period, amount){
+    return accrualLedgerExists(c,period,amount) || state.approvals.some(a=>!isStaleProgramAccrualApproval(a) && !isRejectedApproval(a) && a.cariId===c.id && a.type==="Tahakkuk" && String(a.date||"").slice(0,7)===period && Math.abs(num(a.amount)-num(amount))<0.01);
   }
   function accrualScopeValue(){
     const el=byId("accrualScope");
@@ -3910,7 +3913,7 @@
   };
   function monthlyAccrualCandidates(){
     const period=byId("accrualPeriod")?.value || periodInputDefault();
-    return accrualCariler().map(c=>({c,amount:num(c.monthlyFee),period})).filter(x=>x.amount>0 && !accrualExists(x.c,x.period,x.amount));
+    return accrualCariler().map(c=>({c,amount:num(c.monthlyFee),period})).filter(x=>x.amount>0 && !accrualLedgerExists(x.c,x.period,x.amount));
   }
   function accrualRangeCandidates(){
     const mode=byId("accrualMode")?.value||"single";
@@ -3921,7 +3924,7 @@
     monthSequence(start,end).forEach(period=>{
       accrualCariler().forEach(c=>{
         const amount=num(c.monthlyFee);
-        if(amount>0 && !accrualExists(c,period,amount)) rows.push({c,amount,period});
+        if(amount>0 && !accrualLedgerExists(c,period,amount)) rows.push({c,amount,period});
       });
     });
     return rows;
@@ -3933,30 +3936,57 @@
     accrualCariler().filter(c=>num(c.monthlyFee)>0).forEach(c=>periods.forEach(p=>{if(accrualExists(c,p,num(c.monthlyFee))) count++;}));
     return count;
   }
+  function monthlyAccrualBackfillStartPeriod(){
+    return String(localStorage.getItem("ALKAM_ACCRUAL_BACKFILL_START") || LIVE_START_DATE.slice(0,7)).slice(0,7);
+  }
+  function monthlyAccrualCoverageRows(start=monthlyAccrualBackfillStartPeriod(), end=periodInputDefault()){
+    const rows=[];
+    monthSequence(start,end).forEach(period=>{
+      state.cariler.filter(c=>!c.deleted).forEach(c=>{
+        const amount=num(c.monthlyFee);
+        if(amount>0 && !accrualLedgerExists(c,period,amount)) rows.push({c,amount,period});
+      });
+    });
+    return rows;
+  }
+  function cleanupAccrualApprovalForPostedRow(row){
+    const ids=new Set();
+    (state.approvals||[]).filter(a=>{
+      if(isRejectedApproval(a) || a.type!=="Tahakkuk") return false;
+      if(a.cariId!==row.c.id || String(a.date||"").slice(0,7)!==row.period) return false;
+      if(Math.abs(num(a.amount)-row.amount)>=0.01) return false;
+      const src=String(a.source||"")+" "+String(a.reason||"");
+      return a.autoCreated || isStaleProgramAccrualApproval(a) || /otomasyon tahakkuk|program/i.test(src);
+    }).forEach(a=>ids.add(a.id));
+    if(ids.size) state.approvals=state.approvals.filter(a=>!ids.has(a.id));
+    return ids.size;
+  }
   function autoCreateMonthlyAccrualApprovals(){
     if(window.__alkamAutoMonthlyAccrualRunning) return;
     if(!state.automation.monthlyAccrual?.enabled) return;
     if(!Array.isArray(state.cariler) || !state.cariler.length) return;
     window.__alkamAutoMonthlyAccrualRunning=true;
     try{
-      const period=periodInputDefault();
+      const start=monthlyAccrualBackfillStartPeriod();
+      const end=periodInputDefault();
       const createdAt=new Date().toLocaleString("tr-TR");
-      const rows=state.cariler.filter(c=>!c.deleted).map(c=>({c,amount:num(c.monthlyFee),period})).filter(x=>x.amount>0 && !allTxns(x.c).some(t=>String(t.date||"").slice(0,7)===x.period && Math.abs(num(t.debit)-x.amount)<0.01 && /tahakkuk/i.test(String(t.type||t.source||""))));
+      const rows=monthlyAccrualCoverageRows(start,end);
+      localStorage.setItem("ALKAM_LAST_ACCRUAL_COVERAGE", JSON.stringify({start,end,missing:rows.length,checkedAt:new Date().toISOString()}));
       if(!rows.length) return;
-      const removeApprovalIds=new Set();
+      let clearedApprovals=0;
       rows.forEach(x=>{
         const traceId=importHash(["AUTO-MONTHLY-TAHAKKUK",x.c.id,x.period,x.amount]);
-        state.manualTxns.push({id:uid("AUTO-TAH"),cariId:x.c.id,date:periodDate(x.period),type:"TAHAKKUK",debit:x.amount,credit:0,source:"Otomasyon Tahakkuk",description:`${periodName(x.period)} aylık muhasebe ücreti tahakkuku`,docNo:traceId,traceId,importHash:traceId,autoMonthlyAccrual:true,ledgerVerified:true,createdAt});
-        (state.approvals||[]).filter(a=>a.status==="Bekliyor" && a.type==="Tahakkuk" && a.autoCreated && a.cariId===x.c.id && String(a.date||"").slice(0,7)===x.period && Math.abs(num(a.amount)-x.amount)<0.01).forEach(a=>removeApprovalIds.add(a.id));
+        state.manualTxns.push({id:uid("AUTO-TAH"),cariId:x.c.id,date:periodDate(x.period),type:"TAHAKKUK",debit:x.amount,credit:0,source:"Otomasyon Tahakkuk",description:`${periodName(x.period)} aylik muhasebe ucreti tahakkuku`,docNo:traceId,traceId,importHash:traceId,autoMonthlyAccrual:true,ledgerVerified:true,createdAt});
+        clearedApprovals += cleanupAccrualApprovalForPostedRow(x);
         state.importHashes.push(traceId);
       });
-      if(removeApprovalIds.size) state.approvals=state.approvals.filter(a=>!removeApprovalIds.has(a.id));
       state.importHashes=[...new Set(state.importHashes)].slice(-5000);
       writeJson(LS.manual,state.manualTxns);
       writeJson(LS.approvals,state.approvals);
       writeJson(LS.importHashes,state.importHashes);
-      logAudit("Aylık tahakkuk otomatik işlendi", `${periodName(period)} · ${rows.length} cari · ${money(rows.reduce((s,x)=>s+x.amount,0))}`, "Tahakkuk");
-      notify(`${periodName(period)} tahakkukları otomatik cariye işlendi: ${rows.length} cari.`);
+      const total=rows.reduce((sum,x)=>sum+x.amount,0);
+      logAudit("Aylik tahakkuk geriye donuk kontrol edildi", `${periodName(start)} - ${periodName(end)} | ${rows.length} eksik kayit cariye islendi | ${money(total)} | ${clearedApprovals} bekleyen onay temizlendi`, "Tahakkuk");
+      notify(`Aylik tahakkuk kontrolu tamam: ${periodName(start)} - ${periodName(end)} arasi ${rows.length} eksik kayit cariye islendi.`);
     }finally{
       window.__alkamAutoMonthlyAccrualRunning=false;
     }
@@ -4005,10 +4035,12 @@
     rows.forEach(x=>{
       const traceId=importHash(["TAHAKKUK",x.c.id,x.period,x.amount]);
       state.manualTxns.push({id:uid("AUTO-TAH"),cariId:x.c.id,date:periodDate(x.period),type:"TAHAKKUK",debit:x.amount,credit:0,source:"Otomasyon Tahakkuk",description:`${periodName(x.period)} aylık muhasebe ücreti tahakkuku`,docNo:traceId,traceId,importHash:traceId,autoMonthlyAccrual:true,ledgerVerified:true,createdAt:new Date().toLocaleString("tr-TR")});
+      cleanupAccrualApprovalForPostedRow(x);
       state.importHashes.push(traceId);
     });
     state.importHashes=[...new Set(state.importHashes)].slice(-5000);
     writeJson(LS.manual,state.manualTxns);
+    writeJson(LS.approvals,state.approvals);
     writeJson(LS.importHashes,state.importHashes);
     logAudit("Aylık tahakkuk cariye işlendi", `${rows.length} cari · ${money(rows.reduce((s,x)=>s+x.amount,0))}`);
     refreshAll();
