@@ -236,7 +236,7 @@
     <section id="tab-onay" class="tab-page">
       <div class="topbar approval-hero">
         <div class="page-head"><h1>Onay Merkezi</h1><p>Önerilen cari, hareket tipi, tutar, güven puanı ve eşleşme sebebi görünür. Emin olunmayan kayıt cariye yazılmaz.</p></div>
-        <div class="btn-row"><button class="btn btn-blue" onclick="openApprovalModal()">Onay Kaydı Ekle</button><button class="btn btn-soft" onclick="clearApproved()">Onaylananları Temizle</button></div>
+        <div class="btn-row"><button class="btn btn-blue" onclick="openApprovalModal()">Onay Kaydı Ekle</button><button class="btn btn-soft" onclick="clearApproved()">Aktif Listeyi Yenile</button></div>
       </div>
       <div id="approvalList" class="section"></div>
       <div id="historyImportPanel" class="section"></div>
@@ -980,6 +980,7 @@
     repairDuplicateMonthlyAccruals();
     repairUnsafeBankOcrApprovals();
     repairApprovedAccrualLedgerLinks();
+    autoArchivePostedApprovals();
     renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderCashModules(); renderTelegramPanel(); renderHistoryImportPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects(); cleanupLegacyTelegramPanels();
   };
 
@@ -3839,6 +3840,22 @@
   };
   window.rejectItem=function(id){const a=state.approvals.find(x=>x.id===id);if(!a)return;a.status="Reddedildi";a.rejectedAt=new Date().toLocaleString("tr-TR");writeJson(LS.approvals,state.approvals);logAudit("Onay kaydı reddedildi", a.reason||id, "Reddedildi");refreshAll();notify("Kayıt aktif listeden Reddedilen Arşiv sekmesine taşındı.");};
   window.clearApproved=function(){repairApprovedAccrualLedgerLinks();state.approvals=state.approvals.filter(a=>a.status==="Bekliyor"||isVerificationProblem(a)||isRejectedApproval(a));writeJson(LS.approvals,state.approvals);refreshAll();notify("Deftere bağlanan kayıtlar listeden kaldırıldı; kontrol gereken ve reddedilen kayıtlar korundu.");};
+  function autoArchivePostedApprovals(){
+    if(window.__alkamAutoArchivePostedApprovals) return 0;
+    window.__alkamAutoArchivePostedApprovals=true;
+    try{
+      const keep=a=>a.status==="Bekliyor" || isVerificationProblem(a) || isRejectedApproval(a);
+      const before=(state.approvals||[]).length;
+      const removed=(state.approvals||[]).filter(a=>!keep(a));
+      if(!removed.length) return 0;
+      state.approvals=state.approvals.filter(keep);
+      writeJson(LS.approvals,state.approvals);
+      logAudit("Deftere işlenen onaylar aktif listeden arşivlendi", `${removed.length} kayıt aktif karar listesinden kaldırıldı; cari/hareket defteri korunur.`, "Doğrulandı");
+      return before-state.approvals.length;
+    }finally{
+      window.__alkamAutoArchivePostedApprovals=false;
+    }
+  }
 
   function periodInputDefault(){return today().slice(0,7);}
   function periodDate(period){return (period||periodInputDefault())+"-01";}
@@ -3868,7 +3885,11 @@
   }
   function isMonthlyAccrualTxn(t){
     const text=(String(t.type||"")+" "+String(t.source||"")+" "+String(t.description||t.desc||"")).toLocaleLowerCase("tr-TR");
-    return text.includes("tahakkuk") && (text.includes("muhasebe") || text.includes("defter") || text.includes("otomasyon") || text.includes("aylik") || text.includes("aylık"));
+    const normalized=cleanText(text);
+    const debit=num(t.debit);
+    const isDebitAccrual=debit>0 && /tahakkuk|fatura|ucret|muhasebe|defter/.test(normalized);
+    const isMonthlyText=/tahakkuk/.test(normalized) && /(muhasebe|defter|otomasyon|aylik|ucret|satis faturasi)/.test(normalized);
+    return isDebitAccrual || isMonthlyText || !!t.autoMonthlyAccrual;
   }
   function accrualPeriodLedgerExists(c, period){
     return allTxns(c).some(t=>String(t.date||"").slice(0,7)===period && isMonthlyAccrualTxn(t));
