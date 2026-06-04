@@ -1288,7 +1288,7 @@
     if(!cariId) return notify("Cari seç.");
     let row = id ? findTxn(id) : null;
     if(!row){row={id:uid("MAN"), cariId, docNo:"MANUEL"}; state.manualTxns.push(row);}
-    Object.assign(row,{cariId,date:byId("txDate").value||today(),type:byId("txType").value.toUpperCase(),debit:num(byId("txDebit").value),credit:num(byId("txCredit").value),source:byId("txSource").value,description:byId("txDesc").value});
+    Object.assign(row,{cariId,date:byId("txDate").value||today(),type:byId("txType").value.toUpperCase(),debit:num(byId("txDebit").value),credit:num(byId("txCredit").value),source:byId("txSource").value,description:byId("txDesc").value,updatedAt:new Date().toISOString(),userEdited:!!id});
     ensureTraceId(row,"MAN");
     writeJson(LS.manual,state.manualTxns);
     writeJson(LS.cariler,state.cariler);
@@ -3974,9 +3974,13 @@
     const amount=num(t.debit);
     const text=(String(t.source||"")+" "+String(t.description||t.desc||"")).toLocaleLowerCase("tr-TR");
     let score=0;
-    if(Math.abs(amount-fee)<0.01) score+=100;
-    if(t.autoMonthlyAccrual) score+=30;
-    if(text.includes("otomasyon tahakkuk")) score+=20;
+    if(t.userEdited || t.updatedAt) score+=220;
+    if(Math.abs(amount-fee)<0.01) score+=60;
+    if(text.includes("onaylÄ±") || text.includes("onayli")) score+=45;
+    if(text.includes("manuel")) score+=40;
+    if(text.includes("ana veri")) score+=25;
+    if(t.autoMonthlyAccrual) score+=15;
+    if(text.includes("otomasyon tahakkuk")) score+=10;
     if(t.ledgerVerified) score+=10;
     if(text.includes("yillik kayittan bolundu") || text.includes("yıllık kayıttan bölündü")) score-=20;
     return score;
