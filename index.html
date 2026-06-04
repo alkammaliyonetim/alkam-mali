@@ -97,7 +97,7 @@
       <div class="login-side-inner">
         <div class="login-shield-icon">🔐</div>
         <h1 class="login-side-title">Güvenilir.<br>Standart.<br><span>Kontrollü.</span></h1>
-        <p class="login-side-text">Cari ekstresi ana defterdir. Hesap hareketleri doğrulama katmanıdır. Emin olunmayan işlem onaya düşer.</p>
+        <p class="login-side-text">Cari ekstresi ana kayıt ekranıdır. Hesap hareketleri doğrulama katmanıdır. Emin olunmayan işlem onaya düşer.</p>
       </div>
     </div>
     <div class="login-panel">
@@ -245,7 +245,7 @@
 
     <section id="tab-otomasyon" class="tab-page">
       <div class="topbar">
-        <div class="page-head"><h1>Otomasyon Kontrol Merkezi</h1><p>Varsayılan durum: finansal/muhasebesel otomatik işler kapalıdır. Bir tıkla “Otomatik” veya “Kapalı” yapılabilir.</p></div>
+        <div class="page-head"><h1>Otomasyon Kontrol Merkezi</h1><p>Varsayılan durum: riskli finansal otomatik işler kapalıdır. Bir tıkla “Otomatik” veya “Kapalı” yapılabilir.</p></div>
         <div class="btn-row"><button class="btn btn-red" onclick="disableAllAutomation()">Tüm otomatik işleri kapat</button><button class="btn btn-blue" onclick="renderAutomation()">Paneli yenile</button><button class="btn btn-soft" onclick="clearAutomationPending()">Onay bekleyenleri temizle</button></div>
       </div>
       <div class="section" id="accrualPanel"></div>
@@ -263,7 +263,7 @@
         <div class="grid-4">
           <div><h3>Yedek İndir</h3><p class="muted-note">Cari, hareket, hesap, onay, otomasyon ve işlem izi JSON olarak iner.</p><button class="btn btn-blue" onclick="downloadState()">Tam yedek indir</button></div>
           <div><h3>Yedek Yükle</h3><input type="file" accept=".json,application/json" onchange="importStateFile(event)" /></div>
-          <div><h3>Geçiş Paketi Yükle</h3><p class="muted-note">Sadece ön izleme, Moka takvimi ve import hash yüklenir; cari ana defter korunur.</p><input type="file" accept=".json,application/json" onchange="importMigrationPackageFile(event)" /></div>
+          <div><h3>İçe Aktarma Paketi Yükle</h3><p class="muted-note">Sadece ön izleme, Moka takvimi ve import hash yüklenir; cari ana kayıtları korunur.</p><input type="file" accept=".json,application/json" onchange="importMigrationPackageFile(event)" /></div>
           <div><h3>Temizlik</h3><button class="btn btn-soft" onclick="clearCariCache()">Cari cache temizle</button> <button class="btn btn-red" onclick="resetLocalOnly()">Yerel veriyi sıfırla</button></div>
         </div>
       </div>
@@ -411,22 +411,22 @@
     {key:"calisanlar", title:"Çalışanlar", party:"Çalışan", amount:"Net Ödeme / Maaş", statuses:["Aktif","Ödenecek","Ödendi","Pasif"]},
     {key:"masraflar", title:"Masraflar", party:"Masraf Yeri / Tedarikçi", amount:"Tutar", statuses:["Bekliyor","Onaya Hazır","Ödendi","Reddedildi"]},
     {key:"efaturalar", title:"Gelen E-Faturalar", party:"Gönderen", amount:"Fatura Tutarı", statuses:["Geldi","Kontrolde","Onaya Hazır","Ödendi"]},
-    {key:"krediler", title:"Krediler", party:"Banka / Kredi", amount:"Taksit / Borç", statuses:["Aktif","Ödenecek","Ödendi","Kapandı"]},
+    {key:"krediler", title:"Krediler", party:"Banka / Kredi", amount:"Taksit / Kalan Ödeme", statuses:["Aktif","Ödenecek","Ödendi","Kapandı"]},
     {key:"demirbaslar", title:"Demirbaşlar", party:"Demirbaş / Satıcı", amount:"Değer", statuses:["Aktif","Amortisman","Satıldı","Hurda"]},
     {key:"projeler", title:"Projeler", party:"Proje / Müşteri", amount:"Bütçe / Hakediş", statuses:["Açık","Devam","Tamamlandı","Beklemede"]},
     {key:"cekler", title:"Çek Portföyü", party:"Çek Sahibi / Banka", amount:"Çek Tutarı", statuses:["Portföyde","Tahsil Edildi","Ciro Edildi","Karşılıksız"]},
-    {key:"senetler", title:"Senet Portföyü", party:"Senet Borçlusu", amount:"Senet Tutarı", statuses:["Portföyde","Tahsil Edildi","Ciro Edildi","Protestolu"]}
+    {key:"senetler", title:"Senet Portföyü", party:"Senet Veren / Muhatap", amount:"Senet Tutarı", statuses:["Portföyde","Tahsil Edildi","Ciro Edildi","Protestolu"]}
   ];
 
   const automationRules = [
-    {key:"monthlyAccrual",title:"Aylık Muhasebe Ücreti Tahakkuku",desc:"Her ay otomatik muhasebe ücreti tahakkuku oluşturma.",risk:"Yüksek"},
+    {key:"monthlyAccrual",title:"Aylık Hizmet Ücreti Tahakkuku",desc:"Her ay cari kartındaki aylık hizmet ücretini oluşturma.",risk:"Yüksek"},
     {key:"retroAccrual",title:"Geçmiş Ay Tahakkuk Tamamlama",desc:"Eksik geçmiş ayları otomatik hesaplayıp cari hareketlere yazma.",risk:"Yüksek"},
     {key:"bankAutoMatch",title:"Banka Hareketi Otomatik Eşleştirme",desc:"Banka hareketlerini otomatik cariyle eşleştirme.",risk:"Orta"},
     {key:"bankAutoPost",title:"Banka Hareketini Otomatik Cari İşleme",desc:"Eşleşen banka hareketini cariye otomatik işleme.",risk:"Kritik"},
     {key:"approvalAutoConfirm",title:"%100 Emin Eşleşmeyi Otomatik Onaylama",desc:"Güven puanı yüksek kayıtları kullanıcı onayı olmadan işleme.",risk:"Kritik"},
     {key:"mokaAutoCollection",title:"Moka United Tahsilatını Otomatik Cari İşleme",desc:"Moka tahsilatını manuel onay olmadan cari hesabına yazma.",risk:"Kritik"},
     {key:"mokaAutoSettlement",title:"Moka United Banka Aktarımını Otomatik İşleme",desc:"Moka’dan bankaya gelen transferleri otomatik kapatma/aktarma.",risk:"Kritik"},
-    {key:"invoiceAutoCreate",title:"Fatura / Defter / Dijital Defter Otomatik Tahakkuk",desc:"Defter, dijital defter, fatura vb. özel tahakkukları otomatik oluşturma.",risk:"Yüksek"},
+    {key:"invoiceAutoCreate",title:"Fatura / Dijital Kayıt Otomatik Tahakkuk",desc:"Fatura, dijital kayıt ve özel tahakkukları otomatik oluşturma.",risk:"Yüksek"},
     {key:"importAutoProcess",title:"İçe Aktarılan Dosyayı Otomatik İşleme",desc:"Excel/PDF/banka ekstresi yüklenince kayıtları otomatik sisteme yazma.",risk:"Yüksek"},
     {key:"bulkAutoUpdate",title:"Toplu Otomatik Güncelleme",desc:"Birden fazla cariyi/hareketi tek seferde otomatik değiştirme.",risk:"Kritik"}
   ];
@@ -471,7 +471,7 @@
     writeJson(LS.accounts,state.accounts);
   }
   function ensureMonthlyAccrualAutomationEnabled(){
-    if(!state.automation.monthlyAccrual) state.automation.monthlyAccrual={enabled:true,title:"Aylık Muhasebe Ücreti Tahakkuku",desc:"Her ay otomatik muhasebe ücreti tahakkuku oluşturma.",risk:"Yüksek",updatedAt:new Date().toISOString()};
+    if(!state.automation.monthlyAccrual) state.automation.monthlyAccrual={enabled:true,title:"Aylık Hizmet Ücreti Tahakkuku",desc:"Her ay cari kartındaki aylık hizmet ücretini oluşturma.",risk:"Yüksek",updatedAt:new Date().toISOString()};
     if(!state.automation.monthlyAccrual.enabled){
       state.automation.monthlyAccrual.enabled=true;
       state.automation.monthlyAccrual.updatedAt=new Date().toISOString();
@@ -725,9 +725,9 @@
     const unlinkedAccounts=accounts.filter(a=>a.postedToCari && !hasLinkedLedgerRow(a));
     unlinkedAccounts.slice(0,30).forEach(a=>issues.push({level:"Kırmızı",area:"Hesap/Cari",title:"Hesap hareketinin cari karşılığı yok",detail:`${a.accountId||"-"} · ${a.date||"-"} · ${money(a.amount)} · ${a.desc||"-"}`}));
     const approvedButNotTrusted=approvals.filter(a=>a.status!=="Bekliyor" && !isRejectedApproval(a) && !isTrustedApproval(a));
-    approvedButNotTrusted.slice(0,30).forEach(a=>issues.push({level:"Turuncu",area:"Onay",title:"Onaylı ama güven zinciri tamam değil",detail:`${a.date||"-"} · ${a.type||"-"} · ${money(a.amount)} · ${a.reason||""}`}));
+    approvedButNotTrusted.slice(0,30).forEach(a=>issues.push({level:"Turuncu",area:"Onay",title:"Onaylı ama kayıt doğrulaması tamam değil",detail:`${a.date||"-"} · ${a.type||"-"} · ${money(a.amount)} · ${a.reason||""}`}));
     const duplicates=liveLedgerDuplicateGroups();
-    duplicates.slice(0,20).forEach(g=>issues.push({level:"Kırmızı",area:"Mükerrer",title:"Canlı defterde benzer kayıt grubu",detail:`${g[0].cariName||"-"} · ${g[0].date||"-"} · ${money(num(g[0].debit)||num(g[0].credit))} · ${g.length} kayıt`}));
+    duplicates.slice(0,20).forEach(g=>issues.push({level:"Kırmızı",area:"Mükerrer",title:"Canlı kayıtlarda benzer işlem grubu",detail:`${g[0].cariName||"-"} · ${g[0].date||"-"} · ${money(num(g[0].debit)||num(g[0].credit))} · ${g.length} kayıt`}));
     const verified=(state.approvalVerifications||[]).filter(v=>v.ok).length;
     const status=issues.some(i=>i.level==="Kırmızı")?"Kırmızı":issues.length?"Turuncu":"Yeşil";
     return {
@@ -747,18 +747,18 @@
   }
   function renderEndToEndStatusMini(check){
     const cls=check.status==="Yeşil"?"green":check.status==="Kırmızı"?"red":"amber";
-    return `<div style="margin-top:10px;border-top:1px dashed #cbd5e1;padding-top:10px"><strong>Uçtan uca muhasebe bağlantısı:</strong> <span class="tag ${cls}">${esc(check.status)}</span><br><strong>Cari / Hesap / Onay:</strong> ${check.ledgerCount} cari hareketi · ${check.accountCount} hesap hareketi · ${check.pendingApprovals} onay bekleyen<br><strong>Kopukluk:</strong> Tahsilat-hesap ${check.unlinkedCollections} · Hesap-cari ${check.unlinkedAccounts} · Onay zinciri ${check.approvedButNotTrusted} · Mükerrer grup ${check.duplicateGroups}</div>`;
+    return `<div style="margin-top:10px;border-top:1px dashed #cbd5e1;padding-top:10px"><strong>Uçtan uca kayıt doğrulaması:</strong> <span class="tag ${cls}">${esc(check.status)}</span><br><strong>Cari / Hesap / Onay:</strong> ${check.ledgerCount} cari hareketi · ${check.accountCount} hesap hareketi · ${check.pendingApprovals} onay bekleyen<br><strong>Kopukluk:</strong> Tahsilat-hesap ${check.unlinkedCollections} · Hesap-cari ${check.unlinkedAccounts} · Onay doğrulama ${check.approvedButNotTrusted} · Mükerrer grup ${check.duplicateGroups}</div>`;
   }
   function renderEndToEndReportPanel(){
     const c=endToEndIntegrityCheck();
     const cls=c.status==="Yeşil"?"green":c.status==="Kırmızı"?"red":"amber";
     const issueRows=c.issues.length?`<table><thead><tr><th>Durum</th><th>Alan</th><th>Kontrol</th><th>Detay</th></tr></thead><tbody>${c.issues.map(i=>`<tr><td><span class="tag ${i.level==="Kırmızı"?"red":i.level==="Turuncu"?"amber":"gray"}">${esc(i.level)}</span></td><td>${esc(i.area)}</td><td><strong>${esc(i.title)}</strong></td><td>${esc(i.detail)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Cari, hesap, onay ve rapor bağlantılarında açık kopukluk bulunmadı.</div>`;
-    return `<h2 class="section-title" style="margin-top:16px">Uçtan Uca Muhasebe Bağlantı Kontrolü</h2>
+    return `<h2 class="section-title" style="margin-top:16px">Uçtan Uca Kayıt Doğrulama Kontrolü</h2>
       <div class="compact-status" style="margin-bottom:12px">
         <div class="compact-card"><span>Genel Statü</span><strong><span class="tag ${cls}">${esc(c.status)}</span></strong><p class="muted-note">Yeşil yalnızca kopukluk yoksa</p></div>
-        <div class="compact-card"><span>Cari Hareketi</span><strong>${c.ledgerCount}</strong><p class="muted-note">Gelir tablosu aynı defteri okur</p></div>
+        <div class="compact-card"><span>Cari Hareketi</span><strong>${c.ledgerCount}</strong><p class="muted-note">Gelir tablosu aynı kayıtları okur</p></div>
         <div class="compact-card"><span>Hesap Hareketi</span><strong>${c.accountCount}</strong><p class="muted-note">Kasa / banka / Moka / kredi kartı</p></div>
-        <div class="compact-card"><span>Onay Bekleyen</span><strong>${c.pendingApprovals}</strong><p class="muted-note">${c.approvedButNotTrusted} onay zinciri eksik</p></div>
+        <div class="compact-card"><span>Onay Bekleyen</span><strong>${c.pendingApprovals}</strong><p class="muted-note">${c.approvedButNotTrusted} kayıt doğrulaması eksik</p></div>
         <div class="compact-card"><span>Kopuk / Mükerrer</span><strong>${c.unlinkedCollections+c.unlinkedAccounts+c.duplicateGroups}</strong><p class="muted-note">Uçtan uca takip</p></div>
       </div>
       <div class="rule-box" style="margin-bottom:10px"><strong>Kural:</strong> Cari, hesap, Onay Merkezi ve Gelir Tablosu aynı aktif kayıt havuzundan beslenir. Cariden silinen kayıt raporda kalamaz; kasa/banka/Moka karşılığı olmayan tahsilat yeşil güvenilir kabul edilmez.</div>
@@ -791,7 +791,7 @@
     const type=cleanText(a?.type||""), source=cleanText(a?.source||"");
     if(/tahsilat/.test(type)) return `${accountImpactLabel(a)}; cari borcu azalır; tahsilat raporuna girer.`;
     if(/moka/.test(type) || /moka/.test(source)) return "Moka United bekleyen tahsilatı artar; cari borcu azalır; bankaya geçiş takvimi takip edilir.";
-    if(/tahakkuk/.test(type)) return "Gelmesi gereken gelir artar; cari borçlanır; ay gelir tablosuna yansır.";
+    if(/tahakkuk/.test(type)) return "Gelmesi gereken gelir artar; cari açık bakiyesi artar; ay gelir tablosuna yansır.";
     if(/gider|odeme|ödeme/.test(type)) return "Gider veya ödeme kaydı oluşur; ilgili hesap bakiyesi ve gider raporu etkilenir.";
     return "Cari, hesap ve raporlar aynı kayıt üzerinden güncellenir.";
   }
@@ -1054,7 +1054,7 @@
     const processedText=processed?`${esc(processed.status)} · ${esc(processed.date||"-")} · ${money(processed.amount)}`:"Henüz işlenen kayıt yok";
     el.innerHTML=`<div class="section approval-board" style="margin:14px 0">
       <div class="approval-board-head">
-        <div><div class="approval-board-title">Canlı Operasyon Merkezi</div><div class="approval-board-sub">Mailden banka ekstresi, Moka, Telegram ve Onay Merkezi burada izlenir; kesin kayıt onay ve doğrulama zincirinden geçmeden deftere yazılmaz.</div></div>
+        <div><div class="approval-board-title">Canlı Operasyon Merkezi</div><div class="approval-board-sub">Mailden banka ekstresi, Moka, Telegram ve Onay Merkezi burada izlenir; kesin kayıt onay ve doğrulama tamamlanmadan kayda geçmez.</div></div>
         <div class="btn-row"><button class="btn btn-green" onclick="switchTab('onay');fetchMailAndStageImports()">Mailden Oku + Onaya Hazırla</button><button class="btn btn-blue" onclick="switchTab('onay')">Onay Merkezi</button></div>
       </div>
       <div class="compact-status" style="padding:16px;margin:0">
@@ -1129,7 +1129,7 @@
           <div class="metric-mini"><div class="k">Güncel Bakiye</div><div class="v">${balanceLabel(liveMeta.bal)}</div></div>
         </div>
         <div class="v119-legend"><span><i class="v119-dot v119-red"></i>Gelir tahakkuku</span><span><i class="v119-dot v119-green"></i>Tahsilat alındı</span><span><i class="v119-dot v119-blue"></i>Düzeltme / Diğer</span></div>
-        <div class="rule-box">Canlı dönem başlangıcı: <strong>01.12.2025</strong>. Öncesi arşiv/açılış bakiyesidir ve içe aktarmadan tekrar cariye yazılmaz. Arşiv hareket: <strong>${liveMeta.archiveCount}</strong> · Canlı hareket: <strong>${liveMeta.liveCount}</strong> · Son işlem: <strong>${esc(liveMeta.last||"-")}</strong> · Tüm defter borç/alacak: <strong>${money(meta.debit)} / ${money(meta.credit)}</strong>.</div>
+        <div class="rule-box">Canlı dönem başlangıcı: <strong>01.12.2025</strong>. Öncesi arşiv/açılış bilgisidir ve içe aktarmadan tekrar cariye yazılmaz. Arşiv hareket: <strong>${liveMeta.archiveCount}</strong> · Canlı hareket: <strong>${liveMeta.liveCount}</strong> · Son işlem: <strong>${esc(liveMeta.last||"-")}</strong> · Tüm kayıt tahakkuk/tahsilat: <strong>${money(meta.debit)} / ${money(meta.credit)}</strong>.</div>
         <div class="rule-box">Bu extrede <strong>Kaynak</strong> kolonu zorunludur. En yakın tarih en üstte gösterilir. Bakiye işarete göre <strong>Bakiye B</strong> veya <strong>Bakiye A</strong> gösterilir.</div>
         ${promiseBox}
         ${donePromiseBox}
@@ -1250,8 +1250,8 @@
     const manual=(state.manualTxns||[]).find(t=>!t.deleted && linkedFinancialMatch(t,seed));
     const account=(state.accountTxns||[]).find(t=>linkedFinancialMatch(t,seed));
     const result={traceId, manual, account, ok:false, reason:""};
-    if(seed.requiresManual && !manual) result.reason="Cari defter satırı bulunamadı";
-    else if(seed.requiresAccount && !account) result.reason="Hesap defter satırı bulunamadı";
+    if(seed.requiresManual && !manual) result.reason="Cari kayıt satırı bulunamadı";
+    else if(seed.requiresAccount && !account) result.reason="Hesap hareket satırı bulunamadı";
     else if(seed.cariId && manual && String(manual.cariId)!==String(seed.cariId)) result.reason="Cari eşleşmesi tutarsız";
     else if(seed.accountId && account && String(account.accountId)!==String(seed.accountId)) result.reason="Hesap eşleşmesi tutarsız";
     else if(amount>0 && manual && Math.abs(num(manual.debit||manual.credit)-amount)>0.01) result.reason="Cari tutarı tutarsız";
@@ -1346,14 +1346,14 @@
     if(!confirm("Bu cari hareket silinsin mi? Bağlı kasa/banka/onay kayıtları da iptal edilir ve iz arşive alınır.")) return;
     const traceId=txTraceId(row);
     const rowDate=row.date, rowAmount=num(row.debit)||num(row.credit)||num(row.amount), rowDesc=row.description||row.desc||row.id;
-    const res=cancelLinkedFinancialChain(row,"Cari hareketinden zincir iptali");
+    const res=cancelLinkedFinancialChain(row,"Cari hareketinden bağlı kayıt iptali");
     const stillExists=state.cariler.some(c=>allTxns(c).some(t=>{
       if(traceId && txTraceId(t)===traceId) return true;
       return String(t.id)===String(txId) || (String(t.date||"")===String(rowDate) && Math.abs((num(t.debit)||num(t.credit)||num(t.amount))-rowAmount)<0.01 && String(t.description||t.desc||t.id||"").slice(0,80)===String(rowDesc||"").slice(0,80));
     }));
-    logAudit(stillExists?"Cari hareket silme doğrulaması başarısız":"Cari hareket zinciri silindi", `${rowDate} · ${rowDesc} · Cari ${res.removedManual.length} · Hesap ${res.removedAccounts.length} · Onay ${res.cancelledApprovals.length}`, stillExists?"Kontrol":"Silindi");
+    logAudit(stillExists?"Cari hareket silme doğrulaması başarısız":"Cari hareket ve bağlı kayıtları silindi", `${rowDate} · ${rowDesc} · Cari ${res.removedManual.length} · Hesap ${res.removedAccounts.length} · Onay ${res.cancelledApprovals.length}`, stillExists?"Kontrol":"Silindi");
     refreshAll();
-    notify(stillExists?"Silme kontrol gerektiriyor: kayıt defterde hâlâ görünüyor.":"Hareket silindi, bağlı kayıtlar iptal edildi ve arşive alındı.");
+    notify(stillExists?"Silme kontrol gerektiriyor: kayıt hâlâ görünüyor.":"Hareket silindi, bağlı kayıtlar iptal edildi ve arşive alındı.");
   };
 
   function mokaInstallmentCountFromText(text){
@@ -1485,16 +1485,16 @@
   }
   window.repairAccountingChains=function(){
     const gaps=accountingChainWarnings();
-    if(!gaps.length) return notify("Muhasebe zincirinde tutarsız kayıt yok.");
+    if(!gaps.length) return notify("Kayıt doğrulamasında tutarsızlık yok.");
     if(!confirm(`${gaps.length} tutarsız kayıt iptal edilsin mi? Bağlı cari/hesap hareketleri arşive alınır, onay kaydı İptal Edildi olur.`)) return;
     let manual=0,accounts=0,approvals=0;
     gaps.forEach(a=>{
-      const res=cancelLinkedFinancialChain(a,"Muhasebe zincir kontrolü ile iptal");
+      const res=cancelLinkedFinancialChain(a,"Kayıt doğrulama kontrolü ile iptal");
       manual+=res.removedManual.length; accounts+=res.removedAccounts.length; approvals+=res.cancelledApprovals.length;
     });
-    logAudit("Muhasebe zincir kontrolü çalıştı", `Onay ${approvals} · Cari ${manual} · Hesap ${accounts}`, "Kontrol");
+    logAudit("Kayıt doğrulama kontrolü çalıştı", `Onay ${approvals} · Cari ${manual} · Hesap ${accounts}`, "Kontrol");
     refreshAll();
-    notify(`Zincir onarıldı: Onay ${approvals}, cari ${manual}, hesap ${accounts}.`);
+    notify(`Kayıt bağlantıları düzeltildi: Onay ${approvals}, cari ${manual}, hesap ${accounts}.`);
   };
   window.selectAccount=function(id){state.selectedAccountId=id;renderAccounts();};
   function ensureCreditCardSourceOption(){
@@ -1556,8 +1556,8 @@
     const row=state.accountTxns.find(x=>String(x.id)===String(id));
     if(!row) return;
     if(!confirm("Bu hesap hareketi silinsin mi? Bağlı cari hareketi ve onay kaydı da iptal edilir; tek taraflı bakiye bırakılmaz.")) return;
-    const res=cancelLinkedFinancialChain(row,"Hesap hareketinden zincir iptali");
-    logAudit("Hesap hareketi zinciri silindi", `${row.accountId} · ${row.date} · ${money(row.amount)} · Cari ${res.removedManual.length} · Hesap ${res.removedAccounts.length} · Onay ${res.cancelledApprovals.length}`, "Silindi");
+    const res=cancelLinkedFinancialChain(row,"Hesap hareketinden bağlı kayıt iptali");
+    logAudit("Hesap hareketi ve bağlı kayıtları silindi", `${row.accountId} · ${row.date} · ${money(row.amount)} · Cari ${res.removedManual.length} · Hesap ${res.removedAccounts.length} · Onay ${res.cancelledApprovals.length}`, "Silindi");
     refreshAll();
   };
   window.exportSelectedAccountCsv=function(){
@@ -2834,7 +2834,7 @@
     if(changed){
       writeJson(LS.manual,state.manualTxns);
       writeJson(LS.approvals,state.approvals);
-      logAudit("Onaylı tahakkuk defter senkronu", `${repaired} eksik tahakkuk cariye işlendi · ${skipped} mükerrer atlandı`, "Kontrol");
+      logAudit("Onaylı tahakkuk kayıt senkronu", `${repaired} eksik tahakkuk cariye işlendi · ${skipped} mükerrer atlandı`, "Kontrol");
     }
     window.__alkamApprovedAccrualRepairRunning=false;
   }
@@ -2926,7 +2926,7 @@
   function latestBankRecord(){
     const candidates=[];
     (state.accountTxns||[]).forEach(x=>{if(isBankRecord(x))candidates.push({stage:x.postedToCari?"Hesap + Cari":"Hesap / Onay Bekliyor",date:normalizeImportDate(x.date)||"",amount:num(x.amount||x.credit||x.debit),desc:x.desc||x.description||"",source:x.source||"Banka",traceId:txTraceId(x),createdAt:x.createdAt||""});});
-    (state.approvals||[]).forEach(x=>{if(isBankRecord(x))candidates.push({stage:isApprovedStatus(x.status)?(x.ledgerVerified?"Deftere İşlendi":"Onaylandı"):"Onay Merkezi",date:normalizeImportDate(x.date)||normalizeImportDate(x.createdAt)||"",amount:num(x.amount),desc:x.reason||"",source:x.source||"Banka",traceId:txTraceId(x),createdAt:x.approvedAt||x.createdAt||""});});
+    (state.approvals||[]).forEach(x=>{if(isBankRecord(x))candidates.push({stage:isApprovedStatus(x.status)?(x.ledgerVerified?"Kesin Kayda Geçti":"Onaylandı"):"Onay Merkezi",date:normalizeImportDate(x.date)||normalizeImportDate(x.createdAt)||"",amount:num(x.amount),desc:x.reason||"",source:x.source||"Banka",traceId:txTraceId(x),createdAt:x.approvedAt||x.createdAt||""});});
     (state.importPreview||[]).forEach(x=>{if(isBankRecord(x))candidates.push({stage:x.archive?"Arşiv":(x.duplicate?"Mükerrer":"Ön İzleme"),date:normalizeImportDate(x.date)||"",amount:num(x.amount||x.credit||x.debit),desc:x.desc||"",source:x.source||"Banka",traceId:txTraceId(x),createdAt:""});});
     candidates.sort((a,b)=>String(b.date||"").localeCompare(String(a.date||""))||String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
     return candidates[0]||null;
@@ -2937,7 +2937,7 @@
   }
   function latestMailRecord(){
     const candidates=[];
-    (state.approvals||[]).forEach(x=>{if(isMailRecord(x))candidates.push({stage:isApprovedStatus(x.status)?(x.ledgerVerified?"Deftere İşlendi":"Onaylandı"):"Onay Merkezi",date:normalizeImportDate(x.date)||normalizeImportDate(x.createdAt)||"",amount:num(x.amount),desc:x.mailSubject||x.reason||"",source:x.source||"Mail",traceId:txTraceId(x),createdAt:x.approvedAt||x.createdAt||"",file:x.originFile||""});});
+    (state.approvals||[]).forEach(x=>{if(isMailRecord(x))candidates.push({stage:isApprovedStatus(x.status)?(x.ledgerVerified?"Kesin Kayda Geçti":"Onaylandı"):"Onay Merkezi",date:normalizeImportDate(x.date)||normalizeImportDate(x.createdAt)||"",amount:num(x.amount),desc:x.mailSubject||x.reason||"",source:x.source||"Mail",traceId:txTraceId(x),createdAt:x.approvedAt||x.createdAt||"",file:x.originFile||""});});
     (state.importPreview||[]).forEach(x=>{if(isMailRecord(x))candidates.push({stage:x.archive?"Arşiv":(x.duplicate?"Mükerrer":"Ön İzleme"),date:normalizeImportDate(x.date)||"",amount:num(x.amount||x.credit||x.debit),desc:x.mailImportNote||x.desc||"",source:x.source||"Mail",traceId:txTraceId(x),createdAt:"",file:x.uploadFileName||x.fileName||""});});
     (state.telegramMessages||[]).forEach(x=>{if(isMailRecord(x))candidates.push({stage:"Mail Kuyruğu",date:normalizeImportDate(x.createdAt)||"",amount:num(x.amount),desc:x.text||x.mailSubject||"",source:x.source||"Mail",traceId:txTraceId(x),createdAt:x.createdAt||"",file:x.originFile||""});});
     candidates.sort((a,b)=>String(b.createdAt||"").localeCompare(String(a.createdAt||""),"tr")||String(b.date||"").localeCompare(String(a.date||""),"tr"));
@@ -2945,7 +2945,7 @@
   }
   function latestProcessedRecord(){
     const candidates=[];
-    (state.approvalVerifications||[]).forEach(x=>candidates.push({status:x.ok?"Deftere İşlendi":"Doğrulama Gerekli",at:x.verifiedAt||"",date:normalizeImportDate(x.date)||"",amount:num(x.amount),source:"İşlem Doğrulama",traceId:x.traceId||"",desc:x.cariName||""}));
+    (state.approvalVerifications||[]).forEach(x=>candidates.push({status:x.ok?"Kesin Kayda Geçti":"Doğrulama Gerekli",at:x.verifiedAt||"",date:normalizeImportDate(x.date)||"",amount:num(x.amount),source:"İşlem Doğrulama",traceId:x.traceId||"",desc:x.cariName||""}));
     (state.approvals||[]).forEach(x=>{if(x.status!=="Bekliyor")candidates.push({status:x.status,at:x.approvedAt||x.cancelledAt||x.createdAt||"",date:normalizeImportDate(x.date)||normalizeImportDate(x.createdAt)||"",amount:num(x.amount),source:x.source||"",traceId:txTraceId(x),desc:x.reason||""});});
     (state.accountTxns||[]).forEach(x=>candidates.push({status:x.postedToCari?"Hesap + Cari":"Hesap",at:x.createdAt||"",date:normalizeImportDate(x.date)||"",amount:num(x.amount),source:x.source||"",traceId:txTraceId(x),desc:x.desc||""}));
     candidates.sort((a,b)=>String(b.at||"").localeCompare(String(a.at||""),"tr")||String(b.date||"").localeCompare(String(a.date||""),"tr"));
@@ -3037,7 +3037,7 @@
         <div><b>1. Mail eki</b>Excel/CSV dosyasi okunur.</div>
         <div><b>2. On izleme</b>Cari, tutar, tarih, kaynak ve ID uretilir.</div>
         <div><b>3. Onay Merkezi</b>Mukerrer ve eslesme kontrolu yapilir.</div>
-        <div><b>4. Kesin defter</b>Sadece onaylanan kayit cariye islenir.</div>
+        <div><b>4. Kesin kayıt</b>Sadece onaylanan kayit cariye islenir.</div>
       </div>
     </div>`;
   }
@@ -3260,7 +3260,7 @@
           <div class="compact-card"><span>Canlı Mükerrer</span><strong>${s.liveLedgerDuplicateGroups}</strong><p class="muted-note">${s.liveLedgerDuplicateRows} satır</p></div>
         </div>
         ${s.liveLedgerDuplicateGroups?`<h3 class="section-title" style="font-size:16px">Canlı Dönem Mükerrer Kontrolü</h3><div class="mini-list">${liveDupRows}</div>`:`<div class="empty" style="margin-bottom:12px">Canlı dönemde aynı cari/tarih/tutar/yön seviyesinde mükerrer grup bulunmadı.</div>`}
-        ${s.archiveLedgerDuplicateGroups?`<h3 class="section-title" style="font-size:16px">Arşiv Bilgi Kontrolü</h3><div class="rule-box" style="margin-bottom:8px">Bu kayıtlar 01.12.2025 öncesi arşiv dönemindedir; canlı kullanımı engellemez, sadece geçmiş defter bilgisidir.</div><div class="mini-list">${archiveDupRows}</div>`:""}
+        ${s.archiveLedgerDuplicateGroups?`<h3 class="section-title" style="font-size:16px">Arşiv Bilgi Kontrolü</h3><div class="rule-box" style="margin-bottom:8px">Bu kayıtlar 01.12.2025 öncesi arşiv dönemindedir; canlı kullanımı engellemez, sadece geçmiş kayıt bilgisidir.</div><div class="mini-list">${archiveDupRows}</div>`:""}
       </div></details>`;
   }
   function renderHistoryImportPanel(){
@@ -3549,12 +3549,12 @@
   }
   function approvalAccountCell(a){
     const current=a.accountId||"";
-    const opts=`<option value="">Hesap seç...</option>`+(state.accounts||[]).map(x=>`<option value="${esc(x.id)}" ${String(current)===String(x.id)?"selected":""}>${esc(x.name)} (${esc(accountTypeLabel(x.type))})</option>`).join("");
+    const opts=`<option value="">Para hesabı seç...</option>`+(state.accounts||[]).map(x=>`<option value="${esc(x.id)}" ${String(current)===String(x.id)?"selected":""}>${esc(x.name)} (${esc(accountTypeLabel(x.type))})</option>`).join("");
     if(a.status!=="Bekliyor"){
       const acc=(state.accounts||[]).find(x=>String(x.id)===String(a.accountId));
-      return `<br><span class="muted-note">Hedef hesap: ${acc?esc(acc.name):"-"}</span>`;
+      return `<br><span class="muted-note">Para hesabı: ${acc?esc(acc.name):"-"}</span>`;
     }
-    return `<div style="margin-top:6px"><span class="muted-note">Hedef hesap</span><select class="select-input" style="margin-top:4px;min-width:170px" onchange="setApprovalAccount('${esc(a.id)}',this.value)">${opts}</select></div>`;
+    return `<div style="margin-top:6px"><span class="muted-note">Para hesabı</span><select class="select-input" style="margin-top:4px;min-width:170px" onchange="setApprovalAccount('${esc(a.id)}',this.value)">${opts}</select></div>`;
   }
   window.setApprovalAccount=function(id,accountId){
     const a=state.approvals.find(x=>x.id===id); if(!a)return;
@@ -3583,7 +3583,7 @@
     return !!a?.ledgerVerified || /deftere işlendi|deftere islendi|doğrulandı|dogrulandi/i.test(String(a?.status||""));
   }
   function isVerificationProblem(a){
-    return /doğrulama gerekli|dogrulama gerekli|defter bağlantısı|defter baglantisi/i.test(String(a?.status||""));
+    return /doğrulama gerekli|dogrulama gerekli|defter bağlantısı|defter baglantisi|kayıt bağlantısı|kayit baglantisi/i.test(String(a?.status||""));
   }
   function isRejectedApproval(a){
     return /reddedildi|iptal|mükerrer|mukerrer|bölündü|bolundu/i.test(String(a?.status||""));
@@ -3604,7 +3604,7 @@
     if(a?.duplicateReason) return {status:TRUST_BAD,note:a.duplicateReason};
     if(!a?.cariId || amount<=0 || !ledgerDate) return {status:TRUST_CHECK,note:"Cari, tarih ve tutar tamamlanmalı"};
     const hit=findExistingCariDuplicate({date:ledgerDate,amount,debit,credit,type:a.type,cariId:a.cariId,desc:a.reason,source:a.source});
-    if(hit && !isVerifiedApproval(a)) return {status:TRUST_BAD,note:"Cari defterde benzer kayıt var"};
+    if(hit && !isVerifiedApproval(a)) return {status:TRUST_BAD,note:"Cari kayıtlarda benzer işlem var"};
     return {status:TRUST_DONE,note:"Tekrar riski yok"};
   }
   function approvalTrustChain(a){
@@ -3625,8 +3625,8 @@
       trustStep("Ön kontrol yapıldı",preOk&&hasCari?TRUST_DONE:(amount<=0||!ledgerDate?TRUST_BAD:TRUST_CHECK),preOk&&hasCari?"Tarih, tutar, cari ve güven puanı tamam":(!hasCari?"Cari eşleşmesi gerekli":"Tarih/tutar/güven kontrol edilmeli")),
       trustStep("Onay bekliyor",rejected?TRUST_BAD:(a.status==="Bekliyor"?TRUST_WAIT:TRUST_DONE),rejected?"Aktif onay akışında değil":(a.status==="Bekliyor"?"Kullanıcı kararı bekleniyor":"Onay aşaması geçildi")),
       trustStep("Kullanıcı onayladı",approved?TRUST_DONE:(a.status==="Bekliyor"?TRUST_WAIT:TRUST_CHECK),approved?"Kullanıcı onay izi var":"Henüz onaylanmadı"),
-      trustStep("Deftere yazıldı",verification.manual?TRUST_DONE:(approved?TRUST_CHECK:TRUST_WAIT),verification.manual?`Cari satırı: ${verification.manual.id}`:"Cari defter satırı bulunmadı"),
-      trustStep("Defterden geri doğrulandı",(verification.ok&&a.ledgerVerified)||anyVerificationOk?TRUST_DONE:(approved?TRUST_CHECK:TRUST_WAIT),(verification.ok&&a.ledgerVerified)||anyVerificationOk?"Defter ve hesap bağlantısı okundu":"Geri okuma tamamlanmadı"),
+      trustStep("Kesin kayda geçti",verification.manual?TRUST_DONE:(approved?TRUST_CHECK:TRUST_WAIT),verification.manual?`Cari kayıt satırı: ${verification.manual.id}`:"Cari kayıt satırı bulunmadı"),
+      trustStep("Kayıttan geri doğrulandı",(verification.ok&&a.ledgerVerified)||anyVerificationOk?TRUST_DONE:(approved?TRUST_CHECK:TRUST_WAIT),(verification.ok&&a.ledgerVerified)||anyVerificationOk?"Cari ve hesap bağlantısı okundu":"Geri okuma tamamlanmadı"),
       trustStep("Mükerrer kontrolü temiz",duplicate.status,duplicate.note),
       trustStep("Rapor / log kaydı oluşturuldu",logOk?TRUST_DONE:(approved?TRUST_CHECK:TRUST_WAIT),logOk?"Audit/doğrulama izi var":"Log veya rapor izi bekleniyor")
     ];
@@ -3637,7 +3637,7 @@
   function isTrustedApproval(a){return approvalTrustChain(a).ok;}
   function approvalTrustChainHtml(a){
     const chain=approvalTrustChain(a);
-    const tag=chain.ok?`<span class="tag green">Güvenilir Kayıt</span>`:chain.hasBad?`<span class="tag red">Zincir Hatalı</span>`:chain.hasCheck?`<span class="tag amber">Doğrulama Gerekli</span>`:`<span class="tag gray">Zincir Bekliyor</span>`;
+    const tag=chain.ok?`<span class="tag green">Güvenilir Kayıt</span>`:chain.hasBad?`<span class="tag red">Kontrol Gerekli</span>`:chain.hasCheck?`<span class="tag amber">Doğrulama Gerekli</span>`:`<span class="tag gray">Karar Bekliyor</span>`;
     return `<div class="trust-chain-box"><div class="trust-summary">${tag}<span class="trust-count">${chain.completeCount}/8</span></div><div class="trust-chain">${chain.steps.map((s,i)=>`<div class="trust-step ${trustStepClass(s.status)}"><span class="trust-no">${i+1}</span>${esc(s.label)}<small>${esc(s.status)}${s.note?` · ${esc(s.note)}`:""}</small></div>`).join("")}</div></div>`;
   }
   function approvalFilterMatch(a,filter){
@@ -3688,7 +3688,7 @@
       const ids=new Set(rows.map(x=>x.id));
       state.approvals=(state.approvals||[]).filter(x=>!ids.has(x.id));
       writeJson(LS.approvals,state.approvals);
-      logAudit("Eski otomasyon tahakkuk adayları otomatik temizlendi", `${rows.length} bekleyen aday silindi; cari defterdeki kesin hareketlere dokunulmadı.`, "Tahakkuk");
+      logAudit("Eski otomasyon tahakkuk adayları otomatik temizlendi", `${rows.length} bekleyen aday silindi; cari kayıtlarındaki kesin hareketlere dokunulmadı.`, "Tahakkuk");
     }finally{
       window.__alkamProgramAccrualCleanupRunning=false;
     }
@@ -3745,7 +3745,7 @@
   function recordApprovalVerification(a,result){
     const c=state.cariler.find(x=>x.id===a.cariId);
     const acc=state.accounts.find(x=>String(x.id)===String(a.accountId));
-    const row={id:uid("VER"),ok:!!result.ok,approvalId:a.id,traceId:result.traceId,date:result.ledgerDate,amount:num(a.amount),type:a.type,cariName:c?.name||"",accountName:acc?.name||"",verifiedAt:new Date().toLocaleString("tr-TR"),manualTxnId:result.manual?.id||"",accountTxnId:result.account===true?"":(result.account?.id||""),message:result.ok?"Deftere yazıldı ve doğrulandı":"Defter bağlantısı doğrulanamadı"};
+    const row={id:uid("VER"),ok:!!result.ok,approvalId:a.id,traceId:result.traceId,date:result.ledgerDate,amount:num(a.amount),type:a.type,cariName:c?.name||"",accountName:acc?.name||"",verifiedAt:new Date().toLocaleString("tr-TR"),manualTxnId:result.manual?.id||"",accountTxnId:result.account===true?"":(result.account?.id||""),message:result.ok?"Kesin kayda geçti ve doğrulandı":"Kayıt bağlantısı doğrulanamadı"};
     a.trustChainVersion="v1";
     a.lastTrustCheckAt=row.verifiedAt;
     if(result.ok && result.manual) result.manual.ledgerVerified=true;
@@ -3809,7 +3809,7 @@
       <div class="approval-tabs">${filterBar}</div>
       ${accrualTools}
       <div class="approval-context"><b>${esc(activeFilter[1])}</b> görünümü açık. Bu listede ${filtered.length} kayıt var; onaylanmadan hiçbir finansal kayıt cari ekstresine kesin hareket olarak yazılmaz.</div>
-      <div class="approval-table-wrap">${filtered.length?`<table class="approval-table"><thead><tr><th>İşlem ID</th><th>İşlem Tarihi</th><th>Önerilen Cari</th><th>İşlem</th><th>Kaynak / Hesap</th><th>Güven</th><th>Güven Zinciri</th><th class="text-right">Tutar</th><th>Sonuç / Açıklama</th><th>Karar</th></tr></thead><tbody>${table}</tbody></table>`:`<div class="empty">Bu filtrede kayıt yok.</div>`}</div>`;
+      <div class="approval-table-wrap">${filtered.length?`<table class="approval-table"><thead><tr><th>İşlem ID</th><th>İşlem Tarihi</th><th>Önerilen Cari</th><th>İşlem</th><th>Kaynak / Hesap</th><th>Güven</th><th>Kayıt Doğrulama</th><th class="text-right">Tutar</th><th>Sonuç / Açıklama</th><th>Karar</th></tr></thead><tbody>${table}</tbody></table>`:`<div class="empty">Bu filtrede kayıt yok.</div>`}</div>`;
   }
   window.approveItem=function(id){
     const a=state.approvals.find(x=>x.id===id); if(!a) return;
@@ -3847,13 +3847,13 @@
       a.accountTxnId=verification.account===true?"":verification.account.id;
       writeJson(LS.approvals,state.approvals);
       logAudit("Onay kaydı doğrulandı", `${a.type} · ${money(a.amount)} · ${traceId}`, "Doğrulandı");
-      notify("Kayıt deftere işlendi ve doğrulandı.");
+      notify("Kayıt kesin kayda geçti ve doğrulandı.");
     }else{
       a.status="Doğrulama Gerekli";
       a.ledgerVerified=false;
       writeJson(LS.approvals,state.approvals);
       logAudit("Onay kaydı doğrulama hatası", `${a.type} · ${money(a.amount)} · ${traceId}`, "Kontrol");
-      notify("Kayıt kontrol gerektiriyor: defter bağlantısı doğrulanamadı.");
+      notify("Kayıt kontrol gerektiriyor: kayıt bağlantısı doğrulanamadı.");
     }
     refreshAll();
   };
@@ -3869,15 +3869,15 @@
       a.accountTxnId=verification.account===true?"":verification.account.id;
       writeJson(LS.approvals,state.approvals);
       logAudit("Onay kaydı tekrar doğrulandı", `${a.type} · ${money(a.amount)} · ${txTraceId(a)}`, "Doğrulandı");
-      notify("Kayıt yeniden kontrol edildi: defterde var ve yeşil doğrulandı.");
+      notify("Kayıt yeniden kontrol edildi: kesin kayıtta var ve yeşil doğrulandı.");
     }else{
       logAudit("Onay kaydı doğrulanamadı", `${a.type} · ${money(a.amount)} · ${txTraceId(a)}`, "Kontrol");
-      notify("Kayıt hâlâ kontrol gerektiriyor: defter bağlantısı bulunamadı.");
+      notify("Kayıt hâlâ kontrol gerektiriyor: kayıt bağlantısı bulunamadı.");
     }
     refreshAll();
   };
   window.rejectItem=function(id){const a=state.approvals.find(x=>x.id===id);if(!a)return;a.status="Reddedildi";a.rejectedAt=new Date().toLocaleString("tr-TR");writeJson(LS.approvals,state.approvals);logAudit("Onay kaydı reddedildi", a.reason||id, "Reddedildi");refreshAll();notify("Kayıt aktif listeden Reddedilen Arşiv sekmesine taşındı.");};
-  window.clearApproved=function(){repairApprovedAccrualLedgerLinks();state.approvals=state.approvals.filter(a=>a.status==="Bekliyor"||isVerificationProblem(a)||isRejectedApproval(a));writeJson(LS.approvals,state.approvals);refreshAll();notify("Deftere bağlanan kayıtlar listeden kaldırıldı; kontrol gereken ve reddedilen kayıtlar korundu.");};
+  window.clearApproved=function(){repairApprovedAccrualLedgerLinks();state.approvals=state.approvals.filter(a=>a.status==="Bekliyor"||isVerificationProblem(a)||isRejectedApproval(a));writeJson(LS.approvals,state.approvals);refreshAll();notify("Kesin kayda geçen işlemler aktif listeden kaldırıldı; kontrol gereken ve reddedilen kayıtlar korundu.");};
   function autoArchivePostedApprovals(){
     if(window.__alkamAutoArchivePostedApprovals) return 0;
     window.__alkamAutoArchivePostedApprovals=true;
@@ -3888,7 +3888,7 @@
       if(!removed.length) return 0;
       state.approvals=state.approvals.filter(keep);
       writeJson(LS.approvals,state.approvals);
-      logAudit("Deftere işlenen onaylar aktif listeden arşivlendi", `${removed.length} kayıt aktif karar listesinden kaldırıldı; cari/hareket defteri korunur.`, "Doğrulandı");
+      logAudit("Kesin kayda geçen onaylar aktif listeden arşivlendi", `${removed.length} kayıt aktif karar listesinden kaldırıldı; cari/hareket kayıtları korunur.`, "Doğrulandı");
       return before-state.approvals.length;
     }finally{
       window.__alkamAutoArchivePostedApprovals=false;
@@ -3966,7 +3966,7 @@
     monthSequence(start,addMonths(start,count-1)).forEach(period=>{
       if(accrualExists(c,period,monthly)) return;
       const traceId=importHash(["SPLIT-ACCRUAL",txTraceId(a)||a.id,period,c.id,monthly]);
-      fresh.push({id:uid("APR-SPLIT"),cariId:c.id,amount:monthly,score:100,type:"Tahakkuk",source:"Otomasyon Tahakkuk",date:periodDate(period),reason:`${periodName(period)} aylık muhasebe ücreti tahakkuku (yıllık kayıttan bölündü)`,status:"Bekliyor",createdAt,traceId,importHash:traceId,splitFrom:a.id});
+      fresh.push({id:uid("APR-SPLIT"),cariId:c.id,amount:monthly,score:100,type:"Tahakkuk",source:"Otomasyon Tahakkuk",date:periodDate(period),reason:`${periodName(period)} aylık hizmet ücreti tahakkuku (yıllık kayıttan bölündü)`,status:"Bekliyor",createdAt,traceId,importHash:traceId,splitFrom:a.id});
     });
     if(!fresh.length) return notify("Bu dönemler için aylık tahakkuk zaten var veya onaya alınmış.");
     a.status="Bölündü";
@@ -4089,7 +4089,7 @@
       let clearedApprovals=0;
       rows.forEach(x=>{
         const traceId=importHash(["AUTO-MONTHLY-TAHAKKUK",x.c.id,x.period,x.amount]);
-        state.manualTxns.push({id:uid("AUTO-TAH"),cariId:x.c.id,date:periodDate(x.period),type:"TAHAKKUK",debit:x.amount,credit:0,source:"Otomasyon Tahakkuk",description:`${periodName(x.period)} aylik muhasebe ucreti tahakkuku`,docNo:traceId,traceId,importHash:traceId,autoMonthlyAccrual:true,ledgerVerified:true,createdAt});
+        state.manualTxns.push({id:uid("AUTO-TAH"),cariId:x.c.id,date:periodDate(x.period),type:"TAHAKKUK",debit:x.amount,credit:0,source:"Otomasyon Tahakkuk",description:`${periodName(x.period)} aylık hizmet ücreti tahakkuku`,docNo:traceId,traceId,importHash:traceId,autoMonthlyAccrual:true,ledgerVerified:true,createdAt});
         clearedApprovals += cleanupAccrualApprovalForPostedRow(x);
         state.importHashes.push(traceId);
       });
@@ -4140,14 +4140,14 @@
       </div>
       <div class="btn-row" style="margin:10px 0 12px"><button class="btn btn-green" onclick="sendMonthlyAccrualsToApproval()">Eksik Tahakkukları Cariye İşle</button><button class="btn btn-soft" onclick="setAccrualScope('selected')">Sadece Seçili Cari</button><button class="btn btn-soft" onclick="renderAccrualPanel()">Yenile</button></div>
       <div class="section" style="margin:10px 0 12px"><h3 class="section-title">Bu Ay Otomatik İşlenen Tahakkuklar</h3>${postedRows.length?`<table><thead><tr><th>Cari</th><th>Tarih</th><th>İşlem ID</th><th>Açıklama</th><th class="text-right">Tutar</th></tr></thead><tbody>${postedRows.map(x=>`<tr><td><strong>${esc(x.cari?.name||"-")}</strong></td><td>${esc(x.txn.date)}</td><td>${traceBadge(x.txn)}<br><span class="tag green">Doğrulandı</span></td><td>${esc(x.txn.description||"")}</td><td class="text-right money">${money(x.txn.debit)}</td></tr>`).join("")}</tbody></table>`:`<div class="empty">Bu ay otomatik işlenmiş tahakkuk yok.</div>`}</div>
-      <div class="mini-list">${rows.length?rows.slice(0,24).map(x=>`<div class="mini-row"><strong>${esc(x.c.name)}</strong><br>${esc(periodName(x.period))} aylık muhasebe ücreti · ${money(x.amount)} · Tarih ${esc(periodDate(x.period))}</div>`).join(""):`<div class="empty">Bu seçim için yeni tahakkuk adayı yok. Ücretler sıfır olabilir veya kayıtlar zaten hazırlanmış/onaya gönderilmiş olabilir.</div>`}</div>`;
+      <div class="mini-list">${rows.length?rows.slice(0,24).map(x=>`<div class="mini-row"><strong>${esc(x.c.name)}</strong><br>${esc(periodName(x.period))} aylık hizmet ücreti · ${money(x.amount)} · Tarih ${esc(periodDate(x.period))}</div>`).join(""):`<div class="empty">Bu seçim için yeni tahakkuk adayı yok. Ücretler sıfır olabilir veya kayıtlar zaten hazırlanmış/onaya gönderilmiş olabilir.</div>`}</div>`;
   }
   window.sendMonthlyAccrualsToApproval=function(){
     const rows=accrualRangeCandidates();
     if(!rows.length) return notify("İşlenecek eksik tahakkuk yok.");
     rows.forEach(x=>{
       const traceId=importHash(["TAHAKKUK",x.c.id,x.period,x.amount]);
-      state.manualTxns.push({id:uid("AUTO-TAH"),cariId:x.c.id,date:periodDate(x.period),type:"TAHAKKUK",debit:x.amount,credit:0,source:"Otomasyon Tahakkuk",description:`${periodName(x.period)} aylık muhasebe ücreti tahakkuku`,docNo:traceId,traceId,importHash:traceId,autoMonthlyAccrual:true,ledgerVerified:true,createdAt:new Date().toLocaleString("tr-TR")});
+      state.manualTxns.push({id:uid("AUTO-TAH"),cariId:x.c.id,date:periodDate(x.period),type:"TAHAKKUK",debit:x.amount,credit:0,source:"Otomasyon Tahakkuk",description:`${periodName(x.period)} aylık hizmet ücreti tahakkuku`,docNo:traceId,traceId,importHash:traceId,autoMonthlyAccrual:true,ledgerVerified:true,createdAt:new Date().toLocaleString("tr-TR")});
       cleanupAccrualApprovalForPostedRow(x);
       state.importHashes.push(traceId);
     });
@@ -4163,12 +4163,12 @@
   function renderAutomation(){
     const pending = readJson(LS.pendingAuto,[]);
     byId("automationPanel").innerHTML = `
-      <div class="rule-box" style="margin-bottom:12px"><strong>Aylık tahakkuk kuralı:</strong> Her ayın 1'inde cari kartındaki aylık ücretler doğrudan cari ekstresine tahakkuk olarak işlenir. Banka, Moka, Telegram ve toplu mutasyonlar onaysız kesin deftere yazılmaz.</div>
+      <div class="rule-box" style="margin-bottom:12px"><strong>Aylık tahakkuk kuralı:</strong> Her ayın 1'inde cari kartındaki aylık ücretler doğrudan cari ekstresine tahakkuk olarak işlenir. Banka, Moka, Telegram ve toplu işlemler onaysız kesin kayda geçmez.</div>
       ${automationRules.map(r=>{const enabled=!!state.automation[r.key]?.enabled;return `<div class="auto-row"><div><div class="auto-name">${esc(r.title)}</div><div class="auto-desc">${esc(r.desc)}</div><span class="auto-risk">Risk: ${esc(r.risk)}</span></div><label><span class="switch"><input type="checkbox" data-auto="${esc(r.key)}" ${enabled?"checked":""}><span class="slider"></span></span><span class="switch-text">${enabled?"OTOMATİK":"KAPALI"}</span></label></div>`;}).join("")}
       <h3 style="font-size:15px;margin:18px 0 8px">Onay Bekleyen / Bloklanan Otomasyonlar</h3>
       <div class="rule-box">${pending.length?pending.map(x=>`<div><strong>${esc(x.title||x.key)}</strong> · ${esc(x.createdAt||"")}</div>`).join(""):"Onay bekleyen otomasyon kaydı yok."}</div>
       <h3 style="font-size:15px;margin:18px 0 8px">Koruma Notu</h3>
-      <div class="rule-box">Bu katman otomatik işlem fonksiyonlarını izin bayraklarıyla kontrol eder. Mevcut ana programı silmez; finansal mutasyonlarda kullanıcı onayı esastır.</div>`;
+      <div class="rule-box">Bu katman otomatik işlem fonksiyonlarını izin bayraklarıyla kontrol eder. Mevcut ana programı silmez; riskli finansal değişikliklerde kullanıcı onayı esastır.</div>`;
     document.querySelectorAll("[data-auto]").forEach(input=>input.onchange=()=>toggleAutomation(input.dataset.auto,input.checked));
     publishAutomationFlags();
   }
