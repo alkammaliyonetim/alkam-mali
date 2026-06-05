@@ -548,7 +548,7 @@
   function dateInRange(date,start,end){const d=isoDate(date);return !!d && d>=start && d<=end;}
   function currentLedgerRows(){
     const rows=[];
-    state.cariler.filter(c=>!c.deleted).forEach(c=>allTxns(c).forEach(t=>rows.push({...t,cariId:c.id,cariName:c.name,ledger:t.approvalId?"Onaylı Defter":(t.sourceLedger||"Cari Defter")})));
+    state.cariler.filter(c=>!c.deleted).forEach(c=>allTxns(c).forEach(t=>rows.push({...t,cariId:c.id,cariName:c.name,ledger:t.approvalId?"Onaylı Kayıt":(t.sourceLedger||"Cari Kayıt")})));
     return rows;
   }
   function cashExpenseRows(){
@@ -1256,7 +1256,7 @@
     else if(seed.accountId && account && String(account.accountId)!==String(seed.accountId)) result.reason="Hesap eşleşmesi tutarsız";
     else if(amount>0 && manual && Math.abs(num(manual.debit||manual.credit)-amount)>0.01) result.reason="Cari tutarı tutarsız";
     else if(amount>0 && account && Math.abs(num(account.amount)-amount)>0.01) result.reason="Hesap tutarı tutarsız";
-    else {result.ok=true;result.reason="Defter satırı doğrulandı";}
+    else {result.ok=true;result.reason="Kayıt satırı doğrulandı";}
     return result;
   }
   function recordFinancialVerification(seed,scope){
@@ -4307,18 +4307,18 @@
       const preview=Array.isArray(d.importPreview)?d.importPreview:[];
       const plans=Array.isArray(d.mokaPlans)?d.mokaPlans:[];
       const hashes=Array.isArray(d.importHashes)?d.importHashes:[];
-      if(!preview.length && !plans.length) return notify("Geçiş paketinde ön izleme kaydı yok.");
+      if(!preview.length && !plans.length) return notify("İçe aktarma paketinde ön izleme kaydı yok.");
       state.importPreview=preview.map(row=>markImportDuplicate(markArchiveImport({...row})));
       state.mokaPlans=plans;
       state.importHashes=[...new Set([...(state.importHashes||[]),...hashes])].slice(-5000);
       writeJson(LS.importPreview,state.importPreview);
       writeJson(LS.mokaPlans,state.mokaPlans);
       writeJson(LS.importHashes,state.importHashes);
-      logAudit("Geçiş paketi yüklendi", `${f.name} · Ön izleme ${preview.length} · Moka taksit ${plans.length}`);
+      logAudit("İçe aktarma paketi yüklendi", `${f.name} · Ön izleme ${preview.length} · Moka taksit ${plans.length}`);
       switchTab("onay");
       refreshAll();
-      notify("Geçiş paketi yüklendi. Onay Merkezi'nde ön izleme hazır.");
-    }catch(err){notify("Geçiş paketi okunamadı: "+err.message);}};
+      notify("İçe aktarma paketi yüklendi. Onay Merkezi'nde ön izleme hazır.");
+    }catch(err){notify("İçe aktarma paketi okunamadı: "+err.message);}};
     r.readAsText(f);
   };
   function persistAll(){writeJson(LS.cariler,state.cariler);writeJson(LS.manual,state.manualTxns);writeJson(LS.deleted,state.deletedTxns);writeJson(LS.accounts,state.accounts);writeJson(LS.accountTxns,state.accountTxns);writeJson(LS.approvals,state.approvals);writeJson(LS.approvalVerifications,state.approvalVerifications);writeJson(LS.opsTasks,state.opsTasks);writeJson(LS.cashModules,state.cashRecords);writeJson(LS.automation,state.automation);writeJson(LS.importPreview,state.importPreview);writeJson(LS.importHashes,state.importHashes);writeJson(LS.mokaPlans,state.mokaPlans);}
