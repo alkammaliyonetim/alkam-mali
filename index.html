@@ -1065,16 +1065,29 @@
     byId("kpiDebit").textContent = money(debit);
     byId("kpiCredit").textContent = money(credit);
     byId("kpiBalance").textContent = balanceLabel(bal);
-    renderDashboardOpsCenter();
-    renderDashboardFinanceStatement();
     byId("sideConn").textContent = state.cariler.length ? `${state.dataSource} • ${activeCariler.length} aktif cari` : (state.loadError ? "Hata: "+state.loadError : "Yükleniyor...");
     byId("connState").textContent = activeCariler.length ? `${activeCariler.length} cari yüklü` : "Cari bekleniyor";
     const top = rows.sort((a,b)=>Math.abs(b.bal)-Math.abs(a.bal)).slice(0,8);
     byId("dashboardTopCari").innerHTML = top.length ? `<table><thead><tr><th>Cari</th><th>Son İşlem</th><th class="text-right">Bakiye</th></tr></thead><tbody>${top.map(x=>`<tr><td>${esc(x.c.name)}</td><td>${esc(x.last||"-")}</td><td class="text-right money">${balanceLabel(x.bal)}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Cari veri yok.<br>${esc(state.loadError||"Yükleniyor...")}</div>`;
     const pb=promiseBudget();
-    const integrity=endToEndIntegrityCheck();
     byId("systemStatus").innerHTML = `<strong>Veri kaynağı:</strong> ${esc(state.dataSource)}<br><strong>Aktif cari:</strong> ${activeCariler.length}<br><strong>Toplam hareket:</strong> ${activeCariler.reduce((s,c)=>s+allTxns(c).length,0)}<br><strong>Beklenen ödeme sözleri:</strong> Bu hafta ${money(pb.week)} · Bu ay ${money(pb.month)} · Bu yıl ${money(pb.year)}${pb.overdue>0?`<br><span style="color:#b91c1c"><strong>Geciken ödeme sözü:</strong> ${money(pb.overdue)}</span>`:""}<br><strong>Kaynak kolonu:</strong> Aktif<br><strong>Bakiye standardı:</strong> Bakiye B / Bakiye A<br><strong>Moka United:</strong> Ayrı hesap aktif<br><strong>Otomasyon:</strong> Riskli işler varsayılan KAPALI${state.loadError?`<br><span style="color:#b91c1c"><strong>Hata:</strong> ${esc(state.loadError)}</span>`:""}`;
-    byId("systemStatus").innerHTML += renderEndToEndStatusMini(integrity);
+    scheduleDashboardHeavyRender();
+  }
+
+  function scheduleDashboardHeavyRender(){
+    if(currentTab!=="dashboard") return;
+    clearTimeout(window.__alkamDashboardHeavyTimer);
+    window.__alkamDashboardHeavyTimer=setTimeout(()=>{
+      if(currentTab!=="dashboard") return;
+      try{
+        renderDashboardOpsCenter();
+        renderDashboardFinanceStatement();
+        const el=byId("systemStatus");
+        if(el) el.innerHTML += renderEndToEndStatusMini(endToEndIntegrityCheck());
+      }catch(err){
+        console.error("[ALKAM] dashboard ağır bölüm hata", err);
+      }
+    }, 250);
   }
 
   function renderDashboardOpsCenter(){
