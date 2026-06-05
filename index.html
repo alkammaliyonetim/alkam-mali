@@ -454,6 +454,9 @@
     dataSource: "Yükleniyor",
     loadError: ""
   };
+  let currentTab = "dashboard";
+  let bootRepairsDone = false;
+  let cariLoadPromise = null;
   ensureDefaultAccounts();
 
   function initAutomation(){
@@ -858,6 +861,8 @@
   }
 
   async function loadCariData(reason){
+    if(cariLoadPromise) return cariLoadPromise;
+    cariLoadPromise = (async()=>{
     let raw = externalArray();
     let source = raw ? "alkam-cariler-data.js" : "";
     if(!raw){
@@ -886,6 +891,9 @@
     logAudit("Cari veri yüklendi", `${state.cariler.length} cari · Kaynak: ${state.dataSource}`);
     refreshAll();
     return true;
+    })();
+    try{return await cariLoadPromise;}
+    finally{cariLoadPromise=null;}
   }
   window.forceReloadCariler = async function(){localStorage.removeItem(LS.cariler); state.selectedCariId=null; const ok=await loadCariData("manuel yenile"); notify(ok?"Cariler yüklendi":"Cari verisi bulunamadı");};
   window.clearCariCache = function(){localStorage.removeItem(LS.cariler); notify("Cari önbelleği temizlendi"); forceReloadCariler();};
@@ -1008,6 +1016,7 @@
   }
 
   window.switchTab = function(tab){
+    currentTab = tab || "dashboard";
     document.querySelectorAll(".tab-page").forEach(x=>x.classList.remove("active"));
     document.querySelectorAll(".nav-btn,.erp-module-btn").forEach(x=>x.classList.toggle("active", x.dataset.tab===tab));
     if(cashTabs.has(tab)) setNavGroup("cash", true);
@@ -1016,14 +1025,36 @@
   };
 
   window.refreshAll = function(){
-    cleanupPendingSplitAccruals();
-    cleanupStaleProgramAccrualApprovals();
-    autoCreateMonthlyAccrualApprovals();
-    repairDuplicateMonthlyAccruals();
-    repairUnsafeBankOcrApprovals();
-    repairApprovedAccrualLedgerLinks();
-    autoArchivePostedApprovals();
-    renderDashboard(); renderCariList(); renderSelectedCariDetail(); renderAccounts(); renderCashModules(); renderTelegramPanel(); renderHistoryImportPanel(); renderApprovals(); renderAccrualPanel(); renderAutomation(); renderReports(); renderAuditList(); fillSelects(); cleanupLegacyTelegramPanels();
+    if(window.__alkamRefreshRunning) return;
+    window.__alkamRefreshRunning = true;
+    try{
+      if(!bootRepairsDone && state.cariler.length){
+        bootRepairsDone = true;
+        cleanupPendingSplitAccruals();
+        cleanupStaleProgramAccrualApprovals();
+        autoCreateMonthlyAccrualApprovals();
+        repairDuplicateMonthlyAccruals();
+        repairUnsafeBankOcrApprovals();
+        repairApprovedAccrualLedgerLinks();
+        autoArchivePostedApprovals();
+      }
+      renderDashboard();
+      if(currentTab==="cariler"){ renderCariList(); renderSelectedCariDetail(); }
+      if(currentTab==="hesaplar"){ renderAccounts(); }
+      if(cashTabs.has(currentTab)){ renderCashModules(); }
+      if(currentTab==="onay"){ renderApprovals(); renderTelegramPanel(); renderHistoryImportPanel(); }
+      if(currentTab==="otomasyon"){ renderAccrualPanel(); renderAutomation(); }
+      if(currentTab==="raporlar"){ renderReports(); }
+      renderAuditList();
+      fillSelects();
+      if(currentTab==="onay") cleanupLegacyTelegramPanels();
+    }catch(err){
+      console.error("[ALKAM] refreshAll hata", err);
+      state.loadError = err?.message || String(err);
+      const s=byId("sideConn"); if(s) s.textContent = "Açılış hatası: " + state.loadError;
+    }finally{
+      window.__alkamRefreshRunning = false;
+    }
   };
 
   function renderDashboard(){
