@@ -370,11 +370,29 @@ async function mailQueue(request, env) {
   const mails = [];
   for (const item of listed.keys || []) {
     if (String(item.name || "").includes(":att:")) continue;
-    const value = await queue.get(item.name, "json");
+    const value = await safeQueueJsonGet(queue, item.name);
     if (value) mails.push({ ...value, queueKey: item.name });
   }
   mails.sort((a, b) => String(b.receivedAt || "").localeCompare(String(a.receivedAt || "")));
   return json({ ok: true, configured: true, storageConfigured: true, count: mails.length, mails });
+}
+
+async function safeQueueJsonGet(queue, key) {
+  try {
+    const text = await queue.get(key, "text");
+    if (!text) return null;
+    return JSON.parse(String(text).replace(/^\uFEFF/, ""));
+  } catch (err) {
+    return {
+      id: key,
+      channel: "system",
+      subject: "Kuyruk kaydı okunamadı",
+      receivedAt: new Date().toISOString(),
+      docType: "parse-error",
+      text: `Bu kuyruk kaydı JSON olarak okunamadı: ${String(err && err.message ? err.message : err).slice(0, 240)}`,
+      attachments: []
+    };
+  }
 }
 
 async function mailQueueAck(request, env) {
