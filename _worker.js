@@ -369,6 +369,7 @@ async function mailQueue(request, env) {
   const listed = await queue.list({ prefix: "mailq:", limit });
   const mails = [];
   for (const item of listed.keys || []) {
+    if (String(item.name || "").includes(":att:")) continue;
     const value = await queue.get(item.name, "json");
     if (value) mails.push({ ...value, queueKey: item.name });
   }
