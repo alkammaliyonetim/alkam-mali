@@ -53,31 +53,18 @@
       <div id="yearNotice" class="notice hidden"></div>
 
       <section class="view active" id="overviewView">
-        <div class="cards-grid" id="overviewCards"></div>
-        <div class="cards-grid compare-grid" id="compareCards"></div>
-        <div class="two-col">
-          <div class="card">
-            <div class="card-title">Aylık Finansal Özet</div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Ay</th><th>Ciro</th><th>Maliyet</th><th>Brüt Kar</th><th>Marj</th></tr>
-                </thead>
-                <tbody id="overviewMonthlyBody"></tbody>
-              </table>
+        <div class="income-shell">
+          <div class="income-head">
+            <div>
+              <h3>Gelir Tablosu</h3>
+              <p>Satışlar, miktarlar, maliyetler, giderler ve net kar tek çalışma sayfasında.</p>
             </div>
+            <div id="incomeQuickTotals" class="income-totals"></div>
           </div>
-          <div class="card">
-            <div class="card-title">Kategori Özeti</div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Kategori</th><th>Adet</th><th>Ciro</th><th>Kar</th><th>Marj</th></tr>
-                </thead>
-                <tbody id="overviewCategoryBody"></tbody>
-              </table>
-            </div>
+          <div class="income-table-wrap">
+            <table class="income-table" id="incomeTable"></table>
           </div>
+          <div class="income-note">Dolu hücrelere tıklayarak kaynağı ve filtrelenebilir detay listesini açabilirsiniz.</div>
         </div>
       </section>
 
@@ -277,6 +264,27 @@
       </section>
 
     </main>
+  </div>
+
+  <div class="detail-drawer" id="cellDetailDrawer" aria-hidden="true">
+    <div class="detail-panel">
+      <div class="detail-head">
+        <div>
+          <h3 id="detailTitle">Hücre Detayı</h3>
+          <p id="detailSubtitle"></p>
+        </div>
+        <button id="detailClose" type="button">×</button>
+      </div>
+      <div class="detail-filters">
+        <label class="field"><span>Filtre</span><input id="detailFilter" type="text" placeholder="Kaynak / kategori / ay ara" /></label>
+      </div>
+      <div class="table-wrap detail-table-wrap">
+        <table>
+          <thead><tr><th>Kaynak</th><th>Yıl</th><th>Ay</th><th>Bölüm</th><th>Kalem</th><th>Değer</th></tr></thead>
+          <tbody id="detailBody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <script src="xlsx.full.min.js"></script>

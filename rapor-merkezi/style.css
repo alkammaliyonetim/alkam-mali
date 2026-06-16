@@ -35,6 +35,54 @@ body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:
 .hidden{display:none}
 .view{display:none}
 .view.active{display:block}
+.income-shell{background:#f4f6f8;border:1px solid #c9d2df;border-radius:8px;color:#111827;overflow:hidden}
+.income-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;background:#ffffff;border-bottom:1px solid #c9d2df;padding:14px 16px}
+.income-head h3{margin:0;font-size:22px;color:#111827;font-weight:900}
+.income-head p{margin:4px 0 0;color:#475569;font-size:13px}
+.income-totals{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.income-totals span{background:#eef6ff;border:1px solid #bfd7ff;border-radius:6px;color:#0f172a;font-weight:800;font-size:12px;padding:7px 9px}
+.income-table-wrap{overflow:auto;max-height:calc(100vh - 190px);background:#fff}
+.income-table{min-width:1180px;width:100%;border-collapse:separate;border-spacing:0;font-family:Arial,Helvetica,sans-serif}
+.income-table th,.income-table td{border-right:1px solid #111827;border-bottom:1px solid #111827;padding:5px 7px;font-size:12px;line-height:1.15;white-space:nowrap;text-align:right;color:#111827}
+.income-table thead th{position:sticky;top:0;z-index:4;background:#e5e7eb;font-weight:900;text-align:center;border-top:1px solid #111827}
+.income-table .year-head{background:#f3f300;color:#e11d48;font-weight:950}
+.income-table .month-head-col.odd{background:#f8fafc}
+.income-table .month-head-col.even{background:#d9d9d9}
+.income-table tbody th{position:sticky;left:0;z-index:3;text-align:left;font-weight:900;background:#f8fafc;min-width:150px}
+.income-table tbody td:nth-child(2){position:sticky;left:150px;z-index:2;text-align:center;font-weight:800;background:#b7dbc7;min-width:58px}
+.income-table tbody td:nth-child(2n+4){background:#d9d9d9}
+.income-table .section-row th,.income-table .section-row td{background:#2f3120!important;color:#fff;font-weight:950;text-align:left}
+.income-table .sales-section th,.income-table .sales-section td{background:#64c8aa!important;color:#10251e}
+.income-table .qty-section th,.income-table .qty-section td{background:#93c83e!important;color:#10210b}
+.income-table .cost-section th,.income-table .cost-section td{background:#f0bd7f!important;color:#2b1700}
+.income-table .expense-section th,.income-table .expense-section td{background:#7fc4df!important;color:#082633}
+.income-table .cat-MDF th,.income-table .cat-MDF td{background:#92d050;color:#111827}
+.income-table .cat-SUNTA th,.income-table .cat-SUNTA td{background:#ffff00;color:#111827}
+.income-table .cat-KAPLAMA th,.income-table .cat-KAPLAMA td{background:#00b0f0;color:#001b28}
+.income-table .cat-KENAR-BANT th,.income-table .cat-KENAR-BANT td{background:#ff0000;color:#111827}
+.income-table .cat-CARSAF th,.income-table .cat-CARSAF td{background:#7030a0;color:#fff}
+.income-table .cat-ISCILIK th,.income-table .cat-ISCILIK td{background:#ffc000;color:#111827}
+.income-table .cat-DIGER th,.income-table .cat-DIGER td{background:#a6a6a6;color:#111827}
+.income-table .cost td,.income-table .cost th{filter:saturate(.72) brightness(1.08)}
+.income-table .expense-line th,.income-table .expense-line td{background:#d9edf7;color:#111827}
+.income-table .total-line th,.income-table .total-line td{background:#f2f2f2!important;color:#111827;font-weight:950;border-top:2px solid #111827}
+.income-table .gross-line th,.income-table .gross-line td,.income-table .net-line th,.income-table .net-line td{background:#252513!important;color:#fff;font-weight:950}
+.income-table .income-value{cursor:pointer;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}
+.income-table .income-value:hover{outline:2px solid #2563eb;outline-offset:-2px}
+.income-table .year-total{background:#67c2ad!important;font-weight:950}
+.income-note{font-size:12px;color:#475569;background:#ffffff;padding:10px 16px;border-top:1px solid #c9d2df}
+.detail-drawer{position:fixed;inset:0;background:rgba(2,6,23,.45);z-index:50;display:none;justify-content:flex-end}
+.detail-drawer.open{display:flex}
+.detail-panel{width:min(780px,96vw);height:100vh;background:#f8fafc;color:#111827;border-left:1px solid #cbd5e1;box-shadow:-20px 0 60px rgba(2,6,23,.35);display:flex;flex-direction:column}
+.detail-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:16px;border-bottom:1px solid #cbd5e1;background:#fff}
+.detail-head h3{margin:0;font-size:20px;color:#0f172a}
+.detail-head p{margin:4px 0 0;color:#64748b;font-size:13px}
+#detailClose{width:34px;height:34px;border:1px solid #cbd5e1;background:#eef2f7;color:#0f172a;border-radius:8px;font-size:22px;line-height:1;cursor:pointer}
+.detail-filters{padding:12px 16px;background:#f1f5f9;border-bottom:1px solid #cbd5e1}
+.detail-filters .field input{background:#fff;color:#111827;border-color:#cbd5e1}
+.detail-table-wrap{padding:0 16px 16px;overflow:auto}
+.detail-table-wrap table{background:#fff}
+.detail-table-wrap th,.detail-table-wrap td{color:#111827;border-bottom:1px solid #e2e8f0}
 .cards-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:14px}
 .compare-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:16px}
@@ -105,4 +153,5 @@ th{text-align:left;color:var(--muted);font-size:12px;background:rgba(255,255,255
   .sidebar{height:auto;position:static}
   .topbar{flex-direction:column}
   .cards-grid{grid-template-columns:1fr}
+  .income-head{flex-direction:column}
 }
