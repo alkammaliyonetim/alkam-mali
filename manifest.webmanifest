@@ -1,0 +1,19 @@
+{
+  "name": "ALKAM Mali Müşavirlik Ön Muhasebe",
+  "short_name": "ALKAM Mali",
+  "description": "Cari, banka, tahsilat, belge ve onay yönetim programı",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#061d3f",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "/alkam-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
