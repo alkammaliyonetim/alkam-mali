@@ -146,7 +146,7 @@ export async function onRequest(context) {
 <meta name="theme-color" content="#061d3f">
 <meta name="application-name" content="ALKAM Ön Muhasebe">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="manifest" href="/manifest.webmanifest">`;
+<link rel="manifest" href="/manifest.json">`;
   const appScripts = `
 <script src="/alkam-drive-arsiv-v1.js?v=1"></script>
 <script src="/alkam-desktop-pwa-v1.js?v=1"></script>`;
