@@ -1,5 +1,5 @@
 const CACHE = "alkam-shell-v1";
-const SHELL = ["/", "/index.html", "/manifest.webmanifest", "/alkam-icon.svg", "/alkam-drive-arsiv-v1.js", "/alkam-desktop-pwa-v1.js"];
+const SHELL = ["/", "/index.html", "/manifest.json", "/alkam-icon.svg", "/alkam-drive-arsiv-v1.js", "/alkam-desktop-pwa-v1.js"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
