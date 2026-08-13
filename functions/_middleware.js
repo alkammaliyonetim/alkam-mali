@@ -142,7 +142,17 @@ export async function onRequest(context) {
 })();
 </script>`;
 
+  const appLinks = `
+<meta name="theme-color" content="#061d3f">
+<meta name="application-name" content="ALKAM Ön Muhasebe">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.webmanifest">`;
+  const appScripts = `
+<script src="/alkam-drive-arsiv-v1.js?v=1"></script>
+<script src="/alkam-desktop-pwa-v1.js?v=1"></script>`;
+
   return new HTMLRewriter()
-    .on("body", { element(element) { element.append(patch, { html: true }); } })
+    .on("head", { element(element) { element.append(appLinks, { html: true }); } })
+    .on("body", { element(element) { element.append(patch + appScripts, { html: true }); } })
     .transform(response);
 }
