@@ -44,6 +44,29 @@ export default {
       return telegramWebhookInfo(request, env);
     }
     const response = await env.ASSETS.fetch(request);
+    const contentType = response.headers.get("content-type") || "";
+    const isHome = url.pathname === "/" || url.pathname === "/index.html";
+    if (isHome && contentType.includes("text/html")) {
+      const appLinks = `
+<meta name="theme-color" content="#061d3f">
+<meta name="application-name" content="ALKAM Ön Muhasebe">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.json">`;
+      const appScripts = `
+<script src="/alkam-drive-arsiv-v1.js?v=1"></script>
+<script src="/alkam-desktop-pwa-v1.js?v=1"></script>`;
+      const rewritten = new HTMLRewriter()
+        .on("head", { element(element) { element.append(appLinks, { html: true }); } })
+        .on("body", { element(element) { element.append(appScripts, { html: true }); } })
+        .transform(response);
+      const rewrittenHeaders = new Headers(rewritten.headers);
+      rewrittenHeaders.set("cache-control", "no-store");
+      return new Response(rewritten.body, {
+        status: rewritten.status,
+        statusText: rewritten.statusText,
+        headers: rewrittenHeaders
+      });
+    }
     const headers = new Headers(response.headers);
     headers.set("cache-control", "no-store");
     return new Response(response.body, {
