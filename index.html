@@ -903,9 +903,13 @@
   function normalizeCari(c, i){
     const id = c.id || c.cari_id || slug(c.name || c.cari_name || c.title || c.unvan || ("Cari "+(i+1)));
     const rawTxns = Array.isArray(c.transactions) ? c.transactions : Array.isArray(c.hareketler) ? c.hareketler : Array.isArray(c.movements) ? c.movements : Array.isArray(c.entries) ? c.entries : [];
+    const hasTotalsField = c.totalDebit!=null || c.total_debit!=null || c.borc!=null || c.debit!=null || c.totalCredit!=null || c.total_credit!=null || c.alacak!=null || c.credit!=null;
     const totalDebit = num(c.totalDebit ?? c.total_debit ?? c.borc ?? c.debit ?? 0);
     const totalCredit = num(c.totalCredit ?? c.total_credit ?? c.alacak ?? c.credit ?? 0);
-    const balance = num(c.balance ?? c.bakiye ?? (totalDebit-totalCredit));
+    /* Bakiye ASLA saklanan alandan alinmaz, her zaman borc-alacak farkindan hesaplanir.
+       Saklanan balance/bakiye alani SADECE kaynakta hic borc/alacak bilgisi yoksa
+       (cok eski/eksik kayit) son care olarak kullanilir. 17.09.2026 duzeltmesi. */
+    const balance = hasTotalsField ? (totalDebit-totalCredit) : num(c.balance ?? c.bakiye ?? 0);
     let txns = rawTxns.map((t,idx)=>normalizeTxn(t, id, idx));
     if(!txns.length && (Math.abs(totalDebit)>0.01 || Math.abs(totalCredit)>0.01 || Math.abs(balance)>0.01)){
       txns = [{
