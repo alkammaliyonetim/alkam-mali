@@ -1034,6 +1034,7 @@
     try{
       if(!bootRepairsDone && state.cariler.length){
         bootRepairsDone = true;
+        restoreWronglyArchivedAnaVeriAccruals_17092026();
         cleanupPendingSplitAccruals();
         cleanupStaleProgramAccrualApprovals();
         autoCreateMonthlyAccrualApprovals();
@@ -4085,16 +4086,49 @@
     const amount=num(t.debit);
     const text=(String(t.source||"")+" "+String(t.description||t.desc||"")).toLocaleLowerCase("tr-TR");
     let score=0;
+    /* 17.09.2026 duzeltmesi: Istasyon'dan canli senkronlanan gercek kayitlar
+       ("Ana Veri" kaynakli) HER ZAMAN programin kendi urettigi "Otomasyon
+       Tahakkuk" sentetik kayitlarindan once tutulmali. Onceki puanlama bunu
+       tersine ceviriyordu (otomasyon kaydi daha yuksek puan alip gercek
+       Istasyon kaydi arsive dusuyordu) - bu 230 gercek kaydin yanlislikla
+       silinmesine yol acti. */
     if(t.userEdited || t.updatedAt) score+=220;
+    if(text.includes("ana veri") || text.includes("istasyon")) score+=200;
+    if(!t.autoMonthlyAccrual && !text.includes("otomasyon tahakkuk")) score+=80;
     if(Math.abs(amount-fee)<0.01) score+=60;
     if(text.includes("onaylÄ±") || text.includes("onayli")) score+=45;
     if(text.includes("manuel")) score+=40;
-    if(text.includes("ana veri")) score+=25;
-    if(t.autoMonthlyAccrual) score+=15;
-    if(text.includes("otomasyon tahakkuk")) score+=10;
     if(t.ledgerVerified) score+=10;
+    if(t.autoMonthlyAccrual || text.includes("otomasyon tahakkuk")) score-=60;
     if(text.includes("yillik kayittan bolundu") || text.includes("yıllık kayıttan bölündü")) score-=20;
     return score;
+  }
+  function restoreWronglyArchivedAnaVeriAccruals_17092026(){
+    /* 17.09.2026: Istasyon canli senkron aktif olmadan once, program kendi
+       "Otomasyon Tahakkuk" kayitlarini uretmis; eski mukerrer-temizleme
+       puanlamasi bu sentetik kayitlari gercek Istasyon ("Ana Veri") kayitlarina
+       tercih edip gercek kayitlari arsive dusurmustu. Bu tek seferlik,
+       geriye donuk duzeltme: sentetik kayitlari tamamen kaldirir ve
+       yanlislikla arsivlenen gercek kayitlari geri yukler. Bir kez calisir
+       (localStorage bayragiyla korunur). */
+    if(localStorage.getItem("ALKAM_MUKERRER_TAHAKKUK_FIX_17092026")) return;
+    localStorage.setItem("ALKAM_MUKERRER_TAHAKKUK_FIX_17092026","1");
+    let removed=0, restored=0;
+    state.manualTxns=state.manualTxns.filter(t=>{
+      const isAuto = !!t.autoMonthlyAccrual || /otomasyon tahakkuk/i.test(String(t.source||""));
+      if(isAuto) removed++;
+      return !isAuto;
+    });
+    state.deletedTxns=(state.deletedTxns||[]).filter(t=>{
+      const wasWrongArchive = /mükerrer ayl[iı]k tahakkuk ar[sş]ivlendi/i.test(String(t.deleteReason||"")) && !t.autoMonthlyAccrual && !/otomasyon tahakkuk/i.test(String(t.source||""));
+      if(wasWrongArchive){ restored++; return false; }
+      return true;
+    });
+    if(removed || restored){
+      writeJson(LS.manual, state.manualTxns);
+      writeJson(LS.deleted, state.deletedTxns);
+      logAudit("Mükerrer aylık tahakkuk otomasyon hatası düzeltildi", `${removed} sentetik "Otomasyon Tahakkuk" kaydı silindi, ${restored} gerçek Istasyon kaydı geri yüklendi`, "Tahakkuk");
+    }
   }
   function archiveMonthlyAccrualDuplicate(t,c,reason){
     state.deletedTxns.unshift({...t,cariId:c.id,deletedAt:new Date().toISOString(),deleteReason:reason||"Mükerrer aylık tahakkuk otomatik arşivlendi"});
