@@ -1043,6 +1043,18 @@
         repairApprovedAccrualLedgerLinks();
         autoArchivePostedApprovals();
       }
+      /* 18.09.2026 duzeltmesi: repairDuplicateMonthlyAccruals SADECE bootRepairsDone
+         bayragiyla, sayfa acilisinda BIR KEZ calisiyordu. Ama otomasyon tahakkuk
+         yaratan diger yollar (sendMonthlyAccrualsToApproval butonu, veya cari verisi
+         boot'tan SONRA asenkron guncellendiginde autoCreateMonthlyAccrualApprovals'in
+         tekrar mukerrer kayit uretmesi) bu tek seferlik temizlikten SONRA calisabiliyordu
+         ve hicbir zaman tekrar temizlenmiyordu - bu yuzden mukerrer tahakkuk sorunu
+         defalarca geri geliyordu (18.09.2026'da 118 kayit / 2.172.750 TL). Fonksiyonun
+         kendi ic guvenlik kilidi (window.__alkamRepairMonthlyAccruals) oldugu icin her
+         refreshAll() cagrisinda kosulsuz calistirmak guvenli ve ucuzdur (idempotent). */
+      if(state.cariler.length){
+        repairDuplicateMonthlyAccruals();
+      }
       renderDashboard();
       if(currentTab==="cariler"){ renderCariList(); renderSelectedCariDetail(); }
       if(currentTab==="hesaplar"){ renderAccounts(); }
