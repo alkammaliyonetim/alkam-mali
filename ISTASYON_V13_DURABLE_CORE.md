@@ -28,7 +28,7 @@
 
 Kanonik açılış kaynakları:
 
-- `data/istasyon-opening-seed-20260926.json`
+- `data/istasyon-opening-source-20260926.json`
 - `data/istasyon-v13-source-controls.json`
 - Orijinal denetim dosyası: `Istasyon_Acilis_Cari_Defteri_Preflight_20260926.xlsx`
 
@@ -62,7 +62,7 @@ Bu migration **mevcut cari/ekstre verisini silmez** ve **cari_ekstre_lines'a oto
 
 ### 2. 73 cari kanonik opening seed
 
-`data/istasyon-opening-seed-20260926.json`
+`data/istasyon-opening-source-20260926.json`
 
 Bu dosyada 73 carinin PDF/list mutabakatlı açılış adayı vardır. Eski JSON son bakiyesi açılış olarak kullanılmaz.
 
