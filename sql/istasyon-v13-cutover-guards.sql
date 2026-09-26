@@ -104,6 +104,11 @@ begin
 end;
 $;
 
+drop trigger if exists trg_istasyon_opening_immutable_i on public.istasyon_opening_balances;
+create trigger trg_istasyon_opening_immutable_i
+before insert on public.istasyon_opening_balances
+for each row execute function public.istasyon_guard_frozen_opening();
+
 drop trigger if exists trg_istasyon_opening_immutable_u on public.istasyon_opening_balances;
 create trigger trg_istasyon_opening_immutable_u
 before update on public.istasyon_opening_balances
@@ -113,6 +118,35 @@ drop trigger if exists trg_istasyon_opening_immutable_d on public.istasyon_openi
 create trigger trg_istasyon_opening_immutable_d
 before delete on public.istasyon_opening_balances
 for each row execute function public.istasyon_guard_frozen_opening();
+
+create or replace function public.istasyon_guard_frozen_cutover_run()
+returns trigger
+language plpgsql
+as $$
+begin
+  if old.status='frozen' then
+    raise exception 'ISTASYON_FROZEN_CUTOVER_IMMUTABLE';
+  end if;
+  if TG_OP='DELETE' then
+    return old;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_istasyon_cutover_immutable_u on public.istasyon_cutover_runs;
+create trigger trg_istasyon_cutover_immutable_u
+before update on public.istasyon_cutover_runs
+for each row
+when (old.status='frozen')
+execute function public.istasyon_guard_frozen_cutover_run();
+
+drop trigger if exists trg_istasyon_cutover_immutable_d on public.istasyon_cutover_runs;
+create trigger trg_istasyon_cutover_immutable_d
+before delete on public.istasyon_cutover_runs
+for each row
+when (old.status='frozen')
+execute function public.istasyon_guard_frozen_cutover_run();
 
 create or replace function public.istasyon_apply_allocation(
   p_open_item_id uuid,
