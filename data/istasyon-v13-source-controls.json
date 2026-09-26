@@ -1,0 +1,30 @@
+{
+  "protocol": "istasyon-v13-source-controls-v1",
+  "canonical_source": "Istasyon_Acilis_Cari_Defteri_Preflight_20260926.xlsx",
+  "legacy_json_source": "alkam-cariler-73-istasyon-canli-15092026.json",
+  "expected_active_count": 73,
+  "canonical_opening_net": 3741583.88,
+  "canonical_opening_debit": 3782783.88,
+  "canonical_opening_credit": 41200,
+  "legacy_json_net_expected": 4127300.88,
+  "legacy_json_difference_expected": 385717,
+  "identity_review_names": [
+    "ŞAMİL ÇELİK",
+    "HALİL ESEN",
+    "ŞULE ARAS"
+  ],
+  "period_review_names": [
+    "ÇOLKAN NAK. KOLTUK LTD.ŞTİ",
+    "ÖZDİNLER GIDA İNŞAAT TAAHHÜT SAN.TİC.LTD.ŞTİ"
+  ],
+  "future_period_expected_rows": 6,
+  "future_period_expected_amount": 60000,
+  "write_mode": "OFF",
+  "notes": [
+    "Açılış bakiyesi JSON son bakiyeden alınmaz.",
+    "73 aktif kart kanonik master settir.",
+    "PDF/list mutabakatı kanonik açılış kontrolüdür.",
+    "Cutover tarihi kullanıcı tarafından onaylanmadan nihai açılış dondurulmaz.",
+    "Banka/Moka/Belge akışları kesin cari kayda yalnız açık onay ve readback doğrulaması sonrası geçebilir."
+  ]
+}
