@@ -226,6 +226,19 @@ function classifyMailDocument(subject, raw, attachmentNames) {
   return "mail";
 }
 
+function classifyMailScope(subject, raw, attachmentNames) {
+  const text = `${subject || ""} ${attachmentNames.join(" ")} ${raw || ""}`;
+  const lower = text.toLocaleLowerCase("tr-TR");
+  const compact = text.toLocaleUpperCase("tr-TR").replace(/\s+/g, "");
+  if (
+    (lower.includes("halkbank") || lower.includes("halk bankasi") || lower.includes("halk bankası")) &&
+    compact.includes("TR78000120092790") &&
+    compact.includes("9675")
+  ) return "alkam";
+  if (lower.includes("moka united") || lower.includes("pos ödemesi") || lower.includes("pos odemesi")) return "alkam";
+  return "unclassified";
+}
+
 async function queueInboundEmail(message, env) {
   const queue = mailQueueStore(env);
   if (!queue) return;
@@ -256,6 +269,7 @@ async function queueInboundEmail(message, env) {
     date,
     receivedAt: new Date().toISOString(),
     docType: classifyMailDocument(subject, raw, attachments.map(x => x.fileName)),
+    scope: classifyMailScope(subject, raw, attachments.map(x => x.fileName)),
     attachments,
     text: safeMailText(raw.replace(/Content-[^\n]+\n/gi, " ").replace(/[A-Za-z0-9+/=]{80,}/g, " ").replace(/\s+/g, " "), 4000)
   };
@@ -358,6 +372,10 @@ async function gmailImport(request, env) {
       date: safeMailText(msg.date || "", 120),
       receivedAt: new Date().toISOString(),
       docType: classifyMailDocument(subject, text, attachments.map(x => x.fileName)),
+      scope: safeMailText(msg.scope || classifyMailScope(subject, text, attachments.map(x => x.fileName)), 80),
+      bank: safeMailText(msg.bank || "", 120),
+      accountRef: safeMailText(msg.accountRef || "", 160),
+      sourceKind: safeMailText(msg.sourceKind || "", 80),
       attachments,
       text
     };
@@ -856,9 +874,11 @@ async function istasyonStatus(request, env) {
     telegramConfigured: !!String(env.TELEGRAM_BOT_TOKEN || "").trim(),
     telegramQueueConfigured: !!telegramQueue,
     pendingMail: 0,
+    alkamPendingMail: 0,
     bankDocuments: 0,
     mokaDocuments: 0,
     otherDocuments: 0,
+    unclassifiedDocuments: 0,
     latestBankReceivedAt: null,
     latestMokaReceivedAt: null
   };
@@ -876,6 +896,12 @@ async function istasyonStatus(request, env) {
       const subject = String(row.subject || "").toLocaleLowerCase("tr-TR");
       const hay = type + " " + subject;
       const at = String(row.receivedAt || row.date || "");
+      const scope = String(row.scope || "unclassified").toLowerCase();
+      if (scope !== "alkam") {
+        result.unclassifiedDocuments += 1;
+        continue;
+      }
+      result.alkamPendingMail += 1;
       if (/moka|pos/.test(hay)) {
         result.mokaDocuments += 1;
         if (!result.latestMokaReceivedAt || at > result.latestMokaReceivedAt) result.latestMokaReceivedAt = at;
