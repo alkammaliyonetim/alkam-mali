@@ -33,6 +33,14 @@ jobs:
           node-version: "22"
       - name: İstasyON source preflight
         run: npm run test:istasyon-v13
+      - name: Build opening staging SQL (generation only)
+        env:
+          ISTASYON_CUTOVER_DATE: "2099-01-01"
+        run: |
+          npm run build:istasyon-opening
+          test -s data/istasyon-opening-stage.generated.sql
+          ! grep -Eiq "insert[[:space:]]+into[[:space:]]+(public\.)?cari_ekstre_lines" data/istasyon-opening-stage.generated.sql
+
       - name: Syntax checks
         run: |
           node --check istasyon-v13-control-tower.js
