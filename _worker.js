@@ -55,7 +55,7 @@ export default {
       const appScripts = `
 <script src="/alkam-drive-arsiv-v1.js?v=1"></script>
 <script src="/alkam-desktop-pwa-v1.js?v=1"></script>
-<script src="/alkam-bizmu-migration-v1.js?v=1"></script>`;
+<script src="/alkam-bizmu-migration-v1.js?v=1"></script>\n<script src="/istasyon-v13-readiness.js?v=13"></script>`;
       const rewritten = new HTMLRewriter()
         .on("head", { element(element) { element.append(appLinks, { html: true }); } })
         .on("body", { element(element) { element.append(appScripts, { html: true }); } })
@@ -836,5 +836,63 @@ async function telegramSend(request, env) {
     return json({ ok: true, configured: true, messageId: data.result && data.result.message_id });
   } catch (err) {
     return json({ ok: false, configured: true, error: err && err.message ? err.message : "Telegram gönderim bağlantı hatası" });
+  }
+}
+
+
+async function istasyonStatus(request, env) {
+  if (request.method !== "GET") return json({ ok: false, error: "GET gerekli." }, 405);
+  const mailQueue = mailQueueStore(env);
+  const telegramQueue = telegramQueueStore(env);
+  const result = {
+    ok: true,
+    service: "IstasyonALKAM",
+    version: "v13",
+    generatedAt: new Date().toISOString(),
+    financialWrite: "approval_required",
+    durableCore: "schema_ready_not_auto_posting",
+    mailQueueConfigured: !!mailQueue,
+    gmailConfigured: !!String(env.ALKAM_GMAIL_INGEST_KEY || "").trim(),
+    telegramConfigured: !!String(env.TELEGRAM_BOT_TOKEN || "").trim(),
+    telegramQueueConfigured: !!telegramQueue,
+    pendingMail: 0,
+    bankDocuments: 0,
+    mokaDocuments: 0,
+    otherDocuments: 0,
+    latestBankReceivedAt: null,
+    latestMokaReceivedAt: null
+  };
+
+  if (!mailQueue) return json(result);
+
+  try {
+    const listed = await mailQueue.list({ prefix: "mailq:", limit: 100 });
+    const mailKeys = (listed.keys || []).filter(x => !String(x.name || "").includes(":att:"));
+    result.pendingMail = mailKeys.length;
+    for (const item of mailKeys) {
+      const row = await safeQueueJsonGet(mailQueue, item.name);
+      if (!row) continue;
+      const type = String(row.docType || "").toLowerCase();
+      const subject = String(row.subject || "").toLocaleLowerCase("tr-TR");
+      const hay = type + " " + subject;
+      const at = String(row.receivedAt || row.date || "");
+      if (/moka|pos/.test(hay)) {
+        result.mokaDocuments += 1;
+        if (!result.latestMokaReceivedAt || at > result.latestMokaReceivedAt) result.latestMokaReceivedAt = at;
+      } else if (/bank|halkbank|hesap ekstresi|ekstre|banka/.test(hay)) {
+        result.bankDocuments += 1;
+        if (!result.latestBankReceivedAt || at > result.latestBankReceivedAt) result.latestBankReceivedAt = at;
+      } else {
+        result.otherDocuments += 1;
+      }
+    }
+    return json(result);
+  } catch (err) {
+    return json({
+      ...result,
+      ok: false,
+      error: "istasyon_status_queue_read_failed",
+      message: String(err && err.message ? err.message : err).slice(0, 180)
+    }, 500);
   }
 }
