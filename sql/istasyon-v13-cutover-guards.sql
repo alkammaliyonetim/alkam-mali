@@ -78,20 +78,31 @@ for each row execute function public.istasyon_guard_cutover_freeze();
 create or replace function public.istasyon_guard_frozen_opening()
 returns trigger
 language plpgsql
-as $$
+as $
 declare
   v_status text;
+  v_run_id uuid;
 begin
+  if TG_OP='DELETE' then
+    v_run_id=old.cutover_run_id;
+  else
+    v_run_id=new.cutover_run_id;
+  end if;
+
   select status into v_status
   from public.istasyon_cutover_runs
-  where id=coalesce(new.cutover_run_id,old.cutover_run_id);
+  where id=v_run_id;
 
   if v_status='frozen' then
     raise exception 'ISTASYON_FROZEN_OPENING_IMMUTABLE';
   end if;
-  return coalesce(new,old);
+
+  if TG_OP='DELETE' then
+    return old;
+  end if;
+  return new;
 end;
-$$;
+$;
 
 drop trigger if exists trg_istasyon_opening_immutable_u on public.istasyon_opening_balances;
 create trigger trg_istasyon_opening_immutable_u
