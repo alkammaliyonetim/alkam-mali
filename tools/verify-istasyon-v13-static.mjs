@@ -41,6 +41,8 @@ ok('durable core does not delete existing ledger', !/(delete\s+from|truncate\s+t
 ok('cutover freeze requires reconciliation', files.guards.includes('ISTASYON_CUTOVER_NOT_RECONCILED'));
 ok('cutover freeze requires approval', files.guards.includes('ISTASYON_CUTOVER_APPROVAL_REQUIRED'));
 ok('frozen opening immutable', files.guards.includes('ISTASYON_FROZEN_OPENING_IMMUTABLE'));
+ok('frozen opening blocks new inserts', files.guards.includes('trg_istasyon_opening_immutable_i'));
+ok('frozen cutover run immutable', files.guards.includes('ISTASYON_FROZEN_CUTOVER_IMMUTABLE'));
 ok('allocation requires approval', files.guards.includes('ISTASYON_ALLOCATION_APPROVAL_REQUIRED'));
 ok('allocation protects over-allocation', files.guards.includes('ISTASYON_ALLOCATION_EXCEEDS_OPEN_AMOUNT'));
 ok('bank post requires approval', files.guards.includes('ISTASYON_BANK_POST_APPROVAL_REQUIRED'));
