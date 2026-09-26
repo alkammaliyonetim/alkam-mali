@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 
-const seedPath = new URL('../data/istasyon-opening-seed-20260926.json', import.meta.url);
+const seedPath = new URL('../data/istasyon-opening-source-20260926.json', import.meta.url);
 const outPath = new URL('../data/istasyon-opening-stage.generated.sql', import.meta.url);
 const seed = JSON.parse(await fs.readFile(seedPath,'utf8'));
 
@@ -12,12 +12,12 @@ if (!/^20\d{2}-\d{2}-\d{2}$/.test(cutoverDate)) {
 
 const q = (s) => "'" + String(s ?? '').replaceAll("'","''") + "'";
 const rowsSql = seed.rows.map((r) => [
-  q(r.source_card_id),
-  q(r.name),
-  Number(r.opening_balance).toFixed(2),
-  Number(r.pdf_balance ?? r.opening_balance).toFixed(2),
-  q(r.balance_side),
-  q(r.identity_check || ''),
+  q(r.source_card_key),
+  q(r.party_name),
+  Number(r.source_list_amount).toFixed(2),
+  Number(r.source_pdf_amount ?? r.source_list_amount).toFixed(2),
+  q(r.balance_side_source),
+  q(r.identity_control || ''),
   q(r.period_risk || ''),
   q(r.pdf_source || '')
 ].join(',')).map((x)=>'  ('+x+')').join(',\n');
