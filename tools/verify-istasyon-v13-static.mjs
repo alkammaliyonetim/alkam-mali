@@ -8,7 +8,10 @@ const files = {
   ui: read('istasyon-v13-readiness.js'),
   index: read('index.html'),
   admin: read('admin.html'),
-  gmail: read('google-apps-script/istasyon-alkam-gmail-v13.gs')
+  gmail: read('google-apps-script/istasyon-alkam-gmail-v13.gs'),
+  openingSource: read('data/istasyon-opening-source-20260926.json'),
+  openingStage: read('sql/istasyon-v13-opening-source-stage.sql'),
+  openingSeed: read('sql/istasyon-v13-opening-source-seed-20260926.sql')
 };
 
 const checks = [];
@@ -24,6 +27,14 @@ ok('durable core has allocation table', files.core.includes('istasyon_allocation
 ok('durable core has bank raw staging', files.core.includes('istasyon_bank_raw'));
 ok('durable core has document links', files.core.includes('istasyon_document_links'));
 ok('durable core has audit trail', files.core.includes('istasyon_audit_events'));
+const opening = JSON.parse(files.openingSource);
+const openingSum = opening.rows.reduce((sum,row)=>sum+Number(row.source_list_amount||0),0);
+ok('canonical opening package has 73 cards', opening.rows.length===73);
+ok('canonical opening package total is 3,741,583.88', Math.abs(openingSum-3741583.88)<0.005);
+ok('opening stage requires explicit cutover date', files.openingStage.includes('ISTASYON_CUTOVER_DATE_REQUIRED'));
+ok('opening stage keeps expected 73-card invariant', files.openingStage.includes('expected_active_count') && files.openingStage.includes('3741583.88'));
+ok('opening seed asserts source count', files.openingSeed.includes('ISTASYON_OPENING_SOURCE_COUNT_MISMATCH'));
+ok('opening seed asserts source total', files.openingSeed.includes('ISTASYON_OPENING_SOURCE_BALANCE_MISMATCH'));
 ok('durable core does not post cari ledger', !/insert\s+into\s+public\.cari_ekstre_lines/i.test(files.core));
 ok('durable core does not delete existing ledger', !/(delete\s+from|truncate\s+table)\s+public\.cari_ekstre_lines/i.test(files.core));
 
