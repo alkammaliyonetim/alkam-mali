@@ -30,6 +30,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Run İstasyON v13 static safety check
+        run: node tools/verify-istasyon-v13-static.mjs
+
       - name: Install Playwright
         run: |
           npm init -y
