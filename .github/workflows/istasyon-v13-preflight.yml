@@ -53,7 +53,7 @@ jobs:
           const fs=require('fs');
           const ctl=JSON.parse(fs.readFileSync('data/istasyon-v13-source-controls.json','utf8'));
           if(ctl.write_mode!=='OFF') throw new Error('write_mode must stay OFF');
-          const sql=fs.readFileSync('sql/istasyon-v13-durable-core.sql','utf8');
+          const sql=fs.readFileSync('sql/istasyon-v13-durable-core.sql','utf8').replace(/--.*$/gm,'');
           if(/insert\s+into\s+public\.cari_ekstre_lines/i.test(sql)) throw new Error('durable core must not post to cari_ekstre_lines');
           console.log('WRITE_GUARD_OK');
           NODE
