@@ -7,7 +7,7 @@ on:
       - "data/istasyon-v13-source-controls.json"
       - "tools/istasyon-v13-preflight.mjs"
       - "sql/istasyon-v13-durable-core.sql"
-      - "istasyon-v13-control-tower.js"
+      - "istasyon-v13-readiness.js"
       - "_worker.js"
       - "package.json"
   push:
@@ -18,7 +18,7 @@ on:
       - "data/istasyon-v13-source-controls.json"
       - "tools/istasyon-v13-preflight.mjs"
       - "sql/istasyon-v13-durable-core.sql"
-      - "istasyon-v13-control-tower.js"
+      - "istasyon-v13-readiness.js"
       - "_worker.js"
       - "package.json"
 
@@ -41,9 +41,11 @@ jobs:
           test -s data/istasyon-opening-stage.generated.sql
           ! grep -Eiq "insert[[:space:]]+into[[:space:]]+(public\.)?cari_ekstre_lines" data/istasyon-opening-stage.generated.sql
 
+      - name: Static safety contract
+        run: node tools/verify-istasyon-v13-static.mjs
       - name: Syntax checks
         run: |
-          node --check istasyon-v13-control-tower.js
+          node --check istasyon-v13-readiness.js
           node --check _worker.js
       - name: Ensure financial write remains locked
         run: |
