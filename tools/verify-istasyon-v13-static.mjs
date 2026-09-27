@@ -13,12 +13,16 @@ const files = {
   openingStage: read('sql/istasyon-v13-opening-source-stage.sql'),
   openingSeed: read('sql/istasyon-v13-opening-source-seed-20260926.sql'),
   openItemStage: read('sql/istasyon-v13-open-item-stage.sql'),
-  openItemRebuild: read('tools/istasyon-v13-open-item-rebuild.mjs')
+  openItemRebuild: read('tools/istasyon-v13-open-item-rebuild.mjs'),
+  operations: read('sql/istasyon-v13-operational-services.sql'),
+  security: read('sql/istasyon-v13-security.sql')
 };
 
 const stripSqlComments = s => s.replace(/--.*$/gm, '');
 const coreSql = stripSqlComments(files.core);
 const guardSql = stripSqlComments(files.guards);
+const operationsSql = stripSqlComments(files.operations);
+const securitySql = stripSqlComments(files.security);
 
 const checks = [];
 function ok(name, value) {
@@ -59,6 +63,18 @@ ok('allocation requires approval', files.guards.includes('ISTASYON_ALLOCATION_AP
 ok('allocation protects over-allocation', files.guards.includes('ISTASYON_ALLOCATION_EXCEEDS_OPEN_AMOUNT'));
 ok('bank post requires approval', files.guards.includes('ISTASYON_BANK_POST_APPROVAL_REQUIRED'));
 ok('bank post requires readback ref', files.guards.includes('ISTASYON_BANK_POST_READBACK_REF_REQUIRED'));
+
+ok('operations has idempotent bank raw ingest', files.operations.includes('istasyon_ingest_bank_raw') && files.operations.includes('source_hash'));
+ok('operations bank ingest never posts cari ledger', !/insert\s+into\s+public\.cari_ekstre_lines/i.test(operationsSql));
+ok('operations bank match approval required', files.operations.includes('ISTASYON_BANK_MATCH_APPROVAL_REQUIRED'));
+ok('operations document archive ref required', files.operations.includes('ISTASYON_DOCUMENT_ARCHIVE_REF_REQUIRED'));
+ok('operations exposes aging view', files.operations.includes('v_istasyon_receivables_aging'));
+ok('operations exposes document search view', files.operations.includes('v_istasyon_document_search'));
+ok('operations exposes control center view', files.operations.includes('v_istasyon_control_center'));
+ok('security enables RLS for bank raw', files.security.includes('alter table public.istasyon_bank_raw enable row level security'));
+ok('security blocks anonymous bank raw', files.security.includes('revoke all on public.istasyon_bank_raw from anon'));
+ok('security requires base finance role function', files.security.includes('ISTASYON_RLS_BASE_ROLE_FUNCTIONS_REQUIRED'));
+ok('security does not grant anon execute', !/grant\s+execute[\s\S]{0,200}\bto\s+anon\b/i.test(securitySql));
 
 ok('worker has safe status endpoint', files.worker.includes('/api/istasyon/status'));
 ok('worker preserves mail scope', files.worker.includes('classifyMailScope'));
