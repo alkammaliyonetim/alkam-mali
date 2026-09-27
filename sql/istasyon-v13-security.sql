@@ -57,14 +57,14 @@ revoke insert,update,delete on public.istasyon_bank_raw from authenticated;
 revoke insert,update,delete on public.istasyon_bank_matches from authenticated;
 revoke insert,update,delete on public.istasyon_posting_receipts from authenticated;
 
-revoke all on function public.istasyon_ingest_bank_raw(text,text,date,time,numeric,numeric,numeric,text,text,text,jsonb) from public,anon;
+revoke all on function public.istasyon_ingest_bank_raw(text,text,date,time,text,numeric,numeric,numeric,text,text,text,jsonb) from public,anon;
 revoke all on function public.istasyon_propose_bank_match(uuid,uuid,text,numeric,text) from public,anon;
 revoke all on function public.istasyon_approve_bank_match(uuid,text,text) from public,anon;
 revoke all on function public.istasyon_register_document(text,text,date,text,numeric,text,text,text,text) from public,anon;
 revoke all on function public.istasyon_link_document(uuid,text,text,text) from public,anon;
 revoke all on function public.istasyon_apply_allocation(uuid,text,text,numeric,date,text,text) from public,anon;
 
-grant execute on function public.istasyon_ingest_bank_raw(text,text,date,time,numeric,numeric,numeric,text,text,text,jsonb) to service_role;
+grant execute on function public.istasyon_ingest_bank_raw(text,text,date,time,text,numeric,numeric,numeric,text,text,text,jsonb) to service_role;
 grant execute on function public.istasyon_propose_bank_match(uuid,uuid,text,numeric,text) to service_role;
 grant execute on function public.istasyon_register_document(text,text,date,text,numeric,text,text,text,text) to service_role;
 grant execute on function public.istasyon_link_document(uuid,text,text,text) to service_role;
