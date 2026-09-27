@@ -33,6 +33,28 @@ jobs:
       - name: Run İstasyON v13 static safety check
         run: node tools/verify-istasyon-v13-static.mjs
 
+      - name: Wait for Cloudflare Pages deploy
+        if: github.event_name != 'pull_request' && github.ref_name == 'main'
+        env:
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
+        run: |
+          set -euo pipefail
+          base="${ALKAM_TEST_URL%/}"
+          for i in $(seq 1 40); do
+            html="$(curl -fsSL --max-time 15 "$base/" 2>/dev/null || true)"
+            js="$(curl -fsSL --max-time 15 "$base/istasyon-v13-readiness.js?v=13" 2>/dev/null || true)"
+            if printf '%s' "$html" | grep -q 'istasyon-v13-readiness.js?v=13' \
+              && printf '%s' "$js" | grep -q 'EXPECTED_ACTIVE=73' \
+              && printf '%s' "$js" | grep -q 'EXPECTED_OPENING=3741583.88'; then
+              echo "ISTASYON_V13_DEPLOY_READY attempt=$i"
+              exit 0
+            fi
+            echo "Waiting for Pages deploy... attempt=$i"
+            sleep 10
+          done
+          echo "Cloudflare Pages did not expose the merged v13 assets in time."
+          exit 1
+
       - name: Install Playwright
         if: github.event_name != 'pull_request'
         run: |
