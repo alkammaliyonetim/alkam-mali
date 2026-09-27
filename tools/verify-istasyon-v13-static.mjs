@@ -14,6 +14,10 @@ const files = {
   openingSeed: read('sql/istasyon-v13-opening-source-seed-20260926.sql')
 };
 
+const stripSqlComments = s => s.replace(/--.*$/gm, '');
+const coreSql = stripSqlComments(files.core);
+const guardSql = stripSqlComments(files.guards);
+
 const checks = [];
 function ok(name, value) {
   checks.push({ name, ok: !!value });
@@ -35,8 +39,9 @@ ok('opening stage requires explicit cutover date', files.openingStage.includes('
 ok('opening stage keeps expected 73-card invariant', files.openingStage.includes('expected_active_count') && files.openingStage.includes('3741583.88'));
 ok('opening seed asserts source count', files.openingSeed.includes('ISTASYON_OPENING_SOURCE_COUNT_MISMATCH'));
 ok('opening seed asserts source total', files.openingSeed.includes('ISTASYON_OPENING_SOURCE_BALANCE_MISMATCH'));
-ok('durable core does not post cari ledger', !/insert\s+into\s+public\.cari_ekstre_lines/i.test(files.core));
-ok('durable core does not delete existing ledger', !/(delete\s+from|truncate\s+table)\s+public\.cari_ekstre_lines/i.test(files.core));
+ok('durable core does not post cari ledger', !/insert\s+into\s+public\.cari_ekstre_lines/i.test(coreSql));
+ok('durable core does not delete existing ledger', !/(delete\s+from|truncate\s+table)\s+public\.cari_ekstre_lines/i.test(coreSql));
+ok('guard SQL has no invalid single-dollar quote', !/\bas\s+\$\s*$/m.test(guardSql));
 
 ok('cutover freeze requires reconciliation', files.guards.includes('ISTASYON_CUTOVER_NOT_RECONCILED'));
 ok('cutover freeze requires approval', files.guards.includes('ISTASYON_CUTOVER_APPROVAL_REQUIRED'));
