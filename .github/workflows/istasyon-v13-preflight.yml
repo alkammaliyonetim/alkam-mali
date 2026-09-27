@@ -38,6 +38,9 @@ on:
       - "tools/verify-istasyon-v13-static.mjs"
       - "sql/istasyon-v13-durable-core.sql"
       - "sql/istasyon-v13-cutover-guards.sql"
+      - "ISTASYON_V13_FINISH_STATUS.md"
+      - "sql/istasyon-v13-security.sql"
+      - "sql/istasyon-v13-operational-services.sql"
       - "sql/istasyon-v13-opening-source-stage.sql"
       - "sql/istasyon-v13-opening-source-seed-20260926.sql"
       - "google-apps-script/istasyon-alkam-gmail-v13.gs"
@@ -84,8 +87,10 @@ jobs:
           const fs=require('fs');
           const ctl=JSON.parse(fs.readFileSync('data/istasyon-v13-source-controls.json','utf8'));
           if(ctl.write_mode!=='OFF') throw new Error('write_mode must stay OFF');
-          const sql=fs.readFileSync('sql/istasyon-v13-durable-core.sql','utf8').replace(/--.*$/gm,'');
-          if(/insert\s+into\s+public\.cari_ekstre_lines/i.test(sql)) throw new Error('durable core must not post to cari_ekstre_lines');
+          const paths=['sql/istasyon-v13-durable-core.sql','sql/istasyon-v13-operational-services.sql'];
+          const sql=paths.map(p=>fs.readFileSync(p,'utf8')).join('\n').replace(/--.*$/gm,'');
+          if(/insert\s+into\s+public\.cari_ekstre_lines/i.test(sql)) throw new Error('v13 migrations must not post to cari_ekstre_lines');
+          if(/\bdelete\s+from\s+public\.cari_ekstre_lines/i.test(sql)) throw new Error('v13 migrations must not delete cari_ekstre_lines');
           console.log('WRITE_GUARD_OK');
           NODE
       - name: Upload preflight evidence
