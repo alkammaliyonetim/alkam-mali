@@ -78,7 +78,7 @@ for each row execute function public.istasyon_guard_cutover_freeze();
 create or replace function public.istasyon_guard_frozen_opening()
 returns trigger
 language plpgsql
-as $
+as $$
 declare
   v_status text;
   v_run_id uuid;
@@ -102,7 +102,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists trg_istasyon_opening_immutable_i on public.istasyon_opening_balances;
 create trigger trg_istasyon_opening_immutable_i
