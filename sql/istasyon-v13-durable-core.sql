@@ -8,7 +8,7 @@
 --
 -- Safety:
 --   * no DELETE / TRUNCATE on existing data
---   * no automatic INSERT into cari_ekstre_lines
+--   * no automatic posting to the existing cari ledger
 --   * no automatic monthly accrual generation
 --   * no bank-to-ledger posting
 --   * all finalization remains approval gated
