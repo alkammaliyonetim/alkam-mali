@@ -3,7 +3,8 @@
     "tg:bot": "node tools/tg-bot-v3.mjs",
     "test:automation-inventory": "node tools/check-automation-inventory.mjs",
     "test:istasyon-v13": "node tools/istasyon-v13-preflight.mjs",
-    "build:istasyon-opening": "node tools/istasyon-v13-build-opening-sql.mjs"
+    "build:istasyon-opening": "node tools/istasyon-v13-build-opening-sql.mjs",
+    "test:istasyon-open-items": "node tools/istasyon-v13-open-item-rebuild.mjs"
   },
   "dependencies": {
     "dotenv": "latest",
