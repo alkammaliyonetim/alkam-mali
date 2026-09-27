@@ -58,8 +58,7 @@ export default {
       const appScripts = `
 <script src="/alkam-drive-arsiv-v1.js?v=1"></script>
 <script src="/alkam-desktop-pwa-v1.js?v=1"></script>
-<script src="/alkam-bizmu-migration-v1.js?v=1"></script>
-<script src="/istasyon-v13-control-tower.js?v=1"></script>`;
+<script src="/alkam-bizmu-migration-v1.js?v=1"></script>`;
       const rewritten = new HTMLRewriter()
         .on("head", { element(element) { element.append(appLinks, { html: true }); } })
         .on("body", { element(element) { element.append(appScripts, { html: true }); } })
