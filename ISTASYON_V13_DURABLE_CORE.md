@@ -100,7 +100,7 @@ Kontroller:
 
 ### 5. Kontrol Kulesi
 
-`istasyon-v13-control-tower.js`
+`istasyon-v13-readiness.js`
 
 Ana ekranda:
 
