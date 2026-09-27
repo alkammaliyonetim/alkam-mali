@@ -11,7 +11,9 @@ const files = {
   gmail: read('google-apps-script/istasyon-alkam-gmail-v13.gs'),
   openingSource: read('data/istasyon-opening-source-20260926.json'),
   openingStage: read('sql/istasyon-v13-opening-source-stage.sql'),
-  openingSeed: read('sql/istasyon-v13-opening-source-seed-20260926.sql')
+  openingSeed: read('sql/istasyon-v13-opening-source-seed-20260926.sql'),
+  openItemStage: read('sql/istasyon-v13-open-item-stage.sql'),
+  openItemRebuild: read('tools/istasyon-v13-open-item-rebuild.mjs')
 };
 
 const stripSqlComments = s => s.replace(/--.*$/gm, '');
@@ -42,6 +44,11 @@ ok('opening seed asserts source total', files.openingSeed.includes('ISTASYON_OPE
 ok('durable core does not post cari ledger', !/insert\s+into\s+public\.cari_ekstre_lines/i.test(coreSql));
 ok('durable core does not delete existing ledger', !/(delete\s+from|truncate\s+table)\s+public\.cari_ekstre_lines/i.test(coreSql));
 ok('guard SQL has no invalid single-dollar quote', !/\bas\s+\$\s*$/m.test(guardSql));
+ok('open-item stage is candidate-only', files.openItemStage.includes('istasyon_open_item_candidate_stage'));
+ok('open-item stage never writes final open items', !/insert\s+into\s+(public\.)?istasyon_open_items/i.test(stripSqlComments(files.openItemStage)));
+ok('open-item stage never writes cari ledger', !/insert\s+into\s+(public\.)?cari_ekstre_lines/i.test(stripSqlComments(files.openItemStage)));
+ok('open-item reconstruction declares read-only mode', files.openItemRebuild.includes("mode:'read_only_reconstruction'"));
+ok('open-item reconstruction final posting is zero', files.openItemRebuild.includes('final_posting:0'));
 
 ok('cutover freeze requires reconciliation', files.guards.includes('ISTASYON_CUTOVER_NOT_RECONCILED'));
 ok('cutover freeze requires approval', files.guards.includes('ISTASYON_CUTOVER_APPROVAL_REQUIRED'));

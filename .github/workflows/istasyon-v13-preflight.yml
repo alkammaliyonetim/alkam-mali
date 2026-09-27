@@ -8,6 +8,8 @@ on:
       - "data/istasyon-opening-source-20260926.json"
       - "tools/istasyon-v13-preflight.mjs"
       - "tools/istasyon-v13-build-opening-sql.mjs"
+      - "tools/istasyon-v13-open-item-rebuild.mjs"
+      - "sql/istasyon-v13-open-item-stage.sql"
       - "tools/verify-istasyon-v13-static.mjs"
       - "sql/istasyon-v13-durable-core.sql"
       - "sql/istasyon-v13-cutover-guards.sql"
@@ -28,6 +30,8 @@ on:
       - "data/istasyon-opening-source-20260926.json"
       - "tools/istasyon-v13-preflight.mjs"
       - "tools/istasyon-v13-build-opening-sql.mjs"
+      - "tools/istasyon-v13-open-item-rebuild.mjs"
+      - "sql/istasyon-v13-open-item-stage.sql"
       - "tools/verify-istasyon-v13-static.mjs"
       - "sql/istasyon-v13-durable-core.sql"
       - "sql/istasyon-v13-cutover-guards.sql"
@@ -59,6 +63,12 @@ jobs:
           test -s data/istasyon-opening-stage.generated.sql
           ! grep -Eiq "insert[[:space:]]+into[[:space:]]+(public\.)?cari_ekstre_lines" data/istasyon-opening-stage.generated.sql
 
+      - name: Open-item reconstruction preflight
+        env:
+          ISTASYON_AS_OF_DATE: "2026-09-26"
+        run: |
+          npm run test:istasyon-open-items
+          test -s data/istasyon-open-item-preflight.json
       - name: Static safety contract
         run: node tools/verify-istasyon-v13-static.mjs
       - name: Syntax checks
