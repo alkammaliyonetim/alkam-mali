@@ -5,10 +5,19 @@ on:
     paths:
       - "alkam-cariler-73-istasyon-canli-15092026.json"
       - "data/istasyon-v13-source-controls.json"
+      - "data/istasyon-opening-source-20260926.json"
       - "tools/istasyon-v13-preflight.mjs"
+      - "tools/istasyon-v13-build-opening-sql.mjs"
+      - "tools/verify-istasyon-v13-static.mjs"
       - "sql/istasyon-v13-durable-core.sql"
+      - "sql/istasyon-v13-cutover-guards.sql"
+      - "sql/istasyon-v13-opening-source-stage.sql"
+      - "sql/istasyon-v13-opening-source-seed-20260926.sql"
+      - "google-apps-script/istasyon-alkam-gmail-v13.gs"
       - "istasyon-v13-readiness.js"
       - "_worker.js"
+      - "index.html"
+      - "admin.html"
       - "package.json"
   push:
     branches:
@@ -16,10 +25,19 @@ on:
     paths:
       - "alkam-cariler-73-istasyon-canli-15092026.json"
       - "data/istasyon-v13-source-controls.json"
+      - "data/istasyon-opening-source-20260926.json"
       - "tools/istasyon-v13-preflight.mjs"
+      - "tools/istasyon-v13-build-opening-sql.mjs"
+      - "tools/verify-istasyon-v13-static.mjs"
       - "sql/istasyon-v13-durable-core.sql"
+      - "sql/istasyon-v13-cutover-guards.sql"
+      - "sql/istasyon-v13-opening-source-stage.sql"
+      - "sql/istasyon-v13-opening-source-seed-20260926.sql"
+      - "google-apps-script/istasyon-alkam-gmail-v13.gs"
       - "istasyon-v13-readiness.js"
       - "_worker.js"
+      - "index.html"
+      - "admin.html"
       - "package.json"
 
 jobs:
