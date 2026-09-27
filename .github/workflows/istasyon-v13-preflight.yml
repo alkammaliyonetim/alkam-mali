@@ -1,0 +1,82 @@
+name: İstasyON v13 Preflight
+
+on:
+  pull_request:
+    paths:
+      - "alkam-cariler-73-istasyon-canli-15092026.json"
+      - "data/istasyon-v13-source-controls.json"
+      - "data/istasyon-opening-source-20260926.json"
+      - "tools/istasyon-v13-preflight.mjs"
+      - "tools/istasyon-v13-build-opening-sql.mjs"
+      - "tools/verify-istasyon-v13-static.mjs"
+      - "sql/istasyon-v13-durable-core.sql"
+      - "sql/istasyon-v13-cutover-guards.sql"
+      - "sql/istasyon-v13-opening-source-stage.sql"
+      - "sql/istasyon-v13-opening-source-seed-20260926.sql"
+      - "google-apps-script/istasyon-alkam-gmail-v13.gs"
+      - "istasyon-v13-readiness.js"
+      - "_worker.js"
+      - "index.html"
+      - "admin.html"
+      - "package.json"
+  push:
+    branches:
+      - main
+    paths:
+      - "alkam-cariler-73-istasyon-canli-15092026.json"
+      - "data/istasyon-v13-source-controls.json"
+      - "data/istasyon-opening-source-20260926.json"
+      - "tools/istasyon-v13-preflight.mjs"
+      - "tools/istasyon-v13-build-opening-sql.mjs"
+      - "tools/verify-istasyon-v13-static.mjs"
+      - "sql/istasyon-v13-durable-core.sql"
+      - "sql/istasyon-v13-cutover-guards.sql"
+      - "sql/istasyon-v13-opening-source-stage.sql"
+      - "sql/istasyon-v13-opening-source-seed-20260926.sql"
+      - "google-apps-script/istasyon-alkam-gmail-v13.gs"
+      - "istasyon-v13-readiness.js"
+      - "_worker.js"
+      - "index.html"
+      - "admin.html"
+      - "package.json"
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: İstasyON source preflight
+        run: npm run test:istasyon-v13
+      - name: Build opening staging SQL (generation only)
+        env:
+          ISTASYON_CUTOVER_DATE: "2099-01-01"
+        run: |
+          npm run build:istasyon-opening
+          test -s data/istasyon-opening-stage.generated.sql
+          ! grep -Eiq "insert[[:space:]]+into[[:space:]]+(public\.)?cari_ekstre_lines" data/istasyon-opening-stage.generated.sql
+
+      - name: Static safety contract
+        run: node tools/verify-istasyon-v13-static.mjs
+      - name: Syntax checks
+        run: |
+          node --check istasyon-v13-readiness.js
+          node --check _worker.js
+      - name: Ensure financial write remains locked
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const ctl=JSON.parse(fs.readFileSync('data/istasyon-v13-source-controls.json','utf8'));
+          if(ctl.write_mode!=='OFF') throw new Error('write_mode must stay OFF');
+          const sql=fs.readFileSync('sql/istasyon-v13-durable-core.sql','utf8').replace(/--.*$/gm,'');
+          if(/insert\s+into\s+public\.cari_ekstre_lines/i.test(sql)) throw new Error('durable core must not post to cari_ekstre_lines');
+          console.log('WRITE_GUARD_OK');
+          NODE
+      - name: Upload preflight evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: istasyon-v13-preflight
+          path: data/istasyon-v13-preflight-result.json

@@ -1,1 +1,13 @@
-{"scripts":{"tg:bot":"node tools/tg-bot-v3.mjs","test:automation-inventory":"node tools/check-automation-inventory.mjs"},"dependencies":{"dotenv":"latest","node-telegram-bot-api":"latest"},"devDependencies":{}}
+{
+  "scripts": {
+    "tg:bot": "node tools/tg-bot-v3.mjs",
+    "test:automation-inventory": "node tools/check-automation-inventory.mjs",
+    "test:istasyon-v13": "node tools/istasyon-v13-preflight.mjs",
+    "build:istasyon-opening": "node tools/istasyon-v13-build-opening-sql.mjs"
+  },
+  "dependencies": {
+    "dotenv": "latest",
+    "node-telegram-bot-api": "latest"
+  },
+  "devDependencies": {}
+}

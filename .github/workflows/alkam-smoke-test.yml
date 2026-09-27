@@ -30,49 +30,60 @@ jobs:
         with:
           node-version: 20
 
+      - name: Run İstasyON v13 static safety check
+        run: node tools/verify-istasyon-v13-static.mjs
+
       - name: Install Playwright
+        if: github.event_name != 'pull_request'
         run: |
           npm init -y
           npm install -D playwright
           npx playwright install --with-deps chromium
 
       - name: Run IstasyonALKAM bank check
+        if: github.event_name != 'pull_request'
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-bank-check.mjs
 
       - name: Run IstasyonALKAM operation check
+        if: github.event_name != 'pull_request'
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-operation-check.mjs
 
       - name: Run IstasyonALKAM sample flow
+        if: github.event_name != 'pull_request'
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-operation-flow-check.mjs
 
       - name: Run IstasyonALKAM mobile cari check
+        if: github.event_name != 'pull_request'
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-mobile-cari-check.mjs
 
       - name: Run IstasyonALKAM Telegram check
+        if: github.event_name != 'pull_request'
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-telegram-check.mjs
 
       - name: Run ALKAM live visual check
+        if: github.event_name != 'pull_request'
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/alkam-live-visual-check.mjs
 
       - name: Run IstasyonALKAM automation check
+        if: github.event_name != 'pull_request'
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-automation-check.mjs
 
       - name: Run IstasyonALKAM Luca sync check
-        if: github.ref_name == 'luca-sync' || github.head_ref == 'luca-sync' || github.ref_name == 'luca-fix' || github.head_ref == 'luca-fix'
+        if: github.event_name != 'pull_request' && (github.ref_name == 'luca-sync' || github.ref_name == 'luca-fix')
         env:
           ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://luca-fix.alkam-mali.pages.dev/' }}
         run: node tools/istasyonalkam-luca-sync-check.mjs
