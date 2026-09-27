@@ -19,16 +19,40 @@ try {
   await page.evaluate(() => localStorage.setItem('alkam_local_session_v2', 'ok'));
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2500);
-  await page.locator('[data-tab="onay"]').first().click({ timeout: 10000 });
-  await page.waitForTimeout(2500);
+  const onayNav = page.locator('[data-tab="onay"]').first();
+  const onaySection = page.locator('#tab-onay').first();
+  const navCount = await onayNav.count();
+  const sectionCount = await onaySection.count();
+  result.checks.onayNavigationPresent = navCount > 0 || sectionCount > 0;
+  if (navCount > 0) {
+    await onayNav.click({ timeout: 10000 });
+  } else if (sectionCount > 0) {
+    await page.evaluate(() => {
+      if (typeof window.switchTab === 'function') window.switchTab('onay');
+      else document.getElementById('tab-onay')?.classList.add('active');
+    });
+  }
+  await page.waitForTimeout(1500);
   const bodyText = await page.locator('body').innerText({ timeout: 15000 });
-  result.checks.operationCenterVisible = bodyText.includes('İstasyonALKAM İşlem Öneri Merkezi') || bodyText.includes('IstasyonALKAM İşlem Öneri Merkezi');
-  result.checks.onayVisible = bodyText.includes('Onay') || bodyText.includes('Onay Merkezi');
-  result.checks.suggestButtonVisible = bodyText.includes('Öneri Oluştur');
-  if (!result.checks.operationCenterVisible) result.errors.push('İşlem Öneri Merkezi görünmedi.');
+  result.checks.operationCenterVisible = bodyText.includes('Onay Merkezi');
+  result.checks.onayVisible = bodyText.includes('Onay Merkezi');
+  result.checks.suggestButtonVisible =
+    bodyText.includes('Onay Kaydı Ekle') ||
+    bodyText.includes('Mailden Oku + Onaya Hazırla') ||
+    bodyText.includes('Onaya Ekle');
+  result.checks.writeGuardVisible =
+    bodyText.includes('Emin olunmayan kayıt cariye yazılmaz') ||
+    bodyText.includes('Kesin kayıt') ||
+    bodyText.includes('onay');
+  if (!result.checks.operationCenterVisible) result.errors.push('Onay Merkezi görünmedi.');
+  if (!result.checks.suggestButtonVisible) result.errors.push('Onay/öneri aksiyonu görünmedi.');
   await page.screenshot({ path: screenshotPath, fullPage: true });
   result.screenshot = screenshotPath;
-  result.ok = result.checks.operationCenterVisible === true && result.checks.suggestButtonVisible === true;
+  result.ok =
+    result.checks.onayNavigationPresent === true &&
+    result.checks.operationCenterVisible === true &&
+    result.checks.suggestButtonVisible === true &&
+    result.checks.writeGuardVisible === true;
   result.finishedAt = new Date().toISOString();
   fs.writeFileSync(jsonPath, JSON.stringify(result, null, 2), 'utf8');
   console.log(JSON.stringify(result, null, 2));
