@@ -812,7 +812,7 @@
   window.exportSelectedCariExcel=function(){
     const c=state.cariler.find(x=>x.id===state.selectedCariId); if(!c)return notify("Cari seç.");
     const rows=allTxns(c); let run=0;
-    const data=rows.map(t=>{run+=num(t.debit)-num(t.credit);return{"Tarih":t.date,"Kaynak":t.source,"Tip":t.type,"Açıklama":t.description,"Borç":num(t.debit),"Alacak":num(t.credit),"Bakiye":run};});
+    const data=rows.map(t=>{run+=num(t.debit)-num(t.credit);return{"Tarih":t.date,"Açıklama":t.description,"Borç":num(t.debit),"Alacak":num(t.credit),"Bakiye":run};});
     if(window.XLSX){const wb=XLSX.utils.book_new();const ws=XLSX.utils.json_to_sheet(data);XLSX.utils.book_append_sheet(wb,ws,"Ekstre");XLSX.writeFile(wb,slug(c.name)+"-ekstre.xlsx");}
     else downloadBlob(slug(c.name)+"-ekstre.csv", toCsv(data), "text/csv;charset=utf-8");
   };
