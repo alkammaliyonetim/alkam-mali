@@ -508,11 +508,21 @@
     return {debit, credit, bal, last:rows.length?rows[rows.length-1].date:(c.periodEnd || c.periodStart || ""), count:rows.length};
   }
 
+  function renderTab(tab){
+    if(tab==="dashboard") renderDashboard();
+    else if(tab==="cariler"){ renderCariList(); renderSelectedCariDetail(); }
+    else if(tab==="hesaplar") renderAccounts();
+    else if(tab==="onay") renderApprovals();
+    else if(tab==="otomasyon") renderAutomation();
+    else if(tab==="raporlar") renderReports();
+    fillSelects();
+  }
+
   window.switchTab = function(tab){
     document.querySelectorAll(".tab-page").forEach(x=>x.classList.remove("active"));
     document.querySelectorAll(".nav-btn,.erp-module-btn").forEach(x=>x.classList.toggle("active", x.dataset.tab===tab));
     const el=byId("tab-"+tab); if(el) el.classList.add("active");
-    refreshAll();
+    renderTab(tab);
   };
 
   window.refreshAll = function(){
