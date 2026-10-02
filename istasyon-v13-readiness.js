@@ -3,10 +3,10 @@
 if(window.__ISTASYON_V13_READINESS__) return;
 window.__ISTASYON_V13_READINESS__=true;
 
-var VERSION='İstasyON v13 Readiness 1.0';
-var EXPECTED_ACTIVE=73;
+var VERSION='İstasyON v13 Readiness 1.1 · 02.10.2026';
+var EXPECTED_ACTIVE=79;
 var EXPECTED_OPENING=3741583.88;
-var CARILER_URL='/alkam-cariler-73-istasyon-canli-15092026.json';
+var CARILER_URL='/alkam-cariler-79-istasyon-canli-02102026.json';
 var STATUS_URL='/api/istasyon/status';
 
 function q(s,r){return (r||document).querySelector(s)}
@@ -70,9 +70,9 @@ async function refresh(){
       '<div class="is13card good"><b>Kesin Yazma</b><strong>KAPALI</strong></div>'+
     '</div>'+
     '<div class="is13row">'+
-      '<div class="is13box"><strong>Kaynak kontrolü</strong><br>73 aktif cari: '+(countOk?'doğrulandı':'fark var')+
+      '<div class="is13box"><strong>Kaynak kontrolü</strong><br>'+EXPECTED_ACTIVE+' aktif cari: '+(countOk?'doğrulandı':'fark var')+
       '<br>Kanonik açılış kaynağı: liste bakiyesi + PDF mutabakatı = '+tl(EXPECTED_OPENING)+
-      '<br>15.09 JSON snapshot bakiye: '+tl(currentJsonBalance)+' — yalnız geçmiş/hareket kaynağı, açılış bakiyesi değildir.</div>'+
+      '<br>02.10 canlı cari senkronu bakiye: '+tl(currentJsonBalance)+' — İstasyON CARI_HAREKETLERI kaynağından okunur.</div>'+
       '<div class="is13box"><strong>Otomasyon sağlığı</strong><br>Gmail aktarım: '+esc(config)+
       '<br>Son Halkbank belge zamanı: '+esc(latest)+
       '<br>Yerel cari hareket: '+local.cariMovements+' · Tahakkuk: '+local.tahakkuk+' · Tahsilat: '+local.tahsilat+
