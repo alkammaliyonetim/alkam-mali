@@ -65,6 +65,12 @@ jobs:
           npm install -D playwright
           npx playwright install --with-deps chromium
 
+      - name: Verify Pınar canonical balance
+        if: github.event_name != 'pull_request'
+        env:
+          ALKAM_TEST_URL: ${{ github.event.inputs.test_url || 'https://alkam-mali.pages.dev/' }}
+        run: node tools/istasyon-pinar-canonical-check.mjs
+
       - name: Run IstasyonALKAM bank check
         if: github.event_name != 'pull_request'
         env:
