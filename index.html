@@ -924,7 +924,8 @@
       code:c.code || c.cari_code || c.vkn || c.vergiNo || "", type:c.type || c.taxpayer_type || c.mukellefTuru || "Cari Ekstre",
       phone:c.phone || c.telefon || "", monthlyFee:num(c.monthlyFee || c.monthly_fee || c.defter_ucreti || 0),
       status:c.status || "Aktif", note:c.note || c.not || "", periodStart:c.periodStart || "", periodEnd:c.periodEnd || "",
-      sourceFile:c.sourceFile || c.source_file || "", rawTotals:{totalDebit,totalCredit,balance}, transactions:txns, deleted:!!c.deleted
+      sourceFile:c.sourceFile || c.source_file || "", sourceName:c.sourceName || "", canonicalReadOnly:!!c.sourceName,
+      rawTotals:{totalDebit,totalCredit,balance}, transactions:txns, deleted:!!c.deleted
     };
   }
 
@@ -962,7 +963,16 @@
     const keys=txnDeleteKeys(t,cariId);
     return keys.some(k=>(set||deletedTxnKeySet()).has(k));
   }
+  function isCanonicalLiveCari(c){
+    return !!(c && c.canonicalReadOnly && c.sourceName);
+  }
+  function canonicalReadOnlyMode(){
+    return !!(state.cariler.length && state.cariler.every(isCanonicalLiveCari));
+  }
   function allTxns(c){
+    if(isCanonicalLiveCari(c)){
+      return [...(c.transactions||[])].sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+    }
     const deletedSet=deletedTxnKeySet();
     const base=(c.transactions||[]).filter(t=>!isTxnDeletedByArchive(t,c.id,deletedSet));
     const manual=state.manualTxns.filter(t=>t.cariId===c.id && !t.deleted && !isTxnDeletedByArchive(t,c.id,deletedSet));
@@ -1035,15 +1045,17 @@
     try{
       if(!bootRepairsDone && state.cariler.length){
         bootRepairsDone = true;
-        restoreWronglyArchivedAnaVeriAccruals_17092026();
-        importBizmuAccountData_18092026();
-        cleanupPendingSplitAccruals();
-        cleanupStaleProgramAccrualApprovals();
-        autoCreateMonthlyAccrualApprovals();
-        repairDuplicateMonthlyAccruals();
-        repairUnsafeBankOcrApprovals();
-        repairApprovedAccrualLedgerLinks();
-        autoArchivePostedApprovals();
+        if(!canonicalReadOnlyMode()){
+          restoreWronglyArchivedAnaVeriAccruals_17092026();
+          importBizmuAccountData_18092026();
+          cleanupPendingSplitAccruals();
+          cleanupStaleProgramAccrualApprovals();
+          autoCreateMonthlyAccrualApprovals();
+          repairDuplicateMonthlyAccruals();
+          repairUnsafeBankOcrApprovals();
+          repairApprovedAccrualLedgerLinks();
+          autoArchivePostedApprovals();
+        }
       }
       /* 18.09.2026 duzeltmesi: repairDuplicateMonthlyAccruals SADECE bootRepairsDone
          bayragiyla, sayfa acilisinda BIR KEZ calisiyordu. Ama otomasyon tahakkuk
@@ -1054,7 +1066,7 @@
          defalarca geri geliyordu (18.09.2026'da 118 kayit / 2.172.750 TL). Fonksiyonun
          kendi ic guvenlik kilidi (window.__alkamRepairMonthlyAccruals) oldugu icin her
          refreshAll() cagrisinda kosulsuz calistirmak guvenli ve ucuzdur (idempotent). */
-      if(state.cariler.length){
+      if(state.cariler.length && !canonicalReadOnlyMode()){
         repairDuplicateMonthlyAccruals();
       }
       renderDashboard();
