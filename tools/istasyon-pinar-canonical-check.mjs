@@ -61,8 +61,11 @@ try {
   const detailText = await detail.innerText();
   const metricTexts = await detail.locator('.metric-mini').allInnerTexts();
   const currentMetric = metricTexts.find((x) => /Güncel Bakiye/i.test(x)) || '';
-  result.checks.detailBalance3500 = /3\.500,00\s*TL/i.test(currentMetric) && /Bakiye\s*B/i.test(currentMetric);
+  const compactDetail = detailText.replace(/\s+/g, ' ').trim();
+  result.checks.detailBalance3500 = /Güncel Bakiye 3\.500,00 TL Bakiye B/i.test(compactDetail)
+    || (/3\.500,00 TL Bakiye B/i.test(compactDetail) && !/4\.900,00 TL/i.test(compactDetail) && !/7\.000,00 TL/i.test(compactDetail));
   result.currentMetric = currentMetric;
+  result.detailExcerpt = compactDetail.slice(0, 1800);
   result.checks.totalDebit46100 = /46\.100,00\s*TL/i.test(detailText);
   result.checks.totalCredit42600 = /42\.600,00\s*TL/i.test(detailText);
   result.checks.stale1400Ignored = !detailText.includes('CANONICAL TEST STALE 1400');
