@@ -1,0 +1,304 @@
+/* ALKAM Enterprise UI — 02.10.2026
+   Amaç: finansal mantığa dokunmadan Cari Ekstre ekranını daha okunaklı,
+   daha yoğun ve uluslararası ERP seviyesinde bir çalışma alanına dönüştürmek. */
+:root{
+  --bg:#f5f7fb;
+  --panel:#ffffff;
+  --line:#e3e9f2;
+  --text:#14213d;
+  --muted:#6b778c;
+  --nav1:#07182f;
+  --nav2:#0a2850;
+  --blue:#2367e8;
+  --green:#0f9f6e;
+  --red:#d14343;
+  --amber:#d77b12;
+  --purple:#7257d9;
+  --shadow:0 8px 22px rgba(18,38,63,.055);
+  --radius:14px;
+  --navw:172px;
+  --leftcol:316px;
+}
+html,body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  font-size:14px;
+}
+body{letter-spacing:-.005em}
+.layout{grid-template-columns:var(--navw) minmax(0,1fr)}
+.sidebar{
+  background:linear-gradient(180deg,#06162c 0%,#08264c 58%,#0a315d 100%);
+  padding:12px 9px;
+  border-right:1px solid rgba(255,255,255,.06);
+}
+.brand{padding:8px 8px 12px;margin-bottom:9px}
+.brand-title{font-size:17px;font-weight:800;letter-spacing:-.02em}
+.brand-sub{font-size:9.5px;font-weight:650;color:rgba(255,255,255,.66)}
+.nav{gap:4px}
+.nav:before{font-size:9px;font-weight:800;margin:4px 7px 4px}
+.nav-btn{
+  min-height:35px;height:35px;border-radius:8px;
+  font-size:11.5px;font-weight:700;padding:0 9px;gap:7px;
+  background:rgba(255,255,255,.055);
+}
+.nav-btn:hover{background:rgba(61,131,246,.23);box-shadow:none}
+.nav-btn.active{
+  background:linear-gradient(180deg,#2b73ef,#1f63da);
+  box-shadow:0 7px 17px rgba(20,92,210,.24);
+}
+.nav-group{gap:4px}
+.nav-group-title{
+  min-height:37px;margin:7px 0 3px;border-radius:9px;padding:0 9px;
+  font-size:11.5px;font-weight:750;
+}
+.nav-sub{height:31px;min-height:31px;padding-left:19px;font-size:10.8px}
+.side-box{margin-top:10px;border-radius:10px;padding:8px}
+.side-box .mini{font-size:8.8px;font-weight:800}
+.side-box .big{font-size:10.5px;font-weight:700;line-height:1.4}
+
+.main{padding:0 16px 16px}
+.erp-modulebar{
+  height:54px;margin:0 -16px 12px;padding:0 16px;
+  background:linear-gradient(90deg,#07182f,#092750);
+  box-shadow:0 5px 16px rgba(8,30,62,.12);
+}
+.erp-module-left{gap:3px}
+.erp-module-btn{
+  height:33px;border-radius:8px;padding:0 10px;
+  font-size:11.5px;font-weight:750;
+}
+.erp-module-btn.active{background:#2367e8}
+.erp-module-right{gap:8px;font-size:10.5px;font-weight:750}
+.erp-module-right .btn{min-height:32px;height:32px;padding:6px 10px}
+
+.topbar{margin-bottom:10px;align-items:center;gap:10px}
+.page-head h1{font-size:25px;font-weight:800;letter-spacing:-.03em}
+.page-head p{margin-top:4px;font-size:11.5px;font-weight:600;line-height:1.4}
+.btn{
+  min-height:33px;border-radius:8px;padding:7px 11px;
+  font-size:11.5px;font-weight:750;box-shadow:none;
+}
+.btn-soft{background:#eef2f8;color:#27364f}
+.btn-red{background:#fff1f2;color:#b4232c;border:1px solid #fecdd3}
+.btn-green{background:#0f9f6e}
+.btn-blue{background:#2367e8}
+.btn-purple{background:#f3f0ff;color:#5e48bf;border:1px solid #ddd6fe}
+
+.card,.section,.metric-mini,.rule-box,.empty{
+  border-color:var(--line);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+.section{padding:13px;margin-bottom:12px}
+.section-title{font-size:18px;font-weight:800;margin-bottom:10px}
+
+#tab-cariler>.topbar{
+  min-height:52px;margin-bottom:9px;
+}
+#tab-cariler>.topbar>.btn-row{gap:6px}
+#tab-cariler>.grid-2{
+  grid-template-columns:minmax(280px,var(--leftcol)) minmax(0,1fr);
+  gap:12px;align-items:stretch;
+}
+#tab-cariler>.grid-2>.section{margin-bottom:0}
+#tab-cariler .detail-sticky{padding:11px}
+#tab-cariler .toolbar{
+  grid-template-columns:1fr 1fr;
+  gap:7px;margin-bottom:9px;
+}
+#tab-cariler #cariSearch{grid-column:1/-1}
+.search-input,.select-input{
+  min-height:36px;border-radius:8px;padding:7px 9px;
+  font-size:11.5px;font-weight:650;border-color:#d9e1ed;
+  box-shadow:0 1px 2px rgba(15,23,42,.02);
+}
+.search-input:focus,.select-input:focus{
+  border-color:#7aa7f7;
+  box-shadow:0 0 0 3px rgba(35,103,232,.09);
+}
+
+.cari-list-scroll{
+  max-height:calc(100vh - 224px);
+  overflow:auto;padding-right:3px;
+  scrollbar-width:thin;scrollbar-color:#c8d3e2 transparent;
+}
+.list{gap:6px}
+.list-item{
+  padding:9px 10px;border-radius:10px;background:#fff;
+  border:1px solid #e5eaf2;
+  box-shadow:0 1px 2px rgba(15,23,42,.025);
+}
+.list-item:hover{
+  border-color:#a9c5f6;background:#fbfdff;
+  box-shadow:0 4px 12px rgba(35,103,232,.06);
+}
+.list-item.active{
+  border-color:#4f89ed;
+  background:linear-gradient(180deg,#f7faff,#eef5ff);
+  box-shadow:inset 3px 0 0 #2367e8,0 0 0 1px rgba(35,103,232,.06);
+}
+.list-title{font-size:12.3px;font-weight:800;line-height:1.32;margin-bottom:4px}
+.list-meta{font-size:10.3px;font-weight:600;line-height:1.42;color:#758196}
+.list-meta strong{font-size:11.3px;color:#17233b}
+
+.cari-detail-scroll{
+  height:calc(100vh - 135px);
+  overflow:hidden;padding:10px 10px 0;
+  background:#fff;
+}
+#selectedCariDetail{height:100%;min-height:0}
+#selectedCariDetail.empty{display:flex;align-items:center;justify-content:center}
+.cari-sticky-header{
+  flex:0 0 auto;
+  padding:0 1px 9px;
+  margin-bottom:8px;
+  background:#fff;
+  border-bottom:1px solid #edf1f6;
+}
+.cari-head-row{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:14px;margin-bottom:9px;
+}
+.cari-head-copy{min-width:0;flex:1}
+.cari-eyebrow{
+  font-size:9px;font-weight:800;letter-spacing:.11em;
+  text-transform:uppercase;color:#7a879b;margin-bottom:4px;
+}
+.hero-name{
+  font-size:clamp(19px,1.35vw,24px);
+  font-weight:820;line-height:1.12;letter-spacing:-.028em;
+  margin:0 0 6px;color:#26324a;
+}
+.hero-sub{gap:6px;margin:0;min-height:24px;font-size:10.8px;font-weight:650}
+.hero-sub>.tag{min-height:22px;padding:3px 8px}
+.cari-code{
+  display:inline-flex;align-items:center;min-height:22px;
+  color:#6b778c;background:#f6f8fb;border:1px solid #e6eaf0;
+  border-radius:999px;padding:3px 8px;
+}
+.cari-fee-pill{
+  display:inline-flex;align-items:center;gap:5px;min-height:22px;
+  color:#42506a;background:#f8fafc;border:1px solid #e6eaf0;
+  border-radius:999px;padding:3px 8px;
+}
+.cari-fee-pill strong{color:#17233b;font-weight:800}
+.cari-count{color:#7a879b}
+.alkam-cari-toolbar{
+  justify-content:flex-end;gap:5px;max-width:460px;
+}
+.alkam-cari-toolbar .btn{min-height:31px;padding:6px 9px;font-size:10.8px}
+.alkam-cari-toolbar .btn-red{order:9}
+
+.cari-metrics.grid-4{gap:7px;margin-bottom:8px!important}
+.metric-mini{
+  min-height:67px;padding:9px 10px;
+  border-radius:11px;box-shadow:none;background:#fbfcfe;
+}
+.metric-mini .k{
+  font-size:9px;font-weight:800;letter-spacing:.06em;
+  margin-bottom:5px;color:#7b8799;
+}
+.metric-mini .v{
+  font-size:15.5px;font-weight:820;line-height:1.2;
+  color:#46536b;font-variant-numeric:tabular-nums;
+}
+.cari-metrics .metric-mini:last-child{
+  background:linear-gradient(180deg,#f2f7ff,#eaf2ff);
+  border-color:#bdd3f9;
+}
+.cari-metrics .metric-mini:last-child .v{color:#164fa8;font-size:16.5px}
+
+.cari-meta-row{display:grid;gap:6px}
+.v119-legend{
+  margin:0;padding:0;border:0;background:transparent;border-radius:0;
+  gap:12px;
+}
+.v119-legend span{font-size:9.8px;font-weight:700;color:#758196}
+.v119-dot{width:7px;height:7px}
+.cari-context-strip{
+  display:flex;align-items:center;flex-wrap:wrap;gap:5px 12px;
+  min-height:34px;padding:7px 9px;
+  border:1px solid #e4eaf2;border-radius:10px;background:#f9fbfd;
+  color:#657287;font-size:10px;font-weight:650;line-height:1.35;
+}
+.cari-context-strip strong{color:#2c3b55;font-weight:800}
+.cari-context-strip .context-emphasis{color:#1f5eb9}
+.cari-sticky-header>.rule-box{
+  margin-top:6px;padding:8px 9px;border-radius:10px;
+  font-size:10.3px;font-weight:650;line-height:1.4;box-shadow:none;
+}
+
+.statement-scroll{
+  flex:1 1 auto;min-height:260px;overflow:auto;
+  border:1px solid #e4eaf2;border-radius:11px;background:#fff;
+  scrollbar-width:thin;scrollbar-color:#c7d2df transparent;
+}
+.source-statement{table-layout:auto}
+.source-statement th{
+  top:0;padding:8px 7px;
+  background:#f4f7fb;color:#526076;
+  font-size:9.8px;font-weight:800;letter-spacing:.035em;text-transform:uppercase;
+  border-bottom:1px solid #dfe6ef;
+}
+.source-statement td{
+  padding:7px 7px;font-size:10.8px;line-height:1.32;
+  border-bottom:1px solid #edf1f5;color:#36445b;
+}
+.source-statement tbody tr:hover td{background:rgba(35,103,232,.025)}
+.source-statement .money{font-weight:780;color:#28364d}
+.source-statement .desc{min-width:200px}
+.source-statement .source-badge{
+  min-height:20px;padding:3px 6px;font-size:8.8px;font-weight:800;
+}
+.source-statement .btn{min-height:27px;padding:4px 7px;font-size:9.5px}
+.source-statement .col-no{width:82px}
+.source-statement .col-date{width:86px}
+.source-statement .col-source{width:132px}
+.source-statement .col-type{width:94px}
+.source-statement .col-money{width:104px}
+.source-statement .col-action{width:112px}
+.row-tahakkuk{background:rgba(254,242,242,.52)}
+.row-tahsilat{background:rgba(236,253,245,.58)}
+.row-neutral{background:rgba(239,246,255,.42)}
+.row-tahakkuk td:first-child{box-shadow:inset 3px 0 0 #ef6a6a}
+.row-tahsilat td:first-child{box-shadow:inset 3px 0 0 #2bb889}
+.row-neutral td:first-child{box-shadow:inset 3px 0 0 #5791ed}
+
+/* scrollbars */
+.sidebar::-webkit-scrollbar,.cari-list-scroll::-webkit-scrollbar,.statement-scroll::-webkit-scrollbar{width:7px;height:7px}
+.sidebar::-webkit-scrollbar-thumb,.cari-list-scroll::-webkit-scrollbar-thumb,.statement-scroll::-webkit-scrollbar-thumb{background:#b9c6d6;border-radius:999px}
+.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18)}
+
+/* geniş ekranlarda daha dengeli kolon */
+@media(min-width:1600px){
+  :root{--leftcol:330px}
+  .main{padding-left:18px;padding-right:18px}
+  .erp-modulebar{margin-left:-18px;margin-right:-18px;padding-left:18px;padding-right:18px}
+}
+@media(max-width:1180px) and (min-width:861px){
+  :root{--navw:160px;--leftcol:288px}
+  .page-head p{max-width:620px}
+  .alkam-cari-toolbar{max-width:340px}
+  .alkam-cari-toolbar .btn{padding-left:7px;padding-right:7px}
+}
+@media(max-width:860px){
+  :root{--navw:1fr;--leftcol:1fr}
+  .main{padding:0 10px 14px}
+  .erp-modulebar{margin:0 -10px 10px;padding:0 10px;height:auto;min-height:50px;flex-wrap:wrap}
+  #tab-cariler>.grid-2{grid-template-columns:1fr}
+  .cari-list-scroll{max-height:46vh}
+  .cari-detail-scroll{height:auto;overflow:visible;padding:10px}
+  .cari-head-row{flex-direction:column}
+  .alkam-cari-toolbar{justify-content:flex-start;max-width:none}
+  .cari-metrics.grid-4{grid-template-columns:1fr 1fr}
+  .statement-scroll{max-height:none;overflow:auto}
+}
+@media(max-width:560px){
+  .topbar{align-items:flex-start}
+  .page-head h1{font-size:22px}
+  #tab-cariler .toolbar{grid-template-columns:1fr}
+  #tab-cariler #cariSearch{grid-column:auto}
+  .cari-metrics.grid-4{grid-template-columns:1fr}
+  .cari-context-strip{display:grid;grid-template-columns:1fr 1fr}
+}
