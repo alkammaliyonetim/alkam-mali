@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ALKAM Mali Müşavirlik | Final Eski Gövde + Cari + Otomasyon</title>
+  <title>ALKAM Mali | Cari & Finans Kontrol Merkezi</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
@@ -89,6 +89,7 @@
     .last-bank-card .k{font-size:10px;font-weight:950;letter-spacing:.06em;text-transform:uppercase;color:#64748b}.last-bank-card .v{font-size:13px;font-weight:950;color:#0f172a;margin-top:4px;line-height:1.35}
     @media(max-width:860px){.approval-gate,.approval-status-grid,.compact-status,.last-bank-card,.tg-console,.tg-kpi-grid,.tg-lists,#telegramPanel .ops-panel{grid-template-columns:1fr}.approval-hero{align-items:flex-start}.approval-table-wrap{max-height:none}.approval-actions{justify-content:flex-start}#telegramPanel .ops-panel textarea,#telegramPanel .ops-panel .btn-row,#telegramPanel .ops-panel .inline-check,#telegramPanel .ops-panel .rule-box{grid-column:1;grid-row:auto}}
   </style>
+  <link rel="stylesheet" href="alkam-ui-enterprise-v1.css?v=20261002b" />
 </head>
 <body>
 <div id="loginOverlay" class="login-overlay">
@@ -922,7 +923,7 @@
     return {
       id, name:c.name || c.cari_name || c.title || c.unvan || "İsimsiz Cari",
       code:c.code || c.cari_code || c.vkn || c.vergiNo || "", type:c.type || c.taxpayer_type || c.mukellefTuru || "Cari Ekstre",
-      phone:c.phone || c.telefon || "", monthlyFee:num(c.monthlyFee || c.monthly_fee || c.defter_ucreti || 0),
+      phone:c.phone || c.telefon || "", monthlyFee:(c.monthlyFee==null && c.monthly_fee==null && c.defter_ucreti==null ? null : num(c.monthlyFee ?? c.monthly_fee ?? c.defter_ucreti)),
       status:c.status || "Aktif", note:c.note || c.not || "", periodStart:c.periodStart || "", periodEnd:c.periodEnd || "",
       sourceFile:c.sourceFile || c.source_file || "", sourceName:c.sourceName || "", canonicalReadOnly:!!c.sourceName,
       rawTotals:{totalDebit,totalCredit,balance}, transactions:txns, deleted:!!c.deleted
@@ -1182,6 +1183,9 @@
     const promises=paymentPromisesForCari(c.id);
     const openPromises=promises.filter(p=>!isTaskDone(p));
     const donePromises=promises.filter(p=>isTaskDone(p)).slice(0,8);
+    const statusText=String(c.status||"Aktif");
+    const statusClass=/sil/i.test(statusText)?"red":/pasif/i.test(statusText)?"gray":"green";
+    const feeText=c.monthlyFee==null?"Belirlenmedi":money(c.monthlyFee);
     const promiseBox=openPromises.length?`<div class="rule-box" style="border-color:#fdba74;background:#fff7ed;color:#9a3412"><strong>Aktif Ödeme Sözü:</strong> ${openPromises.map(p=>`${esc(p.dueDate||"Tarih yok")} • ${money(p.amount)} • ${esc(p.text||p.note||"")}`).join("<br>")}<br><button class="btn btn-green" onclick="completeCariPromise('${c.id}')">Söz Yerine Getirildi</button></div>`:"";
     const donePromiseBox=donePromises.length?`<div class="rule-box" style="border-color:#86efac;background:#f0fdf4;color:#166534"><strong>Tamamlanan Ödeme Sözleri:</strong><br>${donePromises.map(p=>`${esc(p.dueDate||"-")} • ${money(p.amount)} • ${esc(p.completedAt||"-")} • ${esc(p.text||p.note||"")}`).join("<br>")}</div>`:"";
     const tableRows = rows.map((t,i)=>{
@@ -1192,28 +1196,50 @@
     }).join("");
     byId("selectedCariDetail").innerHTML = `
       <div class="cari-sticky-header">
-        <div class="btn-row alkam-cari-toolbar">
-          <button class="btn btn-blue" onclick="openTxnModal('${c.id}')">Hareket Ekle</button>
-          <button class="btn btn-soft" onclick="openCariModal('${c.id}')">Cariyi Düzenle</button>
-          ${c.deleted ? `<button class="btn btn-green" onclick="restoreSelectedCari()">Cariyi Geri Al</button>` : `<button class="btn btn-red" onclick="deleteSelectedCari()">Cariyi Sil</button>`}
-          <button class="btn btn-soft" onclick="printSelectedCari()">Yazdır</button>
-          <button class="btn btn-soft" onclick="exportSelectedCariExcel()">Excel</button>
+        <div class="cari-head-row">
+          <div class="cari-head-copy">
+            <div class="cari-eyebrow">Cari Ekstre</div>
+            <h2 class="hero-name">${esc(c.name)}</h2>
+            <div class="hero-sub">
+              <span class="tag ${statusClass}">${esc(statusText)}</span>
+              ${c.code?'<span class="cari-code">'+esc(c.code)+'</span>':""}
+              <span class="cari-fee-pill">Aylık Ücret: <strong>${feeText}</strong></span>
+              <span class="cari-count">${liveMeta.liveCount} canlı · ${liveMeta.archiveCount} arşiv hareket</span>
+            </div>
+          </div>
+          <div class="btn-row alkam-cari-toolbar">
+            <button class="btn btn-blue" onclick="openTxnModal('${c.id}')">Hareket Ekle</button>
+            <button class="btn btn-soft" onclick="openCariModal('${c.id}')">Cariyi Düzenle</button>
+            <button class="btn btn-soft" onclick="printSelectedCari()">Yazdır</button>
+            <button class="btn btn-soft" onclick="exportSelectedCariExcel()">Excel</button>
+            ${c.deleted ? `<button class="btn btn-green" onclick="restoreSelectedCari()">Cariyi Geri Al</button>` : `<button class="btn btn-red" onclick="deleteSelectedCari()">Cariyi Sil</button>`}
+          </div>
         </div>
-        <h2 class="hero-name">${esc(c.name)}</h2>
-        <div class="hero-sub"><span>${esc(c.code||"-")}</span><span>${esc(c.status||"Aktif")}</span><span>Aylık Ücret: ${money(c.monthlyFee)}</span><span>${c.deleted?'<span class="tag red">SİLİNMİŞ</span>':""}</span></div>
-        <div class="grid-4" style="margin-bottom:12px">
+        <div class="grid-4 cari-metrics">
           <div class="metric-mini"><div class="k">Açılış Bakiye</div><div class="v">${balanceLabel(liveMeta.opening)}</div></div>
           <div class="metric-mini"><div class="k">Dönem Tahakkuku</div><div class="v">${money(liveMeta.debit)}</div></div>
           <div class="metric-mini"><div class="k">Dönem Tahsilatı</div><div class="v">${money(liveMeta.credit)}</div></div>
           <div class="metric-mini"><div class="k">Güncel Bakiye</div><div class="v">${balanceLabel(liveMeta.bal)}</div></div>
         </div>
-        <div class="v119-legend"><span><i class="v119-dot v119-red"></i>Gelir tahakkuku</span><span><i class="v119-dot v119-green"></i>Tahsilat alındı</span><span><i class="v119-dot v119-blue"></i>Düzeltme / Diğer</span></div>
-        <div class="rule-box">Canlı dönem başlangıcı: <strong>01.12.2025</strong>. Öncesi arşiv/açılış bilgisidir ve içe aktarmadan tekrar cariye yazılmaz. Arşiv hareket: <strong>${liveMeta.archiveCount}</strong> · Canlı hareket: <strong>${liveMeta.liveCount}</strong> · Son işlem: <strong>${esc(liveMeta.last||"-")}</strong> · Tüm kayıt tahakkuk/tahsilat: <strong>${money(meta.debit)} / ${money(meta.credit)}</strong>.</div>
-        <div class="rule-box">Bu extrede <strong>Kaynak</strong> kolonu zorunludur. En yakın tarih en üstte gösterilir. Bakiye işarete göre <strong>Bakiye B</strong> veya <strong>Bakiye A</strong> gösterilir.</div>
+        <div class="cari-meta-row">
+          <div class="v119-legend">
+            <span><i class="v119-dot v119-red"></i>Gelir tahakkuku</span>
+            <span><i class="v119-dot v119-green"></i>Tahsilat alındı</span>
+            <span><i class="v119-dot v119-blue"></i>Düzeltme / Diğer</span>
+          </div>
+          <div class="cari-context-strip">
+            <span>Canlı dönem <strong>01.12.2025</strong></span>
+            <span>Son işlem <strong>${esc(liveMeta.last||"-")}</strong></span>
+            <span>Toplam tahakkuk <strong>${money(meta.debit)}</strong></span>
+            <span>Toplam tahsilat <strong>${money(meta.credit)}</strong></span>
+            <span class="context-emphasis"><strong>Kaynak</strong> zorunlu · en yeni kayıt üstte</span>
+          </div>
+        </div>
         ${promiseBox}
         ${donePromiseBox}
       </div>
       <div class="statement-scroll"><table class="source-statement"><colgroup><col class="col-no"><col class="col-date"><col class="col-source"><col class="col-type"><col class="col-desc"><col class="col-money"><col class="col-money"><col class="col-money"><col class="col-action"></colgroup><thead><tr><th>İşlem No</th><th>Tarih</th><th>Kaynak</th><th>Tip</th><th>Açıklama</th><th class="text-right">Borç</th><th class="text-right">Alacak</th><th class="text-right">Bakiye</th><th>İşlem</th></tr></thead><tbody>${tableRows || `<tr><td colspan="9" class="empty">Hareket yok.</td></tr>`}</tbody></table></div>`;
+
   }
 
   function sourceClass(s){s=String(s||"").toLowerCase(); if(s.includes("banka")||s.includes("moka")||s.includes("hesap"))return"bank"; if(s.includes("manuel"))return"manual"; if(s.includes("düzelt")||s.includes("duzelt"))return"correction"; if(s.includes("auto")||s.includes("otomatik"))return"auto"; return"";}
