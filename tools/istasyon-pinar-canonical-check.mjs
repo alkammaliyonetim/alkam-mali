@@ -59,8 +59,10 @@ try {
   const detail = page.locator('#selectedCariDetail');
   await detail.locator('h2.hero-name').waitFor({ state: 'visible', timeout: 15000 });
   const detailText = await detail.innerText();
-
-  result.checks.detailBalance3500 = /Güncel Bakiye\s*3\.500,00\s*TL\s*Bakiye\s*B/i.test(detailText);
+  const metricTexts = await detail.locator('.metric-mini').allInnerTexts();
+  const currentMetric = metricTexts.find((x) => /Güncel Bakiye/i.test(x)) || '';
+  result.checks.detailBalance3500 = /3\.500,00\s*TL/i.test(currentMetric) && /Bakiye\s*B/i.test(currentMetric);
+  result.currentMetric = currentMetric;
   result.checks.totalDebit46100 = /46\.100,00\s*TL/i.test(detailText);
   result.checks.totalCredit42600 = /42\.600,00\s*TL/i.test(detailText);
   result.checks.stale1400Ignored = !detailText.includes('CANONICAL TEST STALE 1400');
