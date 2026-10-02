@@ -5,6 +5,7 @@ const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext();
 
 await context.addInitScript(() => {
+  localStorage.setItem('alkam_local_session_v2', 'ok');
   const stale = [
     {
       id: 'STALE-PINAR-1400',
