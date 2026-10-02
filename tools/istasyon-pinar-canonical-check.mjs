@@ -62,8 +62,8 @@ try {
   const metricTexts = await detail.locator('.metric-mini').allInnerTexts();
   const currentMetric = metricTexts.find((x) => /Güncel Bakiye/i.test(x)) || '';
   const compactDetail = detailText.replace(/\s+/g, ' ').trim();
-  result.checks.detailBalance3500 = /Güncel Bakiye 3\.500,00 TL Bakiye B/i.test(compactDetail)
-    || (/3\.500,00 TL Bakiye B/i.test(compactDetail) && !/4\.900,00 TL/i.test(compactDetail) && !/7\.000,00 TL/i.test(compactDetail));
+  result.checks.detailBalance3500 = compactDetail.includes('GÜNCEL BAKİYE 3.500,00 TL Bakiye B')
+    || (compactDetail.includes('3.500,00 TL Bakiye B') && !compactDetail.includes('4.900,00 TL') && !compactDetail.includes('7.000,00 TL'));
   result.currentMetric = currentMetric;
   result.detailExcerpt = compactDetail.slice(0, 1800);
   result.checks.totalDebit46100 = /46\.100,00\s*TL/i.test(detailText);
