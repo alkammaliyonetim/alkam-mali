@@ -42,11 +42,14 @@ jobs:
           base="${ALKAM_TEST_URL%/}"
           for i in $(seq 1 40); do
             html="$(curl -fsSL --max-time 15 "$base/" 2>/dev/null || true)"
-            js="$(curl -fsSL --max-time 15 "$base/istasyon-v13-readiness.js?v=13" 2>/dev/null || true)"
-            if printf '%s' "$html" | grep -q 'istasyon-v13-readiness.js?v=13' \
-              && printf '%s' "$js" | grep -q 'EXPECTED_ACTIVE=73' \
-              && printf '%s' "$js" | grep -q 'EXPECTED_OPENING=3741583.88'; then
-              echo "ISTASYON_V13_DEPLOY_READY attempt=$i"
+            js="$(curl -fsSL --max-time 15 "$base/istasyon-v13-readiness.js?v=20261002-live79" 2>/dev/null || true)"
+            json="$(curl -fsSL --max-time 15 "$base/alkam-cariler-79-istasyon-canli-02102026.json?v=$i" 2>/dev/null || true)"
+            if printf '%s' "$html" | grep -q 'istasyon-v13-readiness.js?v=20261002-live79' \
+              && printf '%s' "$js" | grep -q 'EXPECTED_ACTIVE=79' \
+              && printf '%s' "$js" | grep -q 'EXPECTED_OPENING=3741583.88' \
+              && printf '%s' "$json" | jq -e 'length==79' >/dev/null 2>&1 \
+              && printf '%s' "$json" | jq -e '[.[]|select(.sourceName=="PINAR SEVGİ KOZMETİK")][0] | (.balance==3500 and .monthlyFee==3500)' >/dev/null 2>&1; then
+              echo "ISTASYON_V13_DEPLOY_READY attempt=$i active=79 pinar=3500"
               exit 0
             fi
             echo "Waiting for Pages deploy... attempt=$i"
