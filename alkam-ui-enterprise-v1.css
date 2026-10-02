@@ -335,3 +335,134 @@ body{letter-spacing:-.005em}
   #tab-cariler>.grid-2{grid-template-columns:304px minmax(0,1fr)!important}
   #tab-cariler>.grid-2>.detail-sticky{width:304px!important;max-width:304px!important}
 }
+
+/* Enterprise acceptance pass 3 — narrow-desktop master/detail + right-edge guarantee */
+.statement-scroll{
+  overflow:auto!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable both-edges;
+}
+.source-statement{
+  min-width:760px;
+}
+.source-statement th:nth-child(8),
+.source-statement td:nth-child(8){
+  position:sticky;
+  right:72px;
+  z-index:3;
+  background:#fff;
+  box-shadow:-7px 0 10px rgba(15,23,42,.035);
+}
+.source-statement th:nth-child(9),
+.source-statement td:nth-child(9){
+  position:sticky;
+  right:0;
+  z-index:4;
+  background:#fff;
+}
+.source-statement th:nth-child(8),
+.source-statement th:nth-child(9){
+  z-index:6;
+  background:#f4f7fb;
+}
+.source-statement td:nth-child(9){
+  width:72px;
+  min-width:72px;
+  white-space:nowrap;
+  padding-left:5px;
+  padding-right:5px;
+}
+.source-statement td:nth-child(9) .btn{
+  min-width:0;
+  padding:4px 5px;
+  margin:1px;
+}
+.source-statement td:nth-child(8){
+  min-width:100px;
+}
+.cari-head-copy{max-width:min(68%,720px)}
+.hero-name{max-width:100%}
+.alkam-cari-toolbar{flex:0 0 auto}
+
+@media(max-width:1180px) and (min-width:861px){
+  .layout{grid-template-columns:132px minmax(0,1fr)!important}
+  .sidebar{width:132px!important;min-width:132px!important;max-width:132px!important;padding-left:7px;padding-right:7px}
+  .brand-title{font-size:15px}
+  .brand-sub{font-size:8.7px}
+  .nav-btn{padding-left:7px;padding-right:7px;font-size:10.7px}
+  .nav-sub{padding-left:14px;font-size:10px}
+  #tab-cariler>.grid-2{
+    grid-template-columns:238px minmax(0,1fr)!important;
+    gap:8px!important;
+  }
+  #tab-cariler>.grid-2>.detail-sticky{
+    width:238px!important;min-width:238px!important;max-width:238px!important;
+    padding:9px!important;
+  }
+  #tab-cariler .toolbar{gap:5px!important}
+  #tab-cariler .search-input,#tab-cariler .select-input{
+    min-height:33px!important;
+    padding:6px 7px!important;
+    font-size:10.4px!important;
+  }
+  .list-item{padding:8px!important}
+  .list-title{font-size:11.5px!important}
+  .list-meta{font-size:9.7px!important}
+  .cari-detail-scroll{padding:9px 8px 0!important}
+  .cari-head-row{gap:8px}
+  .cari-head-copy{max-width:60%}
+  .hero-name{font-size:18px!important}
+  .hero-sub{font-size:9.8px!important}
+  .alkam-cari-toolbar{max-width:44%;gap:3px}
+  .alkam-cari-toolbar .btn{
+    min-height:29px!important;
+    padding:5px 6px!important;
+    font-size:9.7px!important;
+  }
+  .metric-mini{min-height:60px!important;padding:8px!important}
+  .metric-mini .v{font-size:13.5px!important}
+  .cari-context-strip{font-size:9.4px!important;gap:4px 8px!important;padding:6px 8px!important}
+  .v119-legend span{font-size:9px!important}
+
+  /* Narrow desktop: keep financial essentials visible without horizontal page loss */
+  .source-statement{min-width:610px!important}
+  .source-statement th:nth-child(1),
+  .source-statement td:nth-child(1),
+  .source-statement th:nth-child(4),
+  .source-statement td:nth-child(4){
+    display:none;
+  }
+  .source-statement .col-date{width:72px}
+  .source-statement .col-source{width:94px}
+  .source-statement .col-desc{width:auto}
+  .source-statement .col-money{width:82px}
+  .source-statement .col-action{width:72px}
+  .source-statement th,.source-statement td{
+    padding-left:5px!important;padding-right:5px!important;
+    font-size:9.9px!important;
+  }
+  .source-statement .desc{min-width:130px!important}
+  .source-statement .source-badge{font-size:8px!important;padding:3px 5px!important}
+}
+
+@media(max-width:1000px) and (min-width:861px){
+  .layout{grid-template-columns:120px minmax(0,1fr)!important}
+  .sidebar{width:120px!important;min-width:120px!important;max-width:120px!important}
+  #tab-cariler>.grid-2{grid-template-columns:218px minmax(0,1fr)!important}
+  #tab-cariler>.grid-2>.detail-sticky{width:218px!important;min-width:218px!important;max-width:218px!important}
+  .brand-sub,.side-box{display:none}
+  .cari-head-copy{max-width:58%}
+  .source-statement{min-width:570px!important}
+  .source-statement th:nth-child(3),
+  .source-statement td:nth-child(3){
+    max-width:88px;
+  }
+}
+
+@media(max-width:920px) and (min-width:861px){
+  #tab-cariler>.grid-2{grid-template-columns:198px minmax(0,1fr)!important}
+  #tab-cariler>.grid-2>.detail-sticky{width:198px!important;min-width:198px!important;max-width:198px!important}
+  .cari-head-copy{max-width:54%}
+  .hero-name{font-size:17px!important}
+  .source-statement{min-width:540px!important}
+}
