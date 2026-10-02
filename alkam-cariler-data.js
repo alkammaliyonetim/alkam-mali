@@ -2,7 +2,7 @@
 (function(){
 'use strict';
 const JSON_FILE='alkam-cariler-79-istasyon-canli-02102026.json';
-const DATA_VERSION='istasyon-live79-20261002-v3';
+const DATA_VERSION='istasyon-live79-20261002-v4';
 const LS_CARI='ALKAM_FINAL_CARILER_V1';
 const LS_VERSION='ALKAM_FINAL_CARILER_DATA_VERSION_V1';
 /* Denetim kontrolü: eski tarayıcı yedeği yeni canlı veriymiş gibi kullanılamaz. */
