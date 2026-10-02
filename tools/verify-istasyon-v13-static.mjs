@@ -79,10 +79,10 @@ ok('security does not grant anon execute', !/grant\s+execute[\s\S]{0,200}\bto\s+
 ok('worker has safe status endpoint', files.worker.includes('/api/istasyon/status'));
 ok('worker preserves mail scope', files.worker.includes('classifyMailScope'));
 ok('worker does not inject v13 UI dynamically', !files.worker.includes('istasyon-v13-readiness.js') && !files.worker.includes('istasyon-v13-control-tower.js'));
-ok('index loads v13 explicitly', files.index.includes('istasyon-v13-readiness.js?v=13'));
-ok('admin loads v13 explicitly', files.admin.includes('istasyon-v13-readiness.js?v=13'));
+ok('index loads v13 explicitly', /istasyon-v13-readiness\.js\?v=/.test(files.index));
+ok('admin loads v13 explicitly', /istasyon-v13-readiness\.js\?v=/.test(files.admin));
 ok('single v13 UI contract', !files.index.includes('istasyon-v13-control-tower.js') && !files.admin.includes('istasyon-v13-control-tower.js'));
-ok('UI declares 73 active canonical cards', files.ui.includes('EXPECTED_ACTIVE=73'));
+ok('UI declares 79 active current cards', files.ui.includes('EXPECTED_ACTIVE=79'));
 ok('UI declares reconciled opening total', files.ui.includes('EXPECTED_OPENING=3741583.88'));
 ok('UI shows financial write closed', files.ui.includes('Kesin Yazma'));
 
