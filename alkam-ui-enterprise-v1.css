@@ -466,3 +466,59 @@ body{letter-spacing:-.005em}
   .hero-name{font-size:17px!important}
   .source-statement{min-width:540px!important}
 }
+
+/* Premium cari list hierarchy */
+.cari-list-head{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:start;
+}
+.cari-list-head .list-title{
+  margin:0;
+  min-width:0;
+}
+.cari-list-balance{
+  font-size:10.9px;
+  font-weight:820;
+  color:#1d3f78;
+  background:#f3f7fd;
+  border:1px solid #dbe7f8;
+  border-radius:8px;
+  padding:4px 6px;
+  white-space:nowrap;
+  font-variant-numeric:tabular-nums;
+}
+.cari-list-subline{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+  margin:5px 0 3px;
+  color:#7a8798;
+  font-size:9.7px;
+  font-weight:650;
+}
+.cari-list-subline .tag{
+  min-height:18px;
+  padding:2px 6px;
+  font-size:8px;
+}
+.list-item.active .cari-list-balance{
+  background:#e9f2ff;
+  border-color:#bfd5fb;
+  color:#164fa8;
+}
+.alkam-cari-toolbar .btn-red{
+  opacity:.82;
+  background:#fff7f7;
+}
+.alkam-cari-toolbar .btn-red:hover{
+  opacity:1;
+  background:#fee2e2;
+}
+@media(max-width:1180px) and (min-width:861px){
+  .cari-list-head{grid-template-columns:1fr}
+  .cari-list-balance{justify-self:start}
+  .cari-list-subline{gap:4px}
+}
