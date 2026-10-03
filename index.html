@@ -133,15 +133,19 @@
           <span id="navGroupArrow-cash" class="nav-group-arrow">⌄</span>
         </button>
         <div class="nav-group-items">
-          <button class="nav-btn nav-sub" data-tab="hesaplar" onclick="switchTab('hesaplar')">Hesaplarım</button>
+          <button class="nav-btn nav-sub" data-tab="hesaplar" onclick="switchTab('hesaplar')">Finans Özeti</button>
+          <button class="nav-btn nav-sub" onclick="switchTab('hesaplar');selectAccount('banka')">🏦 Banka</button>
+          <button class="nav-btn nav-sub" onclick="switchTab('hesaplar');selectAccount('kasa')">💵 Kasa</button>
+          <button class="nav-btn nav-sub" onclick="switchTab('hesaplar');selectAccount('moka-united')">💳 Moka United</button>
+          <button class="nav-btn nav-sub" data-tab="cekler" onclick="switchTab('cekler')">🧾 Çekler</button>
+          <button class="nav-btn nav-sub" data-tab="senetler" onclick="switchTab('senetler')">📄 Senetler</button>
           <button class="nav-btn nav-sub" data-tab="calisanlar" onclick="switchTab('calisanlar')">Çalışanlar</button>
           <button class="nav-btn nav-sub" data-tab="masraflar" onclick="switchTab('masraflar')">Masraflar</button>
           <button class="nav-btn nav-sub" data-tab="efaturalar" onclick="switchTab('efaturalar')">Gelen E-Faturalar</button>
           <button class="nav-btn nav-sub" data-tab="krediler" onclick="switchTab('krediler')">Krediler</button>
           <button class="nav-btn nav-sub" data-tab="demirbaslar" onclick="switchTab('demirbaslar')">Demirbaşlar</button>
           <button class="nav-btn nav-sub" data-tab="projeler" onclick="switchTab('projeler')">Projeler</button>
-          <button class="nav-btn nav-sub" data-tab="cekler" onclick="switchTab('cekler')">Çek Portföyü</button>
-          <button class="nav-btn nav-sub" data-tab="senetler" onclick="switchTab('senetler')">Senet Portföyü</button>
+          
         </div>
       </div>
       <button class="nav-btn" data-tab="onay" onclick="switchTab('onay')"><span class="nav-ico">✅</span> Onay Merkezi</button>
@@ -158,7 +162,7 @@
       <div class="erp-module-left">
         <button class="erp-module-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">ERP Radar</button>
         <button class="erp-module-btn" data-tab="cariler" onclick="switchTab('cariler')">Cari Ekstre</button>
-        <button class="erp-module-btn" data-tab="hesaplar" onclick="switchTab('hesaplar')">Moka United</button>
+        <button class="erp-module-btn" data-tab="hesaplar" onclick="switchTab('hesaplar')">Finans</button>
         <button class="erp-module-btn" data-tab="onay" onclick="switchTab('onay')">Onay</button>
         <button class="erp-module-btn" data-tab="otomasyon" onclick="switchTab('otomasyon')">Otomasyon</button>
       </div>
@@ -218,11 +222,12 @@
 
     <section id="tab-hesaplar" class="tab-page">
       <div class="topbar">
-        <div class="page-head"><h1>Hesaplar</h1><p>Kasa, banka, çek, senet ve Moka United ayrı hesap mantığında takip edilir.</p></div>
+        <div class="page-head"><h1>Finans Kontrol Merkezi</h1><p>Banka, kasa, Moka United, çek ve senet tek merkezde; kaynak ve işlem izi korunarak takip edilir.</p></div>
         <div class="btn-row"><button class="btn btn-green" onclick="openAccountModal()">Hesap İşlemi</button><button class="btn btn-amber" onclick="seedMoka()">Moka United Oluştur</button></div>
       </div>
-      <div class="section"><h2 class="section-title">Hesap Hareketleri</h2><div id="accountTxns"></div></div>
+      <div id="financeStatusStrip" class="section"></div>
       <div id="accountCards" class="cards"></div>
+      <div class="section"><h2 class="section-title">Hesap Hareketleri</h2><div id="accountTxns"></div></div>
     </section>
 
     <section id="tab-calisanlar" class="tab-page"><div id="cashModule-calisanlar"></div></section>
@@ -391,6 +396,7 @@
   };
 
   const CARI_JSON_FILES = [
+    "alkam-cariler-144-istasyon-canli-03102026.json",
     "alkam-cariler-79-istasyon-canli-02102026.json",
     "alkam-cariler-77-28-04-2026.json",
     "alkam-cariler-77-28-04-2026 (1).json",
@@ -416,8 +422,8 @@
     {key:"krediler", title:"Krediler", party:"Banka / Kredi", amount:"Taksit / Kalan Ödeme", statuses:["Aktif","Ödenecek","Ödendi","Kapandı"]},
     {key:"demirbaslar", title:"Demirbaşlar", party:"Demirbaş / Satıcı", amount:"Değer", statuses:["Aktif","Amortisman","Satıldı","Hurda"]},
     {key:"projeler", title:"Projeler", party:"Proje / Müşteri", amount:"Bütçe / Hakediş", statuses:["Açık","Devam","Tamamlandı","Beklemede"]},
-    {key:"cekler", title:"Çek Portföyü", party:"Çek Sahibi / Banka", amount:"Çek Tutarı", statuses:["Portföyde","Tahsil Edildi","Ciro Edildi","Karşılıksız"]},
-    {key:"senetler", title:"Senet Portföyü", party:"Senet Veren / Muhatap", amount:"Senet Tutarı", statuses:["Portföyde","Tahsil Edildi","Ciro Edildi","Protestolu"]}
+    {key:"cekler", title:"Çek Portföyü", party:"Çek Sahibi / Banka", amount:"Çek Tutarı", statuses:["Portföyde","Onaya Hazır","Bankaya Verildi","Tahsil Edildi","Ciro Edildi","Karşılıksız","İptal"]},
+    {key:"senetler", title:"Senet Portföyü", party:"Senet Veren / Muhatap", amount:"Senet Tutarı", statuses:["Portföyde","Onaya Hazır","Tahsil Edildi","Ciro Edildi","Protestolu","İptal"]}
   ];
 
   const automationRules = [
@@ -1554,6 +1560,12 @@
   function renderAccounts(){
     const tx=state.accountTxns;
     ensureMokaPlansFromAccountTxns();
+    const cekRows=cashModuleRows("cekler"), senetRows=cashModuleRows("senetler");
+    const cekOpen=cekRows.filter(r=>!/(tahsil edildi|ciro edildi|iptal)/i.test(String(r.status||"")));
+    const senetOpen=senetRows.filter(r=>!/(tahsil edildi|ciro edildi|iptal)/i.test(String(r.status||"")));
+    const overdueDocs=[...cekOpen,...senetOpen].filter(r=>r.dueDate && r.dueDate<today());
+    const fs=byId("financeStatusStrip");
+    if(fs) fs.innerHTML=`<div class="topbar" style="margin-bottom:8px"><div><h2 class="section-title">Banka · Kasa · Moka · Çek · Senet</h2><p class="muted-note">Kesin finansal yazma onaysız yapılmaz. Moka banka aktarımı cari tahsilatı sayılmaz.</p></div><div class="btn-row"><button class="btn btn-soft" onclick="selectAccount('banka')">Banka</button><button class="btn btn-soft" onclick="selectAccount('kasa')">Kasa</button><button class="btn btn-soft" onclick="selectAccount('moka-united')">Moka</button><button class="btn btn-soft" onclick="switchTab('cekler')">Çek</button><button class="btn btn-soft" onclick="switchTab('senetler')">Senet</button></div></div><div class="grid-4"><div class="metric-mini"><div class="k">Banka</div><div class="v">${money(accountBalance("banka"))}</div></div><div class="metric-mini"><div class="k">Kasa</div><div class="v">${money(accountBalance("kasa"))}</div></div><div class="metric-mini"><div class="k">Moka United</div><div class="v">${money(accountBalance("moka-united"))}</div></div><div class="metric-mini"><div class="k">Açık Çek / Senet</div><div class="v">${cekOpen.length} / ${senetOpen.length}</div><div class="muted-note">${overdueDocs.length} vadesi geçmiş</div></div></div>`;
     if(!state.accounts.some(a=>a.id===state.selectedAccountId)) state.selectedAccountId=state.accounts[0]?.id||"kasa";
     byId("accountCards").innerHTML=state.accounts.map(a=>{
       const rows=tx.filter(t=>t.accountId===a.id);
@@ -1725,9 +1737,51 @@
       <div class="section"><h2 class="section-title">Çalışan Kartları</h2>${employees.length?`${sortSelectHtml(employeeSort,`setCashSort('calisanlar','cards',this.value)`)}<table><thead><tr><th>Çalışan</th><th>Durum</th><th>Not</th><th class="text-right">Aylık Net Maaş</th><th>İşlem</th></tr></thead><tbody>${employees.map(e=>`<tr><td>${esc(employeeName(e))}</td><td><span class="tag ${/pasif/i.test(e.status)?"amber":"green"}">${esc(e.status||"Aktif")}</span></td><td>${esc(e.note||"")}</td><td class="text-right money">${money(employeeMonthlySalary(e))}</td><td><button class="btn btn-red" onclick="deleteCashRecord('calisanlar','${e.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz çalışan kartı yok.</div>`}</div>
       <div class="section"><h2 class="section-title">Maaş Hareketleri</h2>${txns.length?`${sortSelectHtml(salarySort,`setCashSort('calisanlar','salary',this.value)`)}<table><thead><tr><th>Dönem</th><th>Tarih</th><th>Çalışan</th><th>İşlem</th><th>Kaynak</th><th>Durum</th><th>Not</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${txns.map(r=>`<tr><td>${esc(r.period||"-")}</td><td>${esc(r.date)}</td><td>${esc(employeeName(r))}</td><td><span class="tag ${r.payrollType==="Ödeme"?"green":"amber"}">${esc(r.payrollType)}</span></td><td>${esc(r.account||"Bordro")}</td><td>${esc(r.status||"")}</td><td>${esc(r.note||"")}</td><td class="text-right money">${money(r.amount)}</td><td><button class="btn btn-red" onclick="deleteCashRecord('calisanlar','${r.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz maaş hareketi yok.</div>`}</div>`;
   }
+  function renderNegotiableModule(mod){
+    const el=byId("cashModule-"+mod.key); if(!el) return;
+    const rows=sortRecords(cashModuleRows(mod.key),cashSortKey(mod.key,"rows"));
+    const isCheque=mod.key==="cekler";
+    const openRows=rows.filter(r=>!/(tahsil edildi|ciro edildi|iptal)/i.test(String(r.status||"")));
+    const overdue=openRows.filter(r=>r.dueDate && r.dueDate<today());
+    const openTotal=openRows.reduce((s,r)=>s+num(r.amount),0);
+    const overdueTotal=overdue.reduce((s,r)=>s+num(r.amount),0);
+    const cariOptions=state.cariler.filter(x=>!x.deleted && String(x.status||"Aktif").toLocaleUpperCase("tr-TR")==="AKTİF").sort((a,b)=>a.name.localeCompare(b.name,"tr")).map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("");
+    el.innerHTML=`
+      <div class="topbar"><div class="page-head"><h1>${esc(mod.title)}</h1><p>${isCheque?"Alınan/verilen çekler":"Alınan/verilen senetler"}; belge no, vade, cari, banka ve durumla takip edilir. Tahsil/ödeme finans hesabına onay sonrası işlenir.</p></div><div class="btn-row"><button class="btn btn-blue" onclick="exportCashModuleCsv('${mod.key}')">CSV</button></div></div>
+      <div class="cards">
+        <div class="card"><div class="card-label">Açık Kayıt</div><div class="card-value">${openRows.length}</div></div>
+        <div class="card"><div class="card-label">Açık Tutar</div><div class="card-value">${money(openTotal)}</div></div>
+        <div class="card"><div class="card-label">Vadesi Geçen</div><div class="card-value">${overdue.length}</div><p class="muted-note">${money(overdueTotal)}</p></div>
+        <div class="card"><div class="card-label">Toplam Kayıt</div><div class="card-value">${rows.length}</div></div>
+      </div>
+      <div class="section"><h2 class="section-title">Yeni ${isCheque?"Çek":"Senet"} Kaydı</h2>
+        <div class="grid-4">
+          <div class="field"><label>Kayıt Tarihi</label><input id="${mod.key}-date" type="date" value="${today()}" /></div>
+          <div class="field"><label>Vade Tarihi</label><input id="${mod.key}-due" type="date" /></div>
+          <div class="field"><label>Belge No</label><input id="${mod.key}-docno" /></div>
+          <div class="field"><label>Tür</label><select id="${mod.key}-direction"><option>Alınan</option><option>Verilen</option></select></div>
+        </div>
+        <div class="grid-4">
+          <div class="field"><label>${esc(mod.party)}</label><input id="${mod.key}-party" /></div>
+          <div class="field"><label>Cari</label><select id="${mod.key}-cari"><option value="">Cari seçilmedi</option>${cariOptions}</select></div>
+          <div class="field"><label>Banka / Şube</label><input id="${mod.key}-bank" /></div>
+          <div class="field"><label>${esc(mod.amount)}</label><input id="${mod.key}-amount" type="number" step="0.01" /></div>
+        </div>
+        <div class="grid-3">
+          <div class="field"><label>Durum</label><select id="${mod.key}-status">${mod.statuses.map(s=>`<option>${esc(s)}</option>`).join("")}</select></div>
+          <div class="field"><label>Kaynak</label><select id="${mod.key}-source"><option>Manuel</option><option>Banka</option><option>Mail</option><option>Belge</option><option>Devir</option></select></div>
+          <div class="field"><label>Not</label><input id="${mod.key}-note" placeholder="Açıklama / teslim / tahsil notu" /></div>
+        </div>
+        <button class="btn btn-green" onclick="addCashRecord('${mod.key}')">Kaydı Hazırla</button>
+      </div>
+      <div class="section"><h2 class="section-title">${esc(mod.title)} Kayıtları</h2>
+        ${rows.length?`<table><thead><tr><th>Kayıt</th><th>Vade</th><th>Belge No</th><th>Tür</th><th>Muhatap</th><th>Cari</th><th>Banka</th><th>Durum</th><th>Kaynak</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>{const cari=state.cariler.find(c=>c.id===r.cariId);const late=r.dueDate&&r.dueDate<today()&&!/(tahsil edildi|ciro edildi|iptal)/i.test(String(r.status||""));return `<tr><td>${esc(r.date||"-")}</td><td>${late?'<span class="tag red">':''}${esc(r.dueDate||"-")}${late?'</span>':''}</td><td>${esc(r.docNo||"-")}</td><td>${esc(r.direction||"-")}</td><td>${esc(r.party||"-")}</td><td>${esc(cari?.name||"-")}</td><td>${esc(r.bank||"-")}</td><td><span class="tag ${/(tahsil edildi|ciro edildi)/i.test(String(r.status||""))?"green":late?"red":"amber"}">${esc(r.status||"-")}</span></td><td>${esc(r.source||"-")}</td><td class="text-right money">${money(r.amount)}</td><td><button class="btn btn-red" onclick="deleteCashRecord('${mod.key}','${r.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Henüz ${isCheque?"çek":"senet"} kaydı yok.</div>`}
+      </div>`;
+  }
   function renderCashModule(mod){
     const el=byId("cashModule-"+mod.key); if(!el) return;
     if(mod.key==="calisanlar") return renderEmployeeModule(mod);
+    if(mod.key==="cekler"||mod.key==="senetler") return renderNegotiableModule(mod);
     const sort=cashSortKey(mod.key,"rows");
     const rows=sortRecords(cashModuleRows(mod.key),sort);
     const total=rows.reduce((s,r)=>s+num(r.amount),0);
@@ -1761,7 +1815,18 @@
   }
   window.addCashRecord=function(key){
     const mod=cashModules.find(m=>m.key===key); if(!mod)return;
+    const negotiable=key==="cekler"||key==="senetler";
     const row={id:uid("CASH"),date:byId(key+"-date").value||today(),party:byId(key+"-party").value.trim(),amount:num(byId(key+"-amount").value),status:byId(key+"-status").value,note:byId(key+"-note").value.trim(),createdAt:new Date().toLocaleString("tr-TR")};
+    if(negotiable){
+      row.dueDate=byId(key+"-due")?.value||"";
+      row.docNo=(byId(key+"-docno")?.value||"").trim();
+      row.direction=byId(key+"-direction")?.value||"Alınan";
+      row.cariId=byId(key+"-cari")?.value||"";
+      row.bank=(byId(key+"-bank")?.value||"").trim();
+      row.source=byId(key+"-source")?.value||"Manuel";
+      row.postedToFinance=false;
+      row.approvalRequired=true;
+    }
     if(!row.party) return notify("Kayıt adı boş olamaz.");
     if(!state.cashRecords[key]) state.cashRecords[key]=[];
     state.cashRecords[key].unshift(row);
@@ -1817,7 +1882,7 @@
   };
   window.exportCashModuleCsv=function(key){
     const mod=cashModules.find(m=>m.key===key); if(!mod)return;
-    const data=cashModuleRows(key).map(r=>({"Tarih":r.date,"Dönem":r.period||"","Kayıt":r.party,"Tür":r.recordType||"kayıt","İşlem":r.payrollType||"","Kaynak":r.account||"","Durum":r.status,"Not":r.note,"Tutar":num(r.amount)}));
+    const data=cashModuleRows(key).map(r=>({"Tarih":r.date,"Vade":r.dueDate||"","Belge No":r.docNo||"","Yön":r.direction||"","Banka":r.bank||"","Kaynak":r.source||"","Dönem":r.period||"","Kayıt":r.party,"Tür":r.recordType||"kayıt","İşlem":r.payrollType||"","Kaynak":r.account||"","Durum":r.status,"Not":r.note,"Tutar":num(r.amount)}));
     downloadBlob(slug(mod.title)+".csv", toCsv(data), "text/csv;charset=utf-8");
   };
 
