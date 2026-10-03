@@ -164,7 +164,7 @@
       </div>
       <div class="erp-module-right">
         <span id="connState">Hazır</span>
-        <span class="tag" style="background:#0f172a;color:#fff;border:0">CANLI • 02.10.2026</span>
+        <span class="tag" style="background:#0f172a;color:#fff;border:0">CANLI • 03.10.2026</span>
         <button class="btn btn-purple" onclick="toggleAuditPanel()">İşlem İzi</button>
         <button class="btn btn-red" onclick="logout()">Çıkış</button>
       </div>
@@ -176,7 +176,7 @@
         <div class="btn-row"><button class="btn btn-blue" onclick="forceReloadCariler()">Carileri Yeniden Yükle</button><button class="btn btn-soft" onclick="clearCariCache()">Cari Önbelleğini Temizle</button><button class="btn btn-green" onclick="downloadState()">Yedek İndir</button></div>
       </div>
       <div class="cards">
-        <div class="card"><div class="card-label">Cari Sayısı</div><div id="kpiCari" class="card-value">0</div></div>
+        <div class="card"><div class="card-label">Aktif / Pasif Cari</div><div id="kpiCari" class="card-value">0 / 0</div></div>
         <div class="card"><div class="card-label">Tahakkuk Eden Gelir</div><div id="kpiDebit" class="card-value">0,00 TL</div></div>
         <div class="card"><div class="card-label">Tahsil Edilen Gelir</div><div id="kpiCredit" class="card-value">0,00 TL</div></div>
         <div class="card"><div class="card-label">Net Bakiye</div><div id="kpiBalance" class="card-value">0,00 TL</div></div>
@@ -204,7 +204,7 @@
           <div class="toolbar">
             <input id="cariSearch" class="search-input" placeholder="Cari adı, VKN / kod ara..." oninput="renderCariList()" />
             <select id="balanceFilter" class="select-input" onchange="renderCariList()">
-              <option value="all">Tüm Bakiyeler</option><option value="borc">Bakiye B</option><option value="alacak">Bakiye A</option><option value="zero">Sıfır</option><option value="deleted">Silinmişler</option>
+              <option value="all">Tüm Cariler</option><option value="active">Aktifler</option><option value="passive">Pasifler</option><option value="special">Özel</option><option value="borc">Bakiye B</option><option value="alacak">Bakiye A</option><option value="zero">Sıfır</option><option value="deleted">Silinmişler</option>
             </select>
             <select id="sortBy" class="select-input" onchange="renderCariList()">
               <option value="promiseDue">Ödeme sözü tarihi</option><option value="promiseAmount">Ödeme sözü tutarı</option><option value="balanceDesc">Bakiye yüksek</option><option value="nameAsc">Ada göre</option><option value="lastDateDesc">Son işleme göre</option><option value="feeDesc">Ücret yüksek</option>
@@ -1090,19 +1090,21 @@
   };
 
   function renderDashboard(){
-    const activeCariler = state.cariler.filter(c=>!c.deleted);
+    const activeCariler = state.cariler.filter(c=>!c.deleted && String(c.status||'Aktif').toLocaleUpperCase('tr-TR')==='AKTİF');
+    const passiveCariler = state.cariler.filter(c=>!c.deleted && String(c.status||'').toLocaleUpperCase('tr-TR').includes('PASİF'));
+    const specialCariler = state.cariler.filter(c=>!c.deleted && String(c.status||'').toLocaleUpperCase('tr-TR').includes('ÖZEL'));
     const rows = activeCariler.map(c=>({c,...totals(c)}));
     const debit = rows.reduce((s,x)=>s+x.debit,0), credit=rows.reduce((s,x)=>s+x.credit,0), bal=debit-credit;
-    byId("kpiCari").textContent = activeCariler.length;
+    byId("kpiCari").textContent = activeCariler.length+" / "+passiveCariler.length;
     byId("kpiDebit").textContent = money(debit);
     byId("kpiCredit").textContent = money(credit);
     byId("kpiBalance").textContent = balanceLabel(bal);
-    byId("sideConn").textContent = state.cariler.length ? `${state.dataSource} • ${activeCariler.length} aktif cari` : (state.loadError ? "Hata: "+state.loadError : "Yükleniyor...");
-    byId("connState").textContent = activeCariler.length ? `${activeCariler.length} cari yüklü` : "Cari bekleniyor";
+    byId("sideConn").textContent = state.cariler.length ? `${state.dataSource} • ${activeCariler.length} aktif • ${passiveCariler.length} pasif` : (state.loadError ? "Hata: "+state.loadError : "Yükleniyor...");
+    byId("connState").textContent = state.cariler.length ? `${state.cariler.length} cari yüklü` : "Cari bekleniyor";
     const top = rows.sort((a,b)=>Math.abs(b.bal)-Math.abs(a.bal)).slice(0,8);
     byId("dashboardTopCari").innerHTML = top.length ? `<table><thead><tr><th>Cari</th><th>Son İşlem</th><th class="text-right">Bakiye</th></tr></thead><tbody>${top.map(x=>`<tr><td>${esc(x.c.name)}</td><td>${esc(x.last||"-")}</td><td class="text-right money">${balanceLabel(x.bal)}</td></tr>`).join("")}</tbody></table>` : `<div class="empty">Cari veri yok.<br>${esc(state.loadError||"Yükleniyor...")}</div>`;
     const pb=promiseBudget();
-    byId("systemStatus").innerHTML = `<strong>Veri kaynağı:</strong> ${esc(state.dataSource)}<br><strong>Aktif cari:</strong> ${activeCariler.length}<br><strong>Toplam hareket:</strong> ${activeCariler.reduce((s,c)=>s+allTxns(c).length,0)}<br><strong>Beklenen ödeme sözleri:</strong> Bu hafta ${money(pb.week)} · Bu ay ${money(pb.month)} · Bu yıl ${money(pb.year)}${pb.overdue>0?`<br><span style="color:#b91c1c"><strong>Geciken ödeme sözü:</strong> ${money(pb.overdue)}</span>`:""}<br><strong>Kaynak kolonu:</strong> Aktif<br><strong>Bakiye standardı:</strong> Bakiye B / Bakiye A<br><strong>Moka United:</strong> Ayrı hesap aktif<br><strong>Otomasyon:</strong> Riskli işler varsayılan KAPALI${state.loadError?`<br><span style="color:#b91c1c"><strong>Hata:</strong> ${esc(state.loadError)}</span>`:""}`;
+    byId("systemStatus").innerHTML = `<strong>Veri kaynağı:</strong> ${esc(state.dataSource)}<br><strong>Aktif cari:</strong> ${activeCariler.length}<br><strong>Pasif cari:</strong> ${passiveCariler.length}<br><strong>Özel:</strong> ${specialCariler.length}<br><strong>Toplam cari:</strong> ${state.cariler.filter(c=>!c.deleted).length}<br><strong>Toplam hareket:</strong> ${activeCariler.reduce((s,c)=>s+allTxns(c).length,0)}<br><strong>Beklenen ödeme sözleri:</strong> Bu hafta ${money(pb.week)} · Bu ay ${money(pb.month)} · Bu yıl ${money(pb.year)}${pb.overdue>0?`<br><span style="color:#b91c1c"><strong>Geciken ödeme sözü:</strong> ${money(pb.overdue)}</span>`:""}<br><strong>Kaynak kolonu:</strong> Aktif<br><strong>Bakiye standardı:</strong> Bakiye B / Bakiye A<br><strong>Moka United:</strong> Ayrı hesap aktif<br><strong>Otomasyon:</strong> Riskli işler varsayılan KAPALI${state.loadError?`<br><span style="color:#b91c1c"><strong>Hata:</strong> ${esc(state.loadError)}</span>`:""}`;
     scheduleDashboardHeavyRender();
   }
 
@@ -1160,6 +1162,9 @@
     });
     if(f!=="deleted") rows = rows.filter(x=>!x.c.deleted);
     if(f==="deleted") rows = rows.filter(x=>x.c.deleted);
+    if(f==="active") rows=rows.filter(x=>String(x.c.status||"Aktif").toLocaleUpperCase("tr-TR")==="AKTİF");
+    if(f==="passive") rows=rows.filter(x=>String(x.c.status||"").toLocaleUpperCase("tr-TR").includes("PASİF"));
+    if(f==="special") rows=rows.filter(x=>String(x.c.status||"").toLocaleUpperCase("tr-TR").includes("ÖZEL"));
     if(q) rows = rows.filter(x=>(x.c.name+" "+x.c.code+" "+x.c.phone+" "+x.c.sourceFile).toLowerCase().includes(q));
     if(f==="borc") rows=rows.filter(x=>x.bal>0.01);
     if(f==="alacak") rows=rows.filter(x=>x.bal<-0.01);
@@ -1176,7 +1181,7 @@
         <div class="cari-list-balance">${balanceLabel(x.bal)}</div>
       </div>
       <div class="cari-list-subline">
-        <span class="tag ${/pasif/i.test(String(x.c.status||""))?"gray":x.c.deleted?"red":"green"}">${esc(x.c.deleted?"Silinmiş":(x.c.status||"Aktif"))}</span>
+        <span class="tag ${/pasif/i.test(String(x.c.status||""))?"gray":/özel/i.test(String(x.c.status||""))?"amber":x.c.deleted?"red":"green"}">${esc(x.c.deleted?"Silinmiş":(x.c.status||"Aktif"))}</span>
         <span>${esc(x.c.code||"-")}</span>
         <span>${x.count} hareket</span>
       </div>
@@ -4524,7 +4529,7 @@
 })();
 </script>
 
-<script src="alkam-cariler-data.js?v=20261002-live79"></script>
-<script src="istasyon-v13-readiness.js?v=20261002-live79" defer></script>
+<script src="alkam-cariler-data.js?v=20261003-live144"></script>
+<script src="istasyon-v13-readiness.js?v=20261003-live144" defer></script>
 </body>
 </html>
