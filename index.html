@@ -1775,7 +1775,7 @@
         <button class="btn btn-green" onclick="addCashRecord('${mod.key}')">Kaydı Hazırla</button>
       </div>
       <div class="section"><h2 class="section-title">${esc(mod.title)} Kayıtları</h2>
-        ${rows.length?`<table><thead><tr><th>Kayıt</th><th>Vade</th><th>Belge No</th><th>Tür</th><th>Muhatap</th><th>Cari</th><th>Banka</th><th>Durum</th><th>Kaynak</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>{const cari=state.cariler.find(c=>c.id===r.cariId);const late=r.dueDate&&r.dueDate<today()&&!/(tahsil edildi|ciro edildi|iptal)/i.test(String(r.status||""));return `<tr><td>${esc(r.date||"-")}</td><td>${late?'<span class="tag red">':''}${esc(r.dueDate||"-")}${late?'</span>':''}</td><td>${esc(r.docNo||"-")}</td><td>${esc(r.direction||"-")}</td><td>${esc(r.party||"-")}</td><td>${esc(cari?.name||"-")}</td><td>${esc(r.bank||"-")}</td><td><span class="tag ${/(tahsil edildi|ciro edildi)/i.test(String(r.status||""))?"green":late?"red":"amber"}">${esc(r.status||"-")}</span></td><td>${esc(r.source||"-")}</td><td class="text-right money">${money(r.amount)}</td><td><button class="btn btn-red" onclick="deleteCashRecord('${mod.key}','${r.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Henüz ${isCheque?"çek":"senet"} kaydı yok.</div>`}
+        ${rows.length?`<table><thead><tr><th>Kayıt</th><th>Vade</th><th>Belge No</th><th>Tür</th><th>Muhatap</th><th>Cari</th><th>Banka</th><th>Durum</th><th>Kaynak</th><th class="text-right">Tutar</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>{const cari=state.cariler.find(c=>c.id===r.cariId);const late=r.dueDate&&r.dueDate<today()&&!/(tahsil edildi|ciro edildi|iptal)/i.test(String(r.status||""));return `<tr><td>${esc(r.date||"-")}</td><td>${late?'<span class="tag red">':''}${esc(r.dueDate||"-")}${late?'</span>':''}</td><td>${esc(r.docNo||"-")}</td><td>${esc(r.direction||"-")}</td><td>${esc(r.party||"-")}</td><td>${esc(cari?.name||"-")}</td><td>${esc(r.bank||"-")}</td><td><select class="select-input" style="min-width:130px" onchange="updateNegotiableStatus('${mod.key}','${r.id}',this.value)">${mod.statuses.map(s=>`<option ${s===r.status?"selected":""}>${esc(s)}</option>`).join("")}</select></td><td>${esc(r.source||"-")}</td><td class="text-right money">${money(r.amount)}</td><td><button class="btn btn-red" onclick="deleteCashRecord('${mod.key}','${r.id}')">Sil</button></td></tr>`}).join("")}</tbody></table>`:`<div class="empty">Henüz ${isCheque?"çek":"senet"} kaydı yok.</div>`}
       </div>`;
   }
   function renderCashModule(mod){
@@ -1813,6 +1813,16 @@
         ${rows.length?`${sortSelectHtml(sort,`setCashSort('${mod.key}','rows',this.value)`)}<table><thead><tr><th>Tarih</th><th>${esc(mod.party)}</th><th>Durum</th><th>Not</th><th class="text-right">${esc(mod.amount)}</th><th>İşlem</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.date)}</td><td>${esc(r.party)}</td><td><span class="tag ${/(ödendi|tamamlandı|kapandı|tahsil edildi)/i.test(r.status)?"green":"amber"}">${esc(r.status)}</span></td><td>${esc(r.note||"")}</td><td class="text-right money">${money(r.amount)}</td><td><button class="btn btn-red" onclick="deleteCashRecord('${mod.key}','${r.id}')">Sil</button></td></tr>`).join("")}</tbody></table>`:`<div class="empty">Henüz kayıt yok.</div>`}
       </div>`;
   }
+  window.updateNegotiableStatus=function(key,id,status){
+    if(!(key==="cekler"||key==="senetler")) return;
+    const row=cashModuleRows(key).find(r=>r.id===id); if(!row) return;
+    const before=row.status||"";
+    row.status=status;
+    row.updatedAt=new Date().toLocaleString("tr-TR");
+    writeJson(LS.cashModules,state.cashRecords);
+    logAudit(`${key==="cekler"?"Çek":"Senet"} durumu güncellendi`, `${row.party||row.docNo||id} · ${before} -> ${status}`);
+    renderCashModule(cashModules.find(m=>m.key===key));
+  };
   window.addCashRecord=function(key){
     const mod=cashModules.find(m=>m.key===key); if(!mod)return;
     const negotiable=key==="cekler"||key==="senetler";
@@ -1882,7 +1892,7 @@
   };
   window.exportCashModuleCsv=function(key){
     const mod=cashModules.find(m=>m.key===key); if(!mod)return;
-    const data=cashModuleRows(key).map(r=>({"Tarih":r.date,"Vade":r.dueDate||"","Belge No":r.docNo||"","Yön":r.direction||"","Banka":r.bank||"","Kaynak":r.source||"","Dönem":r.period||"","Kayıt":r.party,"Tür":r.recordType||"kayıt","İşlem":r.payrollType||"","Kaynak":r.account||"","Durum":r.status,"Not":r.note,"Tutar":num(r.amount)}));
+    const data=cashModuleRows(key).map(r=>({"Tarih":r.date,"Vade":r.dueDate||"","Belge No":r.docNo||"","Yön":r.direction||"","Banka":r.bank||"","Kaynak":r.source||"","Dönem":r.period||"","Kayıt":r.party,"Tür":r.recordType||"kayıt","İşlem":r.payrollType||"","Hesap":r.account||"","Durum":r.status,"Not":r.note,"Tutar":num(r.amount)}));
     downloadBlob(slug(mod.title)+".csv", toCsv(data), "text/csv;charset=utf-8");
   };
 
