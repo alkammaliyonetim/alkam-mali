@@ -202,7 +202,7 @@
       <div class="grid-2">
         <div class="section detail-sticky">
           <div class="toolbar">
-            <input id="cariSearch" class="search-input" placeholder="Cari ara..." oninput="renderCariList()" />
+            <input id="cariSearch" class="search-input" placeholder="Cari adı, VKN / kod ara..." oninput="renderCariList()" />
             <select id="balanceFilter" class="select-input" onchange="renderCariList()">
               <option value="all">Tüm Bakiyeler</option><option value="borc">Bakiye B</option><option value="alacak">Bakiye A</option><option value="zero">Sıfır</option><option value="deleted">Silinmişler</option>
             </select>
@@ -1170,7 +1170,21 @@
     else if(sort==="lastDateDesc") rows.sort((a,b)=>String(b.last).localeCompare(String(a.last)));
     else if(sort==="feeDesc") rows.sort((a,b)=>num(b.c.monthlyFee)-num(a.c.monthlyFee));
     else rows.sort((a,b)=>Math.abs(b.bal)-Math.abs(a.bal));
-    byId("cariList").innerHTML = rows.length ? rows.map(x=>{const promises=paymentPromisesForCari(x.c.id);const open=promises.filter(p=>!isTaskDone(p));const done=promises.filter(p=>isTaskDone(p));const due=open.map(p=>isoDate(p.dueDate)).filter(Boolean).sort()[0]||"";const overdue=!!(due&&due<today());const cls=open.length?(overdue?" promise-overdue":" promise-open"):(done.length?" promise-done":"");return `<div class="list-item${cls} ${state.selectedCariId===x.c.id?"active":""} ${x.c.deleted?"deleted":""}" onclick="selectCari('${String(x.c.id).replaceAll("'","")}')"><div><div class="list-title">${esc(x.c.name)}</div><div class="list-meta">${esc(x.c.code||"-")} • ${esc(x.c.type||"Cari")}<br>Son: ${esc(x.last||"-")} • ${x.count} hareket<br><strong>${balanceLabel(x.bal)}</strong> ${open.length?`<br><span class="tag ${overdue?"red":"amber"}">${overdue?"Geciken ödeme sözü":"Ödeme sözü"}: ${open.length} • ${money(open.reduce((s,p)=>s+num(p.amount),0))}${due?` • ${esc(due)}`:""}</span>`:""} ${!open.length&&done.length?`<br><span class="tag green">Tamamlanan ödeme sözü: ${done.length} • ${money(done.reduce((s,p)=>s+num(p.amount),0))}</span>`:""} ${x.c.deleted?'<span class="tag red">SİLİNMİŞ</span>':""}</div></div></div>`}).join("") : `<div class="empty">Cari bulunamadı.</div>`;
+    byId("cariList").innerHTML = rows.length ? rows.map(x=>{const promises=paymentPromisesForCari(x.c.id);const open=promises.filter(p=>!isTaskDone(p));const done=promises.filter(p=>isTaskDone(p));const due=open.map(p=>isoDate(p.dueDate)).filter(Boolean).sort()[0]||"";const overdue=!!(due&&due<today());const cls=open.length?(overdue?" promise-overdue":" promise-open"):(done.length?" promise-done":"");return `<div class="list-item${cls} ${state.selectedCariId===x.c.id?"active":""} ${x.c.deleted?"deleted":""}" onclick="selectCari('${String(x.c.id).replaceAll("'","")}')">
+      <div class="cari-list-head">
+        <div class="list-title">${esc(x.c.name)}</div>
+        <div class="cari-list-balance">${balanceLabel(x.bal)}</div>
+      </div>
+      <div class="cari-list-subline">
+        <span class="tag ${/pasif/i.test(String(x.c.status||""))?"gray":x.c.deleted?"red":"green"}">${esc(x.c.deleted?"Silinmiş":(x.c.status||"Aktif"))}</span>
+        <span>${esc(x.c.code||"-")}</span>
+        <span>${x.count} hareket</span>
+      </div>
+      <div class="list-meta">Son işlem: ${esc(x.last||"-")}
+        ${open.length?`<br><span class="tag ${overdue?"red":"amber"}">${overdue?"Geciken ödeme sözü":"Ödeme sözü"}: ${open.length} • ${money(open.reduce((s,p)=>s+num(p.amount),0))}${due?` • ${esc(due)}`:""}</span>`:""}
+        ${!open.length&&done.length?`<br><span class="tag green">Tamamlanan söz: ${done.length} • ${money(done.reduce((s,p)=>s+num(p.amount),0))}</span>`:""}
+      </div>
+    </div>`}).join("") : `<div class="empty">Cari bulunamadı.</div>`;
     if(!state.selectedCariId && rows[0]) state.selectedCariId = rows[0].c.id;
   };
 
