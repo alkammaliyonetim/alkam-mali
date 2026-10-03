@@ -55,7 +55,7 @@ async function refresh(){
   var cariler=Array.isArray(results[0])?results[0]:[];
   var status=results[1]&&typeof results[1]==='object'?results[1]:{};
   var local=localState();
-  var active=cariler.filter(function(c){return String(c.status||'Aktif').toLocaleUpperCase('tr-TR').indexOf('PAS')<0});
+  var active=cariler.filter(function(c){return String(c.status||'Aktif').toLocaleUpperCase('tr-TR')==='AKTİF'});
   var activeCount=active.length;
   var passiveCount=cariler.filter(function(c){return String(c.status||'').toLocaleUpperCase('tr-TR').indexOf('PAS')>=0}).length;
   var specialCount=cariler.filter(function(c){return String(c.status||'').toLocaleUpperCase('tr-TR').indexOf('ÖZEL')>=0}).length;
