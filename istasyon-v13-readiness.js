@@ -3,10 +3,12 @@
 if(window.__ISTASYON_V13_READINESS__) return;
 window.__ISTASYON_V13_READINESS__=true;
 
-var VERSION='İstasyON v13 Readiness 1.1 · 02.10.2026';
-var EXPECTED_ACTIVE=79;
+var VERSION='İstasyON v13 Readiness 1.2 · 03.10.2026';
+var EXPECTED_ACTIVE=77;
+var EXPECTED_PASSIVE=66;
+var EXPECTED_SPECIAL=1;
 var EXPECTED_OPENING=3741583.88;
-var CARILER_URL='/alkam-cariler-79-istasyon-canli-02102026.json';
+var CARILER_URL='/alkam-cariler-144-istasyon-canli-03102026.json';
 var STATUS_URL='/api/istasyon/status';
 
 function q(s,r){return (r||document).querySelector(s)}
@@ -33,7 +35,7 @@ function localState(){
 function style(){
   if(q('#istasyonV13Style'))return;
   var s=document.createElement('style');s.id='istasyonV13Style';
-  s.textContent='.is13{border:1px solid #bfdbfe;background:linear-gradient(180deg,#f8fbff,#fff);border-radius:18px;padding:14px;margin:0 0 16px;box-shadow:0 12px 28px rgba(15,23,42,.07)}.is13h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.is13h h2{margin:0;font-size:20px;font-weight:950;color:#0f172a}.is13h p{margin:4px 0 0;color:#64748b;font-size:11.5px;font-weight:800}.is13badge{border-radius:999px;padding:6px 9px;font-size:10px;font-weight:950;border:1px solid #a7f3d0;background:#ecfdf5;color:#047857}.is13grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:12px}.is13card{border:1px solid #dbeafe;background:#fff;border-radius:12px;padding:10px;min-width:0}.is13card b{display:block;font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.05em}.is13card strong{display:block;margin-top:5px;font-size:18px;font-weight:950;color:#0f172a;overflow-wrap:anywhere}.is13card.warn{border-color:#fed7aa;background:#fff7ed}.is13card.bad{border-color:#fecaca;background:#fff1f2}.is13card.good{border-color:#a7f3d0;background:#f0fdf4}.is13row{display:grid;grid-template-columns:1.1fr 1fr;gap:10px;margin-top:10px}.is13box{border:1px solid #e2e8f0;border-radius:12px;padding:10px;background:#fff;font-size:11px;font-weight:800;color:#475569;line-height:1.5}.is13box strong{color:#0f172a}.is13actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.is13actions button{border:0;border-radius:9px;padding:7px 10px;font-weight:950;background:#1769e8;color:#fff;cursor:pointer}.is13actions button.secondary{background:#e8eef9;color:#0f172a}@media(max-width:1100px){.is13grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.is13grid,.is13row{grid-template-columns:1fr 1fr}}';
+  s.textContent='.is13{border:1px solid #bfdbfe;background:linear-gradient(180deg,#f8fbff,#fff);border-radius:18px;padding:14px;margin:0 0 16px;box-shadow:0 12px 28px rgba(15,23,42,.07)}.is13h{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.is13h h2{margin:0;font-size:20px;font-weight:950;color:#0f172a}.is13h p{margin:4px 0 0;color:#64748b;font-size:11.5px;font-weight:800}.is13badge{border-radius:999px;padding:6px 9px;font-size:10px;font-weight:950;border:1px solid #a7f3d0;background:#ecfdf5;color:#047857}.is13grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin-top:12px}.is13card{border:1px solid #dbeafe;background:#fff;border-radius:12px;padding:10px;min-width:0}.is13card b{display:block;font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:.05em}.is13card strong{display:block;margin-top:5px;font-size:18px;font-weight:950;color:#0f172a;overflow-wrap:anywhere}.is13card.warn{border-color:#fed7aa;background:#fff7ed}.is13card.bad{border-color:#fecaca;background:#fff1f2}.is13card.good{border-color:#a7f3d0;background:#f0fdf4}.is13row{display:grid;grid-template-columns:1.1fr 1fr;gap:10px;margin-top:10px}.is13box{border:1px solid #e2e8f0;border-radius:12px;padding:10px;background:#fff;font-size:11px;font-weight:800;color:#475569;line-height:1.5}.is13box strong{color:#0f172a}.is13actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.is13actions button{border:0;border-radius:9px;padding:7px 10px;font-weight:950;background:#1769e8;color:#fff;cursor:pointer}.is13actions button.secondary{background:#e8eef9;color:#0f172a}@media(max-width:1100px){.is13grid{grid-template-columns:repeat(3,1fr)}}@media(max-width:700px){.is13grid,.is13row{grid-template-columns:1fr 1fr}}';
   document.head.appendChild(s);
 }
 function host(){
@@ -55,14 +57,17 @@ async function refresh(){
   var local=localState();
   var active=cariler.filter(function(c){return String(c.status||'Aktif').toLocaleUpperCase('tr-TR').indexOf('PAS')<0});
   var activeCount=active.length;
+  var passiveCount=cariler.filter(function(c){return String(c.status||'').toLocaleUpperCase('tr-TR').indexOf('PAS')>=0}).length;
+  var specialCount=cariler.filter(function(c){return String(c.status||'').toLocaleUpperCase('tr-TR').indexOf('ÖZEL')>=0}).length;
   var currentJsonBalance=active.reduce(function(s,c){return s+Number(c.signedBalance!=null?c.signedBalance:c.balance||0)},0);
-  var countOk=activeCount===EXPECTED_ACTIVE;
+  var countOk=activeCount===EXPECTED_ACTIVE && passiveCount===EXPECTED_PASSIVE && specialCount===EXPECTED_SPECIAL;
   var bank=status.bankDocuments||0, moka=status.mokaDocuments||0, pending=status.pendingMail||0;
   var latest=status.latestBankReceivedAt||'-';
   var config=status.gmailConfigured===true?'Hazır':(status.gmailConfigured===false?'Eksik':'Kontrol');
   body.innerHTML=
     '<div class="is13grid">'+
-      '<div class="is13card '+(countOk?'good':'bad')+'"><b>Aktif Cari</b><strong>'+activeCount+' / '+EXPECTED_ACTIVE+'</strong></div>'+
+      '<div class="is13card '+(activeCount===EXPECTED_ACTIVE?'good':'bad')+'"><b>Aktif Cari</b><strong>'+activeCount+'</strong></div>'+ 
+      '<div class="is13card '+(passiveCount===EXPECTED_PASSIVE?'good':'bad')+'"><b>Pasif Cari</b><strong>'+passiveCount+'</strong></div>'+
       '<div class="is13card good"><b>Kanonik Açılış</b><strong>'+tl(EXPECTED_OPENING)+'</strong></div>'+
       '<div class="is13card"><b>Gmail Kuyruk</b><strong>'+pending+'</strong></div>'+
       '<div class="is13card '+(bank?'warn':'')+'"><b>Banka Belgesi</b><strong>'+bank+'</strong></div>'+
@@ -70,7 +75,7 @@ async function refresh(){
       '<div class="is13card good"><b>Kesin Yazma</b><strong>KAPALI</strong></div>'+
     '</div>'+
     '<div class="is13row">'+
-      '<div class="is13box"><strong>Kaynak kontrolü</strong><br>'+EXPECTED_ACTIVE+' aktif cari: '+(countOk?'doğrulandı':'fark var')+
+      '<div class="is13box"><strong>Kaynak kontrolü</strong><br>'+activeCount+' aktif + '+passiveCount+' pasif + '+specialCount+' özel = '+cariler.length+' cari'+(countOk?' · doğrulandı':' · fark var')+
       '<br>Kanonik açılış kaynağı: liste bakiyesi + PDF mutabakatı = '+tl(EXPECTED_OPENING)+
       '<br>02.10 canlı cari senkronu bakiye: '+tl(currentJsonBalance)+' — İstasyON CARI_HAREKETLERI kaynağından okunur.</div>'+
       '<div class="is13box"><strong>Otomasyon sağlığı</strong><br>Gmail aktarım: '+esc(config)+
@@ -82,7 +87,7 @@ async function refresh(){
   var b=q('#istasyonV13Refresh');if(b)b.onclick=refresh;
   var c=q('#istasyonV13Cari');if(c)c.onclick=function(){try{window.switchTab&&window.switchTab('cariler')}catch(e){}};
   var a=q('#istasyonV13Approval');if(a)a.onclick=function(){try{window.switchTab&&window.switchTab('onay')}catch(e){}};
-  window.__ISTASYON_V13_LAST={version:VERSION,activeCount:activeCount,expectedActive:EXPECTED_ACTIVE,expectedOpening:EXPECTED_OPENING,currentJsonBalance:currentJsonBalance,status:status,local:local,time:new Date().toISOString()};
+  window.__ISTASYON_V13_LAST={version:VERSION,activeCount:activeCount,passiveCount:passiveCount,specialCount:specialCount,expectedActive:EXPECTED_ACTIVE,expectedPassive:EXPECTED_PASSIVE,expectedOpening:EXPECTED_OPENING,currentJsonBalance:currentJsonBalance,status:status,local:local,time:new Date().toISOString()};
   return window.__ISTASYON_V13_LAST;
 }
 window.ISTASYON_V13={version:VERSION,refresh:refresh,state:function(){return window.__ISTASYON_V13_LAST||null}};
