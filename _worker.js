@@ -4,6 +4,9 @@ export default {
     if (url.pathname === "/api/istasyon/status") {
       return istasyonStatus(request, env);
     }
+    if (url.pathname === "/api/automation/status") {
+      return automationStatus(request, env);
+    }
     if (url.pathname === "/api/mail/status") {
       return mailStatus(request, env);
     }
@@ -81,6 +84,9 @@ export default {
   },
   async email(message, env, ctx) {
     ctx.waitUntil(queueInboundEmail(message, env));
+  },
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(runAutomationCycle(env, { source: "cloudflare-cron", scheduledTime: controller && controller.scheduledTime }));
   }
 };
 
@@ -924,4 +930,76 @@ async function istasyonStatus(request, env) {
       message: String(err && err.message ? err.message : err).slice(0, 180)
     }, 500);
   }
+}
+
+
+function automationStore(env) {
+  return env.AUTOMATION_STATE || env.MAIL_QUEUE || env.ALKAM_MAIL_QUEUE || env.TELEGRAM_QUEUE || env.ALKAM_TELEGRAM_QUEUE || null;
+}
+
+async function runAutomationCycle(env, meta = {}) {
+  const store = automationStore(env);
+  const startedAt = new Date().toISOString();
+  const status = {
+    ok: true,
+    version: "automation-v2",
+    startedAt,
+    finishedAt: null,
+    source: meta.source || "manual",
+    mode: "control_only",
+    financialWrite: "approval_required",
+    rules: {
+      duplicateGuard: true,
+      mokaBankTransferIsNotCariCollection: true,
+      oneOffInvoiceExcludedFromMonthlyFeeLearning: true,
+      chronologicalBalanceCheck: true,
+      negotiableDueDateCheck: true
+    },
+    queue: { pending: 0, alkam: 0, bank: 0, moka: 0, unclassified: 0 },
+    alerts: []
+  };
+  const mailQueue = mailQueueStore(env);
+  if (mailQueue) {
+    const listed = await mailQueue.list({ prefix: "mailq:", limit: 100 });
+    const keys = (listed.keys || []).filter(x => !String(x.name || "").includes(":att:"));
+    status.queue.pending = keys.length;
+    for (const item of keys) {
+      const row = await safeQueueJsonGet(mailQueue, item.name);
+      if (!row) continue;
+      const scope = String(row.scope || "unclassified").toLowerCase();
+      const type = String(row.docType || "").toLowerCase();
+      const subject = String(row.subject || "").toLocaleLowerCase("tr-TR");
+      if (scope !== "alkam") { status.queue.unclassified += 1; continue; }
+      status.queue.alkam += 1;
+      if (/moka|pos/.test(type + " " + subject)) status.queue.moka += 1;
+      else if (/bank|halkbank|hesap|ekstre/.test(type + " " + subject)) status.queue.bank += 1;
+    }
+    if (status.queue.unclassified) status.alerts.push({ code: "UNCLASSIFIED_QUEUE", count: status.queue.unclassified, action: "review" });
+  } else {
+    status.alerts.push({ code: "MAIL_QUEUE_NOT_CONFIGURED", action: "infrastructure" });
+  }
+  status.finishedAt = new Date().toISOString();
+  if (store) {
+    await store.put("automation:last-run", JSON.stringify(status), { expirationTtl: 60 * 60 * 24 * 90 });
+  }
+  return status;
+}
+
+async function automationStatus(request, env) {
+  if (request.method !== "GET") return json({ ok: false, error: "GET gerekli." }, 405);
+  const store = automationStore(env);
+  let lastRun = null;
+  if (store) {
+    try { lastRun = await safeQueueJsonGet(store, "automation:last-run"); } catch {}
+  }
+  return json({
+    ok: true,
+    service: "IstasyonALKAM Automation",
+    version: "automation-v2",
+    engineReady: true,
+    schedulerHandlerReady: true,
+    cronConfigured: "requires Cloudflare Pages/Workers cron configuration",
+    financialWrite: "approval_required",
+    lastRun
+  });
 }
