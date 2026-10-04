@@ -1,0 +1,6 @@
+name = "istasyon-hourly-control"
+main = "istasyon-cron.js"
+compatibility_date = "2026-10-04"
+
+[triggers]
+crons = ["0 * * * *"]
