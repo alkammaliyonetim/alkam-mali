@@ -92,6 +92,12 @@ ok('Gmail is hourly', files.gmail.includes('.everyHours(1)'));
 ok('Halkbank account prefix guarded', files.gmail.includes("ISTASYON_HALKBANK_ACCOUNT_PREFIX = 'TR78000120092790'"));
 ok('Halkbank account suffix guarded', files.gmail.includes("ISTASYON_HALKBANK_ACCOUNT_SUFFIX = '9675'"));
 ok('Gmail posts only to safe ingest queue', files.gmail.includes('/api/mail/gmail-import'));
+ok('Moka sender is exact allowlist', files.gmail.includes("senderEmail !== ISTASYON_MOKA_SENDER"));
+ok('Moka payload carries structured payment', files.gmail.includes("mokaPayment: identity.docType === 'moka' ? parseMokaPaymentV14_"));
+ok('Moka dedupe key uses payment id', files.gmail.includes("dedupeKey: paymentId ? 'MOKA:' + paymentId"));
+ok('Gmail bridge uses script lock', files.gmail.includes("LockService.getScriptLock()"));
+ok('Gmail evidence hash is SHA256', files.gmail.includes("Utilities.DigestAlgorithm.SHA_256"));
+
 
 const failed = checks.filter(x => !x.ok);
 console.log(JSON.stringify({ ok: failed.length === 0, checks: checks.length, failed: failed.map(x => x.name) }, null, 2));
