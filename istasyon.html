@@ -548,7 +548,7 @@ async function load(){
   }catch(e){var m=String(e&&e.message||e);$("#live").textContent=m.includes("OTURUM_ANAHTARI")?"● OTURUM GEREKLİ":"● ERİŞİM / VERİ HATASI";$("#live").className="chip";console.error(e)}
 }
 $("#cariSearch").oninput=function(e){renderCari(e.target.value)};$("#bankSearch").oninput=function(e){renderBank(e.target.value)};$("#feeSearch").oninput=function(e){renderFees(e.target.value)};
-$("#bankFilters .pill").forEach(function(b){b.onclick=function(){S.bankFilter=b.dataset.bankFilter;$("#bankFilters .pill").forEach(function(x){x.classList.toggle("active",x===b)});renderBank()}});
+$$("#bankFilters .pill").forEach(function(b){b.onclick=function(){S.bankFilter=b.dataset.bankFilter;$$("#bankFilters .pill").forEach(function(x){x.classList.toggle("active",x===b)});renderBank()}});
 $("#bankPrepareHigh").onclick=bankPrepareHigh;
 load();auditLoad();
 </script>
