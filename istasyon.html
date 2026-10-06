@@ -34,12 +34,21 @@ function authHeaders(){const k=localStorage.getItem("istasyon_view_key")||"";ret
 <body>
 <div class="top"><div class="topin"><div class="logo">İ</div><div class="brand"><b>iSTASYON</b><small>ALKAM Mali Müşavirlik Operasyon Merkezi</small></div><div class="sp"></div><span class="chip">🛡 READ / PREPARE</span><span class="chip ok" id="live">● BAĞLANIYOR</span></div></div>
 <div class="wrap">
+<div class="card cmdbar">
+  <div class="head"><h2>AperiON Komut</h2><small>Supabase + yerel executor · Work/Codex gerekmez</small></div>
+  <div class="cmdrow">
+    <textarea id="cmdInput" class="cmdinput" placeholder="Örn: Kolostomi makası siparişi verilecek · Ece Medikal'e 5.000 TL ödeme Vakıf'tan · Ekim tahakkuklarını kontrol et"></textarea>
+    <button id="cmdSend" class="primary">İşle</button>
+  </div>
+  <div id="cmdStatus" class="cmdstatus">Görev/not otomatik işlenir. Finansal nihai kayıt yalnız <b>ONAYLIYORUM</b> sonrası ilerler.</div>
+</div>
 <div class="tabs">
 <button class="tab active" data-v="home">Özet</button>
 <button class="tab" data-v="cari">Cari</button>
 <button class="tab" data-v="bank">Banka</button>
 <button class="tab" data-v="moka">Moka</button>
 <button class="tab" data-v="promise">Tahsilat / Sözler</button>
+<button class="tab" data-v="tahakkuk">Tahakkuklar</button>
 <button class="tab" data-v="fees">Muhasebe Ücretleri</button>
 <button class="tab" data-v="tasks">Görevler</button>
 </div>
@@ -65,6 +74,27 @@ function authHeaders(){const k=localStorage.getItem("istasyon_view_key")||"";ret
 <section class="view" id="v-moka"><div class="note"><b>Moka:</b> Şu an bankada MOKA olarak sınıflandırılmış aktarımları gösterir. POS alt defterinin tamamı henüz ayrı canlı kaynağa bağlı değildir.</div><div class="grid kpis"><div class="card kpi"><div class="lab">Moka Satırı</div><div class="val" id="mCount">—</div></div><div class="card kpi"><div class="lab">Toplam</div><div class="val" id="mTotal">—</div><div class="sub">Yüklenen Moka banka satırları</div></div></div><div class="card sec"><div class="head"><h2>Moka Banka Aktarımları</h2><small>alt defter kontrolü</small></div><div class="tablewrap"><table><thead><tr><th>Tarih</th><th>Tutar</th><th>Açıklama</th><th>Kontrol</th><th>Not</th></tr></thead><tbody id="mokaBody"></tbody></table></div></div></section>
 
 <section class="view" id="v-promise"><div class="card sec"><div class="head"><h2>Tahsilat / Ödeme Sözleri</h2><small>bekleyen + geciken</small></div><div class="list" id="promiseList"></div></div></section>
+<section class="view" id="v-tahakkuk">
+  <div class="note"><b>Canlı.</b> CARI_HAREKETLERI tahakkuk/tahsilat kayıtlarından hesaplanır. Turuncu tahakkuk, yeşil tahsilattır.</div>
+  <div class="grid kpis">
+    <div class="card kpi"><div class="lab">Bu Ay Tahakkuk</div><div class="val" id="tMonthAccrual">—</div><div class="sub" id="tMonthAccrualSub">—</div></div>
+    <div class="card kpi"><div class="lab">Bu Ay Tahsilat</div><div class="val" id="tMonthCollection">—</div><div class="sub" id="tMonthCollectionSub">—</div></div>
+    <div class="card kpi"><div class="lab">Bu Yıl Tahakkuk</div><div class="val" id="tYearAccrual">—</div><div class="sub" id="tYearAccrualSub">—</div></div>
+    <div class="card kpi"><div class="lab">Tüm Zamanlar</div><div class="val" id="tAllAccrual">—</div><div class="sub" id="tAllAccrualSub">—</div></div>
+    <div class="card kpi"><div class="lab">Bu Ay Yazılmamış</div><div class="val" id="tMissing">—</div><div class="sub">aktif mükellef</div></div>
+  </div>
+  <div class="card sec">
+    <div class="head"><h2>Tahakkuk / Tahsilat Analizi</h2><small id="tPeriodLabel">—</small></div>
+    <div class="filters" id="tYears"></div>
+    <div class="filters" id="tTypes">
+      <button class="pill active" data-type="all">Tümü</button>
+      <button class="pill" data-type="fee">Muhasebe ücreti</button>
+      <button class="pill" data-type="other">Defter / kapanış / diğer</button>
+    </div>
+    <div class="tablewrap"><table><thead><tr><th>Ay</th><th>Tahakkuk</th><th>Tahsilat</th><th>Fark</th></tr></thead><tbody id="tahakkukBody"></tbody></table></div>
+  </div>
+  <div class="card sec" style="margin-top:12px"><div class="head"><h2>Bu Ay Tahakkuku Olmayan Aktifler</h2><small id="tMissingCount">—</small></div><div class="list" id="tMissingList"></div></div>
+</section>
 <section class="view" id="v-fees"><div class="card sec"><div class="head"><h2>Muhasebe Ücretleri</h2><small>canlı kaynak</small></div><input class="search" id="feeSearch" placeholder="Mükellef ara…"><div class="tablewrap"><table><thead><tr><th>Mükellef</th><th>Dönem</th><th>Tutar</th><th>Durum</th><th>Eklenme</th></tr></thead><tbody id="feeBody"></tbody></table></div></div></section>
 <section class="view" id="v-tasks"><div class="card sec"><div class="head"><h2>iSTASYON Görevleri</h2><small>operasyon</small></div><div class="list" id="taskList"></div></div></section>
 </div>
