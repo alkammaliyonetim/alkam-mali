@@ -20,7 +20,8 @@ button,input,textarea{font:inherit}.cmdbar{padding:14px;margin-bottom:12px}.cmdr
 @media(max-width:1050px){.kpis{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}}@media(max-width:650px){.cmdrow{grid-template-columns:1fr}.primary{min-height:44px}.wrap{padding:9px}.topin{padding:9px}.kpis{grid-template-columns:1fr 1fr}.val{font-size:21px}.brand small{display:none}.chip:nth-of-type(n+2){display:none}.sec{padding:11px}}
 </style>
 <script>
-const API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-live";\nconst CMD_API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-command";
+const API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-live";
+const CMD_API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-command";
 (function(){
   const m=location.hash.match(/^#key=(.+)$/);
   if(m){
@@ -28,7 +29,8 @@ const API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-live";
     history.replaceState(null,"",location.pathname+location.search);
   }
 })();
-function authHeaders(){const k=localStorage.getItem("istasyon_view_key")||"";return k?{"x-istasyon-view-key":k}:{}}\nfunction commandSession(){let s=localStorage.getItem("istasyon_command_session");if(!s){s="web-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);localStorage.setItem("istasyon_command_session",s)}return s}
+function authHeaders(){const k=localStorage.getItem("istasyon_view_key")||"";return k?{"x-istasyon-view-key":k}:{}}
+function commandSession(){let s=localStorage.getItem("istasyon_command_session");if(!s){s="web-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);localStorage.setItem("istasyon_command_session",s)}return s}
 </script>
 </head>
 <body>
