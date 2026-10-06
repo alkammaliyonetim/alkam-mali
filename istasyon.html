@@ -39,7 +39,7 @@ function commandSession(){let s=localStorage.getItem("istasyon_command_session")
 <div class="card cmdbar">
   <div class="head"><h2>AperiON Komut</h2><small>Supabase + yerel executor · Work/Codex gerekmez</small></div>
   <div class="cmdrow">
-    <textarea id="cmdInput" class="cmdinput" placeholder="Örn: Kolostomi makası siparişi verilecek · Ece Medikal'e 5.000 TL ödeme Vakıf'tan · Ekim tahakkuklarını kontrol et"></textarea>
+    <textarea id="cmdInput" class="cmdinput" placeholder="Örn: Kolostomi makası siparişi verilecek · Ece Medikal'e 5.000 ödeme Vakıf'tan · Ekim tahakkuklarını kontrol et"></textarea>
     <button id="cmdSend" class="primary">İşle</button>
   </div>
   <div id="cmdStatus" class="cmdstatus">Görev/not otomatik işlenir. Finansal nihai kayıt yalnız <b>ONAYLIYORUM</b> sonrası ilerler.</div>
@@ -106,7 +106,7 @@ function commandSession(){let s=localStorage.getItem("istasyon_command_session")
 <script>
 var S={d:null,tYear:new Date().getFullYear(),tType:"all",lastCommandId:null};var $=function(s){return document.querySelector(s)};var $$=function(s){return Array.from(document.querySelectorAll(s))};
 function esc(s){s=String(s==null?"":s);return s.replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
-function money(n){var x=Number(n);return Number.isFinite(x)?new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(x):"—"}
+function money(n){var x=Number(n);return Number.isFinite(x)?new Intl.NumberFormat("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}).format(x):"—"}
 function date(s){if(!s)return"—";var d=new Date(String(s).slice(0,10)+"T12:00:00");return isNaN(d)?"—":new Intl.DateTimeFormat("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric"}).format(d)}
 function tag(s){s=String(s||"");return /gec|soru|bek/i.test(s)?"amber":/islen|muhasebede_var|aktif/i.test(s)?"teal":"blue"}
 
