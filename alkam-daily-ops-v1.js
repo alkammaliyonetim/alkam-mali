@@ -22,7 +22,7 @@
   function today(){return new Date().toISOString().slice(0,10);}
   function esc(v){return String(v??'').replace(/[&<>"']/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));}
   function toast(msg){const el=byId('toast'); if(el){el.textContent=msg;el.style.display='block';clearTimeout(window.__alkamOpsToast);window.__alkamOpsToast=setTimeout(()=>el.style.display='none',3200);}else alert(msg);}
-  function money(v){return Number(v||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL';}
+  function money(v){return Number(v||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});}
   function norm(s){return String(s||'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ı/g,'i').replace(/[^a-z0-9ğüşöçıİĞÜŞÖÇ]+/gi,' ').replace(/\s+/g,' ').trim();}
   function amount(v){
     let s=String(v??'').trim(); if(!s) return 0;
@@ -108,7 +108,7 @@
     const onay=byId('tab-onay');
     if(onay && !byId('alkamTelegramBox')){
       const box=document.createElement('div'); box.id='alkamTelegramBox'; box.className='alkam-ops-box';
-      box.innerHTML=`<h2>📩 Telegram / WhatsApp Veri Yükleme</h2><div class="alkam-ops-help">Mesajları satır satır yapıştır veya TXT dosyası yükle. Cari adı ve tutar yakalanır; kesin işlem Onay Merkezi'ne düşer.</div><div class="alkam-ops-grid"><div><textarea id="alkamTelegramText" class="alkam-ops-area" placeholder="ALKAM CARİ tahsilat 12.500 TL"></textarea><div class="btn-row" style="margin-top:8px"><button class="btn btn-blue" onclick="ALKAM_DAILY_OPS.previewTelegram()">Ön İzle</button><button class="btn btn-green" onclick="ALKAM_DAILY_OPS.importTelegram()">Onaya Al</button></div></div><div><input id="alkamTelegramFile" type="file" accept=".txt,.csv" class="search-input"><button class="btn btn-soft" style="margin-top:8px" onclick="ALKAM_DAILY_OPS.loadTelegramFile()">Dosyayı Oku</button></div></div><div id="alkamTelegramResult" class="alkam-ops-result"></div>`;
+      box.innerHTML=`<h2>📩 Telegram / WhatsApp Veri Yükleme</h2><div class="alkam-ops-help">Mesajları satır satır yapıştır veya TXT dosyası yükle. Cari adı ve tutar yakalanır; kesin işlem Onay Merkezi'ne düşer.</div><div class="alkam-ops-grid"><div><textarea id="alkamTelegramText" class="alkam-ops-area" placeholder="ALKAM CARİ tahsilat 12.500"></textarea><div class="btn-row" style="margin-top:8px"><button class="btn btn-blue" onclick="ALKAM_DAILY_OPS.previewTelegram()">Ön İzle</button><button class="btn btn-green" onclick="ALKAM_DAILY_OPS.importTelegram()">Onaya Al</button></div></div><div><input id="alkamTelegramFile" type="file" accept=".txt,.csv" class="search-input"><button class="btn btn-soft" style="margin-top:8px" onclick="ALKAM_DAILY_OPS.loadTelegramFile()">Dosyayı Oku</button></div></div><div id="alkamTelegramResult" class="alkam-ops-result"></div>`;
       const list=byId('approvalList'); onay.insertBefore(box,list||onay.firstChild);
     }
   }
