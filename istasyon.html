@@ -357,8 +357,8 @@ function renderTahakkuk(year){
   if(!years.includes(Number(year)))year=years[0];
   S.tYear=Number(year);
   $("#tYears").innerHTML=years.map(y=>'<button class="pill '+(y===S.tYear?'active':'')+'" data-y="'+y+'">'+y+'</button>').join("");
-  $("#tYears .pill").forEach(b=>b.onclick=function(){renderTahakkuk(Number(b.dataset.y))});
-  $("#tTypes .pill").forEach(b=>{b.classList.toggle("active",b.dataset.type===S.tType);b.onclick=function(){S.tType=b.dataset.type;renderTahakkuk(S.tYear)}});
+  $$("#tYears .pill").forEach(b=>b.onclick=function(){renderTahakkuk(Number(b.dataset.y))});
+  $$("#tTypes .pill").forEach(b=>{b.classList.toggle("active",b.dataset.type===S.tType);b.onclick=function(){S.tType=b.dataset.type;renderTahakkuk(S.tYear)}});
   var yr=rows.filter(x=>Number(x.yil)===S.tYear);
   var by=new Map(yr.map(x=>[Number(x.ay),x]));
   var now=new Date(),cy=now.getFullYear(),cm=now.getMonth()+1;
