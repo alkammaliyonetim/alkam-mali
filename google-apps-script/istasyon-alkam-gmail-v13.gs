@@ -1,5 +1,5 @@
 /*
-  İstasyON / ALKAM — Gmail Halkbank + Moka bridge v13
+  İstasyON / ALKAM — Gmail Halkbank + Moka bridge v14
 
   Amaç:
   - ALKAM'a ait Halkbank hesap ekstrelerini ve Moka bildirimlerini arka planda yakala.
@@ -157,12 +157,13 @@ function detectAlkamSourceV13_(from, subject, body) {
   const compact = text.toLocaleUpperCase('tr-TR').replace(/\s+/g, '');
   const lower = text.toLocaleLowerCase('tr-TR');
   const fromLower = String(from || '').toLocaleLowerCase('tr-TR');
+  const senderEmail = ((fromLower.match(/<([^>]+)>/) || [])[1] || fromLower).trim();
 
   const mokaWords = lower.indexOf('moka united') >= 0 ||
     lower.indexOf('pos ödemesi') >= 0 ||
     lower.indexOf('pos odemesi') >= 0;
   if (mokaWords) {
-    if (fromLower.indexOf(ISTASYON_MOKA_SENDER) < 0) {
+    if (senderEmail !== ISTASYON_MOKA_SENDER) {
       return { accept: false, reason: 'moka_sender_not_allowlisted' };
     }
     const parsed = parseMokaPaymentV14_(body, subject);
@@ -186,7 +187,7 @@ function detectAlkamSourceV13_(from, subject, body) {
 
   if (isHalk) {
     const senderAllowed = ISTASYON_HALKBANK_ALLOWED_DOMAINS.some(function(domain) {
-      return fromLower.indexOf(domain) >= 0;
+      return senderEmail.endsWith(domain);
     });
     if (!senderAllowed) return { accept: false, reason: 'halkbank_sender_not_allowlisted' };
     const hasPrefix = compact.indexOf(ISTASYON_HALKBANK_ACCOUNT_PREFIX) >= 0;
@@ -240,10 +241,17 @@ function parseMokaPaymentV14_(body, subject) {
 
 function fieldV14_(text, label) {
   const lines = String(text || '').split(/\r?\n/).map(function(x){ return x.trim(); });
+  const labels = [
+    'Ödemeyi Yapan Personel','Ödeme İsteğini Gönderen Personel','Takip Numarası',
+    'Kart Sahibinin Adı','Müşteri Adı','Hizmet Alan Kişi Adı','Tutar',
+    'Bayi Komisyon Tutarı','Taksit Sayısı','3D Güvenlik','Ödeme Tarihi','Açıklama'
+  ].map(function(x){ return x.toLocaleLowerCase('tr-TR'); });
   const idx = lines.findIndex(function(x){ return x.toLocaleLowerCase('tr-TR') === String(label).toLocaleLowerCase('tr-TR'); });
   if (idx < 0) return '';
   for (let i = idx + 1; i < lines.length; i++) {
-    if (lines[i]) return lines[i];
+    if (!lines[i]) continue;
+    if (labels.indexOf(lines[i].toLocaleLowerCase('tr-TR')) >= 0) return '';
+    return lines[i];
   }
   return '';
 }
