@@ -57,7 +57,7 @@
           <div class="file-list" id="mokaFileList"></div>
           <div class="btns" style="margin-top:10px"><button class="btn blue" id="readMokaFilesBtn">Dosyaları Oku</button></div>
         </div>
-        <div class="field" style="margin-top:10px"><label>Moka/POS OCR Metni veya Excelden Gelen Satırlar</label><textarea id="mokaText" placeholder="12.04.2026 ALKAM LTD 12.000,00 TL 3 Taksit Ref: MOKA123"></textarea></div>
+        <div class="field" style="margin-top:10px"><label>Moka/POS OCR Metni veya Excelden Gelen Satırlar</label><textarea id="mokaText" placeholder="12.04.2026 ALKAM LTD 12.000,00 3 Taksit Ref: MOKA123"></textarea></div>
         <div class="btns" style="margin-top:10px"><button class="btn blue" id="parseMokaBtn">Metni Analiz Et</button><button class="btn green" id="saveMokaBtn">Aday Moka Kaydını Oluştur</button></div>
       </div>
       <div>
@@ -124,7 +124,7 @@
   function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
   function uid(p){return p+'-'+Date.now()+'-'+Math.random().toString(16).slice(2,8)}
   function today(){return new Date().toISOString().slice(0,10)}
-  function money(v){return num(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL'}
+  function money(v){return num(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})}
   function num(v){if(typeof v==='number')return Number.isFinite(v)?v:0;let s=String(v??'').replace(/\s/g,'').replace(/TL|₺/gi,'');if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');return Number(s)||0}
   function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
   function norm(v){return String(v||'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[ıİ]/g,'i')}
