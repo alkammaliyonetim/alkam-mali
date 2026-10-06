@@ -85,7 +85,7 @@
   function save(k,v){localStorage.setItem(k,JSON.stringify(v))}
   function uid(p){return p+'-'+Date.now()+'-'+Math.random().toString(16).slice(2,8)}
   function num(v){if(typeof v==='number')return Number.isFinite(v)?v:0;let s=String(v??'').trim().replace(/\s/g,'').replace(/TL|₺/gi,'');if(!s)return 0;if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');return Number(s)||0}
-  function money(v){return num(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL'}
+  function money(v){return num(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})}
   function isoDate(v){if(v instanceof Date&&!isNaN(v))return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,'0')}-${String(v.getDate()).padStart(2,'0')}`;const s=String(v||'').trim();let m=s.match(/^(\d{4})-(\d{2})-(\d{2})/);if(m)return `${m[1]}-${m[2]}-${m[3]}`;m=s.match(/^(\d{2})[./-](\d{2})[./-](\d{4})/);if(m)return `${m[3]}-${m[2]}-${m[1]}`;if(typeof v==='number'&&window.XLSX){const d=XLSX.SSF.parse_date_code(v);if(d)return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;}return ''}
   function norm(s){return String(s||'').toLocaleLowerCase('tr-TR').replace(/\s+/g,' ').trim()}
   function isYellow(cell){try{const fg=cell&&cell.s&&cell.s.fill&&(cell.s.fill.fgColor||cell.s.fill.bgColor);const rgb=String((fg&&fg.rgb)||'').toUpperCase();const idx=String((fg&&fg.indexed)||'');return rgb.includes('FFFF00')||rgb.includes('FFF2CC')||idx==='13'}catch(e){return false}}
