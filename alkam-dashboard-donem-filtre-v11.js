@@ -16,7 +16,7 @@
     return true;
   }
   function money(v){return Number(v||0)||0}
-  function fmt(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))+' TL'}
+  function fmt(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))}
   function metrics(){
     var f=getFilter();
     var cari=read('alkam_cari_hareketleri').filter(function(x){return match(x,f)});
