@@ -60,6 +60,18 @@ function commandSession(){let s=localStorage.getItem("istasyon_command_session")
 
 <section class="view" id="v-audit">
   <div class="note"><b>Denetim Hazırlık Merkezi.</b> Risk, kanıt ve dış teyit hazırlığı ISA 315 / ISA 500 / ISA 505 ilkeleri etrafında tasarlanmıştır. Bu ekran bağımsız denetçi görüşü veya sertifikasyon değildir; eksikleri kapatmak ve kanıt zincirini hazırlamak içindir.</div>
+  <div class="card sec" style="margin-bottom:12px">
+    <div class="head"><h2>Kurumsal Muhasebe Kontrol Kulesi</h2><small>SAP S/4HANA ilkeleri + IFRS/TFRS + ISA · iç hazırlık hedefi 100/100</small></div>
+    <div class="grid auditgrid">
+      <div class="card kpi"><div class="lab">Hazırlık Skoru</div><div class="val" id="eScore">—</div><div class="sub" id="eStatus">—</div></div>
+      <div class="card kpi"><div class="lab">Aktif Kontrol</div><div class="val" id="eControls">—</div><div class="sub" id="eHard">—</div></div>
+      <div class="card kpi"><div class="lab">Kapanış Açık</div><div class="val" id="eClose">—</div><div class="sub">zorunlu görev</div></div>
+      <div class="card kpi"><div class="lab">Kanıt</div><div class="val" id="eEvidence">—</div><div class="sub">kanıt kayıt defteri</div></div>
+      <div class="card kpi"><div class="lab">Dış Teyit</div><div class="val" id="eConfirm">—</div><div class="sub">alınmış/kapatılmış</div></div>
+      <div class="card kpi"><div class="lab">Universal Journal</div><div class="val" id="eJournals">—</div><div class="sub" id="eJournalSub">—</div></div>
+    </div>
+    <div class="evidence" style="margin-top:10px">100/100 burada <b>bağımsız denetim görüşü</b> anlamına gelmez. İç kontrol hazırlık hedefidir; kritik kontrol açıkken sistem READY durumuna geçmez.</div>
+  </div>
   <div class="grid auditgrid" style="margin-bottom:12px">
     <div class="card kpi"><div class="lab">Banka İstisna</div><div class="val" id="aBankEx">—</div><div class="sub" id="aBankCrit">—</div></div>
     <div class="card kpi"><div class="lab">Cari Hazır</div><div class="val" id="aCariReady">—</div><div class="sub" id="aCariReview">—</div></div>
@@ -90,6 +102,17 @@ function commandSession(){let s=localStorage.getItem("istasyon_command_session")
     <div class="card sec">
       <div class="head"><h2>Hazırlık Kuyruğu</h2><small id="auditActionCount">—</small></div>
       <div class="list" id="auditActionsList"></div>
+    </div>
+  </div>
+
+  <div class="grid cols" style="margin-top:12px">
+    <div class="card sec">
+      <div class="head"><h2>32 Kurumsal Kontrol</h2><small>önleyici · tespit edici · düzeltici</small></div>
+      <div class="list" id="enterpriseControls"></div>
+    </div>
+    <div class="card sec">
+      <div class="head"><h2>Kapanış / Risk</h2><small>period lock · close cockpit</small></div>
+      <div class="list" id="enterpriseClose"></div>
     </div>
   </div>
 
@@ -235,6 +258,28 @@ function renderAudit(){
   $("#aQueue").textContent=r.hazirlanan_aksiyon==null?"—":r.hazirlanan_aksiyon;
   $("#aFresh").textContent=(r.banka_gecikme_gun||0)+" gün";
   $("#aFreshSub").textContent="Son banka: "+(r.son_banka_tarihi||"—");
+  var e=d.enterprise||{};
+  $("#eScore").textContent=(e.readiness_score==null?"—":e.readiness_score+"/100");
+  $("#eStatus").textContent=e.readiness_status||"—";
+  $("#eControls").textContent=e.active_controls==null?"—":e.active_controls;
+  $("#eHard").textContent=(e.hard_controls||0)+" kritik kapı";
+  $("#eClose").textContent=e.close_open_tasks==null?"—":e.close_open_tasks;
+  $("#eEvidence").textContent=e.evidence_count==null?"—":e.evidence_count;
+  $("#eConfirm").textContent=e.confirmed_external==null?"—":e.confirmed_external;
+  $("#eJournals").textContent=e.posted_journals==null?"—":e.posted_journals;
+  $("#eJournalSub").textContent=(e.unbalanced_posted||0)+" dengesiz posted";
+
+  $("#enterpriseControls").innerHTML=(d.controls||[]).map(function(x){
+    return '<div class="item"><div class="row"><div><div class="title">'+esc(x.control_code)+' · '+esc(x.control_name)+'</div><div class="meta">'+esc(x.control_domain)+' · '+esc(x.control_type)+' · '+esc(x.execution_mode)+' · '+esc(x.frequency)+'</div><div class="evidence">'+esc((x.standard_refs||[]).join(" · "))+'</div></div><span class="tag '+(x.hard_blocker?'red':x.severity==="HIGH"?'amber':'blue')+'">'+(x.hard_blocker?'HARD':esc(x.severity))+'</span></div></div>'
+  }).join("")||'<div class="empty">Kontrol kataloğu yüklenmedi.</div>';
+
+  var close=(d.close_tasks||[]).map(function(x){
+    return '<div class="item"><div class="row"><div><div class="title">'+esc(x.task_name)+'</div><div class="meta">'+esc(x.task_code)+' · '+esc(x.owner_role||"")+'</div></div><span class="tag '+(x.status==="DONE"?'teal':x.status==="BLOCKED"?'red':'amber')+'">'+esc(x.status)+'</span></div></div>'
+  });
+  var risks=(d.risks||[]).map(function(x){
+    return '<div class="item"><div class="row"><div><div class="title">'+esc(x.risk_code)+' · '+esc(x.risk_title)+'</div><div class="meta">'+esc(x.account_area||"")+' · '+esc((x.assertion_tags||[]).join(", "))+'</div></div><span class="tag '+(x.inherent_risk==="SIGNIFICANT"?'red':x.inherent_risk==="HIGH"?'amber':'blue')+'">'+esc(x.inherent_risk)+'</span></div></div>'
+  });
+  $("#enterpriseClose").innerHTML=close.concat(risks).join("")||'<div class="empty">Kapanış/risk kaydı yok.</div>';
 
   $("#auditChecklist").innerHTML=(d.checklist||[]).map(function(x){
     return '<div class="item"><div class="row"><div><div class="title">'+esc(x.title)+'</div><div class="meta">'+esc(x.detail)+'</div><div class="evidence">'+esc(x.standard_ref||"")+'</div></div><div class="'+auditStatusClass(x.status)+'">'+esc(x.status)+'</div></div></div>'
