@@ -15,7 +15,7 @@ Kural: Otomatik kayıt yazmaz. Ön izleme + kullanıcı onayı olmadan cari hare
   function read(key, fallback){ try{ var raw=localStorage.getItem(key); return raw ? JSON.parse(raw) : (fallback || []); }catch(e){ return fallback || []; } }
   function write(key, value){ localStorage.setItem(key, JSON.stringify(value)); }
   function num(v){ if(typeof v==='number') return isFinite(v)?v:0; var s=String(v||'').trim().replace(/\s/g,'').replace(/TL|₺/gi,''); if(!s) return 0; if(s.indexOf(',')>-1 && s.indexOf('.')>-1) s=s.replace(/\./g,'').replace(',','.'); else s=s.replace(',','.'); return Number(s)||0; }
-  function money(v){ return num(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL'; }
+  function money(v){ return num(v).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function uid(prefix){ return prefix+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8); }
   function upper(v){ return String(v||'').toLocaleUpperCase('tr-TR'); }
   function cariName(c){ return c.name || c.cari || c.cari_adi || c.unvan || c.title || 'İsimsiz Cari'; }
