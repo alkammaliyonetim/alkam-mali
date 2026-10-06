@@ -208,7 +208,7 @@ function renderTahakkuk(year){
 }
 async function load(){
   try{
-    var r=await fetch(API+"?api=data",{cache:"no-store",headers:authHeaders()});var d=await r.json();if(!d.ok)throw new Error(d.error||"data");S.d=d;$("#live").textContent="● CANLI";$("#live").className="chip ok";
+    var r=await fetch(API+"?api=data",{cache:"no-store",headers:authHeaders()});var d=await r.json();if(!r.ok||!d.ok){if(r.status===401)throw new Error("OTURUM_ANAHTARI");throw new Error(d.error||"data")};S.d=d;$("#live").textContent="● CANLI";$("#live").className="chip ok";
     var s=d.summary||{},bs=d.bank_summary||{};
     $("#kActive").textContent=s.aktif_mukellef==null?"—":s.aktif_mukellef;$("#kBalance").textContent=money(s.toplam_acik_bakiye);$("#kBank").textContent=bs.banka_kaynak_satiri||"—";$("#kMoka").textContent=(d.moka||[]).length;$("#kTasks").textContent=s.acik_gorev==null?"—":s.acik_gorev;
     $("#bSource").textContent=bs.banka_kaynak_satiri||"—";$("#bIn").textContent=bs.gelen_hareket||"—";$("#bOut").textContent=bs.giden_hareket||"—";$("#bLedger").textContent=bs.muhasebede_var==null?"—":bs.muhasebede_var;$("#bWait").textContent=bs.bekleyen||"—";$("#bankDate").textContent="Son banka: "+(bs.son_banka_tarihi||"—");
@@ -221,7 +221,7 @@ async function load(){
     $("#promiseList").innerHTML=(d.promises||[]).map(function(x){return '<div class="item"><div class="row"><div><div class="title">'+esc(x.mukellef)+'</div><div class="meta">Ödeme tarihi: '+date(x.odeme_tarihi)+' · '+esc(x.odeme_sekli||"")+'</div></div><div class="amt">'+money(x.tutar)+'</div></div><span class="tag '+tag(x.durum)+'">'+esc(x.durum||"—")+'</span><div class="meta">'+esc(x.notlar||"")+'</div></div>'}).join("")||'<div class="empty">Kayıt yok.</div>';
     var openTasks=(d.tasks||[]).filter(function(x){return !/TAMAMLANDI|KAPALI|IPTAL|İPTAL/i.test(String(x.durum||""))});
     $("#taskList").innerHTML=openTasks.map(function(x){return '<div class="item"><div class="title">'+esc(x.baslik)+'</div><div class="meta">'+esc(x.isi_yapacak_kisi||"")+' · '+esc(x.mukellef||"GENEL")+' · '+date(x.baslangic_tarihi)+'</div><span class="tag amber">'+esc(x.durum||"AÇIK")+'</span><div class="meta">'+esc(x.aciklama||"")+'</div></div>'}).join("")||'<div class="empty">Açık görev yok.</div>';
-  }catch(e){$("#live").textContent="● ERİŞİM / VERİ HATASI";$("#live").className="chip";console.error(e)}
+  }catch(e){var m=String(e&&e.message||e);$("#live").textContent=m.includes("OTURUM_ANAHTARI")?"● OTURUM GEREKLİ":"● ERİŞİM / VERİ HATASI";$("#live").className="chip";console.error(e)}
 }
 $("#cariSearch").oninput=function(e){renderCari(e.target.value)};$("#bankSearch").oninput=function(e){renderBank(e.target.value)};$("#feeSearch").oninput=function(e){renderFees(e.target.value)};
 load();
