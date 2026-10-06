@@ -140,9 +140,9 @@
       </div>
       <div class="cards">
         <div class="card"><div class="card-label">Aktif / Pasif Cari</div><div id="kpiCari" class="card-value">0 / 0</div></div>
-        <div class="card"><div class="card-label">Toplam Borç</div><div id="kpiDebit" class="card-value">0,00 TL</div></div>
-        <div class="card"><div class="card-label">Toplam Alacak</div><div id="kpiCredit" class="card-value">0,00 TL</div></div>
-        <div class="card"><div class="card-label">Net Bakiye</div><div id="kpiBalance" class="card-value">0,00 TL</div></div>
+        <div class="card"><div class="card-label">Toplam Borç</div><div id="kpiDebit" class="card-value">0,00</div></div>
+        <div class="card"><div class="card-label">Toplam Alacak</div><div id="kpiCredit" class="card-value">0,00</div></div>
+        <div class="card"><div class="card-label">Net Bakiye</div><div id="kpiBalance" class="card-value">0,00</div></div>
       </div>
       <div class="grid-2">
         <div class="section"><h2 class="section-title">En Borçlu / Riskli Cariler</h2><div id="dashboardTopCari"></div></div>
@@ -370,11 +370,11 @@
   function writeJson(key, value){try{localStorage.setItem(key, JSON.stringify(value));}catch(e){console.warn("localStorage yazılamadı", key, e);}}
   function uid(prefix){return prefix+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);}
   function num(v){if(typeof v==="number") return Number.isFinite(v)?v:0; let s=String(v??"").trim().replace(/\s/g,"").replace(/TL|₺/gi,""); if(!s) return 0; if(s.includes(",")&&s.includes(".")) s=s.replace(/\./g,"").replace(",","."); else if(s.includes(",")) s=s.replace(",","."); return Number(s)||0;}
-  function money(v){return num(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" TL";}
+  function money(v){return num(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});}
   function esc(v){return String(v??"").replace(/[&<>"']/g,s=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[s]));}
   function isoDate(v){if(!v)return"";const s=String(v).trim();if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);const d=new Date(s);return Number.isNaN(d.getTime())?"":d.toISOString().slice(0,10);}
   function today(){return new Date().toISOString().slice(0,10);}
-  function balanceLabel(v){const n=num(v);if(Math.abs(n)<0.01)return"0,00 TL";return money(Math.abs(n))+" "+(n>=0?"Bakiye B":"Bakiye A");}
+  function balanceLabel(v){const n=num(v);if(Math.abs(n)<0.01)return"0,00";return money(Math.abs(n))+" "+(n>=0?"Bakiye B":"Bakiye A");}
   function slug(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") || uid("cari");}
   function notify(msg){const el=byId("toast"); if(!el) return; el.textContent=msg; el.style.display="block"; clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>el.style.display="none",3000);}
   function logAudit(action, detail, level="Kaydedildi"){const list=readJson(LS.audit,[]); list.unshift({at:new Date().toISOString(), action, detail, level}); writeJson(LS.audit, list.slice(0,500)); renderAuditList();}
