@@ -38,8 +38,8 @@
   <div class="cards" style="margin-top:14px">
     <div class="metric"><div class="k">Cari</div><div class="v" id="mCari">0</div></div>
     <div class="metric"><div class="k">Hareket</div><div class="v" id="mHareket">0</div></div>
-    <div class="metric"><div class="k">Toplam Tahakkuk</div><div class="v" id="mBorc">0,00 TL</div></div>
-    <div class="metric"><div class="k">Toplam Tahsilat</div><div class="v" id="mAlacak">0,00 TL</div></div>
+    <div class="metric"><div class="k">Toplam Tahakkuk</div><div class="v" id="mBorc">0,00</div></div>
+    <div class="metric"><div class="k">Toplam Tahsilat</div><div class="v" id="mAlacak">0,00</div></div>
   </div>
 
   <div class="grid">
@@ -66,9 +66,9 @@
         </div>
 
         <div class="cards">
-          <div class="metric"><div class="k">Tahakkuk</div><div class="v" id="dBorc">0,00 TL</div></div>
-          <div class="metric"><div class="k">Tahsilat</div><div class="v" id="dAlacak">0,00 TL</div></div>
-          <div class="metric"><div class="k">Bakiye</div><div class="v" id="dBakiye">0,00 TL</div></div>
+          <div class="metric"><div class="k">Tahakkuk</div><div class="v" id="dBorc">0,00</div></div>
+          <div class="metric"><div class="k">Tahsilat</div><div class="v" id="dAlacak">0,00</div></div>
+          <div class="metric"><div class="k">Bakiye</div><div class="v" id="dBakiye">0,00</div></div>
           <div class="metric"><div class="k">Hareket</div><div class="v" id="dCount">0</div></div>
         </div>
 
@@ -105,7 +105,7 @@ let db={cariler:[],hareketler:[]};
 let selected=null;
 
 const $=id=>document.getElementById(id);
-const money=v=>Number(v||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL';
+const money=v=>Number(v||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const nrm=v=>String(v||'').toLocaleLowerCase('tr-TR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[\u0131\u0130]/g,'i');
 function toast(t){const el=$('toast');el.textContent=t;el.style.display='block';clearTimeout(window.__t);window.__t=setTimeout(()=>el.style.display='none',2600)}
 function save(){localStorage.setItem(STORE,JSON.stringify(db))}
