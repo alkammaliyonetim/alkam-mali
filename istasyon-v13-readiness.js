@@ -12,7 +12,7 @@ var CARILER_URL='/alkam-cariler-144-istasyon-canli-03102026.json';
 var STATUS_URL='/api/istasyon/status';
 
 function q(s,r){return (r||document).querySelector(s)}
-function tl(v){return (Number(v)||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL'}
+function tl(v){return (Number(v)||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]})}
 async function getJson(url){
   try{
