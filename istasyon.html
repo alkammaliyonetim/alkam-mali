@@ -8,7 +8,7 @@
 <style>
 :root{--bg:#05090f;--p:#0a111a;--p2:#0f1926;--line:#203149;--text:#f1f7ff;--mut:#8fa5ba;--teal:#00d7ad;--blue:#48a0ff;--amber:#ffad33;--red:#ff5f6d;--r:17px}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 500px at 50% -10%,rgba(72,160,255,.11),transparent),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
-button,input{font:inherit}.top{position:sticky;top:0;z-index:30;background:rgba(5,9,15,.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+button,input,textarea{font:inherit}.cmdbar{padding:14px;margin-bottom:12px}.cmdrow{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:stretch}.cmdinput{width:100%;min-height:48px;resize:vertical;background:#060b12;border:1px solid var(--line);color:#fff;padding:12px;border-radius:12px;outline:none}.cmdinput:focus{border-color:var(--teal)}.primary{border:1px solid rgba(0,215,173,.35);background:rgba(0,215,173,.12);color:#fff;border-radius:12px;padding:0 18px;font-weight:900}.primary:disabled{opacity:.45;cursor:not-allowed}.cmdstatus{margin-top:9px;color:var(--mut);font-size:11px;line-height:1.5}.cmdstatus.ok{color:var(--teal)}.cmdstatus.warn{color:var(--amber)}.cmdstatus.bad{color:var(--red)}.approvebtn{margin-top:9px;border:1px solid rgba(255,173,51,.35);background:rgba(255,173,51,.12);color:#ffd28b;border-radius:10px;padding:8px 11px;font-weight:900}.filters{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.pill{border:1px solid var(--line);background:var(--p);color:var(--mut);padding:7px 10px;border-radius:999px;font-size:10px;font-weight:850}.pill.active{color:#fff;background:rgba(72,160,255,.13);border-color:rgba(72,160,255,.35)}.barrow{min-width:170px}.bars{display:flex;flex-direction:column;gap:4px;margin-top:5px}.bar{height:4px;border-radius:999px;min-width:2px}.bar.t{background:#d58a12}.bar.c{background:#1f8b68}.right{text-align:right}.top{position:sticky;top:0;z-index:30;background:rgba(5,9,15,.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
 .topin{max-width:1450px;margin:auto;padding:12px 16px;display:flex;align-items:center;gap:11px}.logo{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--blue),var(--teal));font-weight:900}.brand b{letter-spacing:.12em}.brand small{display:block;color:var(--mut);font-size:10px}.sp{flex:1}.chip{border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:10px;font-weight:800;color:var(--mut)}.chip.ok{color:var(--teal);border-color:rgba(0,215,173,.3)}
 .wrap{max-width:1450px;margin:auto;padding:14px}.tabs{display:flex;gap:7px;overflow:auto;padding:3px 0 12px;scrollbar-width:none}.tab{white-space:nowrap;border:1px solid var(--line);background:var(--p);color:var(--mut);padding:10px 13px;border-radius:11px;font-weight:800}.tab.active{color:#fff;background:rgba(0,215,173,.09);border-color:rgba(0,215,173,.28)}
 .view{display:none}.view.active{display:block}.grid{display:grid;gap:12px}.kpis{grid-template-columns:repeat(5,1fr);margin-bottom:12px}.card{background:rgba(10,17,26,.91);border:1px solid var(--line);border-radius:var(--r)}.kpi{padding:14px}.lab{font-size:9px;color:var(--mut);font-weight:900;text-transform:uppercase;letter-spacing:.08em}.val{font:850 25px ui-monospace,SFMono-Regular,monospace;margin-top:8px}.sub{font-size:10px;color:var(--mut);margin-top:5px}.sec{padding:14px}.head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px}.head h2{margin:0;font-size:14px}.head small{color:var(--mut)}
@@ -17,10 +17,10 @@ button,input{font:inherit}.top{position:sticky;top:0;z-index:30;background:rgba(
 .tag{display:inline-flex;padding:3px 6px;border-radius:6px;font:800 9px ui-monospace,monospace}.teal{color:var(--teal);background:rgba(0,215,173,.1)}.amber{color:var(--amber);background:rgba(255,173,51,.1)}.red{color:var(--red);background:rgba(255,95,109,.1)}.blue{color:var(--blue);background:rgba(72,160,255,.1)}
 .cols{grid-template-columns:1.25fr .75fr}.list{display:flex;flex-direction:column;gap:8px}.item{border:1px solid var(--line);background:var(--p2);border-radius:12px;padding:11px}.title{font-weight:850;font-size:12px}.meta{color:var(--mut);font-size:10px;margin-top:4px;line-height:1.45}.row{display:flex;justify-content:space-between;gap:10px}.amt{font:850 12px ui-monospace,monospace}.note{border:1px solid rgba(255,173,51,.25);background:rgba(255,173,51,.06);color:#e4d0ab;padding:11px 12px;border-radius:12px;font-size:11px;margin-bottom:12px}
 .drawer{position:fixed;inset:0;display:none;z-index:60;background:rgba(0,0,0,.62)}.drawer.show{display:block}.panel{position:absolute;right:0;top:0;bottom:0;width:min(620px,100%);background:#07101a;border-left:1px solid var(--line);padding:16px;overflow:auto}.close{float:right;border:1px solid var(--line);background:var(--p2);color:#fff;border-radius:10px;padding:8px 10px}.panel h2{font-size:17px;margin:3px 0 5px}.empty{padding:18px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:11px}
-@media(max-width:1050px){.kpis{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}}@media(max-width:650px){.wrap{padding:9px}.topin{padding:9px}.kpis{grid-template-columns:1fr 1fr}.val{font-size:21px}.brand small{display:none}.chip:nth-of-type(n+2){display:none}.sec{padding:11px}}
+@media(max-width:1050px){.kpis{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}}@media(max-width:650px){.cmdrow{grid-template-columns:1fr}.primary{min-height:44px}.wrap{padding:9px}.topin{padding:9px}.kpis{grid-template-columns:1fr 1fr}.val{font-size:21px}.brand small{display:none}.chip:nth-of-type(n+2){display:none}.sec{padding:11px}}
 </style>
 <script>
-const API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-live";
+const API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-live";\nconst CMD_API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-command";
 (function(){
   const m=location.hash.match(/^#key=(.+)$/);
   if(m){
@@ -28,11 +28,11 @@ const API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-live";
     history.replaceState(null,"",location.pathname+location.search);
   }
 })();
-function authHeaders(){const k=localStorage.getItem("istasyon_view_key")||"";return k?{"x-istasyon-view-key":k}:{}}
+function authHeaders(){const k=localStorage.getItem("istasyon_view_key")||"";return k?{"x-istasyon-view-key":k}:{}}\nfunction commandSession(){let s=localStorage.getItem("istasyon_command_session");if(!s){s="web-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8);localStorage.setItem("istasyon_command_session",s)}return s}
 </script>
 </head>
 <body>
-<div class="top"><div class="topin"><div class="logo">İ</div><div class="brand"><b>iSTASYON</b><small>ALKAM Mali Müşavirlik Operasyon Merkezi</small></div><div class="sp"></div><span class="chip">🛡 READ ONLY</span><span class="chip ok" id="live">● BAĞLANIYOR</span></div></div>
+<div class="top"><div class="topin"><div class="logo">İ</div><div class="brand"><b>iSTASYON</b><small>ALKAM Mali Müşavirlik Operasyon Merkezi</small></div><div class="sp"></div><span class="chip">🛡 READ / PREPARE</span><span class="chip ok" id="live">● BAĞLANIYOR</span></div></div>
 <div class="wrap">
 <div class="tabs">
 <button class="tab active" data-v="home">Özet</button>
@@ -72,7 +72,7 @@ function authHeaders(){const k=localStorage.getItem("istasyon_view_key")||"";ret
 <div class="drawer" id="drawer"><div class="panel"><button class="close" id="close">Kapat ✕</button><div id="detail"><div class="empty">Detay yükleniyor…</div></div></div></div>
 
 <script>
-var S={d:null};var $=function(s){return document.querySelector(s)};var $$=function(s){return Array.from(document.querySelectorAll(s))};
+var S={d:null,tYear:new Date().getFullYear(),tType:"all",lastCommandId:null};var $=function(s){return document.querySelector(s)};var $$=function(s){return Array.from(document.querySelectorAll(s))};
 function esc(s){s=String(s==null?"":s);return s.replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function money(n){var x=Number(n);return Number.isFinite(x)?new Intl.NumberFormat("tr-TR",{style:"currency",currency:"TRY",maximumFractionDigits:2}).format(x):"—"}
 function date(s){if(!s)return"—";var d=new Date(String(s).slice(0,10)+"T12:00:00");return isNaN(d)?"—":new Intl.DateTimeFormat("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric"}).format(d)}
@@ -109,6 +109,73 @@ function renderFees(filter){
   filter=filter||"";var q=filter.toLocaleLowerCase("tr-TR");var rows=(S.d.fees||[]).filter(function(x){return String(x.mukellef||"").toLocaleLowerCase("tr-TR").includes(q)});
   $("#feeBody").innerHTML=rows.map(function(x){return '<tr><td><b>'+esc(x.mukellef)+'</b></td><td>'+esc(x.donem||"")+'</td><td class="amt">'+money(x.tutar)+'</td><td>'+esc(x.durum||"")+'</td><td>'+esc(x.eklenme_tarihi||"")+'</td></tr>'}).join("");
 }
+
+function cmdMessage(text,cls){
+  var el=$("#cmdStatus");el.className="cmdstatus"+(cls?" "+cls:"");el.innerHTML=text;
+}
+async function approveCommand(id){
+  if(!id)return;
+  $("#cmdSend").disabled=true;
+  cmdMessage("ONAY gönderiliyor…","warn");
+  try{
+    var r=await fetch(CMD_API,{method:"POST",headers:{"content-type":"application/json",...authHeaders()},body:JSON.stringify({action:"approve",command_id:id})});
+    var d=await r.json();
+    if(!r.ok||!d.ok)throw new Error(d.error||"onay");
+    cmdMessage("✓ "+esc(d.message||d.status||"Onay işlendi."),"ok");
+    await load();
+  }catch(e){cmdMessage("Onay işlenemedi: "+esc(String(e)),"bad")}finally{$("#cmdSend").disabled=false}
+}
+async function submitCommand(){
+  var input=$("#cmdInput"),text=input.value.trim();if(!text)return;
+  $("#cmdSend").disabled=true;cmdMessage("AperiON işliyor…");
+  try{
+    var r=await fetch(CMD_API,{method:"POST",headers:{"content-type":"application/json",...authHeaders()},body:JSON.stringify({text:text,session_id:commandSession()})});
+    var d=await r.json();S.lastCommandId=d.id||d.command?.id||null;
+    if(!r.ok||(!d.ok&&!d.duplicate))throw new Error(d.error||"komut");
+    if(d.status==="completed"){
+      input.value="";cmdMessage("✓ "+esc(d.response?.message||"Kaydedildi."),"ok");await load();return;
+    }
+    if(d.status==="needs_input"){
+      cmdMessage("AperiON soruyor: <b>"+esc(d.response?.soru||"Ek bilgi gerekli.")+"</b>","warn");return;
+    }
+    if(d.status==="approval_waiting"){
+      var msg=esc(d.response?.is?.ozet||d.response?.ozet||d.response?.message||"İşlem hazırlandı.");
+      cmdMessage("<b>ONAY BEKLİYOR.</b> "+msg+"<br><button class=\"approvebtn\" onclick=\"approveCommand('"+esc(d.id)+"')\">ONAYLIYORUM</button>","warn");return;
+    }
+    cmdMessage(esc(d.response?.message||d.status||"Komut alındı."),"ok");
+  }catch(e){cmdMessage("Komut işlenemedi: "+esc(String(e)),"bad")}finally{$("#cmdSend").disabled=false}
+}
+$("#cmdSend").onclick=submitCommand;
+$("#cmdInput").addEventListener("keydown",function(e){if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();submitCommand()}});
+
+const MONTHS=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+function renderTahakkuk(year){
+  var d=S.d||{},rows=d.tahakkuk_monthly||[];
+  var years=[...new Set(rows.map(x=>Number(x.yil)).filter(Boolean))].sort((a,b)=>b-a);
+  if(!years.length)return;
+  if(!years.includes(Number(year)))year=years[0];
+  S.tYear=Number(year);
+  $("#tYears").innerHTML=years.map(y=>'<button class="pill '+(y===S.tYear?'active':'')+'" data-y="'+y+'">'+y+'</button>').join("");
+  $("#tYears .pill").forEach(b=>b.onclick=function(){renderTahakkuk(Number(b.dataset.y))});
+  $("#tTypes .pill").forEach(b=>{b.classList.toggle("active",b.dataset.type===S.tType);b.onclick=function(){S.tType=b.dataset.type;renderTahakkuk(S.tYear)}});
+  var yr=rows.filter(x=>Number(x.yil)===S.tYear);
+  var by=new Map(yr.map(x=>[Number(x.ay),x]));
+  var now=new Date(),cy=now.getFullYear(),cm=now.getMonth()+1;
+  var cr=rows.find(x=>Number(x.yil)===cy&&Number(x.ay)===cm)||{};
+  var tVal=x=>S.tType==="fee"?Number(x.muhasebe_ucreti||0):S.tType==="other"?Number(x.diger_tahakkuk||0):Number(x.tahakkuk||0);
+  var thisYear=rows.filter(x=>Number(x.yil)===cy).reduce((z,x)=>z+tVal(x),0);
+  var all=rows.reduce((z,x)=>z+tVal(x),0);
+  var allCount=rows.reduce((z,x)=>z+Number(x.tahakkuk_kayit||0),0);
+  $("#tMonthAccrual").textContent=money(tVal(cr));$("#tMonthAccrualSub").textContent=(cr.tahakkuk_kayit||0)+" kayıt · "+MONTHS[cm-1]+" "+cy;
+  $("#tMonthCollection").textContent=money(cr.tahsilat||0);$("#tMonthCollectionSub").textContent=(cr.tahsilat_kayit||0)+" tahsilat · "+MONTHS[cm-1]+" "+cy;
+  $("#tYearAccrual").textContent=money(thisYear);$("#tYearAccrualSub").textContent=cy+" · "+rows.filter(x=>Number(x.yil)===cy).reduce((z,x)=>z+Number(x.tahakkuk_kayit||0),0)+" kayıt";
+  $("#tAllAccrual").textContent=money(all);$("#tAllAccrualSub").textContent=allCount+" kayıt";
+  $("#tMissing").textContent=(d.tahakkuk_missing||[]).length;$("#tMissingCount").textContent=(d.tahakkuk_missing||[]).length+" mükellef";
+  $("#tPeriodLabel").textContent=S.tYear+" · "+(S.tType==="all"?"Tümü":S.tType==="fee"?"Muhasebe ücreti":"Diğer");
+  var vals=Array.from({length:12},(_,i)=>{var r=by.get(i+1)||{};return {m:i+1,a:tVal(r),c:Number(r.tahsilat||0),n:Number(r.tahakkuk_kayit||0),tc:Number(r.tahsilat_kayit||0)}});var mx=Math.max(1,...vals.flatMap(x=>[x.a,x.c]));
+  $("#tahakkukBody").innerHTML=vals.map(x=>{var diff=x.a-x.c;return '<tr><td class="barrow"><b>'+MONTHS[x.m-1]+' '+S.tYear+'</b><div class="bars"><div class="bar t" style="width:'+Math.max(2,Math.round(x.a/mx*100))+'%"></div><div class="bar c" style="width:'+Math.max(2,Math.round(x.c/mx*100))+'%"></div></div></td><td class="amt">'+money(x.a)+'<div class="meta">'+x.n+' kayıt</div></td><td class="amt">'+money(x.c)+'<div class="meta">'+x.tc+' tahsilat</div></td><td class="amt '+(diff>0?'red':'')+'">'+money(diff)+'</td></tr>'}).join("");
+  $("#tMissingList").innerHTML=(d.tahakkuk_missing||[]).slice(0,120).map(x=>'<div class="item"><div class="row"><div><div class="title">'+esc(x.unvan)+'</div><div class="meta">'+esc(x.tckn_vkn||"")+' · aktif</div></div><div class="amt">'+money(x.kanonik_ucret)+'</div></div></div>').join("")||'<div class="empty">Bu ay tahakkuku eksik aktif mükellef görünmüyor.</div>';
+}
 async function load(){
   try{
     var r=await fetch(API+"?api=data",{cache:"no-store",headers:authHeaders()});var d=await r.json();if(!d.ok)throw new Error(d.error||"data");S.d=d;$("#live").textContent="● CANLI";$("#live").className="chip ok";
@@ -118,7 +185,7 @@ async function load(){
     $("#homeCari").innerHTML=(d.cari||[]).slice(0,12).map(function(c){return '<tr class="click" data-cari="'+esc(c.mukellef)+'"><td><b>'+esc(c.mukellef)+'</b></td><td class="amt">'+money(c.bakiye)+'</td><td class="amt">'+money(c.aylik_ucret)+'</td><td>'+date(c.son_tahsilat)+'</td></tr>'}).join("");
     $$("#homeCari tr").forEach(function(tr){tr.onclick=function(){cariDetail(tr.dataset.cari)}});
     $("#homePromises").innerHTML=(d.promises||[]).length?(d.promises||[]).map(function(x){return '<div class="item"><div class="row"><div><div class="title">'+esc(x.mukellef)+'</div><div class="meta">'+date(x.odeme_tarihi)+' · '+esc(x.odeme_sekli||"")+'</div></div><div class="amt">'+money(x.tutar)+'</div></div><span class="tag '+tag(x.durum)+'">'+esc(x.durum||"—")+'</span></div>'}).join(""):'<div class="empty">Ödeme sözü yok.</div>';
-    renderCari();renderBank();renderFees();
+    renderCari();renderBank();renderFees();renderTahakkuk(S.tYear);
     $("#mCount").textContent=(d.moka||[]).length;$("#mTotal").textContent=money((d.moka||[]).reduce(function(z,x){return z+(Number(x.tutar)||0)},0));
     $("#mokaBody").innerHTML=(d.moka||[]).map(function(x){return '<tr><td>'+date(x.tarih)+'</td><td class="amt">'+money(x.tutar)+'</td><td>'+esc(x.aciklama||"")+'</td><td>'+esc(x.kontrol_sonucu||"")+'</td><td>'+esc(x.notlar||"")+'</td></tr>'}).join("");
     $("#promiseList").innerHTML=(d.promises||[]).map(function(x){return '<div class="item"><div class="row"><div><div class="title">'+esc(x.mukellef)+'</div><div class="meta">Ödeme tarihi: '+date(x.odeme_tarihi)+' · '+esc(x.odeme_sekli||"")+'</div></div><div class="amt">'+money(x.tutar)+'</div></div><span class="tag '+tag(x.durum)+'">'+esc(x.durum||"—")+'</span><div class="meta">'+esc(x.notlar||"")+'</div></div>'}).join("")||'<div class="empty">Kayıt yok.</div>';
