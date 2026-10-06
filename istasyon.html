@@ -8,7 +8,7 @@
 <style>
 :root{--bg:#05090f;--p:#0a111a;--p2:#0f1926;--line:#203149;--text:#f1f7ff;--mut:#8fa5ba;--teal:#00d7ad;--blue:#48a0ff;--amber:#ffad33;--red:#ff5f6d;--r:17px}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 500px at 50% -10%,rgba(72,160,255,.11),transparent),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
-button,input,textarea{font:inherit}.cmdbar{padding:14px;margin-bottom:12px}.cmdrow{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:stretch}.cmdinput{width:100%;min-height:48px;resize:vertical;background:#060b12;border:1px solid var(--line);color:#fff;padding:12px;border-radius:12px;outline:none}.cmdinput:focus{border-color:var(--teal)}.primary{border:1px solid rgba(0,215,173,.35);background:rgba(0,215,173,.12);color:#fff;border-radius:12px;padding:0 18px;font-weight:900}.primary:disabled{opacity:.45;cursor:not-allowed}.cmdstatus{margin-top:9px;color:var(--mut);font-size:11px;line-height:1.5}.cmdstatus.ok{color:var(--teal)}.cmdstatus.warn{color:var(--amber)}.cmdstatus.bad{color:var(--red)}.approvebtn{margin-top:9px;border:1px solid rgba(255,173,51,.35);background:rgba(255,173,51,.12);color:#ffd28b;border-radius:10px;padding:8px 11px;font-weight:900}.filters{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.pill{border:1px solid var(--line);background:var(--p);color:var(--mut);padding:7px 10px;border-radius:999px;font-size:10px;font-weight:850}.pill.active{color:#fff;background:rgba(72,160,255,.13);border-color:rgba(72,160,255,.35)}.barrow{min-width:170px}.bars{display:flex;flex-direction:column;gap:4px;margin-top:5px}.bar{height:4px;border-radius:999px;min-width:2px}.bar.t{background:#d58a12}.bar.c{background:#1f8b68}.right{text-align:right}.top{position:sticky;top:0;z-index:30;background:rgba(5,9,15,.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+button,input,textarea{font:inherit}.cmdbar{padding:14px;margin-bottom:12px}.cmdrow{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:stretch}.cmdinput{width:100%;min-height:48px;resize:vertical;background:#060b12;border:1px solid var(--line);color:#fff;padding:12px;border-radius:12px;outline:none}.cmdinput:focus{border-color:var(--teal)}.primary{border:1px solid rgba(0,215,173,.35);background:rgba(0,215,173,.12);color:#fff;border-radius:12px;padding:0 18px;font-weight:900}.primary:disabled{opacity:.45;cursor:not-allowed}.cmdstatus{margin-top:9px;color:var(--mut);font-size:11px;line-height:1.5}.cmdstatus.ok{color:var(--teal)}.cmdstatus.warn{color:var(--amber)}.cmdstatus.bad{color:var(--red)}.approvebtn{margin-top:9px;border:1px solid rgba(255,173,51,.35);background:rgba(255,173,51,.12);color:#ffd28b;border-radius:10px;padding:8px 11px;font-weight:900}.filters{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.pill{border:1px solid var(--line);background:var(--p);color:var(--mut);padding:7px 10px;border-radius:999px;font-size:10px;font-weight:850}.pill.active{color:#fff;background:rgba(72,160,255,.13);border-color:rgba(72,160,255,.35)}.barrow{min-width:170px}.bars{display:flex;flex-direction:column;gap:4px;margin-top:5px}.bar{height:4px;border-radius:999px;min-width:2px}.bar.t{background:#d58a12}.bar.c{background:#1f8b68}.right{text-align:right}.auditActions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}.actionbtn{border:1px solid var(--line);background:var(--p2);color:#fff;border-radius:10px;padding:9px 12px;font-size:10px;font-weight:900;cursor:pointer}.actionbtn:hover{border-color:var(--teal)}.actionbtn.primaryAudit{background:rgba(0,215,173,.12);border-color:rgba(0,215,173,.35)}.statusBlock{color:var(--red);font-weight:900}.statusWarn{color:var(--amber);font-weight:900}.statusOk{color:var(--teal);font-weight:900}.evidence{font-size:10px;color:var(--mut);line-height:1.5}.auditgrid{grid-template-columns:repeat(6,1fr)}.top{position:sticky;top:0;z-index:30;background:rgba(5,9,15,.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
 .topin{max-width:1450px;margin:auto;padding:12px 16px;display:flex;align-items:center;gap:11px}.logo{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--blue),var(--teal));font-weight:900}.brand b{letter-spacing:.12em}.brand small{display:block;color:var(--mut);font-size:10px}.sp{flex:1}.chip{border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:10px;font-weight:800;color:var(--mut)}.chip.ok{color:var(--teal);border-color:rgba(0,215,173,.3)}
 .wrap{max-width:1450px;margin:auto;padding:14px}.tabs{display:flex;gap:7px;overflow:auto;padding:3px 0 12px;scrollbar-width:none}.tab{white-space:nowrap;border:1px solid var(--line);background:var(--p);color:var(--mut);padding:10px 13px;border-radius:11px;font-weight:800}.tab.active{color:#fff;background:rgba(0,215,173,.09);border-color:rgba(0,215,173,.28)}
 .view{display:none}.view.active{display:block}.grid{display:grid;gap:12px}.kpis{grid-template-columns:repeat(5,1fr);margin-bottom:12px}.card{background:rgba(10,17,26,.91);border:1px solid var(--line);border-radius:var(--r)}.kpi{padding:14px}.lab{font-size:9px;color:var(--mut);font-weight:900;text-transform:uppercase;letter-spacing:.08em}.val{font:850 25px ui-monospace,SFMono-Regular,monospace;margin-top:8px}.sub{font-size:10px;color:var(--mut);margin-top:5px}.sec{padding:14px}.head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px}.head h2{margin:0;font-size:14px}.head small{color:var(--mut)}
@@ -17,11 +17,12 @@ button,input,textarea{font:inherit}.cmdbar{padding:14px;margin-bottom:12px}.cmdr
 .tag{display:inline-flex;padding:3px 6px;border-radius:6px;font:800 9px ui-monospace,monospace}.teal{color:var(--teal);background:rgba(0,215,173,.1)}.amber{color:var(--amber);background:rgba(255,173,51,.1)}.red{color:var(--red);background:rgba(255,95,109,.1)}.blue{color:var(--blue);background:rgba(72,160,255,.1)}
 .cols{grid-template-columns:1.25fr .75fr}.list{display:flex;flex-direction:column;gap:8px}.item{border:1px solid var(--line);background:var(--p2);border-radius:12px;padding:11px}.title{font-weight:850;font-size:12px}.meta{color:var(--mut);font-size:10px;margin-top:4px;line-height:1.45}.row{display:flex;justify-content:space-between;gap:10px}.amt{font:850 12px ui-monospace,monospace}.note{border:1px solid rgba(255,173,51,.25);background:rgba(255,173,51,.06);color:#e4d0ab;padding:11px 12px;border-radius:12px;font-size:11px;margin-bottom:12px}
 .drawer{position:fixed;inset:0;display:none;z-index:60;background:rgba(0,0,0,.62)}.drawer.show{display:block}.panel{position:absolute;right:0;top:0;bottom:0;width:min(620px,100%);background:#07101a;border-left:1px solid var(--line);padding:16px;overflow:auto}.close{float:right;border:1px solid var(--line);background:var(--p2);color:#fff;border-radius:10px;padding:8px 10px}.panel h2{font-size:17px;margin:3px 0 5px}.empty{padding:18px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:11px}
-@media(max-width:1050px){.kpis{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}}@media(max-width:650px){.cmdrow{grid-template-columns:1fr}.primary{min-height:44px}.wrap{padding:9px}.topin{padding:9px}.kpis{grid-template-columns:1fr 1fr}.val{font-size:21px}.brand small{display:none}.chip:nth-of-type(n+2){display:none}.sec{padding:11px}}
+@media(max-width:1050px){.auditgrid{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}}@media(max-width:650px){.cmdrow{grid-template-columns:1fr}.primary{min-height:44px}.wrap{padding:9px}.topin{padding:9px}.kpis{grid-template-columns:1fr 1fr}.val{font-size:21px}.brand small{display:none}.chip:nth-of-type(n+2){display:none}.sec{padding:11px}}
 </style>
 <script>
 const API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-live";
 const CMD_API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-command";
+const AUDIT_API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-audit";
 (function(){
   const m=location.hash.match(/^#key=(.+)$/);
   if(m){
@@ -46,6 +47,7 @@ function commandSession(){let s=localStorage.getItem("istasyon_command_session")
 </div>
 <div class="tabs">
 <button class="tab active" data-v="home">Özet</button>
+<button class="tab" data-v="audit">Denetim</button>
 <button class="tab" data-v="cari">Cari</button>
 <button class="tab" data-v="bank">Banka</button>
 <button class="tab" data-v="moka">Moka</button>
@@ -54,6 +56,58 @@ function commandSession(){let s=localStorage.getItem("istasyon_command_session")
 <button class="tab" data-v="fees">Muhasebe Ücretleri</button>
 <button class="tab" data-v="tasks">Görevler</button>
 </div>
+
+
+<section class="view" id="v-audit">
+  <div class="note"><b>Denetim Hazırlık Merkezi.</b> Risk, kanıt ve dış teyit hazırlığı ISA 315 / ISA 500 / ISA 505 ilkeleri etrafında tasarlanmıştır. Bu ekran bağımsız denetçi görüşü veya sertifikasyon değildir; eksikleri kapatmak ve kanıt zincirini hazırlamak içindir.</div>
+  <div class="grid auditgrid" style="margin-bottom:12px">
+    <div class="card kpi"><div class="lab">Banka İstisna</div><div class="val" id="aBankEx">—</div><div class="sub" id="aBankCrit">—</div></div>
+    <div class="card kpi"><div class="lab">Cari Hazır</div><div class="val" id="aCariReady">—</div><div class="sub" id="aCariReview">—</div></div>
+    <div class="card kpi"><div class="lab">Tahakkuk Eksik</div><div class="val" id="aAccrualMissing">—</div><div class="sub">aktif mükellef</div></div>
+    <div class="card kpi"><div class="lab">Belge İndeksi</div><div class="val" id="aDocs">—</div><div class="sub" id="aFinanceDocs">—</div></div>
+    <div class="card kpi"><div class="lab">Hazırlık Kuyruğu</div><div class="val" id="aQueue">—</div><div class="sub">tek tık işlemler</div></div>
+    <div class="card kpi"><div class="lab">Banka Güncellik</div><div class="val" id="aFresh">—</div><div class="sub" id="aFreshSub">—</div></div>
+  </div>
+
+  <div class="card sec">
+    <div class="head"><h2>Tek Tık Denetim Hazırlığı</h2><small>finansal final kayıt ONAYLIYORUM kuralını korur</small></div>
+    <div class="auditActions">
+      <button class="actionbtn primaryAudit" onclick="auditAction('prepare_all')">Denetime Hazırla</button>
+      <button class="actionbtn" onclick="auditAction('prepare_bank')">Banka İstisnalarını Hazırla</button>
+      <button class="actionbtn" onclick="auditAction('prepare_cari')">Cari Eksiklerini Hazırla</button>
+      <button class="actionbtn" onclick="auditAction('prepare_accrual')">Eksik Tahakkukları Hazırla</button>
+      <button class="actionbtn" onclick="auditAction('prepare_confirmations')">Cari Teyit Paketlerini Hazırla</button>
+      <button class="actionbtn" onclick="auditAction('snapshot')">Kanıt Snapshot Oluştur</button>
+    </div>
+    <div id="auditMsg" class="cmdstatus">Öneriler önce hazırlık kuyruğuna alınır; muhasebe/posting yapan işlemler ayrıca onay ister.</div>
+  </div>
+
+  <div class="grid cols" style="margin-top:12px">
+    <div class="card sec">
+      <div class="head"><h2>Denetim Kontrol Listesi</h2><small>risk · kanıt · teyit</small></div>
+      <div class="list" id="auditChecklist"></div>
+    </div>
+    <div class="card sec">
+      <div class="head"><h2>Hazırlık Kuyruğu</h2><small id="auditActionCount">—</small></div>
+      <div class="list" id="auditActionsList"></div>
+    </div>
+  </div>
+
+  <div class="card sec" style="margin-top:12px">
+    <div class="head"><h2>Banka İstisnaları</h2><small id="auditBankCount">—</small></div>
+    <div class="tablewrap"><table><thead><tr><th>Önem</th><th>Tarih</th><th>Tutar</th><th>Kayıt</th><th>Sorun</th><th>Öneri</th><th>İşlem</th></tr></thead><tbody id="auditBankBody"></tbody></table></div>
+  </div>
+
+  <div class="card sec" style="margin-top:12px">
+    <div class="head"><h2>Cari Hazırlık İstisnaları</h2><small id="auditCariCount">—</small></div>
+    <div class="tablewrap"><table><thead><tr><th>Önem</th><th>Cari</th><th>Sorun</th><th>Öneri</th><th>İşlem</th></tr></thead><tbody id="auditCariBody"></tbody></table></div>
+  </div>
+
+  <div class="card sec" style="margin-top:12px">
+    <div class="head"><h2>Muhtemel Mükerrer Banka Kayıtları</h2><small id="auditDupCount">—</small></div>
+    <div class="tablewrap"><table><thead><tr><th>Tarih</th><th>Tutar</th><th>Açıklama</th><th>Tekrar</th><th>Satırlar</th></tr></thead><tbody id="auditDupBody"></tbody></table></div>
+  </div>
+</section>
 
 <section class="view active" id="v-home">
 <div class="grid kpis">
@@ -104,7 +158,7 @@ function commandSession(){let s=localStorage.getItem("istasyon_command_session")
 <div class="drawer" id="drawer"><div class="panel"><button class="close" id="close">Kapat ✕</button><div id="detail"><div class="empty">Detay yükleniyor…</div></div></div></div>
 
 <script>
-var S={d:null,tYear:new Date().getFullYear(),tType:"all",lastCommandId:null};var $=function(s){return document.querySelector(s)};var $$=function(s){return Array.from(document.querySelectorAll(s))};
+var S={d:null,audit:null,tYear:new Date().getFullYear(),tType:"all",lastCommandId:null};var $=function(s){return document.querySelector(s)};var $$=function(s){return Array.from(document.querySelectorAll(s))};
 function esc(s){s=String(s==null?"":s);return s.replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function money(n){var x=Number(n);return Number.isFinite(x)?new Intl.NumberFormat("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}).format(x):"—"}
 function date(s){if(!s)return"—";var d=new Date(String(s).slice(0,10)+"T12:00:00");return isNaN(d)?"—":new Intl.DateTimeFormat("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric"}).format(d)}
@@ -157,6 +211,76 @@ async function approveCommand(id){
     await load();
   }catch(e){cmdMessage("Onay işlenemedi: "+esc(String(e)),"bad")}finally{$("#cmdSend").disabled=false}
 }
+
+function auditStatusClass(s){s=String(s||"");return s==="OK"?"statusOk":s==="WARN"?"statusWarn":"statusBlock"}
+async function auditLoad(){
+  try{
+    var r=await fetch(AUDIT_API,{cache:"no-store",headers:authHeaders()});var d=await r.json();
+    if(!r.ok||!d.ok)throw new Error(d.error||"audit");
+    S.audit=d;renderAudit();
+  }catch(e){
+    $("#auditMsg").className="cmdstatus bad";
+    $("#auditMsg").textContent="Denetim verisi alınamadı: "+String(e&&e.message||e);
+  }
+}
+function renderAudit(){
+  var d=S.audit||{},r=d.readiness||{};
+  $("#aBankEx").textContent=r.banka_istisna==null?"—":r.banka_istisna;
+  $("#aBankCrit").textContent=(r.banka_kritik||0)+" kritik";
+  $("#aCariReady").textContent=(r.cari_hazir||0)+"/"+(r.aktif_mukellef||0);
+  $("#aCariReview").textContent=(r.cari_inceleme||0)+" inceleme";
+  $("#aAccrualMissing").textContent=r.bu_ay_tahakkuk_eksik==null?"—":r.bu_ay_tahakkuk_eksik;
+  $("#aDocs").textContent=r.belge_indeksi==null?"—":r.belge_indeksi;
+  $("#aFinanceDocs").textContent=(r.finans_belgesi||0)+" finans belgesi";
+  $("#aQueue").textContent=r.hazirlanan_aksiyon==null?"—":r.hazirlanan_aksiyon;
+  $("#aFresh").textContent=(r.banka_gecikme_gun||0)+" gün";
+  $("#aFreshSub").textContent="Son banka: "+(r.son_banka_tarihi||"—");
+
+  $("#auditChecklist").innerHTML=(d.checklist||[]).map(function(x){
+    return '<div class="item"><div class="row"><div><div class="title">'+esc(x.title)+'</div><div class="meta">'+esc(x.detail)+'</div><div class="evidence">'+esc(x.standard_ref||"")+'</div></div><div class="'+auditStatusClass(x.status)+'">'+esc(x.status)+'</div></div></div>'
+  }).join("")||'<div class="empty">Kontrol listesi yok.</div>';
+
+  $("#auditActionCount").textContent=(d.actions||[]).length+" kayıt";
+  $("#auditActionsList").innerHTML=(d.actions||[]).slice(0,40).map(function(x){
+    return '<div class="item"><div class="row"><div><div class="title">'+esc(x.title)+'</div><div class="meta">'+esc(x.action_type)+' · '+esc(x.status)+'</div></div><span class="tag '+(x.requires_approval?'amber':'blue')+'">'+(x.requires_approval?'ONAY':'HAZIRLIK')+'</span></div></div>'
+  }).join("")||'<div class="empty">Hazırlık kuyruğu boş.</div>';
+
+  $("#auditBankCount").textContent=(d.bank_exceptions||[]).length+" açık";
+  $("#auditBankBody").innerHTML=(d.bank_exceptions||[]).map(function(x){
+    return '<tr><td><span class="tag '+(x.severity==="KRITIK"?'red':x.severity==="YUKSEK"?'amber':'blue')+'">'+esc(x.severity)+'</span></td><td>'+date(x.tarih)+'</td><td class="amt">'+money(x.tutar)+'</td><td>'+esc(x.entity)+'</td><td>'+esc(x.exception_code)+'</td><td>'+esc(x.suggested_action)+'</td><td><button class="actionbtn" onclick="auditPrepareOne(\'BANKA\',\''+esc(x.source_ref)+'\')">Hazırla</button></td></tr>'
+  }).join("")||'<tr><td colspan="7"><div class="empty">Açık banka istisnası yok.</div></td></tr>';
+
+  $("#auditCariCount").textContent=(d.cari_exceptions||[]).length+" açık";
+  $("#auditCariBody").innerHTML=(d.cari_exceptions||[]).map(function(x){
+    return '<tr><td><span class="tag '+(x.severity==="KRITIK"?'red':x.severity==="YUKSEK"?'amber':'blue')+'">'+esc(x.severity)+'</span></td><td><b>'+esc(x.entity)+'</b></td><td>'+esc(x.exception_code)+'</td><td>'+esc(x.suggested_action)+'</td><td><button class="actionbtn" onclick="auditPrepareOne(\'CARI\',\''+esc(x.source_ref)+'\')">Hazırla</button></td></tr>'
+  }).join("")||'<tr><td colspan="5"><div class="empty">Cari hazırlık istisnası yok.</div></td></tr>';
+
+  $("#auditDupCount").textContent=(d.duplicates||[]).length+" aday";
+  $("#auditDupBody").innerHTML=(d.duplicates||[]).map(function(x){
+    return '<tr><td>'+date(x.tarih)+'</td><td class="amt">'+money(x.tutar)+'</td><td>'+esc(x.aciklama)+'</td><td>'+esc(x.tekrar)+'</td><td>'+esc((x.banka_satirlari||[]).join(", "))+'</td></tr>'
+  }).join("")||'<tr><td colspan="5"><div class="empty">Muhtemel mükerrer banka kaydı yok.</div></td></tr>';
+}
+async function auditAction(action){
+  $("#auditMsg").className="cmdstatus";
+  $("#auditMsg").textContent="Denetim hazırlığı işleniyor…";
+  try{
+    var r=await fetch(AUDIT_API,{method:"POST",headers:{"content-type":"application/json",...authHeaders()},body:JSON.stringify({action:action})});
+    var d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||"audit_action");
+    $("#auditMsg").className="cmdstatus ok";$("#auditMsg").textContent="✓ "+(d.message||"Hazırlandı.");
+    await auditLoad();
+  }catch(e){$("#auditMsg").className="cmdstatus bad";$("#auditMsg").textContent="İşlem hazırlanamadı: "+String(e&&e.message||e)}
+}
+async function auditPrepareOne(domain,source_ref){
+  $("#auditMsg").className="cmdstatus";
+  $("#auditMsg").textContent="Öneri hazırlanıyor…";
+  try{
+    var r=await fetch(AUDIT_API,{method:"POST",headers:{"content-type":"application/json",...authHeaders()},body:JSON.stringify({action:"prepare_one",domain:domain,source_ref:source_ref})});
+    var d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||"prepare_one");
+    $("#auditMsg").className="cmdstatus ok";$("#auditMsg").textContent="✓ "+(d.message||"Hazırlandı.");
+    await auditLoad();
+  }catch(e){$("#auditMsg").className="cmdstatus bad";$("#auditMsg").textContent="Hazırlanamadı: "+String(e&&e.message||e)}
+}
+
 async function submitCommand(){
   var input=$("#cmdInput"),text=input.value.trim();if(!text)return;
   $("#cmdSend").disabled=true;cmdMessage("AperiON işliyor…");
@@ -226,6 +350,6 @@ async function load(){
   }catch(e){var m=String(e&&e.message||e);$("#live").textContent=m.includes("OTURUM_ANAHTARI")?"● OTURUM GEREKLİ":"● ERİŞİM / VERİ HATASI";$("#live").className="chip";console.error(e)}
 }
 $("#cariSearch").oninput=function(e){renderCari(e.target.value)};$("#bankSearch").oninput=function(e){renderBank(e.target.value)};$("#feeSearch").oninput=function(e){renderFees(e.target.value)};
-load();
+load();auditLoad();
 </script>
 </body></html>
