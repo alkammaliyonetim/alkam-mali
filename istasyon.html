@@ -8,7 +8,8 @@
 <style>
 :root{--bg:#05090f;--p:#0a111a;--p2:#0f1926;--line:#203149;--text:#f1f7ff;--mut:#8fa5ba;--teal:#00d7ad;--blue:#48a0ff;--amber:#ffad33;--red:#ff5f6d;--r:17px}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 500px at 50% -10%,rgba(72,160,255,.11),transparent),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
-button,input,textarea{font:inherit}.cmdbar{padding:14px;margin-bottom:12px}.cmdrow{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:stretch}.cmdinput{width:100%;min-height:48px;resize:vertical;background:#060b12;border:1px solid var(--line);color:#fff;padding:12px;border-radius:12px;outline:none}.cmdinput:focus{border-color:var(--teal)}.primary{border:1px solid rgba(0,215,173,.35);background:rgba(0,215,173,.12);color:#fff;border-radius:12px;padding:0 18px;font-weight:900}.primary:disabled{opacity:.45;cursor:not-allowed}.cmdstatus{margin-top:9px;color:var(--mut);font-size:11px;line-height:1.5}.cmdstatus.ok{color:var(--teal)}.cmdstatus.warn{color:var(--amber)}.cmdstatus.bad{color:var(--red)}.approvebtn{margin-top:9px;border:1px solid rgba(255,173,51,.35);background:rgba(255,173,51,.12);color:#ffd28b;border-radius:10px;padding:8px 11px;font-weight:900}.filters{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.pill{border:1px solid var(--line);background:var(--p);color:var(--mut);padding:7px 10px;border-radius:999px;font-size:10px;font-weight:850}.pill.active{color:#fff;background:rgba(72,160,255,.13);border-color:rgba(72,160,255,.35)}.barrow{min-width:170px}.bars{display:flex;flex-direction:column;gap:4px;margin-top:5px}.bar{height:4px;border-radius:999px;min-width:2px}.bar.t{background:#d58a12}.bar.c{background:#1f8b68}.right{text-align:right}.auditActions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}.actionbtn{border:1px solid var(--line);background:var(--p2);color:#fff;border-radius:10px;padding:9px 12px;font-size:10px;font-weight:900;cursor:pointer}.actionbtn:hover{border-color:var(--teal)}.actionbtn.primaryAudit{background:rgba(0,215,173,.12);border-color:rgba(0,215,173,.35)}.statusBlock{color:var(--red);font-weight:900}.statusWarn{color:var(--amber);font-weight:900}.statusOk{color:var(--teal);font-weight:900}.evidence{font-size:10px;color:var(--mut);line-height:1.5}.auditgrid{grid-template-columns:repeat(6,1fr)}.top{position:sticky;top:0;z-index:30;background:rgba(5,9,15,.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+button,input,textarea{font:inherit}.cmdbar{padding:14px;margin-bottom:12px}.cmdrow{display:grid;grid-template-columns:1fr auto;gap:9px;align-items:stretch}.cmdinput{width:100%;min-height:48px;resize:vertical;background:#060b12;border:1px solid var(--line);color:#fff;padding:12px;border-radius:12px;outline:none}.cmdinput:focus{border-color:var(--teal)}.primary{border:1px solid rgba(0,215,173,.35);background:rgba(0,215,173,.12);color:#fff;border-radius:12px;padding:0 18px;font-weight:900}.primary:disabled{opacity:.45;cursor:not-allowed}.cmdstatus{margin-top:9px;color:var(--mut);font-size:11px;line-height:1.5}.cmdstatus.ok{color:var(--teal)}.cmdstatus.warn{color:var(--amber)}.cmdstatus.bad{color:var(--red)}.approvebtn{margin-top:9px;border:1px solid rgba(255,173,51,.35);background:rgba(255,173,51,.12);color:#ffd28b;border-radius:10px;padding:8px 11px;font-weight:900}.filters{display:flex;gap:7px;flex-wrap:wrap;margin:10px 0}.pill{border:1px solid var(--line);background:var(--p);color:var(--mut);padding:7px 10px;border-radius:999px;font-size:10px;font-weight:850}.pill.active{color:#fff;background:rgba(72,160,255,.13);border-color:rgba(72,160,255,.35)}.barrow{min-width:170px}.bars{display:flex;flex-direction:column;gap:4px;margin-top:5px}.bar{height:4px;border-radius:999px;min-width:2px}.bar.t{background:#d58a12}.bar.c{background:#1f8b68}.right{text-align:right}.auditActions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 14px}.actionbtn{border:1px solid var(--line);background:var(--p2);color:#fff;border-radius:10px;padding:9px 12px;font-size:10px;font-weight:900;cursor:pointer}.actionbtn:hover{border-color:var(--teal)}.actionbtn.primaryAudit{background:rgba(0,215,173,.12);border-color:rgba(0,215,173,.35)}
+.bankkpis{grid-template-columns:repeat(6,1fr);margin-bottom:12px}.bankToolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}.bankrow-question td{background:rgba(255,95,109,.055)}.bankrow-open td{background:rgba(255,173,51,.045)}.bankrow-prepared td{background:rgba(72,160,255,.045)}.bankrow-complete td{opacity:.62}.bankrow-moka td{background:rgba(156,112,255,.04)}.bankdesc{max-width:520px}.bankdesc .title{font-size:11px}.bankdesc .meta{max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bank-actions{display:flex;gap:6px;flex-wrap:wrap}.bankbtn{border:1px solid var(--line);background:#0a1320;color:#fff;border-radius:8px;padding:6px 8px;font-size:9px;font-weight:900;cursor:pointer;white-space:nowrap}.bankbtn:hover{border-color:var(--teal)}.bankbtn.good{color:var(--teal);border-color:rgba(0,215,173,.3);background:rgba(0,215,173,.08)}.bankbtn.warn{color:var(--amber);border-color:rgba(255,173,51,.3);background:rgba(255,173,51,.08)}.bankbtn.danger{color:var(--red);border-color:rgba(255,95,109,.3);background:rgba(255,95,109,.08)}.bankdecisiongrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}.bankdecisiongrid .bankbtn{padding:10px}.purple{color:#b79cff;background:rgba(156,112,255,.1)}.statusBlock{color:var(--red);font-weight:900}.statusWarn{color:var(--amber);font-weight:900}.statusOk{color:var(--teal);font-weight:900}.evidence{font-size:10px;color:var(--mut);line-height:1.5}.auditgrid{grid-template-columns:repeat(6,1fr)}.top{position:sticky;top:0;z-index:30;background:rgba(5,9,15,.92);backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
 .topin{max-width:1450px;margin:auto;padding:12px 16px;display:flex;align-items:center;gap:11px}.logo{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,var(--blue),var(--teal));font-weight:900}.brand b{letter-spacing:.12em}.brand small{display:block;color:var(--mut);font-size:10px}.sp{flex:1}.chip{border:1px solid var(--line);border-radius:999px;padding:7px 10px;font-size:10px;font-weight:800;color:var(--mut)}.chip.ok{color:var(--teal);border-color:rgba(0,215,173,.3)}
 .wrap{max-width:1450px;margin:auto;padding:14px}.tabs{display:flex;gap:7px;overflow:auto;padding:3px 0 12px;scrollbar-width:none}.tab{white-space:nowrap;border:1px solid var(--line);background:var(--p);color:var(--mut);padding:10px 13px;border-radius:11px;font-weight:800}.tab.active{color:#fff;background:rgba(0,215,173,.09);border-color:rgba(0,215,173,.28)}
 .view{display:none}.view.active{display:block}.grid{display:grid;gap:12px}.kpis{grid-template-columns:repeat(5,1fr);margin-bottom:12px}.card{background:rgba(10,17,26,.91);border:1px solid var(--line);border-radius:var(--r)}.kpi{padding:14px}.lab{font-size:9px;color:var(--mut);font-weight:900;text-transform:uppercase;letter-spacing:.08em}.val{font:850 25px ui-monospace,SFMono-Regular,monospace;margin-top:8px}.sub{font-size:10px;color:var(--mut);margin-top:5px}.sec{padding:14px}.head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px}.head h2{margin:0;font-size:14px}.head small{color:var(--mut)}
@@ -17,12 +18,13 @@ button,input,textarea{font:inherit}.cmdbar{padding:14px;margin-bottom:12px}.cmdr
 .tag{display:inline-flex;padding:3px 6px;border-radius:6px;font:800 9px ui-monospace,monospace}.teal{color:var(--teal);background:rgba(0,215,173,.1)}.amber{color:var(--amber);background:rgba(255,173,51,.1)}.red{color:var(--red);background:rgba(255,95,109,.1)}.blue{color:var(--blue);background:rgba(72,160,255,.1)}
 .cols{grid-template-columns:1.25fr .75fr}.list{display:flex;flex-direction:column;gap:8px}.item{border:1px solid var(--line);background:var(--p2);border-radius:12px;padding:11px}.title{font-weight:850;font-size:12px}.meta{color:var(--mut);font-size:10px;margin-top:4px;line-height:1.45}.row{display:flex;justify-content:space-between;gap:10px}.amt{font:850 12px ui-monospace,monospace}.note{border:1px solid rgba(255,173,51,.25);background:rgba(255,173,51,.06);color:#e4d0ab;padding:11px 12px;border-radius:12px;font-size:11px;margin-bottom:12px}
 .drawer{position:fixed;inset:0;display:none;z-index:60;background:rgba(0,0,0,.62)}.drawer.show{display:block}.panel{position:absolute;right:0;top:0;bottom:0;width:min(620px,100%);background:#07101a;border-left:1px solid var(--line);padding:16px;overflow:auto}.close{float:right;border:1px solid var(--line);background:var(--p2);color:#fff;border-radius:10px;padding:8px 10px}.panel h2{font-size:17px;margin:3px 0 5px}.empty{padding:18px;text-align:center;color:var(--mut);border:1px dashed var(--line);border-radius:11px}
-@media(max-width:1050px){.auditgrid{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}}@media(max-width:650px){.cmdrow{grid-template-columns:1fr}.primary{min-height:44px}.wrap{padding:9px}.topin{padding:9px}.kpis{grid-template-columns:1fr 1fr}.val{font-size:21px}.brand small{display:none}.chip:nth-of-type(n+2){display:none}.sec{padding:11px}}
+@media(max-width:1050px){.bankkpis{grid-template-columns:repeat(3,1fr)}.auditgrid{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}.cols{grid-template-columns:1fr}}@media(max-width:650px){.bankkpis{grid-template-columns:1fr 1fr}.bankdecisiongrid{grid-template-columns:1fr}.cmdrow{grid-template-columns:1fr}.primary{min-height:44px}.wrap{padding:9px}.topin{padding:9px}.kpis{grid-template-columns:1fr 1fr}.val{font-size:21px}.brand small{display:none}.chip:nth-of-type(n+2){display:none}.sec{padding:11px}}
 </style>
 <script>
 const API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-live";
 const CMD_API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-command";
 const AUDIT_API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-audit";
+const BANK_API="https://iilfwosoroflzubkaryj.supabase.co/functions/v1/istasyon-bank-actions";
 (function(){
   const m=location.hash.match(/^#key=(.+)$/);
   if(m){
@@ -148,7 +150,35 @@ function commandSession(){let s=localStorage.getItem("istasyon_command_session")
 
 <section class="view" id="v-cari"><div class="card sec"><div class="head"><h2>Cari Merkezi</h2><small id="cariCount">—</small></div><input class="search" id="cariSearch" placeholder="Mükellef / VKN / vergi dairesi ara…"><div class="tablewrap"><table><thead><tr><th>Mükellef</th><th>VKN/TCKN</th><th>Durum</th><th>Bakiye</th><th>Aylık Ücret</th><th>Son Tahsilat</th></tr></thead><tbody id="cariBody"></tbody></table></div></div></section>
 
-<section class="view" id="v-bank"><div class="note">Banka kaynağı: ISTASYON ALKAMMALI → Banka_Hareketleri (gid 544056702). Supabase bu kaynağın normalize edilmiş canlı kopyasını ve işlem durumlarını gösterir.</div><div class="grid kpis"><div class="card kpi"><div class="lab">Kaynak Satırı</div><div class="val" id="bSource">—</div></div><div class="card kpi"><div class="lab">Gelen</div><div class="val" id="bIn">—</div></div><div class="card kpi"><div class="lab">Giden</div><div class="val" id="bOut">—</div></div><div class="card kpi"><div class="lab">Muhasebede Var</div><div class="val" id="bLedger">—</div></div><div class="card kpi"><div class="lab">Bekleyen</div><div class="val" id="bWait">—</div></div></div><div class="card sec"><div class="head"><h2>Banka Mutabakatı</h2><small id="bankDate">—</small></div><input class="search" id="bankSearch" placeholder="Cari / açıklama / durum ara…"><div class="tablewrap"><table><thead><tr><th>Tarih</th><th>Tutar</th><th>Cari</th><th>Sınıf</th><th>Kontrol</th><th>Durum</th></tr></thead><tbody id="bankBody"></tbody></table></div></div></section>
+<section class="view" id="v-bank">
+<div class="note"><b>Banka İşlem Kutusu.</b> Kaynak: ISTASYON ALKAMMALI → Banka_Hareketleri. Tamamlananlar geri planda; ana hedef açık işi sıfıra indirmek. Karar vermek kaydı hazırlık kuyruğuna alır; finansal final posting yalnız <b>ONAYLIYORUM</b> sonrası ilerler.</div>
+<div class="grid bankkpis">
+  <div class="card kpi"><div class="lab">Açık İş</div><div class="val" id="bOpen">—</div><div class="sub" id="bOpenAmt">—</div></div>
+  <div class="card kpi"><div class="lab">Karar Gerekli</div><div class="val" id="bQuestion">—</div><div class="sub" id="bQuestionAmt">—</div></div>
+  <div class="card kpi"><div class="lab">Eşleşmemiş</div><div class="val" id="bUnmatched">—</div><div class="sub" id="bUnmatchedAmt">—</div></div>
+  <div class="card kpi"><div class="lab">Hazırlanan</div><div class="val" id="bPrepared">—</div><div class="sub" id="bPreparedAmt">—</div></div>
+  <div class="card kpi"><div class="lab">Moka Kontrol</div><div class="val" id="bMokaWork">—</div><div class="sub" id="bMokaAmt">—</div></div>
+  <div class="card kpi"><div class="lab">Tamamlanan</div><div class="val" id="bDone">—</div><div class="sub" id="bDoneAmt">—</div></div>
+</div>
+<div class="card sec">
+  <div class="head"><h2>Banka İşlem Kutusu</h2><small id="bankDate">—</small></div>
+  <div class="bankToolbar">
+    <div class="filters" id="bankFilters">
+      <button class="pill active" data-bank-filter="OPEN">Açık</button>
+      <button class="pill" data-bank-filter="SORU">Karar Gerekli</button>
+      <button class="pill" data-bank-filter="ESLESMEMIS">Eşleşmemiş</button>
+      <button class="pill" data-bank-filter="HAZIRLANAN">Hazırlanan</button>
+      <button class="pill" data-bank-filter="MOKA">Moka</button>
+      <button class="pill" data-bank-filter="TAMAMLANDI">Tamamlanan</button>
+      <button class="pill" data-bank-filter="ALL">Tümü</button>
+    </div>
+    <button class="actionbtn primaryAudit" id="bankPrepareHigh">Yüksek Güvenli Önerileri Hazırla</button>
+  </div>
+  <input class="search" id="bankSearch" placeholder="Cari / açıklama / durum ara…">
+  <div id="bankMsg" class="cmdstatus">Tamamlanan kayıtlar varsayılan görünümde gizlidir.</div>
+  <div class="tablewrap"><table><thead><tr><th>Tarih</th><th>Tutar</th><th>Kayıt / Açıklama</th><th>Öneri</th><th>Güven</th><th>Durum</th><th>İşlem</th></tr></thead><tbody id="bankBody"></tbody></table></div>
+</div>
+</section>
 
 <section class="view" id="v-moka"><div class="note"><b>Moka:</b> Şu an bankada MOKA olarak sınıflandırılmış aktarımları gösterir. POS alt defterinin tamamı henüz ayrı canlı kaynağa bağlı değildir.</div><div class="grid kpis"><div class="card kpi"><div class="lab">Moka Satırı</div><div class="val" id="mCount">—</div></div><div class="card kpi"><div class="lab">Toplam</div><div class="val" id="mTotal">—</div><div class="sub">Yüklenen Moka banka satırları</div></div></div><div class="card sec"><div class="head"><h2>Moka Banka Aktarımları</h2><small>alt defter kontrolü</small></div><div class="tablewrap"><table><thead><tr><th>Tarih</th><th>Tutar</th><th>Açıklama</th><th>Kontrol</th><th>Not</th></tr></thead><tbody id="mokaBody"></tbody></table></div></div></section>
 
@@ -181,7 +211,7 @@ function commandSession(){let s=localStorage.getItem("istasyon_command_session")
 <div class="drawer" id="drawer"><div class="panel"><button class="close" id="close">Kapat ✕</button><div id="detail"><div class="empty">Detay yükleniyor…</div></div></div></div>
 
 <script>
-var S={d:null,audit:null,tYear:new Date().getFullYear(),tType:"all",lastCommandId:null};var $=function(s){return document.querySelector(s)};var $$=function(s){return Array.from(document.querySelectorAll(s))};
+var S={d:null,audit:null,tYear:new Date().getFullYear(),tType:"all",bankFilter:"OPEN",lastCommandId:null};var $=function(s){return document.querySelector(s)};var $$=function(s){return Array.from(document.querySelectorAll(s))};
 function esc(s){s=String(s==null?"":s);return s.replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
 function money(n){var x=Number(n);return Number.isFinite(x)?new Intl.NumberFormat("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}).format(x):"—"}
 function date(s){if(!s)return"—";var d=new Date(String(s).slice(0,10)+"T12:00:00");return isNaN(d)?"—":new Intl.DateTimeFormat("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric"}).format(d)}
@@ -210,9 +240,88 @@ function renderCari(filter){
   $("#cariBody").innerHTML=rows.map(function(x){var c=map.get(x.unvan)||{};return '<tr class="click" data-cari="'+esc(x.unvan)+'"><td><b>'+esc(x.unvan)+'</b></td><td>'+esc(x.tckn_vkn||"")+'</td><td><span class="tag '+tag(x.durum)+'">'+esc(x.durum||"—")+'</span></td><td class="amt">'+money(c.bakiye)+'</td><td class="amt">'+money(c.aylik_ucret)+'</td><td>'+date(c.son_tahsilat)+'</td></tr>'}).join("");
   $$("#cariBody tr").forEach(function(tr){tr.onclick=function(){cariDetail(tr.dataset.cari)}});
 }
+function bankBucketClass(b){return b==="SORU"?"bankrow-question":b==="ESLESMEMIS"||b==="CARI_AC"||b==="DIGER"?"bankrow-open":b==="HAZIRLANAN"?"bankrow-prepared":b==="TAMAMLANDI"?"bankrow-complete":b==="MOKA"?"bankrow-moka":""}
+function bankBucketTag(b){return b==="SORU"?"red":b==="ESLESMEMIS"||b==="CARI_AC"||b==="DIGER"?"amber":b==="HAZIRLANAN"?"blue":b==="TAMAMLANDI"?"teal":b==="MOKA"?"purple":"blue"}
+function bankActionLabel(a){return {CARI_TAHSILAT:"Cari Tahsilatı",ZATEN_ISLENDI:"Zaten İşlendi",EMANET:"Emanet",CEK_SENET:"Çek/Senet",GIDER:"Gider",ORTAK_KARPAYI:"Ortak/Kâr Payı",YOK_SAY:"Yok Say",MOKA_KONTROL:"Moka Kontrol"}[a]||a||"—"}
+function bankFilterMatch(x,f){
+  if(f==="ALL")return true;
+  if(f==="OPEN")return ["SORU","ESLESMEMIS","CARI_AC","DIGER"].includes(x.work_bucket);
+  return x.work_bucket===f;
+}
 function renderBank(filter){
-  filter=filter||"";var q=filter.toLocaleLowerCase("tr-TR");var rows=(S.d.bank||[]).filter(function(x){return [x.banka_cari,x.onerilen_cari,x.aciklama,x.banka_durum,x.kontrol_sonucu].join(" ").toLocaleLowerCase("tr-TR").includes(q)});
-  $("#bankBody").innerHTML=rows.map(function(x){return '<tr><td>'+date(x.tarih)+'</td><td class="amt">'+money(x.tutar)+'</td><td>'+esc(x.banka_cari||x.onerilen_cari||"—")+'</td><td>'+esc(x.sinif||"")+'</td><td><span class="tag '+tag(x.kontrol_sonucu)+'">'+esc(x.kontrol_sonucu||"—")+'</span></td><td>'+esc(x.banka_durum||"")+'</td></tr>'}).join("");
+  filter=filter==null?($("#bankSearch")?.value||""):filter;
+  var q=String(filter||"").toLocaleLowerCase("tr-TR");
+  var rows=(S.d.bank||[]).filter(function(x){
+    return bankFilterMatch(x,S.bankFilter) &&
+      [x.banka_cari,x.onerilen_cari,x.aciklama,x.banka_durum,x.kontrol_sonucu,x.suggested_cari,x.suggested_action,x.kayit_id].join(" ").toLocaleLowerCase("tr-TR").includes(q)
+  });
+  $("#bankBody").innerHTML=rows.map(function(x){
+    var suggestion=x.suggested_action?bankActionLabel(x.suggested_action)+(x.suggested_cari?" · "+x.suggested_cari:""):"—";
+    var confidence=Number(x.suggestion_confidence||0);
+    var actionHtml="";
+    if(x.work_bucket==="TAMAMLANDI") actionHtml='<span class="tag teal">✓ TAMAM</span>';
+    else if(x.work_bucket==="HAZIRLANAN") actionHtml='<div class="bank-actions"><span class="tag blue">'+esc(bankActionLabel(x.decision_type))+'</span><button class="bankbtn" onclick="bankCancel(\''+esc(x.kayit_id)+'\')">Geri Al</button></div>';
+    else if(x.work_bucket==="MOKA") actionHtml='<span class="tag purple">MOKA ALT DEFTER</span>';
+    else {
+      actionHtml='<div class="bank-actions">';
+      if(x.suggested_action&&confidence>=70) actionHtml+='<button class="bankbtn good" onclick="bankAcceptSuggestion(\''+esc(x.kayit_id)+'\')">Öneriyi Kabul Et</button>';
+      actionHtml+='<button class="bankbtn warn" onclick="openBankDecision(\''+esc(x.kayit_id)+'\')">Karar Ver</button></div>';
+    }
+    return '<tr class="'+bankBucketClass(x.work_bucket)+'"><td>'+date(x.tarih)+'</td><td class="amt">'+money(x.tutar)+'</td><td class="bankdesc"><div class="title">'+esc(x.banka_cari||x.onerilen_cari||x.kayit_id||"—")+'</div><div class="meta" title="'+esc(x.aciklama||"")+'">'+esc(x.aciklama||"")+'</div></td><td>'+esc(suggestion)+'</td><td><span class="tag '+(confidence>=95?"teal":confidence>=70?"amber":"blue")+'">'+confidence+'/100</span></td><td><span class="tag '+bankBucketTag(x.work_bucket)+'">'+esc(x.work_bucket)+'</span></td><td>'+actionHtml+'</td></tr>'
+  }).join("")||'<tr><td colspan="7"><div class="empty">Bu filtrede açık kayıt yok.</div></td></tr>';
+}
+async function bankDecide(kayitId,type,targetCari,note){
+  var row=(S.d.bank||[]).find(function(x){return x.kayit_id===kayitId});if(!row)return;
+  if(type==="CARI_TAHSILAT"&&!targetCari){
+    targetCari=prompt("Cari adı",row.suggested_cari||row.banka_cari||row.onerilen_cari||"")||"";
+    targetCari=targetCari.trim();if(!targetCari)return;
+  }
+  $("#bankMsg").className="cmdstatus";$("#bankMsg").textContent="Karar hazırlanıyor…";
+  try{
+    var r=await fetch(BANK_API,{method:"POST",headers:{"content-type":"application/json",...authHeaders()},body:JSON.stringify({action:"decide",kayit_id:kayitId,decision_type:type,target_cari:targetCari||null,note:note||null})});
+    var d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||"bank_decision");
+    $("#bankMsg").className="cmdstatus ok";$("#bankMsg").textContent="✓ "+(d.message||"Hazırlandı.");
+    $("#drawer").classList.remove("show");await load();
+  }catch(e){$("#bankMsg").className="cmdstatus bad";$("#bankMsg").textContent="Karar kaydedilemedi: "+String(e&&e.message||e)}
+}
+async function bankAcceptSuggestion(kayitId){
+  var row=(S.d.bank||[]).find(function(x){return x.kayit_id===kayitId});if(!row||!row.suggested_action)return;
+  await bankDecide(kayitId,row.suggested_action,row.suggested_cari||null,"Sistem önerisi kabul edildi · güven "+Number(row.suggestion_confidence||0)+"/100");
+}
+async function bankCancel(kayitId){
+  $("#bankMsg").className="cmdstatus";$("#bankMsg").textContent="Karar geri alınıyor…";
+  try{
+    var r=await fetch(BANK_API,{method:"POST",headers:{"content-type":"application/json",...authHeaders()},body:JSON.stringify({action:"cancel",kayit_id:kayitId})});
+    var d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||"cancel");
+    $("#bankMsg").className="cmdstatus ok";$("#bankMsg").textContent="✓ "+(d.message||"Geri alındı.");await load();
+  }catch(e){$("#bankMsg").className="cmdstatus bad";$("#bankMsg").textContent="Geri alınamadı: "+String(e&&e.message||e)}
+}
+function openBankDecision(kayitId){
+  var x=(S.d.bank||[]).find(function(r){return r.kayit_id===kayitId});if(!x)return;
+  $("#drawer").classList.add("show");
+  var suggested=x.suggested_action?'<div class="note"><b>Öneri:</b> '+esc(bankActionLabel(x.suggested_action))+(x.suggested_cari?" · "+esc(x.suggested_cari):"")+' · güven '+Number(x.suggestion_confidence||0)+'/100</div>':"";
+  var h='<h2>Banka Kararı</h2><div class="meta">'+date(x.tarih)+' · '+money(x.tutar)+' · '+esc(x.kayit_id||"")+'</div>'+
+    '<div class="item" style="margin-top:12px"><div class="title">'+esc(x.banka_cari||x.onerilen_cari||"Cari atanmadı")+'</div><div class="meta">'+esc(x.aciklama||"")+'</div></div>'+suggested+
+    '<div class="evidence" style="margin-top:10px">Buradaki seçim kararı kaydeder ve hazırlık kuyruğuna alır. Yeni finansal kayıt gerekiyorsa final posting yine ONAYLIYORUM ister.</div>'+
+    '<div class="bankdecisiongrid">'+
+      '<button class="bankbtn good" onclick="bankDecide(\''+esc(x.kayit_id)+'\',\'CARI_TAHSILAT\')">Cari Tahsilatı</button>'+
+      '<button class="bankbtn" onclick="bankDecide(\''+esc(x.kayit_id)+'\',\'ZATEN_ISLENDI\')">Zaten İşlendi</button>'+
+      '<button class="bankbtn" onclick="bankDecide(\''+esc(x.kayit_id)+'\',\'EMANET\')">Emanet</button>'+
+      '<button class="bankbtn" onclick="bankDecide(\''+esc(x.kayit_id)+'\',\'CEK_SENET\')">Çek / Senet</button>'+
+      '<button class="bankbtn" onclick="bankDecide(\''+esc(x.kayit_id)+'\',\'GIDER\')">Gider</button>'+
+      '<button class="bankbtn" onclick="bankDecide(\''+esc(x.kayit_id)+'\',\'ORTAK_KARPAYI\')">Ortak / Kâr Payı</button>'+
+      '<button class="bankbtn danger" onclick="bankDecide(\''+esc(x.kayit_id)+'\',\'YOK_SAY\')">Yok Say</button>'+
+    '</div>';
+  $("#detail").innerHTML=h;
+}
+async function bankPrepareHigh(){
+  $("#bankPrepareHigh").disabled=true;$("#bankMsg").className="cmdstatus";$("#bankMsg").textContent="Yüksek güvenli öneriler hazırlanıyor…";
+  try{
+    var r=await fetch(BANK_API,{method:"POST",headers:{"content-type":"application/json",...authHeaders()},body:JSON.stringify({action:"prepare_high_confidence"})});
+    var d=await r.json();if(!r.ok||!d.ok)throw new Error(d.error||"prepare_high");
+    $("#bankMsg").className="cmdstatus ok";$("#bankMsg").textContent="✓ "+(d.message||"Hazırlandı.");await load();
+  }catch(e){$("#bankMsg").className="cmdstatus bad";$("#bankMsg").textContent="Hazırlanamadı: "+String(e&&e.message||e)}
+  finally{$("#bankPrepareHigh").disabled=false}
 }
 function renderFees(filter){
   filter=filter||"";var q=filter.toLocaleLowerCase("tr-TR");var rows=(S.d.fees||[]).filter(function(x){return String(x.mukellef||"").toLocaleLowerCase("tr-TR").includes(q)});
@@ -382,7 +491,7 @@ async function load(){
     var r=await fetch(API+"?api=data",{cache:"no-store",headers:authHeaders()});var d=await r.json();if(!r.ok||!d.ok){if(r.status===401)throw new Error("OTURUM_ANAHTARI");throw new Error(d.error||"data")};S.d=d;$("#live").textContent="● CANLI";$("#live").className="chip ok";
     var s=d.summary||{},bs=d.bank_summary||{};
     $("#kActive").textContent=s.aktif_mukellef==null?"—":s.aktif_mukellef;$("#kBalance").textContent=money(s.toplam_acik_bakiye);$("#kBank").textContent=bs.banka_kaynak_satiri||"—";$("#kMoka").textContent=(d.moka||[]).length;$("#kTasks").textContent=s.acik_gorev==null?"—":s.acik_gorev;
-    $("#bSource").textContent=bs.banka_kaynak_satiri||"—";$("#bIn").textContent=bs.gelen_hareket||"—";$("#bOut").textContent=bs.giden_hareket||"—";$("#bLedger").textContent=bs.muhasebede_var==null?"—":bs.muhasebede_var;$("#bWait").textContent=bs.bekleyen||"—";$("#bankDate").textContent="Son banka: "+(bs.son_banka_tarihi||"—");
+    var bw=d.bank_work_summary||{};$("#bOpen").textContent=bw.acik_is==null?"—":bw.acik_is;$("#bOpenAmt").textContent=money(bw.acik_is_tutar)+" · "+(bw.yuksek_guven_oneri||0)+" yüksek güvenli";$("#bQuestion").textContent=bw.soru==null?"—":bw.soru;$("#bQuestionAmt").textContent=money(bw.soru_tutar);$("#bUnmatched").textContent=bw.eslesmemis==null?"—":bw.eslesmemis;$("#bUnmatchedAmt").textContent=money(bw.eslesmemis_tutar);$("#bPrepared").textContent=bw.hazirlanan==null?"—":bw.hazirlanan;$("#bPreparedAmt").textContent=money(bw.hazirlanan_tutar);$("#bMokaWork").textContent=bw.moka==null?"—":bw.moka;$("#bMokaAmt").textContent=money(bw.moka_tutar);$("#bDone").textContent=bw.tamamlanan==null?"—":bw.tamamlanan;$("#bDoneAmt").textContent=money(bw.tamamlanan_tutar);$("#bankDate").textContent="Son banka: "+(bs.son_banka_tarihi||"—")+" · kaynak "+(bw.toplam||bs.banka_kaynak_satiri||"—");
     $("#homeCari").innerHTML=(d.cari||[]).slice(0,12).map(function(c){return '<tr class="click" data-cari="'+esc(c.mukellef)+'"><td><b>'+esc(c.mukellef)+'</b></td><td class="amt">'+money(c.bakiye)+'</td><td class="amt">'+money(c.aylik_ucret)+'</td><td>'+date(c.son_tahsilat)+'</td></tr>'}).join("");
     $$("#homeCari tr").forEach(function(tr){tr.onclick=function(){cariDetail(tr.dataset.cari)}});
     $("#homePromises").innerHTML=(d.promises||[]).length?(d.promises||[]).map(function(x){return '<div class="item"><div class="row"><div><div class="title">'+esc(x.mukellef)+'</div><div class="meta">'+date(x.odeme_tarihi)+' · '+esc(x.odeme_sekli||"")+'</div></div><div class="amt">'+money(x.tutar)+'</div></div><span class="tag '+tag(x.durum)+'">'+esc(x.durum||"—")+'</span></div>'}).join(""):'<div class="empty">Ödeme sözü yok.</div>';
@@ -395,6 +504,8 @@ async function load(){
   }catch(e){var m=String(e&&e.message||e);$("#live").textContent=m.includes("OTURUM_ANAHTARI")?"● OTURUM GEREKLİ":"● ERİŞİM / VERİ HATASI";$("#live").className="chip";console.error(e)}
 }
 $("#cariSearch").oninput=function(e){renderCari(e.target.value)};$("#bankSearch").oninput=function(e){renderBank(e.target.value)};$("#feeSearch").oninput=function(e){renderFees(e.target.value)};
+$("#bankFilters .pill").forEach(function(b){b.onclick=function(){S.bankFilter=b.dataset.bankFilter;$("#bankFilters .pill").forEach(function(x){x.classList.toggle("active",x===b)});renderBank()}});
+$("#bankPrepareHigh").onclick=bankPrepareHigh;
 load();auditLoad();
 </script>
 </body></html>
