@@ -13,7 +13,7 @@
     if(isNaN(n)) n=0;
     return neg?-Math.abs(n):Math.abs(n);
   }
-  function money(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))+' TL'}
+  function money(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))}
   function root(){return q('#selectedCariDetail')||q('#tab-cariler')||document.body}
   function findBalanceCard(){
     var r=root();
