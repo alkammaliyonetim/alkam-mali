@@ -22,8 +22,13 @@ const ISTASYON_MAX_THREADS = 50;
 const ISTASYON_MAX_ATTACHMENTS = 60;
 const ISTASYON_HALKBANK_ACCOUNT_SUFFIX = '9675';
 const ISTASYON_HALKBANK_ACCOUNT_PREFIX = 'TR78000120092790';
+const ISTASYON_MOKA_SENDER = 'operations@mokaunited.com';
+const ISTASYON_HALKBANK_ALLOWED_DOMAINS = ['@bilgi.halkbank.com.tr','@halkbank.com.tr'];
 
 function istasyonAlkamEkstreAktar() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return { ok: false, skipped: true, reason: 'already_running' };
+  try {
   const key = PropertiesService.getScriptProperties().getProperty('ALKAM_GMAIL_INGEST_KEY');
   if (!key) throw new Error('Script Property ALKAM_GMAIL_INGEST_KEY eksik.');
 
@@ -94,6 +99,9 @@ function istasyonAlkamEkstreAktar() {
         bank: identity.bank,
         accountRef: identity.accountRef,
         sourceKind: identity.docType,
+        sourceReliability: identity.reliability || 0,
+        mokaPayment: identity.docType === 'moka' ? parseMokaPaymentV14_(plainBody, subject) : null,
+        evidenceHash: sha256HexV14_([message.getId(), message.getFrom(), subject, plainBody].join('\n')),
         attachments: attachments
       });
     });
@@ -139,12 +147,36 @@ function istasyonAlkamEkstreAktar() {
   };
   console.log(JSON.stringify(result));
   return result;
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function detectAlkamSourceV13_(from, subject, body) {
   const text = [from, subject, body].join(' ');
   const compact = text.toLocaleUpperCase('tr-TR').replace(/\s+/g, '');
   const lower = text.toLocaleLowerCase('tr-TR');
+  const fromLower = String(from || '').toLocaleLowerCase('tr-TR');
+
+  const mokaWords = lower.indexOf('moka united') >= 0 ||
+    lower.indexOf('pos ödemesi') >= 0 ||
+    lower.indexOf('pos odemesi') >= 0;
+  if (mokaWords) {
+    if (fromLower.indexOf(ISTASYON_MOKA_SENDER) < 0) {
+      return { accept: false, reason: 'moka_sender_not_allowlisted' };
+    }
+    const parsed = parseMokaPaymentV14_(body, subject);
+    if (!parsed || !parsed.paymentId || !parsed.paymentAt || !(parsed.grossAmount > 0)) {
+      return { accept: false, reason: 'moka_required_fields_missing' };
+    }
+    return {
+      accept: true,
+      docType: 'moka',
+      bank: 'Moka United',
+      accountRef: 'ALKAM-MOKA',
+      reliability: 100
+    };
+  }
 
   const isHalk = lower.indexOf('halkbank') >= 0 ||
     lower.indexOf('halk bankasi') >= 0 ||
@@ -153,6 +185,10 @@ function detectAlkamSourceV13_(from, subject, body) {
     lower.indexOf('t.halk bankası') >= 0;
 
   if (isHalk) {
+    const senderAllowed = ISTASYON_HALKBANK_ALLOWED_DOMAINS.some(function(domain) {
+      return fromLower.indexOf(domain) >= 0;
+    });
+    if (!senderAllowed) return { accept: false, reason: 'halkbank_sender_not_allowlisted' };
     const hasPrefix = compact.indexOf(ISTASYON_HALKBANK_ACCOUNT_PREFIX) >= 0;
     const hasSuffix = compact.indexOf(ISTASYON_HALKBANK_ACCOUNT_SUFFIX) >= 0;
     if (hasPrefix && hasSuffix) {
@@ -160,19 +196,73 @@ function detectAlkamSourceV13_(from, subject, body) {
         accept: true,
         docType: 'bank',
         bank: 'Halkbank',
-        accountRef: ISTASYON_HALKBANK_ACCOUNT_PREFIX + '******' + ISTASYON_HALKBANK_ACCOUNT_SUFFIX
+        accountRef: ISTASYON_HALKBANK_ACCOUNT_PREFIX + '******' + ISTASYON_HALKBANK_ACCOUNT_SUFFIX,
+        reliability: 100
       };
     }
-    // Halkbank maili ama hesap kimliği kanıtlanamadıysa ALKAM'a otomatik bağlama.
     return { accept: false, reason: 'halkbank_account_not_proven' };
   }
 
-  const isMoka = lower.indexOf('moka united') >= 0 ||
-    lower.indexOf('pos ödemesi') >= 0 ||
-    lower.indexOf('pos odemesi') >= 0;
-  if (isMoka) return { accept: true, docType: 'moka', bank: 'Moka United', accountRef: 'ALKAM-MOKA' };
-
   return { accept: false, reason: 'not_alkam_source' };
+}
+
+function parseMokaPaymentV14_(body, subject) {
+  const text = String(body || '');
+  const paymentId = ((text.match(/gerçekleştirilen\s+(\d+)\s+numaralı ödemeye/i) || [])[1] || '').trim();
+  const requestId = ((text.match(/(\d+)\s+numaralı ödeme isteği ile/i) || [])[1] || '').trim() || null;
+  const paymentAtText = ((text.match(/Ödeme Tarihi\s*\n(\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2})/i) || [])[1] ||
+    (text.match(/(\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2})\s+tarihinde gerçekleştirilen/i) || [])[1] || '').trim();
+  const receiptUrl = ((text.match(/https:\/\/cdn\.mokaunited\.com\/Content\/PaymentReceipt\/[^\s)\]]+/i) || [])[0] || '').trim() || null;
+  const customerMode = /müşteri pos ödemesi/i.test(String(subject || ''));
+  const personnel = fieldV14_(text, customerMode ? 'Ödeme İsteğini Gönderen Personel' : 'Ödemeyi Yapan Personel');
+  const cardholder = fieldV14_(text, customerMode ? 'Müşteri Adı' : 'Kart Sahibinin Adı');
+  const beneficiary = fieldV14_(text, 'Hizmet Alan Kişi Adı');
+  const grossAmount = parseTrMoneyV14_(fieldV14_(text, 'Tutar'));
+  const commissionAmount = parseTrMoneyV14_(fieldV14_(text, 'Bayi Komisyon Tutarı')) || 0;
+  const installments = Number(fieldV14_(text, 'Taksit Sayısı') || 0) || null;
+  const threeD = /^evet$/i.test(fieldV14_(text, '3D Güvenlik') || '');
+  const paymentAt = parseMokaDateV14_(paymentAtText);
+  return {
+    paymentId: paymentId || null,
+    paymentRequestId: requestId,
+    paymentAt: paymentAt,
+    personnelName: personnel || null,
+    cardholderName: cardholder || null,
+    beneficiaryName: beneficiary || null,
+    grossAmount: grossAmount,
+    commissionAmount: commissionAmount,
+    installmentCount: installments,
+    threeDSecure: threeD,
+    receiptUrl: receiptUrl,
+    dedupeKey: paymentId ? 'MOKA:' + paymentId : null
+  };
+}
+
+function fieldV14_(text, label) {
+  const lines = String(text || '').split(/\r?\n/).map(function(x){ return x.trim(); });
+  const idx = lines.findIndex(function(x){ return x.toLocaleLowerCase('tr-TR') === String(label).toLocaleLowerCase('tr-TR'); });
+  if (idx < 0) return '';
+  for (let i = idx + 1; i < lines.length; i++) {
+    if (lines[i]) return lines[i];
+  }
+  return '';
+}
+
+function parseTrMoneyV14_(value) {
+  const raw = String(value || '').replace(/TL/gi, '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.').replace(/[^0-9.-]/g, '');
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+function parseMokaDateV14_(value) {
+  const m = String(value || '').match(/^(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2})$/);
+  return m ? m[3] + '-' + m[2] + '-' + m[1] + 'T' + m[4] + ':' + m[5] + ':00+03:00' : null;
+}
+
+function sha256HexV14_(value) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(value), Utilities.Charset.UTF_8)
+    .map(function(b){ const v = b < 0 ? b + 256 : b; return ('0' + v.toString(16)).slice(-2); })
+    .join('');
 }
 
 function istasyonAlkamTetikleyiciKur() {
