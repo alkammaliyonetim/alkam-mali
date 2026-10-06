@@ -16,7 +16,7 @@ const qa = (sel) => [...document.querySelectorAll(sel)];
 
 function money(v) {
   if (v === null || v === undefined || v === "" || Number.isNaN(Number(v))) return "—";
-  return new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY", maximumFractionDigits: 0 }).format(Number(v));
+  return new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(Number(v));
 }
 function num(v, digits = 0) {
   if (v === null || v === undefined || v === "" || Number.isNaN(Number(v))) return "—";
