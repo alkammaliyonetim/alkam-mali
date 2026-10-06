@@ -3,7 +3,7 @@
   var VERSION='ALKAM Tahakkuk Control v5C';
   function readJson(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}}
   function periodNow(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
-  function money(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))+' TL'}
+  function money(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))}
   function run(period){
     var p=period||periodNow();
     var list=readJson('alkam_tahakkuklar').filter(function(x){return String(x.donem||x.period||'')===p});
