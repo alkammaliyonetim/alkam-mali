@@ -7,7 +7,7 @@
   function readJson(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return []}}
   function writeJson(k,v){localStorage.setItem(k,JSON.stringify(v))}
   function now(){return new Date().toISOString()}
-  function money(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))+' TL'}
+  function money(n){return new Intl.NumberFormat('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Math.abs(Number(n||0)))}
   function defaultAccounts(){return [
     {id:'banka',ad:'Banka',tip:'Banka',bakiye:0},
     {id:'kasa',ad:'Kasa',tip:'Kasa',bakiye:0},
