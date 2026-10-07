@@ -41,7 +41,7 @@ function commandSession(){let s=localStorage.getItem("istasyon_command_session")
 <div class="top"><div class="topin"><div class="logo">İ</div><div class="brand"><b>iSTASYON</b><small>ALKAM Mali Müşavirlik Operasyon Merkezi</small></div><div class="sp"></div><span class="chip">🛡 READ / PREPARE</span><span class="chip ok" id="live">● BAĞLANIYOR</span></div></div>
 <div class="wrap">
 <div class="card cmdbar">
-  <div class="head"><h2>AperiON Komut</h2><small>Supabase + yerel executor · Work/Codex gerekmez</small></div>
+  <div class="head"><h2>AperiON Komut</h2><small>AperiON Core + iSTASYON · canlı Supabase · Work/Codex gerekmez</small></div>
   <div class="cmdrow">
     <textarea id="cmdInput" class="cmdinput" placeholder="Örn: Kolostomi makası siparişi verilecek · Ece Medikal'e 5.000 ödeme Vakıf'tan · Ekim tahakkuklarını kontrol et"></textarea>
     <button id="cmdSend" class="primary">İşle</button>
@@ -153,7 +153,7 @@ function commandSession(){let s=localStorage.getItem("istasyon_command_session")
 <section class="view" id="v-cari"><div class="card sec"><div class="head"><h2>Cari Merkezi</h2><small id="cariCount">—</small></div><input class="search" id="cariSearch" placeholder="Mükellef / VKN / vergi dairesi ara…"><div class="tablewrap"><table><thead><tr><th>Mükellef</th><th>VKN/TCKN</th><th>Durum</th><th>Bakiye</th><th>Aylık Ücret</th><th>Son Tahsilat</th></tr></thead><tbody id="cariBody"></tbody></table></div></div></section>
 
 <section class="view" id="v-bank">
-<div class="note"><b>Banka İşlem Kutusu.</b> Kaynak: ISTASYON ALKAMMALI → Banka_Hareketleri. Tamamlananlar geri planda; ana hedef açık işi sıfıra indirmek. Karar vermek kaydı hazırlık kuyruğuna alır; finansal final posting yalnız <b>ONAYLIYORUM</b> sonrası ilerler.</div>
+<div class="note"><b>Banka İşlem Kutusu.</b> Kaynak: canlı Supabase iSTASYON çekirdeği. Tamamlananlar geri planda; ana hedef açık işi sıfıra indirmek. Karar vermek kaydı hazırlık kuyruğuna alır; finansal final posting yalnız <b>ONAYLIYORUM</b> sonrası ilerler.</div>
 <div class="grid bankkpis">
   <div class="card kpi"><div class="lab">Açık İş</div><div class="val" id="bOpen">—</div><div class="sub" id="bOpenAmt">—</div></div>
   <div class="card kpi"><div class="lab">Karar Gerekli</div><div class="val" id="bQuestion">—</div><div class="sub" id="bQuestionAmt">—</div></div>
